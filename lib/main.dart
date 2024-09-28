@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
-import 'package:swiftcomp/home/more/feature_flag_provider.dart';
+import 'package:swiftcomp/presentation/more/feature_flag_provider.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/in_app_reviewer_helper.dart';
 import 'package:swiftcomp/util/others.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 import 'amplifyconfiguration.dart';
-import 'home/bottom_navigator.dart';
+import 'presentation/bottom_navigator.dart';
 import 'injection_container.dart';
 
 void main() async {

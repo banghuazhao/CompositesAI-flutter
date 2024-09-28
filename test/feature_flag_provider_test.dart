@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mockito/mockito.dart';
-import 'package:swiftcomp/home/more/feature_flag_provider.dart';
+import 'package:swiftcomp/presentation/more/feature_flag_provider.dart';
 
 void main() {
   group('FeatureFlagProvider Tests', () {

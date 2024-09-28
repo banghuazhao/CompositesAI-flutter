@@ -18,6 +18,11 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  domain:
+    path: domain  # Path to the domain module
+  data:
+    path: data    # Path to the data module
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8

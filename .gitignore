@@ -72,6 +72,6 @@ ios/fastlane/*p8
 ios/fastlane/.env
 ios/fastlane/report.xml
 
-lib/data/core/chat_config.dart
+data/lib/utils/chat_config.dart
 
 coverage
