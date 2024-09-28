@@ -41,6 +41,7 @@ dependencies:
   flutter_progress_hud: ^2.0.2
   file: ^6.1.4
   flutter_markdown: ^0.7.3+1
+  get_it: ^8.0.0
 
   amplify_flutter: ^1.8.0
   amplify_auth_cognito: ^1.8.0

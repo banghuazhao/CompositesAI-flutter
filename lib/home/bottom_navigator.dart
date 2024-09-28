@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/home/more/feature_flag_provider.dart';
 import 'package:swiftcomp/home/tools/page/tool_page.dart';
 
-import 'Chat/chat_page.dart';
+import 'chat/views/chat_screen.dart';
 import 'more/more_page.dart';
 
 class BottomNavigator extends StatefulWidget {
@@ -42,7 +42,7 @@ class _BottomNavigatorState extends State<BottomNavigator> {
           body: PageView(
             controller: _controller,
             physics: const NeverScrollableScrollPhysics(),
-            children: [ToolPage(), if (isChatEnabled) ChatPage(), MorePage()],
+            children: [ToolPage(), if (isChatEnabled) ChatScreen(), MorePage()],
           ),
           bottomNavigationBar: BottomNavigationBar(
               backgroundColor: Color.fromRGBO(51, 66, 78, 1),

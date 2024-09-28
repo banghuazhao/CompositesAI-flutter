@@ -12,10 +12,8 @@ import 'package:swiftcomp/util/others.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 import 'amplifyconfiguration.dart';
-import 'home/Chat/chat_session.dart';
-import 'home/Chat/chat_session_manager.dart';
 import 'home/bottom_navigator.dart';
-import 'home/tools/page/tool_page.dart';
+import 'injection_container.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +26,7 @@ void main() async {
 
   await SharedPreferencesHelper.init();
 
+  initInjection();
   runApp(MyApp());
 }
 
@@ -64,7 +63,6 @@ class _MyAppState extends State<MyApp> {
         providers: [
           ChangeNotifierProvider(create: (context) => NumberPrecisionHelper()),
           ChangeNotifierProvider(create: (context) => FeatureFlagProvider()),
-          ChangeNotifierProvider(create: (context) => ChatSessionManager())
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
