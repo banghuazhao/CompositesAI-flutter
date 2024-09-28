@@ -73,3 +73,5 @@ ios/fastlane/.env
 ios/fastlane/report.xml
 
 lib/home/Chat/chat_config.dart
+
+coverage

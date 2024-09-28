@@ -7,7 +7,7 @@ class FeatureFlagProvider extends ChangeNotifier {
   };
 
   FeatureFlagProvider() {
-    _loadFeatureFlags();
+    loadFeatureFlags();
   }
 
   bool getFeatureFlag(String feature) {
@@ -18,7 +18,7 @@ class FeatureFlagProvider extends ChangeNotifier {
     return _featureFlags;
   }
 
-  Future<void> _loadFeatureFlags() async {
+  Future<void> loadFeatureFlags() async {
     final prefs = await SharedPreferences.getInstance();
     _featureFlags.forEach((key, value) {
       _featureFlags[key] = prefs.getBool(key) ?? false;
@@ -26,7 +26,7 @@ class FeatureFlagProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleFeatureFlag(String feature) async {
+  Future<void> toggleFeatureFlag(String feature) async {
     final prefs = await SharedPreferences.getInstance();
     _featureFlags[feature] = !_featureFlags[feature]!;
     prefs.setBool(feature, _featureFlags[feature]!);
