@@ -1,14 +1,15 @@
+import 'package:domain/entities/function_tool.dart';
 import 'package:domain/entities/message.dart';
 import 'package:domain/repositories_abstract/chat_repository.dart';
-import '../data_sources/chat_remote_data_source.dart';
+import '../data_sources/chat_completion_data_source.dart';
 
 class ChatRepositoryImp implements ChatRepository {
-  final ChatRemoteDataSource remoteDataSource;
+  final ChatCompletionsDataSource chatCompletionsDataSource;
 
-  ChatRepositoryImp({required this.remoteDataSource});
+  ChatRepositoryImp({required this.chatCompletionsDataSource});
 
   @override
-  Stream<String> sendMessages(List<Message> messages) {
-    return remoteDataSource.sendMessages(messages);
+  Stream<String> sendMessages(List<Message> messages, List<FunctionTool> functionTools) {
+    return chatCompletionsDataSource.sendMessages(messages, functionTools);
   }
 }

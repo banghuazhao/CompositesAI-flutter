@@ -1,4 +1,4 @@
-name: domain
+name: composite_calculator
 description: "A new Flutter package project."
 version: 0.0.1
 homepage:
@@ -10,8 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  composite_calculator:
-    path: ../composite_calculator
 
 dev_dependencies:
   flutter_test:

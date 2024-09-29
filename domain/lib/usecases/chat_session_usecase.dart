@@ -5,7 +5,7 @@ import '../repositories_abstract/chat_session_repository.dart';
 class ChatSessionUseCase {
   final ChatSessionRepository repository;
 
-  ChatSessionUseCase(this.repository);
+  ChatSessionUseCase({required this.repository});
 
   Future<List<ChatSession>> getAllSessions() async {
     return repository.getAllSessions();
@@ -42,6 +42,7 @@ class ChatSessionUseCase {
   // Add a new method to update the last assistant message
   void updateLastAssistantMessage(ChatSession session, String token) {
     // Find the last message that is from the assistant
+    print(session.messages.last.content);
     for (var i = session.messages.length - 1; i >= 0; i--) {
       if (session.messages[i].role == 'assistant') {
         final previousContent = session.messages[i].content;

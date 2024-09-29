@@ -1,3 +1,4 @@
+import 'package:domain/domain.dart';
 import 'package:domain/entities/chat_session.dart';
 import 'package:domain/entities/message.dart';
 import 'package:domain/usecases/chat_session_usecase.dart';
@@ -24,7 +25,11 @@ class ChatViewModel extends ChangeNotifier {
 
   ChatSession? get selectedSession => _selectedSession;
 
-  ChatViewModel(this._chatUseCase, this._chatSessionUseCase) {
+  ChatViewModel({
+    required ChatUseCase chatUseCase,
+    required ChatSessionUseCase chatSessionUseCase,
+  })  : _chatUseCase = chatUseCase,
+        _chatSessionUseCase = chatSessionUseCase {
     _controller.addListener(_onUserInputChanged);
   }
 
@@ -122,9 +127,8 @@ class ChatViewModel extends ChangeNotifier {
 
     final shouldAppendDot = _isLoading && isLastMessage;
 
-    final assistantMessageContent = shouldAppendDot
-        ? message.content + " ●"
-        : message.content;
+    final assistantMessageContent =
+        shouldAppendDot ? message.content + " ●" : message.content;
     return assistantMessageContent;
   }
 

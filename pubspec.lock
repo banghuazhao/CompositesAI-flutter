@@ -209,6 +209,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.18.0"
+  composite_calculator:
+    dependency: "direct main"
+    description:
+      path: composite_calculator
+      relative: true
+    source: path
+    version: "0.0.1"
   convert:
     dependency: transitive
     description:

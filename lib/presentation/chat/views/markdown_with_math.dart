@@ -31,7 +31,7 @@ class MathInlineSyntax extends md.InlineSyntax {
   @override
   bool onMatch(md.InlineParser parser, Match match) {
     final mathExpression = match.group(1) ?? "";
-    print("Inline equation:" + mathExpression);
+    // print("Inline equation:" + mathExpression);
     // h4 is used for math equations. If there is h4 element, it will be render by math
     final element = md.Element.text("h5", mathExpression);
     parser.addNode(element); // Add the custom math node
@@ -46,7 +46,7 @@ class MathNewlineSyntax extends md.InlineSyntax {
   @override
   bool onMatch(md.InlineParser parser, Match match) {
     final mathExpression = match.group(1) ?? "";
-    print("New line equation: " + mathExpression);
+    // print("New line equation: " + mathExpression);
     // h4 is used for math equations. If there is h4 element, it will be render by math
     final element = md.Element.text("h4", mathExpression);
     parser.addNode(element); // Add the custom math node

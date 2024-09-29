@@ -22,6 +22,8 @@ dependencies:
     path: domain  # Path to the domain module
   data:
     path: data    # Path to the data module
+  composite_calculator:
+    path: composite_calculator
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

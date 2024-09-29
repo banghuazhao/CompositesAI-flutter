@@ -1,30 +1,41 @@
 import 'dart:convert';
+import 'package:domain/entities/function_tool.dart';
 import 'package:domain/entities/message.dart';
 import 'package:http/http.dart' as http;
 import '../utils/api_constants.dart';
 import '../utils/network_exceptions.dart';
 
-abstract class ChatRemoteDataSource {
-  Stream<String> sendMessages(List<Message> messages);
+abstract class ChatCompletionsDataSource {
+  Stream<String> sendMessages(List<Message> messages, List<FunctionTool> functionTools);
 }
 
-class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
+class ChatRemoteDataSourceImpl implements ChatCompletionsDataSource {
   final http.Client client;
 
   ChatRemoteDataSourceImpl({required this.client});
 
   @override
-  Stream<String> sendMessages(List<Message> messages) async* {
-    final request = http.Request('POST', Uri.parse(ApiConstants.chatEndpoint))
+  Stream<String> sendMessages(List<Message> messages,
+      List<FunctionTool> functionTools) async* {
+    final request = http.Request('POST', Uri.parse(ApiConstants.chatCompletionsEndpoint))
       ..headers.addAll({
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ${ApiConstants.apiKey}',
       })
-      ..body = jsonEncode({
+      ..body = functionTools.isEmpty ? jsonEncode({
+        "model": "gpt-4o",
+        "stream": true,
+        'messages': messages
+      }) :
+      jsonEncode({
         "model": "gpt-4o",
         "stream": true,
         'messages': messages,
+        "tools": functionTools
       });
+
+    // var prettyBody = const JsonEncoder.withIndent('  ').convert(jsonDecode(request.body));
+    // print(prettyBody);
 
     final response = await client.send(request);
 
@@ -59,6 +70,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         }
       }
     } else {
+      print('Failed to send message: ${response.statusCode}');
       throw NetworkException('Failed to send message: ${response.statusCode}');
     }
   }
