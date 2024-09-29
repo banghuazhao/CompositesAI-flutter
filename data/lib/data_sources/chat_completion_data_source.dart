@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:domain/entities/function_tool.dart';
 import 'package:domain/entities/message.dart';
 import 'package:http/http.dart' as http;
+import '../models/chat_chunk.dart';
 import '../utils/api_constants.dart';
 import '../utils/network_exceptions.dart';
 
 abstract class ChatCompletionsDataSource {
-  Stream<String> sendMessages(List<Message> messages, List<FunctionTool> functionTools);
+  Stream<ChatChunk> sendMessages(List<Message> messages, List<FunctionTool> functionTools);
 }
 
 class ChatRemoteDataSourceImpl implements ChatCompletionsDataSource {
@@ -15,7 +16,7 @@ class ChatRemoteDataSourceImpl implements ChatCompletionsDataSource {
   ChatRemoteDataSourceImpl({required this.client});
 
   @override
-  Stream<String> sendMessages(List<Message> messages,
+  Stream<ChatChunk> sendMessages(List<Message> messages,
       List<FunctionTool> functionTools) async* {
     final request = http.Request('POST', Uri.parse(ApiConstants.chatCompletionsEndpoint))
       ..headers.addAll({
@@ -58,12 +59,11 @@ class ChatRemoteDataSourceImpl implements ChatCompletionsDataSource {
 
             try {
               final data = jsonDecode(jsonString);
-              final content = data['choices'][0]['delta']['content'] ?? '';
-              if (content.isNotEmpty) {
-                yield content;
-              }
-            } catch (_) {
+              final chatChunk = ChatChunk.fromJson(data);
+              yield chatChunk;
+            } catch (e) {
               // Handle JSON parsing errors
+              print('Error decoding chat completion JSON: $e. $jsonString');
               continue;
             }
           }

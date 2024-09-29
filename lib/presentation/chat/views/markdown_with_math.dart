@@ -16,8 +16,10 @@ class MarkdownWithMath extends StatelessWidget {
       data: markdownData,
       selectable: true,
       // For better user experience
-      builders: {'h5': InlineMathBuilder(), 'h4': NewlineMathBuilder()},
-      inlineSyntaxes: [MathInlineSyntax(), MathNewlineSyntax()],
+      // builders: {'h5': InlineMathBuilder(), 'h4': NewlineMathBuilder()},
+      // inlineSyntaxes: [MathInlineSyntax(), MathNewlineSyntax()],
+      builders: {'h4': NewlineMathBuilder()},
+      inlineSyntaxes: [MathNewlineSyntax(), MathInlineSyntax()],
       // Custom inline syntax for inline math
       styleSheet: MarkdownStyleSheet(),
     );
@@ -31,9 +33,8 @@ class MathInlineSyntax extends md.InlineSyntax {
   @override
   bool onMatch(md.InlineParser parser, Match match) {
     final mathExpression = match.group(1) ?? "";
-    // print("Inline equation:" + mathExpression);
-    // h4 is used for math equations. If there is h4 element, it will be render by math
-    final element = md.Element.text("h5", mathExpression);
+    print("Inline equation detected:" + mathExpression);
+    final element = md.Element.text("h4", mathExpression);
     parser.addNode(element); // Add the custom math node
     return true;
   }
@@ -59,17 +60,19 @@ class NewlineMathBuilder extends MarkdownElementBuilder {
   @override
   Widget visitText(md.Text text, TextStyle? preferredStyle) {
     final mathExpression = text.text;
-    // print("Math equation detected: $mathExpression");
-    return Math.tex(mathExpression, textStyle: preferredStyle);
+    // print("New line Math builder: $mathExpression");
+    return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Math.tex(mathExpression, textStyle: preferredStyle));
   }
 }
 
-class InlineMathBuilder extends MarkdownElementBuilder {
-  @override
-  Widget visitText(md.Text text, TextStyle? preferredStyle) {
-    final mathExpression = text.text;
-    // print("Math equation detected: $mathExpression");
-    return Math.tex(mathExpression,
-        mathStyle: MathStyle.text, textStyle: preferredStyle);
-  }
-}
+// class InlineMathBuilder extends MarkdownElementBuilder {
+//   @override
+//   Widget visitText(md.Text text, TextStyle? preferredStyle) {
+//     final mathExpression = text.text;
+//     print("Inline Math builder: $mathExpression");
+//     return Math.tex(mathExpression,
+//         mathStyle: MathStyle.display, textStyle: preferredStyle);
+//   }
+// }

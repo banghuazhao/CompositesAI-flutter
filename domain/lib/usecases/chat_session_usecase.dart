@@ -40,13 +40,11 @@ class ChatSessionUseCase {
   }
 
   // Add a new method to update the last assistant message
-  void updateLastAssistantMessage(ChatSession session, String token) {
+  void updateLastAssistantMessage(ChatSession session, Message message) {
     // Find the last message that is from the assistant
-    print(session.messages.last.content);
     for (var i = session.messages.length - 1; i >= 0; i--) {
       if (session.messages[i].role == 'assistant') {
-        final previousContent = session.messages[i].content;
-        session.messages[i] = Message(role: 'assistant', content: previousContent + token);
+        session.messages[i] = message;
         break;
       }
     }

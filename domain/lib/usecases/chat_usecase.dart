@@ -16,7 +16,7 @@ class ChatUseCase {
       content:
       "You are an expert assistant specialized in composite materials. Your role is to provide accurate and detailed answers to questions related to composite material properties, design, calculations, and analysis.");
 
-  Stream<String> sendMessages(List<Message> messages) {
+  Stream<Message> sendMessages(List<Message> messages) {
     final chatHistory = [systemMessage] + messages;
     final functionTools = functionToolsRepository.getAllFunctionTools();
     return chatRepository.sendMessages(
