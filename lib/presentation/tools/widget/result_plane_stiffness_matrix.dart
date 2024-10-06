@@ -7,7 +7,7 @@ import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:vector_math/vector_math.dart' as VMath;
 
 class ResultPlaneStiffnessMatrix extends StatelessWidget {
-  final VMath.Matrix3 Q_bar;
+  final List<List<double>> Q_bar;
 
   const ResultPlaneStiffnessMatrix({Key? key, required this.Q_bar}) : super(key: key);
 
@@ -32,7 +32,7 @@ class ResultPlaneStiffnessMatrix extends StatelessWidget {
             crossAxisCount: 6,
             itemCount: 9,
             itemBuilder: (BuildContext context, int index) {
-              double value = Q_bar[index];
+              double value = Q_bar[index ~/ 3][index % 3];
 
               return Consumer<NumberPrecisionHelper>(builder: (context, precs, child) {
                 String valueResult = value.toStringAsExponential(precs.precision);

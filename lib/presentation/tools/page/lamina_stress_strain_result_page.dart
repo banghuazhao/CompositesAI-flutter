@@ -14,11 +14,15 @@ class LaminaStressStrainResult extends StatefulWidget {
   final VMath.Matrix3 S_bar;
 
   const LaminaStressStrainResult(
-      {Key? key, required this.resultTensor, required this.Q_bar, required this.S_bar})
+      {Key? key,
+      required this.resultTensor,
+      required this.Q_bar,
+      required this.S_bar})
       : super(key: key);
 
   @override
-  _LaminaStressStrainResultState createState() => _LaminaStressStrainResultState();
+  _LaminaStressStrainResultState createState() =>
+      _LaminaStressStrainResultState();
 }
 
 class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
@@ -29,14 +33,17 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
     return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+            icon:
+                const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
             IconButton(
               onPressed: () {
                 Navigator.push(
-                    context, MaterialPageRoute(builder: (context) => const ToolSettingPage()));
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ToolSettingPage()));
               },
               icon: const Icon(Icons.settings_rounded),
             ),
@@ -48,20 +55,30 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
               crossAxisCount: 8,
               itemCount: 3,
-              staggeredTileBuilder: (int index) =>
-                  StaggeredTile.fit(MediaQuery.of(context).size.width > 600 ? 4 : 8),
+              staggeredTileBuilder: (int index) => StaggeredTile.fit(
+                  MediaQuery.of(context).size.width > 600 ? 4 : 8),
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               itemBuilder: (BuildContext context, int index) {
+                List<List<double>> Q_bar = [
+                  [widget.Q_bar[0], widget.Q_bar[1], widget.Q_bar[2]],
+                  [widget.Q_bar[3], widget.Q_bar[4], widget.Q_bar[5]],
+                  [widget.Q_bar[6], widget.Q_bar[7], widget.Q_bar[8]],
+                ];
+                List<List<double>> S_bar = [
+                  [widget.S_bar[0], widget.S_bar[1], widget.S_bar[2]],
+                  [widget.S_bar[3], widget.S_bar[4], widget.S_bar[5]],
+                  [widget.S_bar[6], widget.S_bar[7], widget.S_bar[8]],
+                ];
                 return [
                   ResultPlaneStressStrainRow(
                     mechanicalTensor: widget.resultTensor,
                   ),
                   ResultPlaneStiffnessMatrix(
-                    Q_bar: widget.Q_bar,
+                    Q_bar: Q_bar,
                   ),
                   ResultPlaneComplianceMatrix(
-                    S_bar: widget.S_bar,
+                    S_bar: S_bar,
                   )
                 ][index];
               }),
@@ -125,7 +142,8 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                     const SizedBox(
                       height: 8,
                     ),
-                    Text(getResultString(0), style: Theme.of(context).textTheme.bodySmall)
+                    Text(getResultString(0),
+                        style: Theme.of(context).textTheme.bodySmall)
                   ],
                 ),
                 const SizedBox(
@@ -140,7 +158,8 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                     const SizedBox(
                       height: 8,
                     ),
-                    Text(getResultString(1), style: Theme.of(context).textTheme.bodySmall)
+                    Text(getResultString(1),
+                        style: Theme.of(context).textTheme.bodySmall)
                   ],
                 ),
                 const SizedBox(
@@ -155,7 +174,8 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                     const SizedBox(
                       height: 8,
                     ),
-                    Text(getResultString(2), style: Theme.of(context).textTheme.bodySmall)
+                    Text(getResultString(2),
+                        style: Theme.of(context).textTheme.bodySmall)
                   ],
                 ),
               ],

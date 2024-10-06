@@ -7,7 +7,7 @@ import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:vector_math/vector_math.dart' as VMath;
 
 class ResultPlaneComplianceMatrix extends StatelessWidget {
-  final VMath.Matrix3 S_bar;
+  final List<List<double>> S_bar;
 
   const ResultPlaneComplianceMatrix({Key? key, required this.S_bar}) : super(key: key);
 
@@ -32,7 +32,7 @@ class ResultPlaneComplianceMatrix extends StatelessWidget {
             crossAxisCount: 6,
             itemCount: 9,
             itemBuilder: (BuildContext context, int index) {
-              double value = S_bar[index];
+              double value = S_bar[index ~/ 3][index % 3];
               return Consumer<NumberPrecisionHelper>(builder: (context, precs, child) {
                 return Center(
                   child: Container(

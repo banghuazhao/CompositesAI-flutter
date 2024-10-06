@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:composite_calculator/calculators/lamina_engineering_constants_calculator.dart';
+import 'package:composite_calculator/models/lamina_engineering_constants_input.dart';
+import 'package:composite_calculator/models/lamina_engineering_constants_output.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/entities/chat_session.dart';
 import 'package:domain/entities/message.dart';
@@ -29,13 +34,15 @@ class ChatViewModel extends ChangeNotifier {
     "What is SwiftComp?",
     "Calculate lamina engineering constants",
     "What is the upper bound of Young's modulus for composites?",
-    "How to use SwiftComp?",
+    // "How to use SwiftComp?",
+    "Give me some math equations.",
   ];
 
   ChatViewModel({
     required ChatUseCase chatUseCase,
     required ChatSessionUseCase chatSessionUseCase,
-  })  : _chatUseCase = chatUseCase,
+  })
+      : _chatUseCase = chatUseCase,
         _chatSessionUseCase = chatSessionUseCase {
     _controller.addListener(_onUserInputChanged);
   }
@@ -116,7 +123,8 @@ class ChatViewModel extends ChangeNotifier {
               _chatSessionUseCase.updateLastAssistantMessage(
                   selectedSession!, message);
             } else {
-              _chatSessionUseCase.addMessageToSession(selectedSession!, message);
+              _chatSessionUseCase.addMessageToSession(
+                  selectedSession!, message);
             }
             scrollToBottom();
             notifyListeners();
@@ -133,18 +141,20 @@ class ChatViewModel extends ChangeNotifier {
     final tool = lastMessage?.toolCalls?.first;
     if (tool != null) {
       final functionName = tool.function?.name;
+      final functionArguments = tool.function?.arguments ?? "";
+      final argumentsJson = jsonDecode(functionArguments);
       if (functionName == "calculate_lamina_engineering_constants") {
-        // TODO: Use internal or external tools to calculation the result...
+        LaminaEngineeringConstantsInput input = LaminaEngineeringConstantsInput
+            .fromJson(argumentsJson);
+        LaminaEngineeringConstantsOutput output = LaminaEngineeringConstantsCalculator.calculate(input);
         _chatSessionUseCase.addMessageToSession(
             selectedSession!,
             Message(
                 role: "tool",
-                content:
-                    "{     \"E_1\": 4431.314623338257,     \"E_2\": 4431.314623338257,     \"G_12\": 36144.57831325301,     \"nu_12\": 0.7725258493353028,     \"eta_1_12\": 0.10339734121122615,     \"eta_2_12\": 0.10339734121122582,     \"Q\": [         [             43000.50301810866,             40500.50301810865,             -70422.5352112676         ],         [             40500.50301810865,             43000.50301810863,             -70422.53521126758         ],         [             -70422.53521126762,             -70422.53521126759,             154929.57746478872         ]     ],     \"S\": [         [             0.00022566666666666666,             -0.00017433333333333333,             2.3333333333333373e-05         ],         [             -0.00017433333333333333,             0.00022566666666666669,             2.3333333333333295e-05         ],         [             2.333333333333337e-05,             2.3333333333333295e-05,             2.7666666666666667e-05         ]     ] }",
+                content: output.toJson().toString(),
                 tool_call_id: tool.id
             )
         );
-
       }
       _sendMessages();
     } else {
