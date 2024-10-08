@@ -1,8 +1,12 @@
 import 'dart:convert';
 
 import 'package:composite_calculator/calculators/lamina_engineering_constants_calculator.dart';
+import 'package:composite_calculator/calculators/lamina_stress_strain_calculator.dart';
 import 'package:composite_calculator/models/lamina_engineering_constants_input.dart';
 import 'package:composite_calculator/models/lamina_engineering_constants_output.dart';
+import 'package:composite_calculator/models/lamina_stress_strain_input.dart';
+import 'package:composite_calculator/models/lamina_stress_strain_output.dart';
+import 'package:composite_calculator/models/tensor_type.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/entities/chat_session.dart';
 import 'package:domain/entities/message.dart';
@@ -36,13 +40,14 @@ class ChatViewModel extends ChangeNotifier {
     "What is the upper bound of Young's modulus for composites?",
     // "How to use SwiftComp?",
     "Give me some math equations.",
+    "Calculate lamina strain",
+    "Calculate lamina stress"
   ];
 
   ChatViewModel({
     required ChatUseCase chatUseCase,
     required ChatSessionUseCase chatSessionUseCase,
-  })
-      : _chatUseCase = chatUseCase,
+  })  : _chatUseCase = chatUseCase,
         _chatSessionUseCase = chatSessionUseCase {
     _controller.addListener(_onUserInputChanged);
   }
@@ -116,19 +121,18 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> _sendMessages() async {
     try {
       await _chatUseCase.sendMessages(selectedSession!.messages).listen(
-              (message) {
-            final bool isLastMessageAssist = _chatSessionUseCase
-                .isLastMessageAssistInSession(selectedSession!);
-            if (isLastMessageAssist) {
-              _chatSessionUseCase.updateLastAssistantMessage(
-                  selectedSession!, message);
-            } else {
-              _chatSessionUseCase.addMessageToSession(
-                  selectedSession!, message);
-            }
-            scrollToBottom();
-            notifyListeners();
-          }, onDone: () {
+          (message) {
+        final bool isLastMessageAssist =
+            _chatSessionUseCase.isLastMessageAssistInSession(selectedSession!);
+        if (isLastMessageAssist) {
+          _chatSessionUseCase.updateLastAssistantMessage(
+              selectedSession!, message);
+        } else {
+          _chatSessionUseCase.addMessageToSession(selectedSession!, message);
+        }
+        scrollToBottom();
+        notifyListeners();
+      }, onDone: () {
         checkFunctionCall();
       });
     } catch (error) {
@@ -143,25 +147,34 @@ class ChatViewModel extends ChangeNotifier {
       final functionName = tool.function?.name;
       final functionArguments = tool.function?.arguments ?? "";
       final argumentsJson = jsonDecode(functionArguments);
+      String outputString = "";
       if (functionName == "calculate_lamina_engineering_constants") {
-        LaminaEngineeringConstantsInput input = LaminaEngineeringConstantsInput
-            .fromJson(argumentsJson);
-        LaminaEngineeringConstantsOutput output = LaminaEngineeringConstantsCalculator.calculate(input);
-        _chatSessionUseCase.addMessageToSession(
-            selectedSession!,
-            Message(
-                role: "tool",
-                content: output.toJson().toString(),
-                tool_call_id: tool.id
-            )
-        );
+        LaminaEngineeringConstantsInput input =
+            LaminaEngineeringConstantsInput.fromJson(argumentsJson);
+        LaminaEngineeringConstantsOutput output =
+            LaminaEngineeringConstantsCalculator.calculate(input);
+        outputString = output.toJson().toString();
+      } else if (functionName == "calculate_lamina_strain") {
+        LaminaStressStrainInput input =
+            LaminaStressStrainInput.fromJson(argumentsJson);
+        LaminaStressStrainOutput output =
+            LaminaStressStrainCalculator.calculate(input);
+        outputString = output.toJson().toString();
+      } else if (functionName == "calculate_lamina_stress") {
+        LaminaStressStrainInput input =
+            LaminaStressStrainInput.fromJson(argumentsJson);
+        input.tensorType = TensorType.strain;
+        LaminaStressStrainOutput output =
+            LaminaStressStrainCalculator.calculate(input);
+        outputString = output.toJson().toString();
       }
+      _chatSessionUseCase.addMessageToSession(selectedSession!,
+          Message(role: "tool", content: outputString, tool_call_id: tool.id));
       _sendMessages();
     } else {
       setLoading(false);
     }
   }
-
 
   bool isUserMessage(Message message) {
     return message.role == 'user';

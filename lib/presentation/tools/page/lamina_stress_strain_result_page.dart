@@ -1,23 +1,16 @@
-import 'package:flutter/cupertino.dart';
+import 'package:composite_calculator/models/lamina_stress_strain_output.dart';
+import 'package:composite_calculator/models/tensor_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:swiftcomp/generated/l10n.dart';
-import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart';
 import 'package:swiftcomp/presentation/tools/widget/result_plane_compliance_matrix.dart';
 import 'package:swiftcomp/presentation/tools/widget/result_plane_stiffness_matrix.dart';
 import 'package:swiftcomp/presentation/more/tool_setting_page.dart';
-import 'package:vector_math/vector_math.dart' as VMath;
 
 class LaminaStressStrainResult extends StatefulWidget {
-  final MechanicalTensor resultTensor;
-  final VMath.Matrix3 Q_bar;
-  final VMath.Matrix3 S_bar;
+  final LaminaStressStrainOutput output;
 
-  const LaminaStressStrainResult(
-      {Key? key,
-      required this.resultTensor,
-      required this.Q_bar,
-      required this.S_bar})
+  const LaminaStressStrainResult({Key? key, required this.output})
       : super(key: key);
 
   @override
@@ -60,25 +53,15 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               itemBuilder: (BuildContext context, int index) {
-                List<List<double>> Q_bar = [
-                  [widget.Q_bar[0], widget.Q_bar[1], widget.Q_bar[2]],
-                  [widget.Q_bar[3], widget.Q_bar[4], widget.Q_bar[5]],
-                  [widget.Q_bar[6], widget.Q_bar[7], widget.Q_bar[8]],
-                ];
-                List<List<double>> S_bar = [
-                  [widget.S_bar[0], widget.S_bar[1], widget.S_bar[2]],
-                  [widget.S_bar[3], widget.S_bar[4], widget.S_bar[5]],
-                  [widget.S_bar[6], widget.S_bar[7], widget.S_bar[8]],
-                ];
                 return [
                   ResultPlaneStressStrainRow(
-                    mechanicalTensor: widget.resultTensor,
+                    output: widget.output,
                   ),
                   ResultPlaneStiffnessMatrix(
-                    Q_bar: Q_bar,
+                    Q_bar: widget.output.Q,
                   ),
                   ResultPlaneComplianceMatrix(
-                    S_bar: S_bar,
+                    S_bar: widget.output.S,
                   )
                 ][index];
               }),
@@ -87,31 +70,36 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
 }
 
 class ResultPlaneStressStrainRow extends StatelessWidget {
-  final MechanicalTensor mechanicalTensor;
+  final LaminaStressStrainOutput output;
 
   const ResultPlaneStressStrainRow({
     Key? key,
-    required this.mechanicalTensor,
+    required this.output,
   }) : super(key: key);
+
+  bool get isStress {
+    return output.tensorType == TensorType.stress;
+  }
 
   @override
   Widget build(BuildContext context) {
     getResultString(int position) {
-      if (position == 0) {
-        double? value = (mechanicalTensor is PlaneStress)
-            ? (mechanicalTensor as PlaneStress).sigma11
-            : (mechanicalTensor as PlaneStrain).epsilon11;
-        return (value ?? 0).toStringAsExponential(3);
-      } else if (position == 1) {
-        double? value = (mechanicalTensor is PlaneStress)
-            ? (mechanicalTensor as PlaneStress).sigma22
-            : (mechanicalTensor as PlaneStrain).epsilon22;
-        return (value ?? 0).toStringAsExponential(3);
+      if (isStress) {
+        if (position == 0) {
+          return output.sigma11.toStringAsExponential(3);
+        } else if (position == 1) {
+          return output.sigma22.toStringAsExponential(3);
+        } else {
+          return output.sigma12.toStringAsExponential(3);
+        }
       } else {
-        double? value = (mechanicalTensor is PlaneStress)
-            ? (mechanicalTensor as PlaneStress).sigma12
-            : (mechanicalTensor as PlaneStrain).gamma12;
-        return (value ?? 0).toStringAsExponential(3);
+        if (position == 0) {
+          return output.epsilon11.toStringAsExponential(3);
+        } else if (position == 1) {
+          return output.epsilon22.toStringAsExponential(3);
+        } else {
+          return output.gamma12.toStringAsExponential(3);
+        }
       }
     }
 
@@ -136,7 +124,7 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                 Column(
                   children: [
                     Text(
-                      (mechanicalTensor is PlaneStress) ? "σ11" : "ε11",
+                      isStress ? "σ11" : "ε11",
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(
@@ -152,7 +140,7 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                 Column(
                   children: [
                     Text(
-                      (mechanicalTensor is PlaneStress) ? "σ22" : "ε22",
+                      isStress ? "σ22" : "ε22",
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(
@@ -168,7 +156,7 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                 Column(
                   children: [
                     Text(
-                      (mechanicalTensor is PlaneStress) ? "σ12" : "γ12",
+                      isStress ? "σ12" : "γ12",
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(

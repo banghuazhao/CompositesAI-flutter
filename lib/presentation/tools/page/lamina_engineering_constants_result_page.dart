@@ -1,7 +1,7 @@
 import 'package:composite_calculator/models/lamina_engineering_constants_input.dart';
 import 'package:composite_calculator/models/lamina_engineering_constants_output.dart';
 import 'package:composite_calculator/calculators/lamina_engineering_constants_calculator.dart';
-import 'package:composite_calculator/models/analysis_type.dart' as CC;
+import 'package:composite_calculator/models/analysis_type.dart';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +36,6 @@ class LaminaEngineeringConstantsResultPage extends StatefulWidget {
 
 class _LaminaEngineeringConstantsResultPageState
     extends State<LaminaEngineeringConstantsResultPage> {
-
   double layupAngle = 0.0;
 
   LaminaEngineeringConstantsOutput output = LaminaEngineeringConstantsOutput();
@@ -85,7 +84,7 @@ class _LaminaEngineeringConstantsResultPageState
 
     if (widget.isElastic) {
       LaminaEngineeringConstantsInput input = LaminaEngineeringConstantsInput(
-          analysisType: CC.AnalysisType.elastic,
+          analysisType: AnalysisType.elastic,
           E1: e1,
           E2: e2,
           G12: g12,
@@ -94,7 +93,7 @@ class _LaminaEngineeringConstantsResultPageState
       return LaminaEngineeringConstantsCalculator.calculate(input);
     } else {
       LaminaEngineeringConstantsInput input = LaminaEngineeringConstantsInput(
-        analysisType: CC.AnalysisType.elastic,
+        analysisType: AnalysisType.elastic,
         E1: e1,
         E2: e2,
         G12: g12,
