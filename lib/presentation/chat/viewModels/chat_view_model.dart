@@ -37,11 +37,11 @@ class ChatViewModel extends ChangeNotifier {
   List<String> defaultQuestions = [
     "What is SwiftComp?",
     "Calculate lamina engineering constants",
+    "Calculate lamina strain",
+    "Calculate lamina stress",
     "What is the upper bound of Young's modulus for composites?",
     // "How to use SwiftComp?",
-    "Give me some math equations.",
-    "Calculate lamina strain",
-    "Calculate lamina stress"
+    // "Give me some math equations.",
   ];
 
   ChatViewModel({

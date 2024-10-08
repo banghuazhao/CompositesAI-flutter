@@ -22,41 +22,63 @@ class ChatMessageList extends StatelessWidget {
       children: [
         Expanded(
           child: messages.isEmpty
-              ? Column(
-                  children: [
-                    // Optional: Add a logo or banner at the top like the second image
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Icon(
-                        Icons.chat_bubble_outline,
-                        size: 60,
-                        color: Colors.grey,
+              ? SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Icon(
+                          Icons.chat_bubble_outline,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
                       ),
-                    ),
-                    Text(
-                      "Ask a question to get started!",
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                    SizedBox(height: 20),
-                    // Default questions displayed as cards or buttons
-                    Expanded(
-                      child: GridView.count(
-                        crossAxisCount: 2,
-                        // You can adjust the number of columns
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        padding: EdgeInsets.all(16),
-                        children: List.generate(chatViewModel.defaultQuestions.length, (index) {
-                          return InkWell(
-                            onTap: () {
-                              chatViewModel.onDefaultQuestionsTapped(index);
+                      Text(
+                        "Ask a question to get started!",
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                      SizedBox(height: 20),
+                      // Default questions displayed as cards or buttons
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Determine the number of columns based on the screen width
+                          double width = constraints.maxWidth;
+                          int crossAxisCount = 2;
+                          if (width >= 800) {
+                            crossAxisCount = 4;
+                          } else if (width >= 500) {
+                            crossAxisCount = 3;
+                          }
+
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              // Number of items in a row
+                              childAspectRatio: 1.2,
+                              // Width to height ratio of each item
+                              crossAxisSpacing: 10.0,
+                              mainAxisSpacing: 10.0,
+                            ),
+                            itemCount: chatViewModel.defaultQuestions.length,
+                            padding: EdgeInsets.all(16),
+                            itemBuilder: (context, index) {
+                              return InkWell(
+                                onTap: () {
+                                  chatViewModel.onDefaultQuestionsTapped(index);
+                                },
+                                child: _buildDefaultQuestionCard(
+                                    chatViewModel.defaultQuestions[index]),
+                              );
                             },
-                            child: _buildDefaultQuestionCard(chatViewModel.defaultQuestions[index]),
                           );
-                        }),
+                        },
                       ),
-                    ),
-                  ],
+                      SizedBox(height: 20),
+                    ],
+                  ),
                 )
               : ListView.builder(
                   controller: chatViewModel.scrollController,
@@ -136,19 +158,19 @@ class ChatMessageList extends StatelessWidget {
 // A helper function to create default question cards
 Widget _buildDefaultQuestionCard(String question) {
   return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Text(
-            question,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.black),
-          ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+    ),
+    elevation: 2,
+    child: Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Center(
+        child: Text(
+          question,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14, color: Colors.black),
         ),
       ),
+    ),
   );
 }

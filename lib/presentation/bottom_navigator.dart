@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -41,7 +40,7 @@ class _BottomNavigatorState extends State<BottomNavigator> {
           body: PageView(
             controller: _controller,
             physics: const NeverScrollableScrollPhysics(),
-            children: [ToolPage(), if (isChatEnabled) ChatScreen(), MorePage()],
+            children: [if (isChatEnabled) ChatScreen(), ToolPage(), MorePage()],
           ),
           bottomNavigationBar: BottomNavigationBar(
               backgroundColor: Color.fromRGBO(51, 66, 78, 1),
@@ -58,8 +57,8 @@ class _BottomNavigatorState extends State<BottomNavigator> {
               },
               type: BottomNavigationBarType.fixed,
               items: [
-                _bottomItem(Icons.view_list, Icons.view_list, "Tools"),
                 if (isChatEnabled) _bottomItem(Icons.chat, Icons.chat, "Chat"),
+                _bottomItem(Icons.view_list, Icons.view_list, "Tools"),
                 _bottomItem(Icons.more_horiz, Icons.more_horiz, "More"),
               ]));
     });
