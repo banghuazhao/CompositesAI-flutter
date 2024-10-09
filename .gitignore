@@ -74,3 +74,6 @@ ios/fastlane/report.xml
 data/lib/utils/chat_config.dart
 
 coverage
+android/fastlane/report.xml
+ios/fastlane/report.xml
+.firebase
