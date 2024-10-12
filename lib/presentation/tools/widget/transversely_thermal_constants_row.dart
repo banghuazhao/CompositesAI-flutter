@@ -71,7 +71,7 @@ class _TransverselyThermalConstantsRowState extends State<TransverselyThermalCon
                               border: const OutlineInputBorder(),
                               labelText: "ɑ11",
                               errorText: widget.validate
-                                  ? validateModulus(widget.material.alpha11)
+                                  ? validateCTEs(widget.material.alpha11)
                                   : null),
                           onChanged: (value) {
                             widget.material.alpha11 = double.tryParse(value);
@@ -88,7 +88,7 @@ class _TransverselyThermalConstantsRowState extends State<TransverselyThermalCon
                               border: const OutlineInputBorder(),
                               labelText: "ɑ22",
                               errorText: widget.validate
-                                  ? validateModulus(widget.material.alpha22)
+                                  ? validateCTEs(widget.material.alpha22)
                                   : null),
                           onChanged: (value) {
                             widget.material.alpha22 = double.tryParse(value);
@@ -110,7 +110,7 @@ class _TransverselyThermalConstantsRowState extends State<TransverselyThermalCon
                               border: const OutlineInputBorder(),
                               labelText: "ɑ12",
                               errorText: widget.validate
-                                  ? validateModulus(widget.material.alpha12)
+                                  ? validateCTEs(widget.material.alpha12)
                                   : null),
                           onChanged: (value) {
                             widget.material.alpha12 = double.tryParse(value);

@@ -96,6 +96,7 @@ class _LayupSequenceRowState extends State<LayupSequenceRow> {
                       onChanged: (value) {
                         setState(() {
                           widget.layupSequence.value = value;
+                          widget.layupSequence.stringValue = value;
                         });
                       },
                     ),
@@ -103,26 +104,35 @@ class _LayupSequenceRowState extends State<LayupSequenceRow> {
                     Row(
                       children: [
                         // ElevatedButton(onPressed: onPressed, child: child)
-                        ElevatedButton(onPressed: () {
-                          final updatedText = _textEditingController.text + '/';
-                          setState(() {
-                            _textEditingController.text = updatedText;
-                          });
-                        }, child: Text("/")),
+                        ElevatedButton(
+                            onPressed: () {
+                              final updatedText =
+                                  _textEditingController.text + '/';
+                              setState(() {
+                                _textEditingController.text = updatedText;
+                              });
+                            },
+                            child: Text("/")),
                         const SizedBox(width: 6),
-                        ElevatedButton(onPressed: () {
-                          final updatedText = _textEditingController.text + '[';
-                          setState(() {
-                            _textEditingController.text = updatedText;
-                          });
-                        }, child: Text("[")),
+                        ElevatedButton(
+                            onPressed: () {
+                              final updatedText =
+                                  _textEditingController.text + '[';
+                              setState(() {
+                                _textEditingController.text = updatedText;
+                              });
+                            },
+                            child: Text("[")),
                         const SizedBox(width: 6),
-                        ElevatedButton(onPressed: () {
-                          final updatedText = _textEditingController.text + ']';
-                          setState(() {
-                            _textEditingController.text = updatedText;
-                          });
-                        }, child: Text("]")),
+                        ElevatedButton(
+                            onPressed: () {
+                              final updatedText =
+                                  _textEditingController.text + ']';
+                              setState(() {
+                                _textEditingController.text = updatedText;
+                              });
+                            },
+                            child: Text("]")),
                       ],
                     )
                   ]))

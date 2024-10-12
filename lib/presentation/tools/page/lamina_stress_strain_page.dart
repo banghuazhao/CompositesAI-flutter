@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:composite_calculator/calculators/lamina_stress_strain_calculator.dart';
 import 'package:composite_calculator/models/lamina_stress_strain_input.dart';
 import 'package:composite_calculator/models/lamina_stress_strain_output.dart';
@@ -20,7 +18,6 @@ import 'package:swiftcomp/presentation/tools/widget/description.dart';
 import 'package:swiftcomp/presentation/tools/widget/lamina_constants_row.dart';
 import 'package:swiftcomp/presentation/tools/widget/layup_angle_row.dart';
 import 'package:swiftcomp/presentation/tools/widget/plane_stress_strain_row.dart';
-import 'package:vector_math/vector_math.dart' as VMath;
 
 import '../../tools/widget/delta_temperature_row.dart';
 import '../widget/transversely_thermal_constants_row.dart';
@@ -86,7 +83,7 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage> {
             crossAxisSpacing: 12,
             itemBuilder: (BuildContext context, int index) {
               return [
-                AnalysisType(callback: (analysisType) {
+                AnalysisTypeRow(callback: (analysisType) {
                   isElastic = analysisType == "Elastic";
                 }),
                 LaminaContantsRow(

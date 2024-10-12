@@ -72,7 +72,7 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
                   crossAxisSpacing: 12,
                   itemBuilder: (BuildContext context, int index) {
                     return [
-                      AnalysisType(callback: (type) {
+                      AnalysisTypeRow(callback: (type) {
                         isElastic = type == "Elastic";
                       }),
                       TransverselyIsotropicRow(

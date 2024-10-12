@@ -60,7 +60,7 @@ class _LaminaEngineeringConstantsPageState extends State<LaminaEngineeringConsta
                   crossAxisSpacing: 12,
                   itemBuilder: (BuildContext context, int index) {
                     return [
-                      AnalysisType(callback: (analysisType) {
+                      AnalysisTypeRow(callback: (analysisType) {
                         isElastic = analysisType == "Elastic";
                       }),
                       LaminaContantsRow(

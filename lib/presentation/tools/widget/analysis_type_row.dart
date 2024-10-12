@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-class AnalysisType extends StatefulWidget {
+class AnalysisTypeRow extends StatefulWidget {
   final Function(String) callback;
 
-  const AnalysisType({Key? key, required this.callback}) : super(key: key);
+  const AnalysisTypeRow({Key? key, required this.callback}) : super(key: key);
 
   @override
-  State<AnalysisType> createState() => _AnalysisTypeState();
+  State<AnalysisTypeRow> createState() => _AnalysisTypeRowState();
 }
 
-class _AnalysisTypeState extends State<AnalysisType> {
+class _AnalysisTypeRowState extends State<AnalysisTypeRow> {
   String analysisType = "Elastic";
 
   @override

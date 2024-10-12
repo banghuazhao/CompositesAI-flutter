@@ -8,6 +8,14 @@ validateModulus(double? value) {
   }
 }
 
+validateCTEs(double? value) {
+  if (value == null) {
+    return "Not a number";
+  } else {
+    return null;
+  }
+}
+
 validateIsotropicPoissonRatio(double? value) {
   if (value == null) {
     return "Not a number";

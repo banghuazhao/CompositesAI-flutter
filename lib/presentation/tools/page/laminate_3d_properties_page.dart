@@ -76,7 +76,7 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
                   crossAxisSpacing: 12,
                   itemBuilder: (BuildContext context, int index) {
                     return [
-                      AnalysisType(callback: (type) {
+                      AnalysisTypeRow(callback: (type) {
                         isElastic = type == "Elastic";
                       }),
                       LaminaContantsRow(

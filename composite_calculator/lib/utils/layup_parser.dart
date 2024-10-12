@@ -1,20 +1,14 @@
-import 'package:flutter/foundation.dart';
-
-class LayupSequence {
-  List<double>? layups;
-  String stringValue = "";
-
-  // set 方法
-  set value(String value) {
-    layups = [];
+class LayupParser {
+  static List<double>? parse(String layupSequence) {
+    List<double> layups = [];
     String baseLayup = "";
     int rBefore = 1;
     bool symmetry = false;
     int rAfter = 1;
 
-    if (value.split("]").length == 2 && value.split("]")[1] != "") {
-      baseLayup = value.split("]")[0].replaceAll("[", "");
-      String msn = value.split("]")[1];
+    if (layupSequence.split("]").length == 2 && layupSequence.split("]")[1] != "") {
+      baseLayup = layupSequence.split("]")[0].replaceAll("[", "");
+      String msn = layupSequence.split("]")[1];
       if (msn.contains('s')) {
         // symmetry
         symmetry = true;
@@ -26,8 +20,7 @@ class LayupSequence {
             if (rBeforeTemp != null) {
               rBefore = rBeforeTemp;
             } else {
-              layups = null;
-              return;
+              return null;
             }
           }
           if (r[1] != "") {
@@ -35,8 +28,7 @@ class LayupSequence {
             if (rAfterTemp != null) {
               rAfter = rAfterTemp;
             } else {
-              layups = null;
-              return;
+              return null;
             }
           }
         }
@@ -47,19 +39,17 @@ class LayupSequence {
         if (rBeforeTemp != null) {
           rBefore = rBeforeTemp;
         } else {
-          layups = null;
-          return;
+          return null;
         }
       }
     } else {
-      baseLayup = value.replaceAll("[", "").replaceAll("]", '');
+      baseLayup = layupSequence.replaceAll("[", "").replaceAll("]", '');
     }
 
     for (String angleString in baseLayup.split('/')) {
       double? angle = double.tryParse(angleString);
       if (angle == null) {
-        layups = null;
-        return;
+        return null;
       }
       layups!.add(angle);
     }
@@ -88,19 +78,6 @@ class LayupSequence {
         layups!.add(layup);
       }
     }
-    if (kDebugMode) {
-      print(baseLayup);
-      print(layups);
-    }
-  }
-
-  isValid() {
-    if (layups == null) {
-      return false;
-    } else if (layups!.length > 1000000) {
-      return false;
-    } else {
-      return true;
-    }
+    return layups;
   }
 }
