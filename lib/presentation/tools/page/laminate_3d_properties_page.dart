@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -28,17 +29,16 @@ class Laminate3DPropertiesPage extends StatefulWidget {
 }
 
 class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
+  AnalysisType analysisType = AnalysisType.elastic;
   TransverselyIsotropicMaterial transverselyIsotropicMaterial =
       TransverselyIsotropicMaterial();
-  OrthotropicMaterial orthotropicMaterial =
-  OrthotropicMaterial();
+  OrthotropicMaterial orthotropicMaterial = OrthotropicMaterial();
 
   TransverselyIsotropicCTE transverselyIsotropicCTE =
       TransverselyIsotropicCTE();
   LayupSequence layupSequence = LayupSequence();
   LayerThickness layerThickness = LayerThickness();
   bool validate = false;
-  bool isElastic = true;
 
   @override
   Widget build(BuildContext context) {
@@ -69,35 +69,41 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
               child: StaggeredGridView.countBuilder(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                   crossAxisCount: 8,
-                  itemCount: isElastic ? 5 : 6,
+                  itemCount: itemList.length,
                   staggeredTileBuilder: (int index) => StaggeredTile.fit(
                       MediaQuery.of(context).size.width > 600 ? 4 : 8),
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                   itemBuilder: (BuildContext context, int index) {
-                    return [
-                      AnalysisTypeRow(callback: (type) {
-                        isElastic = type == "Elastic";
-                      }),
-                      LaminaContantsRow(
-                        material: transverselyIsotropicMaterial,
-                        validate: validate,
-                        isPlaneStress: false,
-                      ),
-                      if (!isElastic)
-                        TransverselyThermalConstantsRow(
-                            material: transverselyIsotropicCTE,
-                            validate: validate),
-                      LayupSequenceRow(
-                          layupSequence: layupSequence, validate: validate),
-                      LayerThicknessPage(
-                          layerThickness: layerThickness, validate: validate),
-                      DescriptionItem(
-                          content: DescriptionModels.getDescription(
-                              DescriptionType.laminate_3d_properties, context))
-                    ][index];
+                    return itemList[index];
                   })),
         ));
+  }
+
+  List<Widget> get itemList {
+    return [
+      AnalysisTypeRow(
+        analysisType: analysisType,
+        onChanged: (newValue) {
+          setState(() {
+            analysisType = newValue;
+          });
+        },
+      ),
+      LaminaContantsRow(
+        material: transverselyIsotropicMaterial,
+        validate: validate,
+        isPlaneStress: false,
+      ),
+      if (analysisType == AnalysisType.thermalElastic)
+        TransverselyThermalConstantsRow(
+            material: transverselyIsotropicCTE, validate: validate),
+      LayupSequenceRow(layupSequence: layupSequence, validate: validate),
+      LayerThicknessPage(layerThickness: layerThickness, validate: validate),
+      DescriptionItem(
+          content: DescriptionModels.getDescription(
+              DescriptionType.laminate_3d_properties, context))
+    ];
   }
 
   void _calculate() {
@@ -107,7 +113,7 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
       return;
     }
 
-    if (!isElastic && !transverselyIsotropicCTE.isValid()) {
+    if (analysisType == AnalysisType.thermalElastic && !transverselyIsotropicCTE.isValid()) {
       return;
     }
 
@@ -160,7 +166,7 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
       Matrix C_single = Rsigma * Cp * Rsigma.transpose();
       C += C_single;
 
-      if (!isElastic) {
+      if (analysisType == AnalysisType.thermalElastic) {
         double alpha11 = transverselyIsotropicCTE.alpha11!;
         double alpha22 = transverselyIsotropicCTE.alpha22!;
         double alpha12 = transverselyIsotropicCTE.alpha12!;
@@ -202,7 +208,7 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
     orthotropicMaterial.nu13 = -1 / S[0][0] * S[0][2];
     orthotropicMaterial.nu23 = -1 / S[1][1] * S[1][2];
 
-    if (!isElastic) {
+    if (analysisType == AnalysisType.thermalElastic) {
       Q_start = Q_start * (1 / nPly);
       alpha_temp = alpha_temp * (1 / nPly);
       Matrix alpha_CTE = Q_start.inverse() * alpha_temp;

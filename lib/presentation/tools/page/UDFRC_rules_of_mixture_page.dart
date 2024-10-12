@@ -1,3 +1,4 @@
+import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -25,24 +26,24 @@ class RulesOfMixturePage extends StatefulWidget {
 }
 
 class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
+  AnalysisType analysisType = AnalysisType.elastic;
   TransverselyIsotropicMaterial fiberMaterial = TransverselyIsotropicMaterial();
   IsotropicMaterial matrixMaterial = IsotropicMaterial();
   VolumeFraction fiberVolumeFraction = VolumeFraction();
   bool validate = false;
-  bool isElastic = true;
 
   TransverselyIsotropicCTE transverselyIsotropicCTE =
-  TransverselyIsotropicCTE();
+      TransverselyIsotropicCTE();
 
-  IsotropicCTE isotropicCTE =
-  IsotropicCTE();
+  IsotropicCTE isotropicCTE = IsotropicCTE();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+            icon:
+                const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text(S.of(context).UDFRC_Properties),
@@ -65,49 +66,60 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
               child: StaggeredGridView.countBuilder(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                   crossAxisCount: 8,
-                  itemCount: isElastic ? 5 : 7,
-                  staggeredTileBuilder: (int index) =>
-                      StaggeredTile.fit(MediaQuery.of(context).size.width > 600 ? 4 : 8),
+                  itemCount: itemList.length,
+                  staggeredTileBuilder: (int index) => StaggeredTile.fit(
+                      MediaQuery.of(context).size.width > 600 ? 4 : 8),
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                   itemBuilder: (BuildContext context, int index) {
-                    return [
-                      AnalysisTypeRow(callback: (type) {
-                        isElastic = type == "Elastic";
-                      }),
-                      TransverselyIsotropicRow(
-                        material: fiberMaterial,
-                        validate: validate,
-                      ),
-                      if (!isElastic)
-                        TransverselyThermalConstantsRow(
-                            material: transverselyIsotropicCTE,
-                            title: "Fiber CTEs",
-                            shouldConsider12: false,
-                            validate: validate),
-                      IsotropicMaterialRow(
-                        title: "Matrix Properties",
-                        material: matrixMaterial,
-                        validate: validate,
-                      ),
-                      if (!isElastic)
-                        IsotropicThermalConstantsRow(material: isotropicCTE,
-                            title: "Matrix CTE",
-                            validate: validate
-                        ),
-                      VolumeFractionRow(volumeFraction: fiberVolumeFraction, validate: validate),
-                      DescriptionItem(
-                          content: DescriptionModels.getDescription(
-                              DescriptionType.UDFRC_rules_of_mixtures, context))
-                    ][index];
+                    return itemList[index];
                   })),
         ));
   }
 
-  void _calculate() {
-    if (fiberMaterial.isValid() && matrixMaterial.isValid() && fiberVolumeFraction.isValid()) {
+  List<Widget> get itemList {
+    return [
+      AnalysisTypeRow(
+        analysisType: analysisType,
+        onChanged: (newValue) {
+          setState(() {
+            analysisType = newValue;
+          });
+        },
+      ),
+      TransverselyIsotropicRow(
+        material: fiberMaterial,
+        validate: validate,
+      ),
+      if (analysisType == AnalysisType.thermalElastic)
+        TransverselyThermalConstantsRow(
+            material: transverselyIsotropicCTE,
+            title: "Fiber CTEs",
+            shouldConsider12: false,
+            validate: validate),
+      IsotropicMaterialRow(
+        title: "Matrix Properties",
+        material: matrixMaterial,
+        validate: validate,
+      ),
+      if (analysisType == AnalysisType.thermalElastic)
+        IsotropicThermalConstantsRow(
+            material: isotropicCTE, title: "Matrix CTE", validate: validate),
+      VolumeFractionRow(
+          volumeFraction: fiberVolumeFraction, validate: validate),
+      DescriptionItem(
+          content: DescriptionModels.getDescription(
+              DescriptionType.UDFRC_rules_of_mixtures, context))
+    ];
+  }
 
-      if (!isElastic && !transverselyIsotropicCTE.isValid() && !isotropicCTE.isValid()) {
+  void _calculate() {
+    if (fiberMaterial.isValid() &&
+        matrixMaterial.isValid() &&
+        fiberVolumeFraction.isValid()) {
+      if (analysisType == AnalysisType.thermalElastic &&
+          !transverselyIsotropicCTE.isValid() &&
+          !isotropicCTE.isValid()) {
         return;
       }
 
@@ -149,8 +161,22 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
       ]);
       Matrix SHf_Temp = Matrix([
         [ef1, nuf12, nuf13, 0, 0, 0],
-        [-nuf12, 1 / ef2 - nuf12 * nuf12 / ef1, -nuf23 / ef2 - nuf13 * nuf13 / ef1, 0, 0, 0],
-        [-nuf23, -nuf23 / ef2 - nuf12 * nuf12 / ef1, 1 / ef3 - nuf13 * nuf13 / ef1, 0, 0, 0],
+        [
+          -nuf12,
+          1 / ef2 - nuf12 * nuf12 / ef1,
+          -nuf23 / ef2 - nuf13 * nuf13 / ef1,
+          0,
+          0,
+          0
+        ],
+        [
+          -nuf23,
+          -nuf23 / ef2 - nuf12 * nuf12 / ef1,
+          1 / ef3 - nuf13 * nuf13 / ef1,
+          0,
+          0,
+          0
+        ],
         [0, 0, 0, 1 / gf23, 0, 0],
         [0, 0, 0, 0, 1 / gf13, 0],
         [0, 0, 0, 0, 0, 1 / gf12]
@@ -166,8 +192,22 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
       ]);
       Matrix SHm_Temp = Matrix([
         [em1, num12, num13, 0, 0, 0],
-        [-num12, 1 / em2 - num12 * num12 / em1, -num23 / em2 - num13 * num13 / em1, 0, 0, 0],
-        [-num23, -num23 / em2 - num12 * num12 / em1, 1 / em3 - num13 * num13 / em1, 0, 0, 0],
+        [
+          -num12,
+          1 / em2 - num12 * num12 / em1,
+          -num23 / em2 - num13 * num13 / em1,
+          0,
+          0,
+          0
+        ],
+        [
+          -num23,
+          -num23 / em2 - num12 * num12 / em1,
+          1 / em3 - num13 * num13 / em1,
+          0,
+          0,
+          0
+        ],
         [0, 0, 0, 1 / gm23, 0, 0],
         [0, 0, 0, 0, 1 / gm13, 0],
         [0, 0, 0, 0, 0, 1 / gm12]
@@ -255,7 +295,7 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
 
       Matrix Chs = Shs.inverse();
 
-      if (!isElastic) {
+      if (analysisType == AnalysisType.thermalElastic) {
         double alpha11_f = transverselyIsotropicCTE.alpha11!;
         double alpha22_f = transverselyIsotropicCTE.alpha22!;
         Matrix cteVector_f = Matrix([
@@ -277,8 +317,9 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
           [0]
         ]);
 
-        Matrix alpha_V = CVs.inverse() * (Cf * Vf * cteVector_f + Cm * Vm * cteVector_m);
-        Matrix alpha_R = (cteVector_f * Vf  + cteVector_m * Vm);
+        Matrix alpha_V =
+            CVs.inverse() * (Cf * Vf * cteVector_f + Cm * Vm * cteVector_m);
+        Matrix alpha_R = (cteVector_f * Vf + cteVector_m * Vm);
         voigtEngineeringConstants.alpha11 = alpha_V[0][0];
         voigtEngineeringConstants.alpha22 = alpha_V[1][0];
         voigtEngineeringConstants.alpha33 = alpha_V[2][0];
@@ -289,7 +330,9 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
 
         double alpha11_h = (Vf * ef1 * alpha11_f + Vm * em1 * alpha_m) / eh1;
         hybridEngineeringConstants.alpha11 = alpha11_h;
-        double alpha22_h = (Vf * (alpha11_f * nuf12 + alpha22_f) + Vm * alpha_m * (1 + num) - alpha11_h * nuh12);
+        double alpha22_h = (Vf * (alpha11_f * nuf12 + alpha22_f) +
+            Vm * alpha_m * (1 + num) -
+            alpha11_h * nuh12);
         hybridEngineeringConstants.alpha22 = alpha22_h;
         hybridEngineeringConstants.alpha33 = alpha22_h;
       }

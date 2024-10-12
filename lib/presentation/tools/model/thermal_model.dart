@@ -11,7 +11,7 @@ class TransverselyIsotropicCTE extends MechanicalMaterial {
   TransverselyIsotropicCTE();
 
   isValid() {
-    if (alpha11 != null && alpha22 != null) {
+    if (alpha11 != null && alpha22 != null && alpha12 != null) {
       return true;
     }
     return false;

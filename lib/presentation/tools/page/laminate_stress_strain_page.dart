@@ -60,39 +60,43 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
               child: StaggeredGridView.countBuilder(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                   crossAxisCount: 8,
-                  itemCount: 5,
+                  itemCount: itemList.length,
                   staggeredTileBuilder: (int index) =>
                       StaggeredTile.fit(MediaQuery.of(context).size.width > 600 ? 4 : 8),
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                   itemBuilder: (BuildContext context, int index) {
-                    return [
-                      LaminaContantsRow(
-                        material: transverselyIsotropicMaterial,
-                        validate: validate,
-                        isPlaneStress: true,
-                      ),
-                      LayupSequenceRow(layupSequence: layupSequence, validate: validate),
-                      LayerThicknessPage(layerThickness: layerThickness, validate: validate),
-                      LaminateStressStrainRow(
-                        mechanicalTensor: mechanicalTensor,
-                        validate: validate,
-                        callback: (value) {
-                          setState(() {
-                            if (value == "Stress Resultants") {
-                              mechanicalTensor = LaminateStress();
-                            } else {
-                              mechanicalTensor = LaminateStrain();
-                            }
-                          });
-                        },
-                      ),
-                      DescriptionItem(
-                          content: DescriptionModels.getDescription(
-                              DescriptionType.laminate_stress_strain, context))
-                    ][index];
+                    return itemList[index];
                   })),
         ));
+  }
+
+  List<Widget> get itemList {
+    return [
+      LaminaContantsRow(
+        material: transverselyIsotropicMaterial,
+        validate: validate,
+        isPlaneStress: true,
+      ),
+      LayupSequenceRow(layupSequence: layupSequence, validate: validate),
+      LayerThicknessPage(layerThickness: layerThickness, validate: validate),
+      LaminateStressStrainRow(
+        mechanicalTensor: mechanicalTensor,
+        validate: validate,
+        callback: (value) {
+          setState(() {
+            if (value == "Stress Resultants") {
+              mechanicalTensor = LaminateStress();
+            } else {
+              mechanicalTensor = LaminateStrain();
+            }
+          });
+        },
+      ),
+      DescriptionItem(
+          content: DescriptionModels.getDescription(
+              DescriptionType.laminate_stress_strain, context))
+    ];
   }
 
   void _calculate() {

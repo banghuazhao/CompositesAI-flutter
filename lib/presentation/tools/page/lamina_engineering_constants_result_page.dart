@@ -9,8 +9,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/material_model.dart';
-import 'package:swiftcomp/presentation/tools/widget/result_plane_compliance_matrix.dart';
-import 'package:swiftcomp/presentation/tools/widget/result_plane_stiffness_matrix.dart';
+import 'package:swiftcomp/presentation/tools/widget/result_3by3_matrix.dart';
 import 'package:swiftcomp/presentation/more/tool_setting_page.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/number.dart';
@@ -18,16 +17,18 @@ import 'package:swiftcomp/util/number.dart';
 import '../../tools/model/thermal_model.dart';
 
 class LaminaEngineeringConstantsResultPage extends StatefulWidget {
+  final AnalysisType analysisType;
   final TransverselyIsotropicMaterial transverselyIsotropicMaterial;
-  final bool isElastic;
-  TransverselyIsotropicCTE transverselyIsotropicCTE =
-      TransverselyIsotropicCTE();
+  final TransverselyIsotropicCTE transverselyIsotropicCTE;
 
-  LaminaEngineeringConstantsResultPage(
-      {Key? key,
-      required this.transverselyIsotropicMaterial,
-      required this.isElastic})
-      : super(key: key);
+  LaminaEngineeringConstantsResultPage({
+    Key? key,
+    required this.analysisType,
+    required this.transverselyIsotropicMaterial,
+    TransverselyIsotropicCTE? transverselyIsotropicCTE,
+  })  : transverselyIsotropicCTE =
+            transverselyIsotropicCTE ?? TransverselyIsotropicCTE(),
+        super(key: key);
 
   @override
   _LaminaEngineeringConstantsResultPageState createState() =>
@@ -68,7 +69,7 @@ class _LaminaEngineeringConstantsResultPageState
       eta_x_xy_datas.add(FlSpot(angle, output.eta1_12));
       eta_y_xy_datas.add(FlSpot(angle, output.eta2_12));
 
-      if (!widget.isElastic) {
+      if (widget.analysisType == AnalysisType.thermalElastic) {
         alpha_xx_datas.add(FlSpot(angle, output.alpha_11));
         alpha_yy_datas.add(FlSpot(angle, output.alpha_22));
         alpha_xy_datas.add(FlSpot(angle, output.alpha_12));
@@ -82,7 +83,7 @@ class _LaminaEngineeringConstantsResultPageState
     double g12 = widget.transverselyIsotropicMaterial.g12!;
     double nu12 = widget.transverselyIsotropicMaterial.nu12!;
 
-    if (widget.isElastic) {
+    if (widget.analysisType == AnalysisType.elastic) {
       LaminaEngineeringConstantsInput input = LaminaEngineeringConstantsInput(
           analysisType: AnalysisType.elastic,
           E1: e1,
@@ -93,7 +94,7 @@ class _LaminaEngineeringConstantsResultPageState
       return LaminaEngineeringConstantsCalculator.calculate(input);
     } else {
       LaminaEngineeringConstantsInput input = LaminaEngineeringConstantsInput(
-        analysisType: AnalysisType.elastic,
+        analysisType: AnalysisType.thermalElastic,
         E1: e1,
         E2: e2,
         G12: g12,
@@ -142,60 +143,61 @@ class _LaminaEngineeringConstantsResultPageState
             child: StaggeredGridView.countBuilder(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                 crossAxisCount: 8,
-                itemCount: 4,
+                itemCount: resultItem.length,
                 staggeredTileBuilder: (int index) => StaggeredTile.fit(
                     MediaQuery.of(context).size.width > 600 ? 4 : 8),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
                 itemBuilder: (BuildContext context, int index) {
-                  List<Widget> children = [
-                    _engineeringConstantsRow("Ex", output.E1, E_x_datas),
-                    const Divider(),
-                    _engineeringConstantsRow("Ey", output.E2, E_y_datas),
-                    const Divider(),
-                    _engineeringConstantsRow("Gxy", output.G12, G_xy_datas),
-                    const Divider(),
-                    _engineeringConstantsRow("νxy", output.nu12, nu_xy_datas),
-                    const Divider(),
-                    _engineeringConstantsRow(
-                        "ηx,xy", output.eta1_12, eta_x_xy_datas),
-                    const Divider(),
-                    _engineeringConstantsRow(
-                        "ηy,xy", output.eta2_12, eta_y_xy_datas)
-                  ];
-                  if (!widget.isElastic) {
-                    List<Widget> moreChildren = [
-                      const Divider(),
-                      _engineeringConstantsRow(
-                          "ɑxx", output.alpha_11, alpha_xx_datas),
-                      const Divider(),
-                      _engineeringConstantsRow(
-                          "ɑyy", output.alpha_22, alpha_yy_datas),
-                      const Divider(),
-                      _engineeringConstantsRow(
-                          "ɑxy", output.alpha_12, alpha_xy_datas)
-                    ];
-                    children.addAll(moreChildren);
-                  }
-                  return [
-                    layupAngleSlider(),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(children: children),
-                      ),
-                    ),
-                    ResultPlaneStiffnessMatrix(
-                      Q_bar: output.Q,
-                    ),
-                    ResultPlaneComplianceMatrix(
-                      S_bar: output.S,
-                    )
-                  ][index];
+                  return resultItem[index];
                 })));
+  }
+
+  List<Widget> get resultItem {
+    List<Widget> children = [
+      _engineeringConstantsRow("Ex", output.E1, E_x_datas),
+      const Divider(),
+      _engineeringConstantsRow("Ey", output.E2, E_y_datas),
+      const Divider(),
+      _engineeringConstantsRow("Gxy", output.G12, G_xy_datas),
+      const Divider(),
+      _engineeringConstantsRow("νxy", output.nu12, nu_xy_datas),
+      const Divider(),
+      _engineeringConstantsRow("ηx,xy", output.eta1_12, eta_x_xy_datas),
+      const Divider(),
+      _engineeringConstantsRow("ηy,xy", output.eta2_12, eta_y_xy_datas)
+    ];
+    if (widget.analysisType == AnalysisType.thermalElastic) {
+      List<Widget> moreChildren = [
+        const Divider(),
+        _engineeringConstantsRow("ɑxx", output.alpha_11, alpha_xx_datas),
+        const Divider(),
+        _engineeringConstantsRow("ɑyy", output.alpha_22, alpha_yy_datas),
+        const Divider(),
+        _engineeringConstantsRow("ɑxy", output.alpha_12, alpha_xy_datas)
+      ];
+      children.addAll(moreChildren);
+    }
+    return [
+      layupAngleSlider(),
+      Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(children: children),
+        ),
+      ),
+      Result3By3Matrix(
+        title: S.of(context).Stiffness_Matrix_Q,
+        matrixList: output.Q,
+      ),
+      Result3By3Matrix(
+        title: S.of(context).Compliance_Matrix_S,
+        matrixList: output.S,
+      ),
+    ];
   }
 
   _engineeringConstantsRow(

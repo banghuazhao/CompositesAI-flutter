@@ -53,40 +53,44 @@ class _LaminatePlatePropertiesResultPageState
           child: StaggeredGridView.countBuilder(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
               crossAxisCount: 8,
-              itemCount: 5,
+              itemCount: resultList.length,
               staggeredTileBuilder: (int index) => StaggeredTile.fit(
                   MediaQuery.of(context).size.width > 600 ? 4 : 8),
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               itemBuilder: (BuildContext context, int index) {
-                return [
-                  Result3By3Matrix(
-                    title: "A Matrix",
-                    matrixList: widget.output.A,
-                  ),
-                  Result3By3Matrix(
-                    title: "B Matrix",
-                    matrixList: widget.output.B,
-                  ),
-                  Result3By3Matrix(
-                    title: "D Matrix",
-                    matrixList: widget.output.D,
-                  ),
-                  InPlanePropertiesWidget(
-                    title: "In-Plane Properties",
-                    explain:
-                        "In-Plane properties are only valid for symmetric laminates only.",
-                    inPlaneProperties: widget.output.inPlaneProperties,
-                  ),
-                  InPlanePropertiesWidget(
-                    title: "Flexural Properties",
-                    explain:
-                        "Flexural properties are only valid for symmetric laminates only.",
-                    inPlaneProperties: widget.output.flexuralProperties,
-                  )
-                ][index];
+                return resultList[index];
               }),
         ));
+  }
+
+  List<Widget> get resultList {
+    return [
+      Result3By3Matrix(
+        title: "A Matrix",
+        matrixList: widget.output.A,
+      ),
+      Result3By3Matrix(
+        title: "B Matrix",
+        matrixList: widget.output.B,
+      ),
+      Result3By3Matrix(
+        title: "D Matrix",
+        matrixList: widget.output.D,
+      ),
+      InPlanePropertiesWidget(
+        title: "In-Plane Properties",
+        explain:
+            "In-Plane properties are only valid for symmetric laminates only.",
+        inPlaneProperties: widget.output.inPlaneProperties,
+      ),
+      InPlanePropertiesWidget(
+        title: "Flexural Properties",
+        explain:
+            "Flexural properties are only valid for symmetric laminates only.",
+        inPlaneProperties: widget.output.flexuralProperties,
+      )
+    ];
   }
 }
 

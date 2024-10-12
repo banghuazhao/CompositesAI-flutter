@@ -11,4 +11,13 @@ enum AnalysisType {
         return 'thermalElastic';
     }
   }
+
+  String get name {
+    switch (this) {
+      case AnalysisType.elastic:
+        return 'Elastic';
+      case AnalysisType.thermalElastic:
+        return 'Thermal elastic';
+    }
+  }
 }

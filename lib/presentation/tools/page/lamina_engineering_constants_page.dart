@@ -1,3 +1,4 @@
+import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -16,21 +17,26 @@ class LaminaEngineeringConstantsPage extends StatefulWidget {
   const LaminaEngineeringConstantsPage({Key? key}) : super(key: key);
 
   @override
-  _LaminaEngineeringConstantsPageState createState() => _LaminaEngineeringConstantsPageState();
+  _LaminaEngineeringConstantsPageState createState() =>
+      _LaminaEngineeringConstantsPageState();
 }
 
-class _LaminaEngineeringConstantsPageState extends State<LaminaEngineeringConstantsPage> {
-  TransverselyIsotropicMaterial transverselyIsotropicMaterial = TransverselyIsotropicMaterial();
-  TransverselyIsotropicCTE transverselyIsotropicCTE = TransverselyIsotropicCTE();
+class _LaminaEngineeringConstantsPageState
+    extends State<LaminaEngineeringConstantsPage> {
+  TransverselyIsotropicMaterial transverselyIsotropicMaterial =
+      TransverselyIsotropicMaterial();
+  TransverselyIsotropicCTE transverselyIsotropicCTE =
+      TransverselyIsotropicCTE();
+  AnalysisType analysisType = AnalysisType.elastic;
   bool validate = false;
-  bool isElastic = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+            icon:
+                const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text(S.of(context).Lamina_engineering_constants),
@@ -53,49 +59,57 @@ class _LaminaEngineeringConstantsPageState extends State<LaminaEngineeringConsta
               child: StaggeredGridView.countBuilder(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                   crossAxisCount: 8,
-                  itemCount: isElastic ? 3 : 4,
-                  staggeredTileBuilder: (int index) =>
-                      StaggeredTile.fit(MediaQuery.of(context).size.width > 600 ? 4 : 8),
+                  itemCount: itemList.length,
+                  staggeredTileBuilder: (int index) => StaggeredTile.fit(
+                      MediaQuery.of(context).size.width > 600 ? 4 : 8),
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                   itemBuilder: (BuildContext context, int index) {
-                    return [
-                      AnalysisTypeRow(callback: (analysisType) {
-                        isElastic = analysisType == "Elastic";
-                      }),
-                      LaminaContantsRow(
-                          material: transverselyIsotropicMaterial,
-                          validate: validate,
-                          isPlaneStress: true),
-                      if (!isElastic)
-                        TransverselyThermalConstantsRow(
-                          material: transverselyIsotropicCTE,
-                          validate: validate,
-                        ),
-                      DescriptionItem(
-                          content: DescriptionModels.getDescription(
-                              DescriptionType.lamina_engineering_constants, context))
-                    ][index];
+                    return itemList[index];
                   })),
         ));
   }
 
+  List<Widget> get itemList {
+    return [
+      AnalysisTypeRow(
+        analysisType: analysisType,
+        onChanged: (newValue) {
+          setState(() {
+            analysisType = newValue;
+          });
+        },
+      ),
+      LaminaContantsRow(
+          material: transverselyIsotropicMaterial,
+          validate: validate,
+          isPlaneStress: true),
+      if (analysisType == AnalysisType.thermalElastic)
+        TransverselyThermalConstantsRow(
+          material: transverselyIsotropicCTE,
+          validate: validate,
+        ),
+      DescriptionItem(
+          content: DescriptionModels.getDescription(
+              DescriptionType.lamina_engineering_constants, context))
+    ];
+  }
+
   void _calculate() {
     if (transverselyIsotropicMaterial.isValidInPlane()) {
-      if (!isElastic && !transverselyIsotropicCTE.isValid()) {
+      if (analysisType == AnalysisType.thermalElastic &&
+          !transverselyIsotropicCTE.isValid()) {
         return;
       }
 
       var resultPage = LaminaEngineeringConstantsResultPage(
-        transverselyIsotropicMaterial: transverselyIsotropicMaterial, isElastic: isElastic,
+        analysisType: analysisType,
+        transverselyIsotropicMaterial: transverselyIsotropicMaterial,
+        transverselyIsotropicCTE: transverselyIsotropicCTE,
       );
-      if (!isElastic) {
-        resultPage.transverselyIsotropicCTE = transverselyIsotropicCTE;
-      }
+
       Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => resultPage));
+          context, MaterialPageRoute(builder: (context) => resultPage));
     }
   }
 }

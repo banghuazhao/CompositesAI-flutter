@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:composite_calculator/models/analysis_type.dart';
 import 'package:composite_calculator/models/tensor_type.dart';
+import 'package:composite_calculator/utils/matrix_to_list_extension.dart';
 import 'package:linalg/linalg.dart';
 import 'package:linalg/matrix.dart';
 
@@ -80,10 +81,13 @@ class LaminaStressStrainCalculator {
         strainVector = S_bar * stressVector + R_epsilon_e * cteVector;
       }
       return LaminaStressStrainOutput(
-          tensorType: TensorType.strain,
-          epsilon11: strainVector[0][0],
-          epsilon22: strainVector[1][0],
-          gamma12: strainVector[2][0]);
+        tensorType: TensorType.strain,
+        epsilon11: strainVector[0][0],
+        epsilon22: strainVector[1][0],
+        gamma12: strainVector[2][0],
+        Q: Q_bar.toListOfLists(),
+        S: S_bar.toListOfLists(),
+      );
     } else {
       double epsilon11 = input.epsilon11;
       double epsilon22 = input.epsilon22;
@@ -114,10 +118,13 @@ class LaminaStressStrainCalculator {
         stressVector = Q_bar * (strainVector - R_epsilon_e * cteVector);
       }
       return LaminaStressStrainOutput(
-          tensorType: TensorType.stress,
-          sigma11: stressVector[0][0],
-          sigma22: stressVector[1][0],
-          sigma12: stressVector[2][0]);
+        tensorType: TensorType.stress,
+        sigma11: stressVector[0][0],
+        sigma22: stressVector[1][0],
+        sigma12: stressVector[2][0],
+        Q: Q_bar.toListOfLists(),
+        S: S_bar.toListOfLists(),
+      );
     }
   }
 }

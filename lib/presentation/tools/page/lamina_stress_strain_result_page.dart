@@ -3,9 +3,9 @@ import 'package:composite_calculator/models/tensor_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:swiftcomp/generated/l10n.dart';
-import 'package:swiftcomp/presentation/tools/widget/result_plane_compliance_matrix.dart';
-import 'package:swiftcomp/presentation/tools/widget/result_plane_stiffness_matrix.dart';
 import 'package:swiftcomp/presentation/more/tool_setting_page.dart';
+
+import '../widget/result_3by3_matrix.dart';
 
 class LaminaStressStrainResult extends StatefulWidget {
   final LaminaStressStrainOutput output;
@@ -27,7 +27,7 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
         appBar: AppBar(
           leading: IconButton(
             icon:
-                const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+            const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
@@ -41,31 +41,47 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
               icon: const Icon(Icons.settings_rounded),
             ),
           ],
-          title: Text(S.of(context).Results),
+          title: Text(S
+              .of(context)
+              .Results),
         ),
         body: SafeArea(
           child: StaggeredGridView.countBuilder(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
               crossAxisCount: 8,
-              itemCount: 3,
-              staggeredTileBuilder: (int index) => StaggeredTile.fit(
-                  MediaQuery.of(context).size.width > 600 ? 4 : 8),
+              itemCount: resultList.length,
+              staggeredTileBuilder: (int index) =>
+                  StaggeredTile.fit(
+                      MediaQuery
+                          .of(context)
+                          .size
+                          .width > 600 ? 4 : 8),
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               itemBuilder: (BuildContext context, int index) {
-                return [
-                  ResultPlaneStressStrainRow(
-                    output: widget.output,
-                  ),
-                  ResultPlaneStiffnessMatrix(
-                    Q_bar: widget.output.Q,
-                  ),
-                  ResultPlaneComplianceMatrix(
-                    S_bar: widget.output.S,
-                  )
-                ][index];
+                return resultList[index];
               }),
         ));
+  }
+
+  List<Widget> get resultList {
+    return [
+      ResultPlaneStressStrainRow(
+        output: widget.output,
+      ),
+      Result3By3Matrix(
+        title: S
+            .of(context)
+            .Stiffness_Matrix_Q,
+        matrixList: widget.output.Q,
+      ),
+      Result3By3Matrix(
+        title: S
+            .of(context)
+            .Compliance_Matrix_S,
+        matrixList: widget.output.S,
+      ),
+    ];
   }
 }
 
@@ -113,7 +129,10 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
           ListTile(
             title: Text(
               "Result",
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .titleMedium,
             ),
           ),
           Padding(
@@ -125,13 +144,19 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                   children: [
                     Text(
                       isStress ? "σ11" : "ε11",
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .titleMedium,
                     ),
                     const SizedBox(
                       height: 8,
                     ),
                     Text(getResultString(0),
-                        style: Theme.of(context).textTheme.bodySmall)
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .bodySmall)
                   ],
                 ),
                 const SizedBox(
@@ -141,13 +166,19 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                   children: [
                     Text(
                       isStress ? "σ22" : "ε22",
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .titleMedium,
                     ),
                     const SizedBox(
                       height: 8,
                     ),
                     Text(getResultString(1),
-                        style: Theme.of(context).textTheme.bodySmall)
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .bodySmall)
                   ],
                 ),
                 const SizedBox(
@@ -157,13 +188,19 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                   children: [
                     Text(
                       isStress ? "σ12" : "γ12",
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .titleMedium,
                     ),
                     const SizedBox(
                       height: 8,
                     ),
                     Text(getResultString(2),
-                        style: Theme.of(context).textTheme.bodySmall)
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .bodySmall)
                   ],
                 ),
               ],
