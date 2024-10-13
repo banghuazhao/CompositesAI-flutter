@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:composite_calculator/composite_calculator.dart';
+import 'package:composite_calculator/models/tensor_type.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -13,23 +15,25 @@ import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
 class LaminateStressStrainResultPage extends StatefulWidget {
   final MechanicalTensor inputTensor;
-  final MechanicalTensor resultTensor;
+  final LaminarStressStrainOutput output;
   final double thickness;
   final List<Matrix> Q;
 
   const LaminateStressStrainResultPage(
       {Key? key,
       required this.inputTensor,
-      required this.resultTensor,
+      required this.output,
       required this.thickness,
       required this.Q})
       : super(key: key);
 
   @override
-  _LaminateStressStrainResultPageState createState() => _LaminateStressStrainResultPageState();
+  _LaminateStressStrainResultPageState createState() =>
+      _LaminateStressStrainResultPageState();
 }
 
-class _LaminateStressStrainResultPageState extends State<LaminateStressStrainResultPage> {
+class _LaminateStressStrainResultPageState
+    extends State<LaminateStressStrainResultPage> {
   List<FlSpot> epsilon11_datas = [];
   List<FlSpot> epsilon22_datas = [];
   List<FlSpot> epsilon12_datas = [];
@@ -48,12 +52,12 @@ class _LaminateStressStrainResultPageState extends State<LaminateStressStrainRes
       kappa[1][0] = (widget.inputTensor as LaminateStrain).kappa22!;
       kappa[2][0] = (widget.inputTensor as LaminateStrain).kappa12!;
     } else {
-      epsilon[0][0] = (widget.resultTensor as LaminateStrain).epsilon11!;
-      epsilon[1][0] = (widget.resultTensor as LaminateStrain).epsilon22!;
-      epsilon[2][0] = (widget.resultTensor as LaminateStrain).epsilon12!;
-      kappa[0][0] = (widget.resultTensor as LaminateStrain).kappa11!;
-      kappa[1][0] = (widget.resultTensor as LaminateStrain).kappa22!;
-      kappa[2][0] = (widget.resultTensor as LaminateStrain).kappa12!;
+      epsilon[0][0] = widget.output.epsilon11;
+      epsilon[1][0] = widget.output.epsilon22;
+      epsilon[2][0] = widget.output.epsilon12;
+      kappa[0][0] = widget.output.kappa11;
+      kappa[1][0] = widget.output.kappa22;
+      kappa[2][0] = widget.output.kappa12;
     }
 
     double totalThickness = widget.Q.length * widget.thickness;
@@ -102,14 +106,17 @@ class _LaminateStressStrainResultPageState extends State<LaminateStressStrainRes
     return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+            icon:
+                const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
             IconButton(
               onPressed: () {
                 Navigator.push(
-                    context, MaterialPageRoute(builder: (context) => const ToolSettingPage()));
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ToolSettingPage()));
               },
               icon: const Icon(Icons.settings_rounded),
             ),
@@ -120,55 +127,84 @@ class _LaminateStressStrainResultPageState extends State<LaminateStressStrainRes
           child: StaggeredGridView.countBuilder(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
               crossAxisCount: 8,
-              itemCount: 7,
-              staggeredTileBuilder: (int index) =>
-                  StaggeredTile.fit(MediaQuery.of(context).size.width > 600 ? 4 : 8),
+              itemCount: resultItems.length,
+              staggeredTileBuilder: (int index) => StaggeredTile.fit(
+                  MediaQuery.of(context).size.width > 600 ? 4 : 8),
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               itemBuilder: (BuildContext context, int index) {
-                return [
-                  ResultStressStrainWidget(
-                    mechanicalTensor: widget.resultTensor,
-                  ),
-                  LaminarStressStrainLineChat(
-                    title: "ε11 through the thickness",
-                    data: epsilon11_datas,
-                  ),
-                  LaminarStressStrainLineChat(
-                    title: "ε22 through the thickness",
-                    data: epsilon22_datas,
-                  ),
-                  LaminarStressStrainLineChat(
-                    title: "ε12 through the thickness",
-                    data: epsilon12_datas,
-                  ),
-                  LaminarStressStrainLineChat(
-                    title: "σ11 through the thickness",
-                    data: sigma11_datas,
-                  ),
-                  LaminarStressStrainLineChat(
-                    title: "σ22 through the thickness",
-                    data: sigma22_datas,
-                  ),
-                  LaminarStressStrainLineChat(
-                    title: "σ12 through the thickness",
-                    data: sigma12_datas,
-                  )
-                ][index];
+                return resultItems[index];
               }),
         ));
+  }
+
+  List<Widget> get resultItems {
+    return [
+      ResultStressStrainWidget(
+        mechanicalTensor: resultTensor,
+      ),
+      LaminarStressStrainLineChat(
+        title: "ε11 through the thickness",
+        data: epsilon11_datas,
+      ),
+      LaminarStressStrainLineChat(
+        title: "ε22 through the thickness",
+        data: epsilon22_datas,
+      ),
+      LaminarStressStrainLineChat(
+        title: "ε12 through the thickness",
+        data: epsilon12_datas,
+      ),
+      LaminarStressStrainLineChat(
+        title: "σ11 through the thickness",
+        data: sigma11_datas,
+      ),
+      LaminarStressStrainLineChat(
+        title: "σ22 through the thickness",
+        data: sigma22_datas,
+      ),
+      LaminarStressStrainLineChat(
+        title: "σ12 through the thickness",
+        data: sigma12_datas,
+      )
+    ];
+  }
+
+  MechanicalTensor get resultTensor {
+    if (widget.output.tensorType == TensorType.stress) {
+      return LaminateStress(
+        N11: widget.output.N11,
+        N22: widget.output.N22,
+        N12: widget.output.N12,
+        M11: widget.output.M11,
+        M22: widget.output.M22,
+        M12: widget.output.M12,
+      );
+    } else {
+      return LaminateStrain(
+        epsilon11: widget.output.epsilon11,
+        epsilon22: widget.output.epsilon22,
+        epsilon12: widget.output.epsilon12,
+        kappa11: widget.output.kappa11,
+        kappa22: widget.output.kappa22,
+        kappa12: widget.output.kappa12,
+      );
+    }
   }
 }
 
 class ResultStressStrainWidget extends StatelessWidget {
   final MechanicalTensor mechanicalTensor;
-  const ResultStressStrainWidget({Key? key, required this.mechanicalTensor}) : super(key: key);
+
+  const ResultStressStrainWidget({Key? key, required this.mechanicalTensor})
+      : super(key: key);
 
   _propertyRow(BuildContext context, String title, double? value) {
     return Consumer<NumberPrecisionHelper>(builder: (context, precs, child) {
       return SizedBox(
         height: 40,
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        child:
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium,
@@ -185,7 +221,8 @@ class ResultStressStrainWidget extends StatelessWidget {
   String getValue(double? value, int precision) {
     String valueString = "";
     if (value != null) {
-      valueString = value == 0 ? "0" : value.toStringAsExponential(precision).toString();
+      valueString =
+          value == 0 ? "0" : value.toStringAsExponential(precision).toString();
     }
     return valueString;
   }
@@ -264,7 +301,9 @@ class ResultStressStrainWidget extends StatelessWidget {
 class LaminarStressStrainLineChat extends StatelessWidget {
   final String title;
   final List<FlSpot> data;
-  const LaminarStressStrainLineChat({Key? key, required this.title, required this.data})
+
+  const LaminarStressStrainLineChat(
+      {Key? key, required this.title, required this.data})
       : super(key: key);
 
   @override
@@ -302,8 +341,10 @@ class LaminarStressStrainLineChat extends StatelessWidget {
             lineTouchData: LineTouchData(enabled: false),
             gridData: FlGridData(
               show: true,
-              horizontalInterval: verticalInterval > 0 ? verticalInterval : null,
-              verticalInterval: horizontalInterval > 0 ? horizontalInterval : null,
+              horizontalInterval:
+                  verticalInterval > 0 ? verticalInterval : null,
+              verticalInterval:
+                  horizontalInterval > 0 ? horizontalInterval : null,
               drawHorizontalLine: true,
               drawVerticalLine: true,
             ),
@@ -334,7 +375,8 @@ class LaminarStressStrainLineChat extends StatelessWidget {
             borderData: FlBorderData(
                 show: true,
                 border: const Border(
-                    left: BorderSide(color: Colors.grey), bottom: BorderSide(color: Colors.grey))),
+                    left: BorderSide(color: Colors.grey),
+                    bottom: BorderSide(color: Colors.grey))),
             minX: minX,
             maxX: maxX,
             minY: minY,

@@ -40,7 +40,14 @@ class LaminateStress extends MechanicalTensor {
   double? M22;
   double? M12;
 
-  LaminateStress();
+  LaminateStress({
+    this.N11,
+    this.N22,
+    this.N12,
+    this.M11,
+    this.M22,
+    this.M12,
+  });
 
   LaminateStress.from(
       this.N11, this.N22, this.N12, this.M11, this.M22, this.M12);
@@ -69,7 +76,14 @@ class LaminateStrain extends MechanicalTensor {
   double? kappa22;
   double? kappa12;
 
-  LaminateStrain();
+  LaminateStrain({
+    this.epsilon11,
+    this.epsilon22,
+    this.epsilon12,
+    this.kappa11,
+    this.kappa22,
+    this.kappa12,
+  });
 
   LaminateStrain.from(this.epsilon11, this.epsilon22, this.epsilon12,
       this.kappa11, this.kappa22, this.kappa12);

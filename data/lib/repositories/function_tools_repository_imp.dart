@@ -29,8 +29,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
         });
     FunctionTool calculateLaminaStrainTool = FunctionTool(
         name: "calculate_lamina_strain",
-        description:
-            "Calculates the strains for a lamina. $commonDescription",
+        description: "Calculates the strains for a lamina. $commonDescription",
         parameters: {
           "type": "object",
           "required": [
@@ -61,8 +60,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
         });
     FunctionTool calculateLaminaStressTool = FunctionTool(
         name: "calculate_lamina_stress",
-        description:
-            "Calculates the stress for a lamina. $commonDescription",
+        description: "Calculates the stress for a lamina. $commonDescription",
         parameters: {
           "type": "object",
           "required": [
@@ -94,7 +92,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
     FunctionTool calculateLaminatePlatePropertiesTool = FunctionTool(
         name: "calculate_laminate_plate_properties",
         description:
-        "Calculates the laminate plate properties. $commonDescription",
+            "Calculates the laminate plate properties. $commonDescription",
         parameters: {
           "type": "object",
           "required": [
@@ -116,13 +114,17 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
               "minimum": -1
             },
             "layup_sequence": {"type": "string", "default": "[0/90/45/-45]s"},
-            "layer_thickness": {"type": "number", "default": 0.125, "exclusiveMinimum": 0}
+            "layer_thickness": {
+              "type": "number",
+              "default": 0.125,
+              "exclusiveMinimum": 0
+            }
           }
         });
     FunctionTool calculateLaminate3DPropertiesTool = FunctionTool(
         name: "calculate_laminate_3d_properties",
         description:
-        "Calculates the laminate plate properties. $commonDescription",
+            "Calculates the laminate plate properties. $commonDescription",
         parameters: {
           "type": "object",
           "required": [
@@ -131,7 +133,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
             "G12",
             "nu12",
             "nu23"
-            "layup_sequence",
+                "layup_sequence",
             "layer_thickness",
           ],
           "properties": {
@@ -151,7 +153,99 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
               "minimum": -1
             },
             "layup_sequence": {"type": "string", "default": "[0/90/45/-45]s"},
-            "layer_thickness": {"type": "number", "default": 0.125, "exclusiveMinimum": 0}
+            "layer_thickness": {
+              "type": "number",
+              "default": 0.125,
+              "exclusiveMinimum": 0
+            }
+          }
+        });
+    FunctionTool calculateLaminarStrainTool = FunctionTool(
+        name: "calculate_laminar_strain",
+        description:
+            "Calculates the strains for a laminar/laminate. $commonDescription",
+        parameters: {
+          "type": "object",
+          "required": [
+            "E1",
+            "E2",
+            "G12",
+            "nu12",
+            "layupSequence",
+            "layerThickness",
+            "N11",
+            "N22",
+            "N12",
+            "M11",
+            "M22",
+            "M12"
+          ],
+          "properties": {
+            "E1": {"type": "number", "default": 150000, "exclusiveMinimum": 0},
+            "E2": {"type": "number", "default": 10000, "exclusiveMinimum": 0},
+            "G12": {"type": "number", "default": 5000, "exclusiveMinimum": 0},
+            "nu12": {
+              "type": "number",
+              "default": 0.3,
+              "maximum": 0.5,
+              "minimum": -1
+            },
+            "layup_sequence": {"type": "string", "default": "[0/90/45/-45]s"},
+            "layer_thickness": {
+              "type": "number",
+              "default": 0.125,
+              "exclusiveMinimum": 0
+            },
+            "N11": {"type": "number", "default": 1},
+            "N22": {"type": "number", "default": 0},
+            "N12": {"type": "number", "default": 0},
+            "M11": {"type": "number", "default": 0},
+            "M22": {"type": "number", "default": 0},
+            "M12": {"type": "number", "default": 0}
+          }
+        });
+    FunctionTool calculateLaminarStressTool = FunctionTool(
+        name: "calculate_laminar_stress",
+        description:
+            "Calculates the stress for a laminar/laminate. $commonDescription",
+        parameters: {
+          "type": "object",
+          "required": [
+            "E1",
+            "E2",
+            "G12",
+            "nu12",
+            "layupSequence",
+            "layerThickness",
+            "epsilon11",
+            "epsilon22",
+            "epsilon12",
+            "kappa11",
+            "kappa22",
+            "kappa12"
+          ],
+          "properties": {
+            "E1": {"type": "number", "default": 150000, "exclusiveMinimum": 0},
+            "E2": {"type": "number", "default": 10000, "exclusiveMinimum": 0},
+            "G12": {"type": "number", "default": 5000, "exclusiveMinimum": 0},
+            "nu12": {
+              "type": "number",
+              "default": 0.3,
+              "maximum": 0.5,
+              "minimum": -1
+            },
+            "layup_sequence": {"type": "string", "default": "[0/90/45/-45]s"},
+            "layer_thickness": {
+              "type": "number",
+              "default": 0.125,
+              "exclusiveMinimum": 0
+            },
+            "epsilon11": {"type": "number", "default": 1e-5},
+            "epsilon22": {"type": "number", "default": 0},
+            "epsilon12": {"type": "number", "default": 0},
+            "kappa11": {"type": "number", "default": 0},
+            "kappa22": {"type": "number", "default": 0},
+            "kappa12": {"type": "number", "default": 0}
           }
         });
     return [
@@ -159,7 +253,9 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
       calculateLaminaStrainTool,
       calculateLaminaStressTool,
       calculateLaminatePlatePropertiesTool,
-      calculateLaminate3DPropertiesTool
+      calculateLaminate3DPropertiesTool,
+      calculateLaminarStrainTool,
+      calculateLaminarStressTool,
     ];
   }
 }

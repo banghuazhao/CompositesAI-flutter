@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:composite_calculator/calculators/lamina_engineering_constants_calculator.dart';
 import 'package:composite_calculator/calculators/lamina_stress_strain_calculator.dart';
+import 'package:composite_calculator/calculators/laminar_stress_strain_calculator.dart';
 import 'package:composite_calculator/calculators/laminate_3d_properties_calculator.dart';
 import 'package:composite_calculator/calculators/laminate_plate_properties_calculator.dart';
 
@@ -9,6 +10,8 @@ import 'package:composite_calculator/models/lamina_engineering_constants_input.d
 import 'package:composite_calculator/models/lamina_engineering_constants_output.dart';
 import 'package:composite_calculator/models/lamina_stress_strain_input.dart';
 import 'package:composite_calculator/models/lamina_stress_strain_output.dart';
+import 'package:composite_calculator/models/laminar_stress_strain_input.dart';
+import 'package:composite_calculator/models/laminar_stress_strain_output.dart';
 import 'package:composite_calculator/models/laminate_3d_properties_input.dart';
 import 'package:composite_calculator/models/laminate_3d_properties_output.dart';
 import 'package:composite_calculator/models/laminate_plate_properties_input.dart';
@@ -48,6 +51,8 @@ class ChatViewModel extends ChangeNotifier {
     "Calculate lamina stress",
     "Calculate laminate plate properties",
     "Calculate laminate 3D properties",
+    "Calculate laminar strain",
+    "Calculate laminate stress",
     "What is the upper bound of Young's modulus for composites?",
     // "How to use SwiftComp?",
     // "Give me some math equations.",
@@ -187,6 +192,19 @@ class ChatViewModel extends ChangeNotifier {
             Laminate3DPropertiesInput.fromJson(argumentsJson);
         Laminate3DPropertiesOutput output =
             Laminate3DPropertiesCalculator.calculate(input);
+        outputString = output.toJson().toString();
+      } else if (functionName == "calculate_laminar_strain") {
+        LaminarStressStrainInput input =
+        LaminarStressStrainInput.fromJson(argumentsJson);
+        LaminarStressStrainOutput output =
+        LaminarStressStrainCalculator.calculate(input);
+        outputString = output.toJson().toString();
+      } else if (functionName == "calculate_laminar_stress") {
+        LaminarStressStrainInput input =
+        LaminarStressStrainInput.fromJson(argumentsJson);
+        input.tensorType = TensorType.strain;
+        LaminarStressStrainOutput output =
+        LaminarStressStrainCalculator.calculate(input);
         outputString = output.toJson().toString();
       }
       _chatSessionUseCase.addMessageToSession(selectedSession!,
