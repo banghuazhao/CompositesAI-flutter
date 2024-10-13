@@ -8,7 +8,7 @@ import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
 class Result6By6Matrix extends StatelessWidget {
   final String title;
-  final Matrix matrix;
+  final List<List<double>> matrix;
 
   const Result6By6Matrix({Key? key, required this.matrix, required this.title}) : super(key: key);
 

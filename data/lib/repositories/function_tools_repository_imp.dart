@@ -119,11 +119,47 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
             "layer_thickness": {"type": "number", "default": 0.125, "exclusiveMinimum": 0}
           }
         });
+    FunctionTool calculateLaminate3DPropertiesTool = FunctionTool(
+        name: "calculate_laminate_3d_properties",
+        description:
+        "Calculates the laminate plate properties. $commonDescription",
+        parameters: {
+          "type": "object",
+          "required": [
+            "E1",
+            "E2",
+            "G12",
+            "nu12",
+            "nu23"
+            "layup_sequence",
+            "layer_thickness",
+          ],
+          "properties": {
+            "E1": {"type": "number", "default": 150000, "exclusiveMinimum": 0},
+            "E2": {"type": "number", "default": 10000, "exclusiveMinimum": 0},
+            "G12": {"type": "number", "default": 5000, "exclusiveMinimum": 0},
+            "nu12": {
+              "type": "number",
+              "default": 0.3,
+              "maximum": 0.5,
+              "minimum": -1
+            },
+            "nu23": {
+              "type": "number",
+              "default": 0.23,
+              "maximum": 0.5,
+              "minimum": -1
+            },
+            "layup_sequence": {"type": "string", "default": "[0/90/45/-45]s"},
+            "layer_thickness": {"type": "number", "default": 0.125, "exclusiveMinimum": 0}
+          }
+        });
     return [
       calculateLaminaEngineeringConstantsTool,
       calculateLaminaStrainTool,
       calculateLaminaStressTool,
-      calculateLaminatePlatePropertiesTool
+      calculateLaminatePlatePropertiesTool,
+      calculateLaminate3DPropertiesTool
     ];
   }
 }

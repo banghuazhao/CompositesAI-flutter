@@ -75,7 +75,11 @@ class TransverselyIsotropicMaterial extends MechanicalMaterial {
   }
 
   isValid() {
-    if (e1 != null && e2 != null && g12 != null && nu12 != null && nu23 != null) {
+    if (e1 != null &&
+        e2 != null &&
+        g12 != null &&
+        nu12 != null &&
+        nu23 != null) {
       if (e1! > 0 && e2! > 0 && g12! > 0) {
         return true;
       }
@@ -107,7 +111,21 @@ class OrthotropicMaterial extends MechanicalMaterial {
   double? alpha33;
   double? alpha12;
 
-  OrthotropicMaterial();
+  OrthotropicMaterial({
+    this.e1,
+    this.e2,
+    this.e3,
+    this.g12,
+    this.g13,
+    this.g23,
+    this.nu12,
+    this.nu13,
+    this.nu23,
+    this.alpha11,
+    this.alpha22,
+    this.alpha33,
+    this.alpha12,
+  });
 
   isValid() {
     if (e1 != null &&

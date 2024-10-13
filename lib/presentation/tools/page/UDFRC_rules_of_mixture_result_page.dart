@@ -1,3 +1,4 @@
+import 'package:composite_calculator/utils/matrix_to_list_extension.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -74,11 +75,11 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Result6By6Matrix(
-                    matrix: widget.Cv,
+                    matrix: widget.Cv.toListOfLists(),
                     title: "Effective 3D Stiffness Matrix",
                   ),
                   Result6By6Matrix(
-                    matrix: widget.Sv,
+                    matrix: widget.Sv.toListOfLists(),
                     title: "Effective 3D Compliance Matrix",
                   ),
                   OrthotropicPropertiesWidget(
@@ -90,11 +91,11 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Result6By6Matrix(
-                    matrix: widget.Cr,
+                    matrix: widget.Cr.toListOfLists(),
                     title: "Effective 3D Stiffness Matrix",
                   ),
                   Result6By6Matrix(
-                    matrix: widget.Sr,
+                    matrix: widget.Sr.toListOfLists(),
                     title: "Effective 3D Compliance Matrix",
                   ),
                   OrthotropicPropertiesWidget(
@@ -106,11 +107,11 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Result6By6Matrix(
-                    matrix: widget.Ch,
+                    matrix: widget.Ch.toListOfLists(),
                     title: "Effective 3D Stiffness Matrix",
                   ),
                   Result6By6Matrix(
-                    matrix: widget.Sh,
+                    matrix: widget.Sh.toListOfLists(),
                     title: "Effective 3D Compliance Matrix",
                   ),
                   OrthotropicPropertiesWidget(

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:composite_calculator/composite_calculator.dart';
+import 'package:composite_calculator/models/laminate_3d_properties_input.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -113,119 +114,32 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
       return;
     }
 
-    if (analysisType == AnalysisType.thermalElastic && !transverselyIsotropicCTE.isValid()) {
+    if (analysisType == AnalysisType.thermalElastic &&
+        !transverselyIsotropicCTE.isValid()) {
       return;
     }
 
-    double thickness = layerThickness.value!;
-    int nPly = layupSequence.layups!.length;
+    Laminate3DPropertiesInput input = Laminate3DPropertiesInput(
+      analysisType: analysisType,
+      E1: transverselyIsotropicMaterial.e1 ?? 0,
+      E2: transverselyIsotropicMaterial.e2 ?? 0,
+      G12: transverselyIsotropicMaterial.g12 ?? 0,
+      nu12: transverselyIsotropicMaterial.nu12 ?? 0,
+      nu23: transverselyIsotropicMaterial.nu23 ?? 0,
+      layupSequence: layupSequence.stringValue,
+      layerThickness: layerThickness.value ?? 0,
+      alpha11: transverselyIsotropicCTE.alpha11 ?? 0,
+      alpha22: transverselyIsotropicCTE.alpha22 ?? 0,
+      alpha12: transverselyIsotropicCTE.alpha12 ?? 0,
+    );
 
-    List<double> bzi = [];
-    for (int i = 1; i <= nPly; i++) {
-      double bz = (-(nPly + 1) * thickness) / 2 + i * thickness;
-      bzi.add(bz);
-    }
-
-    Matrix C = Matrix.fill(6, 6);
-    Matrix alpha_temp = Matrix.fill(3, 1);
-    Matrix Q_start = Matrix.fill(3, 3);
-
-    for (int i = 0; i < nPly; i++) {
-      double layup = layupSequence.layups![i];
-      double e1 = transverselyIsotropicMaterial.e1!;
-      double e2 = transverselyIsotropicMaterial.e2!;
-      double g12 = transverselyIsotropicMaterial.g12!;
-      double nu12 = transverselyIsotropicMaterial.nu12!;
-      double nu23 = transverselyIsotropicMaterial.nu23!;
-      double e3 = e2;
-      double g13 = g12;
-      double g23 = e2 / (2 * (1 + nu23));
-      double nu13 = nu12;
-      double angleRadian = layup * pi / 180;
-      double s = sin(angleRadian);
-      double c = cos(angleRadian);
-      Matrix Sp = Matrix([
-        [1 / e1, -nu12 / e1, -nu13 / e1, 0, 0, 0],
-        [-nu12 / e1, 1 / e2, -nu23 / e2, 0, 0, 0],
-        [-nu13 / e1, -nu23 / e2, 1 / e3, 0, 0, 0],
-        [0, 0, 0, 1 / g23, 0, 0],
-        [0, 0, 0, 0, 1 / g13, 0],
-        [0, 0, 0, 0, 0, 1 / g12]
-      ]);
-
-      Matrix Cp = Sp.inverse();
-
-      Matrix Rsigma = Matrix([
-        [c * c, s * s, 0, 0, 0, -2 * s * c],
-        [s * s, c * c, 0, 0, 0, 2 * s * c],
-        [0, 0, 1, 0, 0, 0],
-        [0, 0, 0, c, s, 0],
-        [0, 0, 0, -s, c, 0],
-        [s * c, -s * c, 0, 0, 0, c * c - s * s]
-      ]);
-      Matrix C_single = Rsigma * Cp * Rsigma.transpose();
-      C += C_single;
-
-      if (analysisType == AnalysisType.thermalElastic) {
-        double alpha11 = transverselyIsotropicCTE.alpha11!;
-        double alpha22 = transverselyIsotropicCTE.alpha22!;
-        double alpha12 = transverselyIsotropicCTE.alpha12!;
-        Matrix cteVector = Matrix([
-          [alpha11],
-          [alpha22],
-          [2 * alpha12]
-        ]);
-        Matrix S_single = C_single.inverse();
-        Matrix Se = Matrix([
-          [S_single[0][0], S_single[0][1], S_single[0][5]],
-          [S_single[0][1], S_single[1][1], S_single[1][5]],
-          [S_single[0][5], S_single[1][5], S_single[5][5]]
-        ]);
-        Matrix Q = Se.inverse();
-        Q_start += Q;
-
-        Matrix R_epsilon_e = Matrix([
-          [c * c, s * s, -s * c],
-          [s * s, c * c, s * c],
-          [2 * s * c, -2 * s * c, c * c - s * s]
-        ]);
-
-        alpha_temp += Q * R_epsilon_e * cteVector;
-      }
-    }
-
-    C = C * (1 / nPly);
-    Matrix S = C.inverse();
-
-    OrthotropicMaterial orthotropicMaterial = OrthotropicMaterial();
-    orthotropicMaterial.e1 = 1 / S[0][0];
-    orthotropicMaterial.e2 = 1 / S[1][1];
-    orthotropicMaterial.e3 = 1 / S[2][2];
-    orthotropicMaterial.g12 = 1 / S[5][5];
-    orthotropicMaterial.g13 = 1 / S[4][4];
-    orthotropicMaterial.g23 = 1 / S[3][3];
-    orthotropicMaterial.nu12 = -1 / S[0][0] * S[0][1];
-    orthotropicMaterial.nu13 = -1 / S[0][0] * S[0][2];
-    orthotropicMaterial.nu23 = -1 / S[1][1] * S[1][2];
-
-    if (analysisType == AnalysisType.thermalElastic) {
-      Q_start = Q_start * (1 / nPly);
-      alpha_temp = alpha_temp * (1 / nPly);
-      Matrix alpha_CTE = Q_start.inverse() * alpha_temp;
-      orthotropicMaterial.alpha11 = alpha_CTE[0][0];
-      orthotropicMaterial.alpha22 = alpha_CTE[1][0];
-      orthotropicMaterial.alpha12 = alpha_CTE[2][0];
-    }
-
-    print(C);
+    Laminate3DPropertiesOutput output =
+        Laminate3DPropertiesCalculator.calculate(input);
 
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => Laminate3DPropertiesResultPage(
-                  C: C,
-                  S: S,
-                  orthotropicMaterial: orthotropicMaterial,
-                )));
+            builder: (context) =>
+                Laminate3DPropertiesResultPage(output: output)));
   }
 }

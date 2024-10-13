@@ -2,12 +2,15 @@ import 'dart:convert';
 
 import 'package:composite_calculator/calculators/lamina_engineering_constants_calculator.dart';
 import 'package:composite_calculator/calculators/lamina_stress_strain_calculator.dart';
+import 'package:composite_calculator/calculators/laminate_3d_properties_calculator.dart';
 import 'package:composite_calculator/calculators/laminate_plate_properties_calculator.dart';
 
 import 'package:composite_calculator/models/lamina_engineering_constants_input.dart';
 import 'package:composite_calculator/models/lamina_engineering_constants_output.dart';
 import 'package:composite_calculator/models/lamina_stress_strain_input.dart';
 import 'package:composite_calculator/models/lamina_stress_strain_output.dart';
+import 'package:composite_calculator/models/laminate_3d_properties_input.dart';
+import 'package:composite_calculator/models/laminate_3d_properties_output.dart';
 import 'package:composite_calculator/models/laminate_plate_properties_input.dart';
 import 'package:composite_calculator/models/laminate_plate_properties_output.dart';
 import 'package:composite_calculator/models/tensor_type.dart';
@@ -44,6 +47,7 @@ class ChatViewModel extends ChangeNotifier {
     "Calculate lamina strain",
     "Calculate lamina stress",
     "Calculate laminate plate properties",
+    "Calculate laminate 3D properties",
     "What is the upper bound of Young's modulus for composites?",
     // "How to use SwiftComp?",
     // "Give me some math equations.",
@@ -177,6 +181,12 @@ class ChatViewModel extends ChangeNotifier {
             LaminatePlatePropertiesInput.fromJson(argumentsJson);
         LaminatePlatePropertiesOutput output =
             LaminatePlatePropertiesCalculator.calculate(input);
+        outputString = output.toJson().toString();
+      } else if (functionName == "calculate_laminate_3d_properties") {
+        Laminate3DPropertiesInput input =
+            Laminate3DPropertiesInput.fromJson(argumentsJson);
+        Laminate3DPropertiesOutput output =
+            Laminate3DPropertiesCalculator.calculate(input);
         outputString = output.toJson().toString();
       }
       _chatSessionUseCase.addMessageToSession(selectedSession!,
