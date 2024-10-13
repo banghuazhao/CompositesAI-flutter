@@ -78,3 +78,4 @@ android/fastlane/report.xml
 ios/fastlane/report.xml
 .firebase
 key
+.env

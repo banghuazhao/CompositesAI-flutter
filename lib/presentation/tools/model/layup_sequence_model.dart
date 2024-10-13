@@ -61,14 +61,14 @@ class LayupSequence {
         layups = null;
         return;
       }
-      layups!.add(angle);
+      layups?.add(angle);
     }
 
     var layupsTemp = [...layups!];
 
     for (var i = 1; i < rBefore; i++) {
       for (var layup in layupsTemp) {
-        layups!.add(layup);
+        layups?.add(layup);
       }
     }
 
@@ -77,7 +77,7 @@ class LayupSequence {
     if (symmetry) {
       var layupsTempReversed = layupsTemp.reversed;
       for (var layup in layupsTempReversed) {
-        layups!.add(layup);
+        layups?.add(layup);
       }
     }
 
@@ -85,7 +85,7 @@ class LayupSequence {
 
     for (var i = 1; i < rAfter; i++) {
       for (var layup in layupsTemp) {
-        layups!.add(layup);
+        layups?.add(layup);
       }
     }
     if (kDebugMode) {

@@ -24,6 +24,11 @@ jobs:
         with:
           flutter-version: '3.19.0'  # Specify Flutter version >= 3.19.0
 
+      - name: Set environment variables
+        run: |
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "AMPLIFY_CONFIG=${{ secrets.AMPLIFY_CONFIG }}" >> .env
+
       # Run flutter pub get to fetch dependencies
       - name: Install Dependencies
         run: flutter pub get

@@ -51,23 +51,25 @@ class LayupParser {
       if (angle == null) {
         return null;
       }
-      layups!.add(angle);
+      layups?.add(angle);
     }
 
     var layupsTemp = [...layups!];
 
     for (var i = 1; i < rBefore; i++) {
       for (var layup in layupsTemp) {
-        layups!.add(layup);
+        layups?.add(layup);
       }
     }
 
-    layupsTemp = [...layups!];
+    if (layups != null) {
+      layupsTemp = [...layups];
+    }
 
     if (symmetry) {
       var layupsTempReversed = layupsTemp.reversed;
       for (var layup in layupsTempReversed) {
-        layups!.add(layup);
+        layups?.add(layup);
       }
     }
 
@@ -75,7 +77,7 @@ class LayupParser {
 
     for (var i = 1; i < rAfter; i++) {
       for (var layup in layupsTemp) {
-        layups!.add(layup);
+        layups?.add(layup);
       }
     }
     return layups;

@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main  # Trigger on pushes to the main branch. Change this as needed.
+  pull_request:  # Temporarily use it to test
+    branches:
+      - main
 
 jobs:
   build:
@@ -18,15 +21,26 @@ jobs:
         with:
           flutter-version: '3.19.0'
 
+      - name: Clean build
+        run: flutter clean
+          
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Set environment variables
+        run: |
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "AMPLIFY_CONFIG=${{ secrets.AMPLIFY_CONFIG }}" >> .env
 
       - name: Build Flutter Web
         run: flutter build web
 
-      - name: Deploy to Firebase Hosting
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: |
-          npm install -g firebase-tools
-          firebase deploy --only hosting --project composites-ai
+#      The web gives error GET https://composites-ai.web.app/assets/.env 404 (Not Found)
+#      Let's use local deploy for now
+#      TODO: fix the web error for Deploy to Firebase Hosting
+#      - name: Deploy to Firebase Hosting
+#        env:
+#          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+#        run: |
+#          npm install -g firebase-tools
+#          firebase deploy
