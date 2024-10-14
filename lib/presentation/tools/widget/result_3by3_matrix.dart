@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:linalg/matrix.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 

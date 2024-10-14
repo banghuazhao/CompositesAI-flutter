@@ -5,6 +5,7 @@ import 'package:composite_calculator/calculators/lamina_stress_strain_calculator
 import 'package:composite_calculator/calculators/laminar_stress_strain_calculator.dart';
 import 'package:composite_calculator/calculators/laminate_3d_properties_calculator.dart';
 import 'package:composite_calculator/calculators/laminate_plate_properties_calculator.dart';
+import 'package:composite_calculator/composite_calculator.dart';
 
 import 'package:composite_calculator/models/lamina_engineering_constants_input.dart';
 import 'package:composite_calculator/models/lamina_engineering_constants_output.dart';
@@ -53,8 +54,8 @@ class ChatViewModel extends ChangeNotifier {
     "Calculate laminate 3D properties",
     "Calculate laminar strain",
     "Calculate laminate stress",
+    "Calculates the UDFRC (Unidirectional fibre-reinforced composites) properties by rules of mixture",
     "What is the upper bound of Young's modulus for composites?",
-    // "How to use SwiftComp?",
     // "Give me some math equations.",
   ];
 
@@ -195,16 +196,22 @@ class ChatViewModel extends ChangeNotifier {
         outputString = output.toJson().toString();
       } else if (functionName == "calculate_laminar_strain") {
         LaminarStressStrainInput input =
-        LaminarStressStrainInput.fromJson(argumentsJson);
+            LaminarStressStrainInput.fromJson(argumentsJson);
         LaminarStressStrainOutput output =
-        LaminarStressStrainCalculator.calculate(input);
+            LaminarStressStrainCalculator.calculate(input);
         outputString = output.toJson().toString();
       } else if (functionName == "calculate_laminar_stress") {
         LaminarStressStrainInput input =
-        LaminarStressStrainInput.fromJson(argumentsJson);
+            LaminarStressStrainInput.fromJson(argumentsJson);
         input.tensorType = TensorType.strain;
         LaminarStressStrainOutput output =
-        LaminarStressStrainCalculator.calculate(input);
+            LaminarStressStrainCalculator.calculate(input);
+        outputString = output.toJson().toString();
+      } else if (functionName == "calculate_UDFRC_rules_of_mixture") {
+        UDFRCRulesOfMixtureInput input =
+            UDFRCRulesOfMixtureInput.fromJson(argumentsJson);
+        UDFRCRulesOfMixtureOutput output =
+            UDFRCRulesOfMixtureCalculator.calculate(input);
         outputString = output.toJson().toString();
       }
       _chatSessionUseCase.addMessageToSession(selectedSession!,

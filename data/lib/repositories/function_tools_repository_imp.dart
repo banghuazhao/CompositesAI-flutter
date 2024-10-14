@@ -132,8 +132,8 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
             "E2",
             "G12",
             "nu12",
-            "nu23"
-                "layup_sequence",
+            "nu23",
+            "layup_sequence",
             "layer_thickness",
           ],
           "properties": {
@@ -248,6 +248,69 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
             "kappa12": {"type": "number", "default": 0}
           }
         });
+    FunctionTool calculateUDFRCRulesOfMixtureTool = FunctionTool(
+        name: "calculate_UDFRC_rules_of_mixture",
+        description:
+            "Calculates the UDFRC (Unidirectional fibre-reinforced composites) properties by rules of mixture. $commonDescription",
+        parameters: {
+          "type": "object",
+          "required": [
+            "E1_fiber",
+            "E2_fiber",
+            "G12_fiber",
+            "nu12_fiber",
+            "nu23_fiber",
+            "E_matrix",
+            "nu_matrix",
+            "fiberVolumeFraction"
+          ],
+          "properties": {
+            "E1_fiber": {
+              "type": "number",
+              "default": 150000,
+              "exclusiveMinimum": 0
+            },
+            "E2_fiber": {
+              "type": "number",
+              "default": 10000,
+              "exclusiveMinimum": 0
+            },
+            "G12_fiber": {
+              "type": "number",
+              "default": 5000,
+              "exclusiveMinimum": 0
+            },
+            "nu12_fiber": {
+              "type": "number",
+              "default": 0.3,
+              "maximum": 0.5,
+              "minimum": -1
+            },
+            "nu23_fiber": {
+              "type": "number",
+              "default": 0.25,
+              "maximum": 0.5,
+              "minimum": -1
+            },
+            "E_matrix": {
+              "type": "number",
+              "default": 3500,
+              "exclusiveMinimum": 0
+            },
+            "nu_matrix": {
+              "type": "number",
+              "default": 0.35,
+              "maximum": 0.5,
+              "minimum": -1
+            },
+            "fiberVolumeFraction": {
+              "type": "number",
+              "default": 0.3,
+              "maximum": 1,
+              "minimum": 0
+            },
+          }
+        });
     return [
       calculateLaminaEngineeringConstantsTool,
       calculateLaminaStrainTool,
@@ -256,6 +319,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
       calculateLaminate3DPropertiesTool,
       calculateLaminarStrainTool,
       calculateLaminarStressTool,
+      calculateUDFRCRulesOfMixtureTool
     ];
   }
 }
