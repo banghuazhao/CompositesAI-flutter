@@ -212,10 +212,11 @@ packages:
   composite_calculator:
     dependency: "direct main"
     description:
-      path: composite_calculator
-      relative: true
-    source: path
-    version: "0.0.1"
+      name: composite_calculator
+      sha256: "8666498a8b8f2e52325e70c281767b1e7cce593aaa74bbb194c877900877cb19"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   convert:
     dependency: transitive
     description:

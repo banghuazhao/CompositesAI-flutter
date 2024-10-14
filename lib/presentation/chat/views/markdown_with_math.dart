@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:markdown/markdown.dart' as md;
+import 'package:flutter/foundation.dart';
 
 class MarkdownWithMath extends StatelessWidget {
   final String markdownData;
@@ -12,15 +13,27 @@ class MarkdownWithMath extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarkdownBody(
-      data: markdownData,
-      selectable: true,
-      // For better user experience
-      builders: {'h5': InlineMathBuilder(), 'h5': NewlineMathBuilder()},
-      inlineSyntaxes: [MathNewlineSyntax(), MathInlineSyntax()],
-      // Custom inline syntax for inline math
-      styleSheet: MarkdownStyleSheet(),
-    );
+    if (kIsWeb) {
+      return MarkdownBody(
+        data: markdownData,
+        selectable: true,
+        // For better user experience
+        builders: {'h5': NewlineMathBuilder()},
+        inlineSyntaxes: [MathNewlineSyntax()],
+        // Custom inline syntax for inline math
+        styleSheet: MarkdownStyleSheet(),
+      );
+    } else {
+      return MarkdownBody(
+        data: markdownData,
+        selectable: true,
+        // For better user experience
+        builders: {'h5': InlineMathBuilder(), 'h5': NewlineMathBuilder()},
+        inlineSyntaxes: [MathNewlineSyntax(), MathInlineSyntax()],
+        // Custom inline syntax for inline math
+        styleSheet: MarkdownStyleSheet(),
+      );
+    }
   }
 }
 

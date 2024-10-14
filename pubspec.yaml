@@ -22,9 +22,8 @@ dependencies:
     path: domain
   data:
     path: data
-  composite_calculator:
-    path: composite_calculator
 
+  composite_calculator: ^1.0.0
   cupertino_icons: ^1.0.8
   fl_chart: ^0.40.2
   app_tracking_transparency: ^2.0.6

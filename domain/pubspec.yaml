@@ -10,8 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  composite_calculator:
-    path: ../composite_calculator
 
 dev_dependencies:
   flutter_test:
