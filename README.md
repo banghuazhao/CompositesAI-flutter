@@ -5,17 +5,17 @@
 [![App Store](https://img.shields.io/badge/App%20Store-Download-blue.svg)](https://apps.apple.com/us/app/swiftcomp-composite-calculator/id1297825946)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Download-green.svg)](https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&hl=en_US)
 
-SwiftComp-flutter is a mobile application designed to provide a comprehensive composite calculator based on the SwiftComp software, an efficient multiscale modeling tool for composites. The app is available on both the App Store and Google Play Store, making it accessible to a wide range of users.
+SwiftComp-flutter is a mobile app designed to provide a comprehensive composite calculator based on the SwiftComp software, a general-purpose multiscale constitutive modeling code for composites. The app is available on both the App Store and Google Play Store, making it accessible to a wide range of users. A web version is also available at [CompositesAI.com](https://compositesai.com/).
 
 ## ✨ Features
 
-- **Lamina Stress/Strain:** Calculate stress and strain for lamina layers.
-- **Lamina Engineering Constants:** Determine the engineering constants for individual lamina.
-- **Laminar Stress/Strain:** Analyze stress and strain across multiple lamina layers.
-- **Laminate Plate Properties:** Compute the properties of laminate plates.
-- **Laminate 3D Properties:** Evaluate the three-dimensional properties of laminate materials.
-- **UDFRC Properties:** Calculate the properties for user-defined fiber-reinforced composites (UDFRC).
-- **Chat (Coming Soon):** A built-in AI expert chat feature is currently under development.
+- **Lamina Stress/Strain:** Compute stress and strain for a single layer with arbitrary fiber orientation.
+- **Lamina Engineering Constants:** Compute engineering constants for a lamina with arbitrary fiber orientation.
+- **Laminar Stress/Strain:** Compute stress and strain distribution within a lamiante.
+- **Laminate Plate Properties:** Compute the ABD matrices for a laminate.
+- **Laminate 3D Properties:** Compute 3D properties for a laminate.
+- **UDFRC Properties:** Compute 3D properties for unidirectional fiber-reinforced composites (UDFRC).
+- **Chat:** A built-in AI Campanion for asking questions and performing calculations.
 
 ## 📋 Requirements
 
@@ -74,8 +74,8 @@ Download SwiftComp from the [Google Play Store](https://play.google.com/store/ap
 1. **Select a Material:** Choose from the existing material database or add a new material.
 2. **Input Parameters:** Enter the necessary parameters for your composite material.
 3. **Calculate:** Press the calculate button to obtain results.
-4. **View Results:** The app provides detailed information on the composite's properties.
-5. **Chat:** A built-in AI expert chat feature is currently under development.
+4. **View Results:** Provide detailed information on the composite's properties.
+5. **Chat:** Ask any questions related to composites and composites simulation. 
 
 ## 🤝 Contributing
 Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting a pull request.
