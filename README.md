@@ -5,7 +5,9 @@
 [![App Store](https://img.shields.io/badge/App%20Store-Download-blue.svg)](https://apps.apple.com/us/app/swiftcomp-composite-calculator/id1297825946)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Download-green.svg)](https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&hl=en_US)
 
-SwiftComp-flutter is a mobile app designed to provide a comprehensive composite calculator based on the SwiftComp software, a general-purpose multiscale constitutive modeling code for composites. The app is available on both the App Store and Google Play Store, making it accessible to a wide range of users. A web version is also available at [CompositesAI.com](https://compositesai.com/).
+
+SwiftComp-flutter is a mobile app designed to provide a comprehensive composite calculator based on the SwiftComp software, a general-purpose multiscale constitutive modeling code for composites. The app is available on both the App Store, Google Play Store, and [web](https://compositesai.com/), making it accessible to a wide range of users.
+
 
 ## ✨ Features
 
@@ -16,6 +18,15 @@ SwiftComp-flutter is a mobile app designed to provide a comprehensive composite 
 - **Laminate 3D Properties:** Compute 3D properties for a laminate.
 - **UDFRC Properties:** Compute 3D properties for unidirectional fiber-reinforced composites (UDFRC).
 - **Chat:** A built-in AI Campanion for asking questions and performing calculations.
+
+
+## 🖼️ Screenshots
+
+<p align="center">
+<img src="./sreenshots/1.png" alt="iOS Screenshot" width="200">
+<img src="./sreenshots/2.png" alt="iOS Screenshot" width="200">
+<img src="./sreenshots/3.png" alt="iOS Screenshot" width="200">
+</p>
 
 ## 📋 Requirements
 
@@ -52,30 +63,26 @@ flutter run
 Then choose your device, it could be iOS, Android, or web.
 
 
-## ⬇️ Download
+## ⬇️ Download to Mobile
 
 ### iOS
-Download SwiftComp from the [App Store](https://apps.apple.com/us/app/swiftcomp-composite-calculator/id1297825946).
+[Download SwiftComp from the App Store](https://apps.apple.com/us/app/swiftcomp-composite-calculator/id1297825946).
 
 ### Android
-Download SwiftComp from the [Google Play Store](https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&hl=en_US).
+[Download SwiftComp from the Google Play Store](https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&hl=en_US).
 
-## 🖼️ Screenshots
-
-<p align="center">
-<img src="./sreenshots/sc1.webp" alt="iOS Screenshot" width="200">
-<img src="./sreenshots/sc2.webp" alt="iOS Screenshot" width="200">
-<img src="./sreenshots/sc3.webp" alt="iOS Screenshot" width="200">
-</p>
+## 🌐 Web Access
+[Use SwiftComp online](https://compositesai.com/)
 
 
 ## 🚀 Usage
 
-1. **Select a Material:** Choose from the existing material database or add a new material.
-2. **Input Parameters:** Enter the necessary parameters for your composite material.
+1. **Select a Tool:** From the Tools tab, choose the desired composite calculator.
+2. **Input Parameters:** Enter the required parameters for your composite material. Note that inputs vary by tool.
 3. **Calculate:** Press the calculate button to obtain results.
-4. **View Results:** Provide detailed information on the composite's properties.
-5. **Chat:** Ask any questions related to composites and composites simulation. 
+4. **View Results:** Once calculation is complete, the results page will be displayed.
+5. **Chat:** Ask any questions related to composites, composites simulation, invoke simulations using natural language.
+
 
 ## 🤝 Contributing
 Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting a pull request.
