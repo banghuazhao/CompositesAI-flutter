@@ -34,7 +34,7 @@ class ChatMessageList extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        "Ask a question to get started!",
+                        "Select a tool to get started!",
                         style: TextStyle(fontSize: 18, color: Colors.grey),
                       ),
                       SizedBox(height: 20),

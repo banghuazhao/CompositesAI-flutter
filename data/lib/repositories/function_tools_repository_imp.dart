@@ -3,7 +3,7 @@ import 'package:domain/repositories_abstract/function_tools_repository.dart';
 
 class FunctionToolsRepositoryImp extends FunctionToolsRepository {
   String get commonDescription =>
-      "Initially, display the default input parameters to the user, clearly outlining each parameter's purpose and current value. Allow the user to either proceed with these default values or modify them as needed to better suit their specific requirements. Based on the user’s decision to either retain or change the parameters, continue with the appropriate calculation process, ensuring that all modifications are fully integrated into the calculation to reflect the user’s preferences accurately.";
+      "Display the default input parameters first. Allow the user to either proceed with these default values or modify them as needed. Based on the user’s decision to either keep or change the parameters, continue with the appropriate calculation process, ensure that all modifications are used in the calculation to reflect the user’s preferences accurately.";
 
   @override
   List<FunctionTool> getAllFunctionTools() {

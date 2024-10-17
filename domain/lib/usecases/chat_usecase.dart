@@ -12,7 +12,7 @@ class ChatUseCase {
   final Message systemMessage = Message(
       role: "system",
       content:
-      "You are an expert assistant specialized in composite materials. Your role is to provide accurate and detailed answers to questions related to composite material properties, design, calculations, and analysis.");
+      "You are an expert in composite materials and structures. Please answer questions related to composites design and manufacturing.");
 
   Stream<Message> sendMessages(List<Message> messages) {
     final chatHistory = [systemMessage] + messages;

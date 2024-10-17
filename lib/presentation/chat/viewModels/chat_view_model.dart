@@ -46,7 +46,6 @@ class ChatViewModel extends ChangeNotifier {
   ChatSession? get selectedSession => _selectedSession;
 
   List<String> defaultQuestions = [
-    "What is SwiftComp?",
     "Calculate lamina engineering constants",
     "Calculate lamina strain",
     "Calculate lamina stress",
@@ -55,7 +54,6 @@ class ChatViewModel extends ChangeNotifier {
     "Calculate laminar strain",
     "Calculate laminate stress",
     "Calculates the UDFRC (Unidirectional fibre-reinforced composites) properties by rules of mixture",
-    "What is the upper bound of Young's modulus for composites?",
     // "Give me some math equations.",
   ];
 
