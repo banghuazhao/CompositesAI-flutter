@@ -1,7 +1,10 @@
 import 'package:domain/entities/function_tool.dart';
-import 'package:domain/repositories_abstract/function_tools_repository.dart';
 
-class FunctionToolsRepositoryImp extends FunctionToolsRepository {
+abstract class FunctionToolsDataSource {
+  List<FunctionTool> getAllFunctionTools();
+}
+
+class FunctionToolsDataSourceImp implements FunctionToolsDataSource {
   String get commonDescription =>
       "Display the default input parameters first. Allow the user to either proceed with these default values or modify them as needed. Based on the user’s decision to either keep or change the parameters, continue with the appropriate calculation process, ensure that all modifications are used in the calculation to reflect the user’s preferences accurately.";
 
@@ -10,7 +13,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
     FunctionTool calculateLaminaEngineeringConstantsTool = FunctionTool(
         name: "calculate_lamina_engineering_constants",
         description:
-            "Calculates the engineering constants for a lamina. $commonDescription",
+        "Calculates the engineering constants for a lamina. $commonDescription",
         parameters: {
           "type": "object",
           "required": ["E1", "E2", "G12", "nu12", "layup_angle"],
@@ -92,7 +95,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
     FunctionTool calculateLaminatePlatePropertiesTool = FunctionTool(
         name: "calculate_laminate_plate_properties",
         description:
-            "Calculates the laminate plate properties. $commonDescription",
+        "Calculates the laminate plate properties. $commonDescription",
         parameters: {
           "type": "object",
           "required": [
@@ -124,7 +127,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
     FunctionTool calculateLaminate3DPropertiesTool = FunctionTool(
         name: "calculate_laminate_3d_properties",
         description:
-            "Calculates the laminate plate properties. $commonDescription",
+        "Calculates the laminate plate properties. $commonDescription",
         parameters: {
           "type": "object",
           "required": [
@@ -163,7 +166,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
     FunctionTool calculateLaminarStrainTool = FunctionTool(
         name: "calculate_laminar_strain",
         description:
-            "Calculates the strains for a laminar/laminate. $commonDescription",
+        "Calculates the strains for a laminar/laminate. $commonDescription",
         parameters: {
           "type": "object",
           "required": [
@@ -207,7 +210,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
     FunctionTool calculateLaminarStressTool = FunctionTool(
         name: "calculate_laminar_stress",
         description:
-            "Calculates the stress for a laminar/laminate. $commonDescription",
+        "Calculates the stress for a laminar/laminate. $commonDescription",
         parameters: {
           "type": "object",
           "required": [
@@ -251,7 +254,7 @@ class FunctionToolsRepositoryImp extends FunctionToolsRepository {
     FunctionTool calculateUDFRCRulesOfMixtureTool = FunctionTool(
         name: "calculate_UDFRC_rules_of_mixture",
         description:
-            "Calculates the UDFRC (Unidirectional fibre-reinforced composites) properties by rules of mixture. $commonDescription",
+        "Calculates the UDFRC (Unidirectional fibre-reinforced composites) properties by rules of mixture. $commonDescription",
         parameters: {
           "type": "object",
           "required": [

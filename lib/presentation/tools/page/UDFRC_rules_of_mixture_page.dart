@@ -1,6 +1,4 @@
 import 'package:composite_calculator/composite_calculator.dart';
-import 'package:composite_calculator/models/UDFRC_rules_of_mixture_input.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:swiftcomp/generated/l10n.dart';

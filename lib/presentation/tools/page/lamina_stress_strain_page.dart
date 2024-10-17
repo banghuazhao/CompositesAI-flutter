@@ -1,9 +1,5 @@
-import 'package:composite_calculator/calculators/lamina_stress_strain_calculator.dart';
 import 'package:composite_calculator/composite_calculator.dart';
-import 'package:composite_calculator/models/lamina_stress_strain_input.dart';
-import 'package:composite_calculator/models/lamina_stress_strain_output.dart';
 import 'package:composite_calculator/models/tensor_type.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:swiftcomp/generated/l10n.dart';

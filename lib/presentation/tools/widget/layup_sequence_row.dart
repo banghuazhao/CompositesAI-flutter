@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:swiftcomp/presentation/tools/model/layup_sequence_model.dart';
 import 'package:swiftcomp/presentation/tools/model/explain.dart';

@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:composite_calculator/composite_calculator.dart';
 import 'package:composite_calculator/models/in-plane-properties.dart';
 import 'package:flutter/material.dart';

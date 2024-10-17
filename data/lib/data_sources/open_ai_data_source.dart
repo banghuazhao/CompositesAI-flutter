@@ -6,11 +6,11 @@ import '../models/chat_chunk.dart';
 import '../utils/api_constants.dart';
 import '../utils/network_exceptions.dart';
 
-abstract class ChatCompletionsDataSource {
+abstract class OpenAIDataSource {
   Stream<ChatChunk> sendMessages(List<Message> messages, List<FunctionTool> functionTools);
 }
 
-class ChatRemoteDataSourceImpl implements ChatCompletionsDataSource {
+class ChatRemoteDataSourceImpl implements OpenAIDataSource {
   final http.Client client;
 
   ChatRemoteDataSourceImpl({required this.client});

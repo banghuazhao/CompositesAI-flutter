@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:swiftcomp/presentation/tools/model/layer_thickness.dart';
 

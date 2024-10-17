@@ -1,25 +1,27 @@
 import 'dart:async';
 
-import 'package:domain/entities/function_tool.dart';
 import 'package:domain/entities/message.dart';
 import 'package:domain/repositories_abstract/chat_repository.dart';
-import '../data_sources/chat_completion_data_source.dart';
+import '../data_sources/function_tools_data_source.dart';
+import '../data_sources/open_ai_data_source.dart';
 import '../models/chat_chunk.dart';
 
 class ChatRepositoryImp implements ChatRepository {
-  final ChatCompletionsDataSource chatCompletionsDataSource;
+  final OpenAIDataSource openAIDataSource;
+  final FunctionToolsDataSource functionToolsDataSource;
 
-  ChatRepositoryImp({required this.chatCompletionsDataSource});
+  ChatRepositoryImp(
+      {required this.openAIDataSource, required this.functionToolsDataSource});
 
   @override
-  Stream<Message> sendMessages(
-      List<Message> messages, List<FunctionTool> functionTools) {
+  Stream<Message> sendMessages(List<Message> messages) {
     // Create a StreamController to accumulate and emit the content as strings
     final StreamController<Message> controller = StreamController<Message>();
 
+    final functionTools = functionToolsDataSource.getAllFunctionTools();
+
     // Call the original sendMessages method that returns Stream<ChatChunk>
-    final chatChunks =
-        chatCompletionsDataSource.sendMessages(messages, functionTools);
+    final chatChunks = openAIDataSource.sendMessages(messages, functionTools);
 
     Message buffer = Message(role: "assistant");
     // Listen to the incoming stream of ChatChunks

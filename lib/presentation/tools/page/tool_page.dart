@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:swiftcomp/generated/l10n.dart';
@@ -6,7 +5,6 @@ import 'package:swiftcomp/presentation/tools/model/tool_model.dart';
 import 'package:swiftcomp/presentation/tools/page/UDFRC_rules_of_mixture_page.dart';
 import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_page.dart';
 import 'package:swiftcomp/presentation/tools/model/DescriptionModels.dart';
-import 'package:swiftcomp/presentation/more/more_page.dart';
 
 import 'lamina_engineering_constants_page.dart';
 import 'laminate_3d_properties_page.dart';

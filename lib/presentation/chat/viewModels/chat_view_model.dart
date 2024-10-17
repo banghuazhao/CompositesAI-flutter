@@ -1,28 +1,9 @@
 import 'dart:convert';
 
-import 'package:composite_calculator/calculators/lamina_engineering_constants_calculator.dart';
-import 'package:composite_calculator/calculators/lamina_stress_strain_calculator.dart';
-import 'package:composite_calculator/calculators/laminar_stress_strain_calculator.dart';
-import 'package:composite_calculator/calculators/laminate_3d_properties_calculator.dart';
-import 'package:composite_calculator/calculators/laminate_plate_properties_calculator.dart';
 import 'package:composite_calculator/composite_calculator.dart';
 
-import 'package:composite_calculator/models/lamina_engineering_constants_input.dart';
-import 'package:composite_calculator/models/lamina_engineering_constants_output.dart';
-import 'package:composite_calculator/models/lamina_stress_strain_input.dart';
-import 'package:composite_calculator/models/lamina_stress_strain_output.dart';
-import 'package:composite_calculator/models/laminar_stress_strain_input.dart';
-import 'package:composite_calculator/models/laminar_stress_strain_output.dart';
-import 'package:composite_calculator/models/laminate_3d_properties_input.dart';
-import 'package:composite_calculator/models/laminate_3d_properties_output.dart';
-import 'package:composite_calculator/models/laminate_plate_properties_input.dart';
-import 'package:composite_calculator/models/laminate_plate_properties_output.dart';
 import 'package:composite_calculator/models/tensor_type.dart';
 import 'package:domain/domain.dart';
-import 'package:domain/entities/chat_session.dart';
-import 'package:domain/entities/message.dart';
-import 'package:domain/usecases/chat_session_usecase.dart';
-import 'package:domain/usecases/chat_usecase.dart';
 import 'package:flutter/cupertino.dart';
 
 class ChatViewModel extends ChangeNotifier {
