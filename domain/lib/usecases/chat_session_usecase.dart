@@ -20,9 +20,11 @@ class ChatSessionUseCase {
     repository.deleteSession(sessionId);
   }
 
-  @override
-  Future<void> createSession(ChatSession session) async {
-    repository.createSession(session);
+  ChatSession createNewSession() {
+    final newSession = ChatSession(
+      title: 'New Chat',
+    );
+    return newSession;
   }
 
   void addMessageToSession(ChatSession session, Message message) {

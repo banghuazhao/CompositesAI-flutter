@@ -79,7 +79,7 @@ class _LaminaEngineeringConstantsPageState
           });
         },
       ),
-      LaminaContantsRow(
+      LaminaConstantsRow(
           material: transverselyIsotropicMaterial,
           validate: validate,
           isPlaneStress: true),

@@ -1,5 +1,6 @@
 name: swiftcomp
 description: A cross-platform composite calculator developed with Flutter, based on SwiftComp, designed for engineers and researchers. Available on iOS, Android, and Web.
+publish_to: none
 
 version: 6.1.11+2024091513
 
@@ -23,7 +24,7 @@ dependencies:
   data:
     path: data
 
-  composite_calculator: ^1.0.0
+  composite_calculator: ^1.0.1
   cupertino_icons: ^1.0.8
   fl_chart: ^0.40.2
   app_tracking_transparency: ^2.0.6
@@ -55,7 +56,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   mockito: ^5.0.17
-  shared_preferences: any
+  flutter_lints: ^3.0.0
 #  flutter_native_splash: ^2.3.11
 #  flutter_launcher_icons: ^0.13.1
 

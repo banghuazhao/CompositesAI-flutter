@@ -21,7 +21,19 @@ linter:
   # or a specific dart file by using the `// ignore: name_of_lint` and
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
+
+  analyzer:
+    strong-mode:
+      implicit-casts: false
+      implicit-dynamic: false
+
   rules:
+    avoid_unused_imports: true
+    unused_local_variable: true
+    prefer_const_constructors: false
+    non_constant_identifier_names: false
+    lower_case_with_underscores: false
+    library_private_types_in_public_api: false
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 

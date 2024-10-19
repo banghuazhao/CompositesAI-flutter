@@ -2,7 +2,7 @@ import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/material.dart';
 
 class AnalysisTypeRow extends StatefulWidget {
-  AnalysisType analysisType;
+  final AnalysisType analysisType;
   final ValueChanged<AnalysisType> onChanged; // Callback to notify parent
 
   AnalysisTypeRow(

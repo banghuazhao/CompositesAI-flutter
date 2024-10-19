@@ -16,6 +16,7 @@ import '../../tools/model/thermal_model.dart';
 import '../../tools/widget/analysis_type_row.dart';
 import '../widget/transversely_thermal_constants_row.dart';
 
+
 class RulesOfMixturePage extends StatefulWidget {
   const RulesOfMixturePage({Key? key}) : super(key: key);
 

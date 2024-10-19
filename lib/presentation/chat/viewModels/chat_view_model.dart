@@ -1,30 +1,23 @@
-import 'dart:convert';
-
-import 'package:composite_calculator/composite_calculator.dart';
-
-import 'package:composite_calculator/models/tensor_type.dart';
+import 'dart:async';
 import 'package:domain/domain.dart';
+import 'package:domain/usecases/function_tools_usecase.dart';
 import 'package:flutter/cupertino.dart';
 
 class ChatViewModel extends ChangeNotifier {
   final ChatUseCase _chatUseCase;
   final ChatSessionUseCase _chatSessionUseCase;
+  final FunctionToolsUseCase _functionToolsUseCase;
 
-  final TextEditingController _controller = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  bool _isLoading = false;
-  List<ChatSession> _sessions = [];
+  final TextEditingController textController = TextEditingController();
+  final ScrollController scrollController = ScrollController();
+  bool isLoading = false;
+
+  List<ChatSession> sessions = [];
   ChatSession? _selectedSession;
 
-  TextEditingController get controller => _controller;
-
-  ScrollController get scrollController => _scrollController;
-
-  bool get isLoading => _isLoading;
-
-  List<ChatSession> get sessions => _sessions;
-
-  ChatSession? get selectedSession => _selectedSession;
+  List<Message> messages = [];
+  StreamController<Message> messageStreamController =
+      StreamController.broadcast();
 
   List<String> defaultQuestions = [
     "Calculate lamina engineering constants",
@@ -41,163 +34,117 @@ class ChatViewModel extends ChangeNotifier {
   ChatViewModel({
     required ChatUseCase chatUseCase,
     required ChatSessionUseCase chatSessionUseCase,
+    required FunctionToolsUseCase functionToolsUseCase,
   })  : _chatUseCase = chatUseCase,
-        _chatSessionUseCase = chatSessionUseCase {
-    _controller.addListener(_onUserInputChanged);
+        _chatSessionUseCase = chatSessionUseCase,
+        _functionToolsUseCase = functionToolsUseCase {
+    textController.addListener(() => notifyListeners());
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _scrollController.dispose();
+    textController.dispose();
+    scrollController.dispose();
+    messageStreamController.close();
     super.dispose();
   }
 
   // Initialize session if no sessions exist
   void initializeSession() async {
-    _sessions = await _chatSessionUseCase.getAllSessions();
-    if (_sessions.isEmpty) {
-      final newSession = ChatSession(
-        id: UniqueKey().toString(),
-        title: 'Session 1',
-      );
-      _chatSessionUseCase.saveSession(newSession);
-      _sessions = [newSession];
+    sessions = await _chatSessionUseCase.getAllSessions();
+    if (sessions.isEmpty) {
+      addNewSession();
+    } else {
+      _selectedSession = sessions.first;
+      notifyListeners();
     }
-    _selectedSession = _sessions.first;
-    notifyListeners();
   }
 
   void setLoading(bool value) {
-    _isLoading = value;
+    isLoading = value;
     notifyListeners();
   }
 
   void scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      if (scrollController.hasClients) {
+        scrollController.jumpTo(scrollController.position.maxScrollExtent);
       }
     });
   }
 
   void addNewSession() {
-    final newSession = ChatSession(
-      id: UniqueKey().toString(),
-      title: 'Session ${sessions.length + 1}',
-    );
-    _chatSessionUseCase.createSession(newSession);
-    _sessions.add(newSession);
+    final newSession = _chatSessionUseCase.createNewSession();
+    sessions.add(newSession);
     selectSession(newSession);
   }
 
   void selectSession(ChatSession session) {
     _selectedSession = session;
+    messages = [..._selectedSession!.messages];
     notifyListeners();
     scrollToBottom();
   }
 
   Future<void> sendCurrentUserMessage() async {
-    sendUserMessage(_controller.text);
+    final textInput = textController.text;
+    final message = Message(role: 'user', content: textInput);
+    await sendMessage(message);
   }
 
-  Future<void> sendUserMessage(String content) async {
-    if (content.isEmpty || selectedSession == null) return;
+  Future<void> sendMessage(Message newMessage) async {
+    if (_selectedSession == null) return;
+    messages.add(newMessage);
+    textController.clear();
     setLoading(true);
-    final userMessage = Message(role: 'user', content: content);
-    _chatSessionUseCase.addMessageToSession(selectedSession!, userMessage);
-    _controller.clear();
     scrollToBottom();
-    notifyListeners();
-    _sendMessages();
-  }
 
-  Future<void> _sendMessages() async {
-    try {
-      await _chatUseCase.sendMessages(selectedSession!.messages).listen(
-          (message) {
-        final bool isLastMessageAssist =
-            _chatSessionUseCase.isLastMessageAssistInSession(selectedSession!);
-        if (isLastMessageAssist) {
-          _chatSessionUseCase.updateLastAssistantMessage(
-              selectedSession!, message);
-        } else {
-          _chatSessionUseCase.addMessageToSession(selectedSession!, message);
-        }
-        scrollToBottom();
-        notifyListeners();
-      }, onDone: () {
-        checkFunctionCall();
-      });
-    } catch (error) {
-      setLoading(false);
+    // Store the latest message
+    Message? finalMessage;
+
+    // Create a subscription to listen to the stream
+    messageStreamController = StreamController.broadcast();
+    final subscription = _chatUseCase
+        .sendMessage(newMessage, _selectedSession!)
+        .listen((Message message) {
+      // Add each streamed message to the stream controller and to the message list
+      messageStreamController.add(message);
+      finalMessage = message; // Update the latest message
+      scrollToBottom();
+    }, onError: (error) {
+      messageStreamController.add(error);
+      print('Error receiving messages: $error');
+      // Handle the error
+    }, onDone: () {
+      // Stream is done; this will trigger when the stream closes
+      print("stream is done, finalMessage: $finalMessage");
+    });
+
+    // Wait for the stream to finish
+    await subscription.asFuture();
+
+    print("stream is finished");
+
+    messageStreamController.close();
+
+    if (finalMessage != null) {
+      messages.add(finalMessage!);
+      saveSession();
+      await checkFunctionCall(finalMessage!);
     }
+
+    setLoading(false);
   }
 
-  void checkFunctionCall() {
-    final lastMessage = selectedSession?.messages.last;
-    final tool = lastMessage?.toolCalls?.first;
+  void saveSession() {
+    _selectedSession?.messages = [...messages];
+  }
+
+  Future<void> checkFunctionCall(Message message) async {
+    final tool = message.toolCalls?.first;
     if (tool != null) {
-      final functionName = tool.function?.name;
-      final functionArguments = tool.function?.arguments ?? "";
-      final argumentsJson = jsonDecode(functionArguments);
-      String outputString = "";
-      if (functionName == "calculate_lamina_engineering_constants") {
-        LaminaEngineeringConstantsInput input =
-            LaminaEngineeringConstantsInput.fromJson(argumentsJson);
-        LaminaEngineeringConstantsOutput output =
-            LaminaEngineeringConstantsCalculator.calculate(input);
-        outputString = output.toJson().toString();
-      } else if (functionName == "calculate_lamina_strain") {
-        LaminaStressStrainInput input =
-            LaminaStressStrainInput.fromJson(argumentsJson);
-        LaminaStressStrainOutput output =
-            LaminaStressStrainCalculator.calculate(input);
-        outputString = output.toJson().toString();
-      } else if (functionName == "calculate_lamina_stress") {
-        LaminaStressStrainInput input =
-            LaminaStressStrainInput.fromJson(argumentsJson);
-        input.tensorType = TensorType.strain;
-        LaminaStressStrainOutput output =
-            LaminaStressStrainCalculator.calculate(input);
-        outputString = output.toJson().toString();
-      } else if (functionName == "calculate_laminate_plate_properties") {
-        LaminatePlatePropertiesInput input =
-            LaminatePlatePropertiesInput.fromJson(argumentsJson);
-        LaminatePlatePropertiesOutput output =
-            LaminatePlatePropertiesCalculator.calculate(input);
-        outputString = output.toJson().toString();
-      } else if (functionName == "calculate_laminate_3d_properties") {
-        Laminate3DPropertiesInput input =
-            Laminate3DPropertiesInput.fromJson(argumentsJson);
-        Laminate3DPropertiesOutput output =
-            Laminate3DPropertiesCalculator.calculate(input);
-        outputString = output.toJson().toString();
-      } else if (functionName == "calculate_laminar_strain") {
-        LaminarStressStrainInput input =
-            LaminarStressStrainInput.fromJson(argumentsJson);
-        LaminarStressStrainOutput output =
-            LaminarStressStrainCalculator.calculate(input);
-        outputString = output.toJson().toString();
-      } else if (functionName == "calculate_laminar_stress") {
-        LaminarStressStrainInput input =
-            LaminarStressStrainInput.fromJson(argumentsJson);
-        input.tensorType = TensorType.strain;
-        LaminarStressStrainOutput output =
-            LaminarStressStrainCalculator.calculate(input);
-        outputString = output.toJson().toString();
-      } else if (functionName == "calculate_UDFRC_rules_of_mixture") {
-        UDFRCRulesOfMixtureInput input =
-            UDFRCRulesOfMixtureInput.fromJson(argumentsJson);
-        UDFRCRulesOfMixtureOutput output =
-            UDFRCRulesOfMixtureCalculator.calculate(input);
-        outputString = output.toJson().toString();
-      }
-      _chatSessionUseCase.addMessageToSession(selectedSession!,
-          Message(role: "tool", content: outputString, tool_call_id: tool.id));
-      _sendMessages();
-    } else {
-      setLoading(false);
+      final toolMessage = _functionToolsUseCase.handleToolCall(tool);
+      await sendMessage(toolMessage);
     }
   }
 
@@ -205,39 +152,33 @@ class ChatViewModel extends ChangeNotifier {
     return message.role == 'user';
   }
 
-  String assistantMessageContent(Message message) {
-    final isLastMessage = selectedSession?.messages.last == message;
-
-    final shouldAppendDot = _isLoading && isLastMessage;
-
-    var content = message.content ?? "";
-
-    final function = message.toolCalls?.first.function;
-    if (function != null) {
-      final name = message.toolCalls?.first.function?.name;
-      final arguments = message.toolCalls?.first.function?.arguments;
-      content = content +
-          '\n\n' +
-          "Call function: $name" +
-          '\n\n' +
-          "Use parameters:\n\n $arguments";
-    }
-
-    final assistantContent = shouldAppendDot ? content + " ●" : content;
-    return assistantContent;
-  }
-
-  void _onUserInputChanged() {
-    notifyListeners();
-  }
-
   bool isUserInputEmpty() {
-    return controller.text.isEmpty;
+    return textController.text.isEmpty;
   }
 
-  void onDefaultQuestionsTapped(int index) {
-    // Handle the card tap event, e.g., navigate to another screen
+  Future<void> onDefaultQuestionsTapped(int index) async {
     final question = defaultQuestions[index];
-    sendUserMessage(question);
+    final message = Message(role: 'user', content: question);
+    await sendMessage(message);
+  }
+}
+
+// Extension on the Message class
+extension ChatContentExtension on Message {
+  String get chatContent {
+    var contentText = content;
+    if (role == 'assistant') {
+      final function = toolCalls?.first.function;
+      if (function != null) {
+        final name = function.name;
+        final arguments = function.arguments;
+        contentText = contentText +
+            '\n\n' +
+            "Call function: $name" +
+            '\n\n' +
+            "Use parameters:\n\n $arguments";
+      }
+    }
+    return contentText;
   }
 }

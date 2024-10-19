@@ -110,6 +110,7 @@ class _LaminaEngineeringConstantsResultPageState
 
   @override
   void initState() {
+    super.initState();
     calculateNewAngle();
     initChartData();
     setState(() {});

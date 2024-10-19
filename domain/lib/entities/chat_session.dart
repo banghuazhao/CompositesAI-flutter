@@ -1,4 +1,5 @@
 import 'message.dart';
+import 'package:uuid/uuid.dart';
 
 class ChatSession {
   final String id;
@@ -7,14 +8,17 @@ class ChatSession {
 
   // Constructor
   ChatSession({
-    required this.id,
+    String? id,
     required this.title,
     List<Message>? messages, // Optional parameter for messages
-  }) : messages = messages ?? []; // Initialize messages as an empty list if null
+  })  : id = id ?? const Uuid().v1(),
+        messages =
+            messages ?? []; // Initialize messages as an empty list if null
 
   factory ChatSession.fromJson(Map<String, dynamic> json) {
     var messagesJson = json['messages'] as List;
-    List<Message> messages = messagesJson.map((msg) => Message.fromJson(msg)).toList();
+    List<Message> messages =
+        messagesJson.map((msg) => Message.fromJson(msg)).toList();
 
     return ChatSession(
       id: json['id'],

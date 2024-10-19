@@ -1,15 +1,24 @@
+import 'package:uuid/uuid.dart';
+
 class Message {
-  String? role;
-  String? content;
+  final String id;
+  final String role;
+  String content;
   List<ToolCalls>? toolCalls;
   String? tool_call_id;
 
-  Message({this.role, this.content, this.toolCalls, this.tool_call_id});
+  Message(
+      {String? id,
+      required this.role,
+      this.content = '',
+      this.toolCalls,
+      this.tool_call_id})
+      : id = id ?? const Uuid().v1();
 
-  // Factory constructor for creating a new Message instance from JSON
-  Message.fromJson(Map<String, dynamic> json) {
-    role = json['role'] ?? 'user';
-    content = json['content'];
+  Message.fromJson(Map<String, dynamic> json)
+      : id = json['id'] ?? '',
+        role = json['role'] ?? 'user',
+        content = json['content'] ?? '' {
     if (json['tool_calls'] != null) {
       toolCalls = <ToolCalls>[];
       json['tool_calls'].forEach((v) {
@@ -22,6 +31,7 @@ class Message {
   // Method for converting a Message instance to JSON format
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
     data['role'] = role;
     data['content'] = content;
     if (toolCalls != null) {

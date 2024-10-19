@@ -25,7 +25,7 @@ class ChatChunk {
     if (json['choices'] != null) {
       choices = <Choices>[];
       json['choices'].forEach((v) {
-        choices!.add(new Choices.fromJson(v));
+        choices!.add(Choices.fromJson(v));
       });
     }
   }
@@ -41,7 +41,7 @@ class Choices {
 
   Choices.fromJson(Map<String, dynamic> json) {
     index = json['index'];
-    delta = json['delta'] != null ? new Delta.fromJson(json['delta']) : null;
+    delta = json['delta'] != null ? Delta.fromJson(json['delta']) : null;
     logprobs = json['logprobs'];
     finishReason = json['finish_reason'];
   }

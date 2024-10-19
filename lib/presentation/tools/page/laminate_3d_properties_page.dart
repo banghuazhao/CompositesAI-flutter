@@ -86,7 +86,7 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
           });
         },
       ),
-      LaminaContantsRow(
+      LaminaConstantsRow(
         material: transverselyIsotropicMaterial,
         validate: validate,
         isPlaneStress: false,

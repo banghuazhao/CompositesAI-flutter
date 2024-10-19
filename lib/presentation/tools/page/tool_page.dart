@@ -87,6 +87,7 @@ class _ToolPageState extends State<ToolPage>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
         appBar: AppBar(
           title: const Text("Tools")

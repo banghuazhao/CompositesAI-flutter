@@ -11,7 +11,7 @@ import 'package:share/share.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/more/login/login_page.dart';
 import 'package:swiftcomp/presentation/more/tool_setting_page.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 import 'feature_flag_page.dart';
 
@@ -58,6 +58,7 @@ class _MorePageState extends State<MorePage>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
         appBar: AppBar(
           title: const Text("More"),
@@ -184,8 +185,8 @@ class _MorePageState extends State<MorePage>
                             );
 
                             var url = params.toString();
-                            if (await canLaunch(url)) {
-                              await launch(url);
+                            if (await canLaunchUrlString(url)) {
+                              await launchUrlString(url);
                             } else {
                               throw 'Could not launch $url';
                             }
@@ -329,10 +330,10 @@ class _MorePageState extends State<MorePage>
 }
 
 class MoreRow extends StatelessWidget {
-  IconData leadingIcon;
-  IconData trailingIcon;
-  String title;
-  void Function() onTap;
+  final IconData leadingIcon;
+  final IconData trailingIcon;
+  final String title;
+  final void Function() onTap;
 
   MoreRow(
       {Key? key,

@@ -1,3 +1,4 @@
+import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,13 +10,7 @@ class ChatMessageList extends StatelessWidget {
   Widget build(BuildContext context) {
     final chatViewModel = Provider.of<ChatViewModel>(context);
 
-    final selectedSession = chatViewModel.selectedSession;
-
-    if (selectedSession == null) {
-      return Center(child: Text('No session selected.'));
-    }
-
-    final messages = selectedSession.messages;
+    final messages = chatViewModel.messages;
 
     return Column(
       children: [
@@ -65,8 +60,9 @@ class ChatMessageList extends StatelessWidget {
                             padding: EdgeInsets.all(16),
                             itemBuilder: (context, index) {
                               return InkWell(
-                                onTap: () {
-                                  chatViewModel.onDefaultQuestionsTapped(index);
+                                onTap: () async {
+                                  await chatViewModel
+                                      .onDefaultQuestionsTapped(index);
                                 },
                                 child: _buildDefaultQuestionCard(
                                     chatViewModel.defaultQuestions[index]),
@@ -81,46 +77,9 @@ class ChatMessageList extends StatelessWidget {
                 )
               : ListView.builder(
                   controller: chatViewModel.scrollController,
-                  itemCount: selectedSession.messages.length,
+                  itemCount: chatList(chatViewModel).length,
                   itemBuilder: (context, index) {
-                    final message = selectedSession.messages[index];
-                    switch (message.role) {
-                      case "user":
-                        return Align(
-                          alignment: Alignment.centerRight,
-                          child: Container(
-                            margin: EdgeInsets.symmetric(
-                                vertical: 5.0, horizontal: 10.0),
-                            padding: EdgeInsets.symmetric(
-                                vertical: 10.0, horizontal: 15.0),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(20.0),
-                            ),
-                            child: Text(
-                              message.content ?? "",
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                        );
-                      case "assistant":
-                        final assistantMessageContent =
-                            chatViewModel.assistantMessageContent(message);
-                        return Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                vertical: 10.0, horizontal: 15.0),
-                            child: MarkdownWithMath(
-                                markdownData: assistantMessageContent),
-                          ),
-                        );
-                      default:
-                        return Container();
-                    }
+                    return chatList(chatViewModel)[index];
                   },
                 ),
         ),
@@ -130,7 +89,7 @@ class ChatMessageList extends StatelessWidget {
             children: [
               Expanded(
                 child: TextField(
-                  controller: chatViewModel.controller,
+                  controller: chatViewModel.textController,
                   decoration: InputDecoration(
                     hintText: 'Ask a question...',
                   ),
@@ -151,6 +110,71 @@ class ChatMessageList extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  List<Widget> chatList(ChatViewModel viewModel) {
+    List<Widget> result = [];
+    final messages = viewModel.messages;
+    for (final message in messages) {
+      switch (message.role) {
+        case "user":
+          result.add(Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              margin: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
+              padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              child: Text(
+                message.content ?? "",
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ));
+          continue;
+        case "assistant":
+          result.add(Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+                padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                child: MarkdownWithMath(markdownData: message.chatContent)),
+          ));
+          continue;
+        default:
+          result.add(Container());
+      }
+    }
+
+    result.add(StreamBuilder<Message>(
+        stream: viewModel.messageStreamController.stream,
+        builder: (context, snapshot) {
+          return Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                  padding:
+                      EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                  child: streamWidget(snapshot)));
+        }));
+
+    return result;
+  }
+
+  Widget streamWidget(AsyncSnapshot<Message> snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return Text("●"); // Loading indicator while waiting for data
+    } else if (snapshot.hasError) {
+      return Text('Error: ${snapshot.error}'); // Display error message
+    } else if (snapshot.data != null) {
+      final message = snapshot.data!;
+      return MarkdownWithMath(markdownData: message.chatContent + " ●");
+    } else {
+      return Container();
+    }
   }
 }
 
