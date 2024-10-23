@@ -79,3 +79,5 @@ ios/fastlane/report.xml
 .firebase
 key
 .env
+ios/fastlane/metadata
+iOS/fastlane/screenshots

@@ -55,6 +55,22 @@ Push a new beta build to TestFlight
 
 
 
+### ios update_whats_new
+
+```sh
+[bundle exec] fastlane ios update_whats_new
+```
+
+Update whats new to App Store
+
+### ios list_languages
+
+```sh
+[bundle exec] fastlane ios list_languages
+```
+
+
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

@@ -54,5 +54,73 @@ platform :ios do
       )
     )
   end
- 
+
+  desc "Update whats new to App Store"
+  lane :update_whats_new do
+    UI.header "🚀 Update whats new to App Store"
+
+    release_note_message = "- Bug fixes and performance improvements"
+    languages_code = ["zh-Hans", "zh-Hant", "fr-FR", "de-DE", "es-ES", "es-MX", "en-AU", "en-GB", "fr-CA", "en-CA", "en-US"]
+    release_notes = create_same_release_notes(languages_code, release_note_message)
+
+    UI.header "#{release_notes}"
+
+    deliver(
+      api_key: app_store_api_key,
+      skip_screenshots: true,
+      skip_app_version_update: true,
+      skip_binary_upload: true,
+      precheck_include_in_app_purchases: false,
+      force: true,
+      release_notes: release_notes
+    )
+  end
+
+  private_lane :app_store_api_key do
+    app_store_connect_api_key(
+      key_id: ENV['APPSTORE_KEY_ID'],
+      issuer_id: ENV['APPSTORE_ISSUER_ID'],
+      key_filepath: ENV['APPSTORE_KEY_FILEPATH']
+    )
+  end
+
+  def create_same_release_notes(languages_code, release_note_message)
+    release_notes = {}
+    
+    languages_code.each do |code|
+      release_notes[code] = release_note_message
+    end
+    
+    return release_notes
+  end
+
+  lane :list_languages do
+    UI.header "🔍 Fetching available languages for the app"
+
+    key_value = File.read(ENV['APPSTORE_KEY_FILE_NAME'])
+    final_api_key_value = key_value.gsub("\\n", "\n")
+
+    api_key_json = {
+      "key_id": ENV['APPSTORE_KEY_ID'],
+      "issuer_id": ENV['APPSTORE_ISSUER_ID'],
+      "key": key_value,
+      "in_house": false
+    }
+
+    File.write("api_key_json.json", JSON.dump(api_key_json))
+  
+    # Download metadata
+    sh "bundle exec fastlane deliver download_metadata --api_key_path api_key_json.json --app_identifier com.cdmHUB.SwiftComp"
+  
+    # Read the metadata files to get the list of languages
+    metadata_dir = "./metadata"
+    languages = Dir.entries(metadata_dir).select { |entry| File.directory? File.join(metadata_dir, entry) and !(entry =='.' || entry == '..') }
+  
+    UI.header "🔍 Available languages"
+    # Print the list of languages
+    languages.each { |lang| UI.message "Language: #{lang}" }
+  
+    # Return the list of languages
+    languages
+  end
 end
