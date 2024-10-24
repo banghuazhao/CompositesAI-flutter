@@ -47,6 +47,7 @@ dependencies:
   flutter_markdown: ^0.7.3+2
   get_it: ^8.0.0
   flutter_dotenv: ^5.0.2
+  flutter_secure_storage: ^9.2.2
 
   amplify_flutter: ^1.8.0
   amplify_auth_cognito: ^1.8.0
