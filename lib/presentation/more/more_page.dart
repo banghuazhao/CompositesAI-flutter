@@ -14,7 +14,7 @@ import 'package:swiftcomp/presentation/more/login/login_page.dart';
 import 'package:swiftcomp/presentation/more/tool_setting_page.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
-import 'NewLogin/new_login.dart';
+import 'NewLogin/views/new_login.dart';
 import 'feature_flag_page.dart';
 import 'feature_flag_provider.dart';
 
