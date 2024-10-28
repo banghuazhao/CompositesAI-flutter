@@ -1,4 +1,4 @@
-// lib/presentation/viewmodels/more_view_model.dart
+// lib/presentation/viewmodels/settings_view_model.dart
 
 import 'dart:io';
 import 'package:amplify_flutter/amplify_flutter.dart';
@@ -14,7 +14,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:launch_review/launch_review.dart';
 import 'package:share/share.dart';
 
-class MoreViewModel extends ChangeNotifier {
+class SettingsViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
   final FeatureFlagProvider featureFlagProvider;
 
@@ -29,7 +29,7 @@ class MoreViewModel extends ChangeNotifier {
   final int _tapTimeout = 1000; // Timeout in milliseconds
   DateTime _lastTapTime = DateTime.now();
 
-  MoreViewModel(
+  SettingsViewModel(
       {required this.authUseCase, required this.featureFlagProvider}) {
     fetchAuthSession();
     initPackageInfo();

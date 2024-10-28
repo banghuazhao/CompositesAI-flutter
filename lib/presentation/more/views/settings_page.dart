@@ -1,37 +1,35 @@
-// lib/presentation/pages/more_page.dart
+// lib/presentation/pages/settings_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
-import 'package:swiftcomp/presentation/more/login/login_page.dart';
-import '../../../injection_container.dart';
-import '../viewModels/more_view_model.dart';
+import '../login/old_login_page.dart';
+import '../viewModels/settings_view_model.dart';
 import 'feature_flag_page.dart';
-import 'new_login.dart';
+import 'login_page.dart';
 import 'tool_setting_page.dart';
 
-class MorePage extends StatefulWidget {
-  const MorePage({Key? key}) : super(key: key);
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({Key? key}) : super(key: key);
 
   @override
-  _MorePageState createState() => _MorePageState();
+  _SettingsPageState createState() => _SettingsPageState();
 }
 
-class _MorePageState extends State<MorePage> {
+class _SettingsPageState extends State<SettingsPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    print("didChangeDependencies");
-    final viewModel = Provider.of<MoreViewModel>(context, listen: false);
+    final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
     viewModel.fetchAuthSessionNew();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MoreViewModel>(
+    return Consumer<SettingsViewModel>(
       builder: (context, viewModel, _) {
         return Scaffold(
-          appBar: AppBar(title: const Text("More")),
+          appBar: AppBar(title: const Text("Settings")),
           body: ProgressHUD(
             child: Builder(
               builder: (context) => ListView(
@@ -46,7 +44,7 @@ class _MorePageState extends State<MorePage> {
                             MaterialPageRoute(
                                 builder: (context) => const NewLoginPage()));
                         if (result == "Log in Success") {
-                          viewModel.fetchAuthSessionNew();
+                          await viewModel.fetchAuthSessionNew();
                         }
                       },
                     ),
@@ -84,7 +82,7 @@ class _MorePageState extends State<MorePage> {
                           },
                   ),
                   MoreRow(
-                    title: "Settings",
+                    title: "Tools Settings",
                     leadingIcon: Icons.settings_rounded,
                     onTap: () => Navigator.push(
                       context,

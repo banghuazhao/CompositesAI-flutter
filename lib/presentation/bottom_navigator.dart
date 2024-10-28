@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:swiftcomp/presentation/more/providers/feature_flag_provider.dart';
 import 'package:swiftcomp/presentation/tools/page/tool_page.dart';
 
 import 'chat/views/chat_screen.dart';
-import 'more/views/more_page.dart';
+import 'more/views/settings_page.dart';
 
 class BottomNavigator extends StatefulWidget {
   const BottomNavigator({Key? key}) : super(key: key);
@@ -29,6 +30,7 @@ class _BottomNavigatorState extends State<BottomNavigator> {
 
   @override
   Widget build(BuildContext context) {
+    final chatViewModel = Provider.of<ChatViewModel>(context);
     return Consumer<FeatureFlagProvider>(
         builder: (context, featureFlagProvider, _) {
       bool isChatEnabled = featureFlagProvider.getFeatureFlag('Chat');
@@ -39,7 +41,7 @@ class _BottomNavigatorState extends State<BottomNavigator> {
           body: PageView(
             controller: _controller,
             physics: const NeverScrollableScrollPhysics(),
-            children: [if (isChatEnabled) ChatScreen(), ToolPage(), MorePage()],
+            children: [if (isChatEnabled) ChatScreen(), ToolPage(), SettingsPage()],
           ),
           bottomNavigationBar: BottomNavigationBar(
               backgroundColor: Color.fromRGBO(51, 66, 78, 1),
@@ -53,12 +55,15 @@ class _BottomNavigatorState extends State<BottomNavigator> {
                 setState(() {
                   _currentIndex = index;
                 });
+                if (_currentIndex == 0 && isChatEnabled) {
+                  chatViewModel.checkAuthStatus();
+                }
               },
               type: BottomNavigationBarType.fixed,
               items: [
                 if (isChatEnabled) _bottomItem(Icons.chat, Icons.chat, "Chat"),
                 _bottomItem(Icons.view_list, Icons.view_list, "Tools"),
-                _bottomItem(Icons.more_horiz, Icons.more_horiz, "More"),
+                _bottomItem(Icons.more_horiz, Icons.more_horiz, "Settings"),
               ]));
     });
   }

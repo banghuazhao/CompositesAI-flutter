@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:domain/domain.dart';
+import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/function_tools_usecase.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -7,6 +8,9 @@ class ChatViewModel extends ChangeNotifier {
   final ChatUseCase _chatUseCase;
   final ChatSessionUseCase _chatSessionUseCase;
   final FunctionToolsUseCase _functionToolsUseCase;
+  final AuthUseCase _authUseCase;
+
+  bool isLoggedIn = false;
 
   final TextEditingController textController = TextEditingController();
   final ScrollController scrollController = ScrollController();
@@ -31,13 +35,17 @@ class ChatViewModel extends ChangeNotifier {
     // "Give me some math equations.",
   ];
 
-  ChatViewModel({
-    required ChatUseCase chatUseCase,
-    required ChatSessionUseCase chatSessionUseCase,
-    required FunctionToolsUseCase functionToolsUseCase,
-  })  : _chatUseCase = chatUseCase,
+  ChatViewModel(
+      {required ChatUseCase chatUseCase,
+      required ChatSessionUseCase chatSessionUseCase,
+      required FunctionToolsUseCase functionToolsUseCase,
+      required AuthUseCase authUseCase})
+      : _chatUseCase = chatUseCase,
         _chatSessionUseCase = chatSessionUseCase,
-        _functionToolsUseCase = functionToolsUseCase {
+        _functionToolsUseCase = functionToolsUseCase,
+        _authUseCase = authUseCase{
+    checkAuthStatus();
+    initializeChatSessions();
     textController.addListener(() => notifyListeners());
   }
 
@@ -50,7 +58,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   // Initialize session if no sessions exist
-  void initializeSession() async {
+  void initializeChatSessions() async {
     sessions = await _chatSessionUseCase.getAllSessions();
     if (sessions.isEmpty) {
       addNewSession();
@@ -58,6 +66,12 @@ class ChatViewModel extends ChangeNotifier {
       _selectedSession = sessions.first;
       notifyListeners();
     }
+  }
+
+  Future<void> checkAuthStatus() async {
+    isLoggedIn = await _authUseCase.isLoggedIn();
+    print("isLoggedIn: $isLoggedIn");
+    notifyListeners();
   }
 
   void setLoading(bool value) {

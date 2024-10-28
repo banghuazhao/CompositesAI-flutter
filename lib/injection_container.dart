@@ -15,7 +15,7 @@ import 'package:http/http.dart' as http;
 import 'package:swiftcomp/presentation/more/providers/feature_flag_provider.dart';
 import 'package:swiftcomp/presentation/more/viewModels/feature_flag_view_model.dart';
 import 'package:swiftcomp/presentation/more/viewModels/login_view_model.dart';
-import 'package:swiftcomp/presentation/more/viewModels/more_view_model.dart';
+import 'package:swiftcomp/presentation/more/viewModels/settings_view_model.dart';
 import 'package:swiftcomp/presentation/more/viewModels/signup_view_model.dart';
 import 'presentation/chat/viewModels/chat_view_model.dart';
 
@@ -24,13 +24,16 @@ final sl = GetIt.instance;
 void initInjection() {
   // ViewModels
   sl.registerFactory<ChatViewModel>(() => ChatViewModel(
-      chatUseCase: sl(), chatSessionUseCase: sl(), functionToolsUseCase: sl()));
+      chatUseCase: sl(),
+      chatSessionUseCase: sl(),
+      functionToolsUseCase: sl(),
+      authUseCase: sl()));
   sl.registerFactory<LoginViewModel>(() => LoginViewModel(authUseCase: sl()));
   sl.registerFactory<SignupViewModel>(() => SignupViewModel(authUseCase: sl()));
-  sl.registerFactory<MoreViewModel>(
-      () => MoreViewModel(authUseCase: sl(), featureFlagProvider: sl()));
+  sl.registerFactory<SettingsViewModel>(
+      () => SettingsViewModel(authUseCase: sl(), featureFlagProvider: sl()));
   sl.registerFactory<FeatureFlagViewModel>(
-          () => FeatureFlagViewModel(featureFlagProvider: sl()));
+      () => FeatureFlagViewModel(featureFlagProvider: sl()));
 
   // Providers
   sl.registerLazySingleton<TokenProvider>(() => TokenProviderImpl());
@@ -45,7 +48,8 @@ void initInjection() {
 
   sl.registerLazySingleton<FunctionToolsUseCase>(() => FunctionToolsUseCase());
 
-  sl.registerLazySingleton<AuthUseCase>(() => AuthUseCase(repository: sl(), tokenProvider: sl()));
+  sl.registerLazySingleton<AuthUseCase>(
+      () => AuthUseCase(repository: sl(), tokenProvider: sl()));
 
   // Repositories
   sl.registerLazySingleton<ChatRepository>(() =>
@@ -63,6 +67,7 @@ void initInjection() {
 
   // External
   sl.registerLazySingleton(() => http.Client());
-  sl.registerLazySingleton<AuthenticatedHttpClient>(() => AuthenticatedHttpClient(sl(), sl()));;
-
+  sl.registerLazySingleton<AuthenticatedHttpClient>(
+      () => AuthenticatedHttpClient(sl(), sl()));
+  ;
 }
