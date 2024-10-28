@@ -12,7 +12,6 @@ class ChatViewModel extends ChangeNotifier {
 
   bool isLoggedIn = false;
 
-  final TextEditingController textController = TextEditingController();
   final ScrollController scrollController = ScrollController();
   bool isLoading = false;
 
@@ -46,12 +45,10 @@ class ChatViewModel extends ChangeNotifier {
         _authUseCase = authUseCase{
     checkAuthStatus();
     initializeChatSessions();
-    textController.addListener(() => notifyListeners());
   }
 
   @override
   void dispose() {
-    textController.dispose();
     scrollController.dispose();
     messageStreamController.close();
     super.dispose();
@@ -100,16 +97,14 @@ class ChatViewModel extends ChangeNotifier {
     scrollToBottom();
   }
 
-  Future<void> sendCurrentUserMessage() async {
-    final textInput = textController.text;
-    final message = Message(role: 'user', content: textInput);
+  Future<void> sendInputMessage(text) async {
+    final message = Message(role: 'user', content: text);
     await sendMessage(message);
   }
 
   Future<void> sendMessage(Message newMessage) async {
     if (_selectedSession == null) return;
     messages.add(newMessage);
-    textController.clear();
     setLoading(true);
     scrollToBottom();
 
@@ -164,10 +159,6 @@ class ChatViewModel extends ChangeNotifier {
 
   bool isUserMessage(Message message) {
     return message.role == 'user';
-  }
-
-  bool isUserInputEmpty() {
-    return textController.text.isEmpty;
   }
 
   Future<void> onDefaultQuestionsTapped(int index) async {

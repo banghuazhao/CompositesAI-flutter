@@ -68,7 +68,8 @@ class _MyAppState extends State<MyApp> {
     return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (context) => NumberPrecisionHelper()),
-          ChangeNotifierProvider(create: (context) => FeatureFlagProvider()),
+          ChangeNotifierProvider(
+              create: (context) => sl<FeatureFlagProvider>()),
           ChangeNotifierProvider(create: (context) => sl<SettingsViewModel>()),
           ChangeNotifierProvider(create: (context) => sl<ChatViewModel>()),
         ],

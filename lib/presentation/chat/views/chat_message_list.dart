@@ -5,7 +5,14 @@ import 'package:provider/provider.dart';
 import 'markdown_with_math.dart';
 import '../viewModels/chat_view_model.dart';
 
-class ChatMessageList extends StatelessWidget {
+class ChatMessageList extends StatefulWidget {
+  @override
+  _ChatMessageListState createState() => _ChatMessageListState();
+}
+
+class _ChatMessageListState extends State<ChatMessageList> {
+  final TextEditingController textController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     final chatViewModel = Provider.of<ChatViewModel>(context);
@@ -89,22 +96,33 @@ class ChatMessageList extends StatelessWidget {
             children: [
               Expanded(
                 child: TextField(
-                  controller: chatViewModel.textController,
-                  decoration: InputDecoration(
-                    hintText: 'Ask a question...',
-                  ),
-                ),
+                    controller: textController,
+                    decoration: InputDecoration(
+                      hintText: 'Ask a question...',
+                    ),
+                    onSubmitted: (value) {
+                      if (textController.text.isNotEmpty &&
+                          !chatViewModel.isLoading) {
+                        final text = textController.text;
+                        textController.clear();
+                        chatViewModel.sendInputMessage(text);
+                      }
+                    },
+                    onChanged: (value) {
+                      setState(() {});
+                    }),
               ),
               chatViewModel.isLoading
                   ? CircularProgressIndicator() // Show loading indicator
                   : IconButton(
                       icon: Icon(Icons.send),
-                      onPressed: chatViewModel.isUserInputEmpty()
+                      onPressed: textController.text.isEmpty
                           ? null
                           : () async {
-                              await chatViewModel.sendCurrentUserMessage();
-                            },
-                    ),
+                              final text = textController.text;
+                              textController.clear();
+                              await chatViewModel.sendInputMessage(text);
+                            }),
             ],
           ),
         ),

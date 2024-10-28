@@ -27,7 +27,7 @@ class _LoginPageState extends State<NewLoginPage> {
       if (accessToken != null) {
         // Login successful
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Successful! Access Token: $accessToken')),
+          SnackBar(content: Text('Login Successful!')),
         );
         Navigator.pop(context, "Log in Success");
       } else if (viewModel.errorMessage != null) {
