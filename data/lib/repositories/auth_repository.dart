@@ -6,10 +6,14 @@ import 'package:domain/entities/user.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/exceptions.dart';
+import '../data_sources/authenticated_http_client.dart';
+
 class AuthRepositoryImpl implements AuthRepository {
   final http.Client client;
+  final AuthenticatedHttpClient authClient;
 
-  AuthRepositoryImpl({required this.client});
+  AuthRepositoryImpl({required this.client, required this.authClient});
 
   @override
   Future<User> signup(String email, String password) async {
@@ -41,6 +45,24 @@ class AuthRepositoryImpl implements AuthRepository {
       return data['accessToken']; // Return access token on success
     } else {
       throw Exception('Login failed');
+    }
+  }
+
+  @override
+  Future<void> logout() async {
+    final url = Uri.parse('http://localhost:3000/api/auth/logout');
+
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return;
+    } else {
+      // Handle error responses
+      throw ServerException(
+          'Logout failed with status code: ${response.statusCode}');
     }
   }
 }

@@ -5,7 +5,7 @@ import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/material_model.dart';
 import 'package:swiftcomp/presentation/tools/widget/orthotropic_properties_widget.dart';
 import 'package:swiftcomp/presentation/tools/widget/result_6by6_matrix.dart';
-import 'package:swiftcomp/presentation/more/tool_setting_page.dart';
+import 'package:swiftcomp/presentation/more/views/tool_setting_page.dart';
 
 class Laminate3DPropertiesResultPage extends StatefulWidget {
   final Laminate3DPropertiesOutput output;

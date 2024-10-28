@@ -2,7 +2,7 @@ import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:swiftcomp/presentation/more/NewLogin/views/sigup_page.dart';
+import 'package:swiftcomp/presentation/more/views/sigup_page.dart';
 
 import '../../../../injection_container.dart';
 import '../viewModels/login_view_model.dart';

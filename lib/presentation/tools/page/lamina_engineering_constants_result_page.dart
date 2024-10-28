@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/material_model.dart';
 import 'package:swiftcomp/presentation/tools/widget/result_3by3_matrix.dart';
-import 'package:swiftcomp/presentation/more/tool_setting_page.dart';
+import 'package:swiftcomp/presentation/more/views/tool_setting_page.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/number.dart';
 

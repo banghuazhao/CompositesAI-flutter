@@ -3,7 +3,7 @@ import 'package:composite_calculator/models/tensor_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:swiftcomp/generated/l10n.dart';
-import 'package:swiftcomp/presentation/more/tool_setting_page.dart';
+import 'package:swiftcomp/presentation/more/views/tool_setting_page.dart';
 
 import '../widget/result_3by3_matrix.dart';
 
