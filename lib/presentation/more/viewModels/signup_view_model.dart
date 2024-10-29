@@ -16,13 +16,13 @@ class SignupViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  Future<User?> signup(String email, String password) async {
+  Future<User?> signup(String username, String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      User user = await authUseCase.signup(email, password);
+      User user = await authUseCase.signup(username, email, password);
       return user;
     } catch (e) {
       _errorMessage = 'Signup failed: ${e.toString()}';

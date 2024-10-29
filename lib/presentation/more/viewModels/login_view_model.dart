@@ -14,13 +14,13 @@ class LoginViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  Future<String?> login(String email, String password) async {
+  Future<String?> login(String username, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final accessToken = await authUseCase.login(email, password);
+      final accessToken = await authUseCase.login(username, password);
       return accessToken; // Successful login returns the access token
     } catch (e) {
       _errorMessage = 'Login failed: ${e.toString()}';

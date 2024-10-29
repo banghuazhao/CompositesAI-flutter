@@ -15,14 +15,14 @@ class NewLoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<NewLoginPage> {
   final _formKey = GlobalKey<FormState>();
-  String email = '';
+  String username = '';
   String password = '';
   bool isLoading = false;
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
 
   void _login(LoginViewModel viewModel) async {
     if (_formKey.currentState!.validate()) {
-      final accessToken = await viewModel.login(email, password);
+      final accessToken = await viewModel.login(username, password);
 
       if (accessToken != null) {
         // Login successful
@@ -52,16 +52,14 @@ class _LoginPageState extends State<NewLoginPage> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        // Email Field
+                        // Username Field
                         TextFormField(
-                          controller: _emailController,
-                          decoration: InputDecoration(labelText: 'Email'),
-                          onChanged: (value) => email = value.trim(),
+                          decoration: InputDecoration(labelText: 'Username'),
+                          onChanged: (value) => username = value.trim(),
                           validator: (value) {
-                            if (value == null || value.isEmpty)
-                              return 'Please enter your email';
-                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value))
-                              return 'Enter a valid email';
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a username';
+                            }
                             return null;
                           },
                         ),
@@ -107,10 +105,10 @@ class _LoginPageState extends State<NewLoginPage> {
     );
 
     if (result != null && result is User) {
-      print(result.email);
+      print(result.username);
       setState(() {
-        email = result.email;
-        _emailController.text = email;
+        username = result.username;
+        _usernameController.text = username;
       });
     }
   }

@@ -5,11 +5,14 @@ import 'package:data/providers/token_provider_impl.dart';
 import 'package:data/repositories/auth_repository.dart';
 import 'package:data/repositories/chat_repository_impl.dart';
 import 'package:data/repositories/chat_session_repository_imp.dart';
+import 'package:data/repositories/user_repository.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:domain/repositories_abstract/token_provider.dart';
+import 'package:domain/repositories_abstract/user_repository.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/function_tools_usecase.dart';
+import 'package:domain/usecases/user_usercase.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:swiftcomp/presentation/more/providers/feature_flag_provider.dart';
@@ -30,8 +33,8 @@ void initInjection() {
       authUseCase: sl()));
   sl.registerFactory<LoginViewModel>(() => LoginViewModel(authUseCase: sl()));
   sl.registerFactory<SignupViewModel>(() => SignupViewModel(authUseCase: sl()));
-  sl.registerFactory<SettingsViewModel>(
-      () => SettingsViewModel(authUseCase: sl(), featureFlagProvider: sl()));
+  sl.registerFactory<SettingsViewModel>(() => SettingsViewModel(
+      authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
   sl.registerFactory<FeatureFlagViewModel>(
       () => FeatureFlagViewModel(featureFlagProvider: sl()));
 
@@ -50,6 +53,7 @@ void initInjection() {
 
   sl.registerLazySingleton<AuthUseCase>(
       () => AuthUseCase(repository: sl(), tokenProvider: sl()));
+  sl.registerLazySingleton<UserUseCase>(() => UserUseCase(repository: sl()));
 
   // Repositories
   sl.registerLazySingleton<ChatRepository>(() =>
@@ -58,6 +62,8 @@ void initInjection() {
       () => ChatSessionRepositoryImpl());
   sl.registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(client: sl(), authClient: sl()));
+  sl.registerLazySingleton<UserRepository>(
+      () => UserRepositoryImpl(authClient: sl()));
 
   // Data Sources
   sl.registerLazySingleton<OpenAIDataSource>(

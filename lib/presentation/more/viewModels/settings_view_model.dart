@@ -5,6 +5,7 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:device_info/device_info.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
+import 'package:domain/usecases/user_usercase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -16,6 +17,7 @@ import 'package:share/share.dart';
 
 class SettingsViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
+  final UserUseCase userUserCase;
   final FeatureFlagProvider featureFlagProvider;
 
   bool isNewLoginEnabled = false;
@@ -30,7 +32,9 @@ class SettingsViewModel extends ChangeNotifier {
   DateTime _lastTapTime = DateTime.now();
 
   SettingsViewModel(
-      {required this.authUseCase, required this.featureFlagProvider}) {
+      {required this.authUseCase,
+      required this.userUserCase,
+      required this.featureFlagProvider}) {
     fetchAuthSession();
     initPackageInfo();
     fetchFeatureFlags();
@@ -63,7 +67,8 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> fetchUser() async {
-    user = User(email: "email");
+    user = await userUserCase.fetchMe();
+    print(user);
     notifyListeners();
   }
 

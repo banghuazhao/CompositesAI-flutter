@@ -27,6 +27,7 @@ class SignupForm extends StatefulWidget {
 
 class _SignupFormState extends State<SignupForm> {
   final _formKey = GlobalKey<FormState>();
+  String username = '';
   String email = '';
   String password = '';
   String confirmPassword = '';
@@ -34,7 +35,7 @@ class _SignupFormState extends State<SignupForm> {
 
   void _signup(SignupViewModel viewModel) async {
     if (_formKey.currentState!.validate()) {
-      User? user = await viewModel.signup(email, password);
+      User? user = await viewModel.signup(username, email, password);
       if (user != null) {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -65,6 +66,18 @@ class _SignupFormState extends State<SignupForm> {
               key: _formKey,
               child: Column(
                 children: [
+                  // Username Field
+                  TextFormField(
+                    decoration: InputDecoration(labelText: 'Username'),
+                    onChanged: (value) => username = value.trim(),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a username';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16.0),
                   // Email Field
                   TextFormField(
                     decoration: InputDecoration(labelText: 'Email'),

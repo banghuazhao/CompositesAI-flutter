@@ -39,7 +39,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       title: "New Login",
                       leadingIcon: Icons.person_rounded,
                       onTap: () async {
-                        String result = await Navigator.push(
+                        String? result = await Navigator.push(
                             context,
                             MaterialPageRoute(
                                 builder: (context) => const NewLoginPage()));
@@ -52,11 +52,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     ListTile(
                       leading: Icon(Icons.account_circle, size: 40),
                       title: Text(
-                        viewModel.user?.email ?? "",
+                        viewModel.user?.username ?? "",
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Text("View Profile"),
+                      subtitle: Text(viewModel.user?.email ?? ""),
                       onTap: () {
                         // Optional: Navigate to Profile Page or Show Profile Options
                       },
