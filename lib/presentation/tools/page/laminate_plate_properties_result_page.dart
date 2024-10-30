@@ -5,7 +5,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/widget/result_3by3_matrix.dart';
-import 'package:swiftcomp/presentation/more/views/tool_setting_page.dart';
+import 'package:swiftcomp/presentation/settings/views/tool_setting_page.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
 class LaminatePlatePropertiesResultPage extends StatefulWidget {

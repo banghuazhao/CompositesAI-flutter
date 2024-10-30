@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:swiftcomp/presentation/more/providers/feature_flag_provider.dart';
+import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:launch_review/launch_review.dart';
 import 'package:share/share.dart';

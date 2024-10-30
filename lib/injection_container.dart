@@ -15,28 +15,33 @@ import 'package:domain/usecases/function_tools_usecase.dart';
 import 'package:domain/usecases/user_usercase.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
-import 'package:swiftcomp/presentation/more/providers/feature_flag_provider.dart';
-import 'package:swiftcomp/presentation/more/viewModels/feature_flag_view_model.dart';
-import 'package:swiftcomp/presentation/more/viewModels/login_view_model.dart';
-import 'package:swiftcomp/presentation/more/viewModels/settings_view_model.dart';
-import 'package:swiftcomp/presentation/more/viewModels/signup_view_model.dart';
+import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/feature_flag_view_model.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/signup_view_model.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/user_profile_view_model.dart';
 import 'presentation/chat/viewModels/chat_view_model.dart';
 
 final sl = GetIt.instance;
 
 void initInjection() {
   // ViewModels
-  sl.registerFactory<ChatViewModel>(() => ChatViewModel(
-      chatUseCase: sl(),
-      chatSessionUseCase: sl(),
-      functionToolsUseCase: sl(),
-      authUseCase: sl()));
+  sl.registerFactory<ChatViewModel>(() =>
+      ChatViewModel(
+          chatUseCase: sl(),
+          chatSessionUseCase: sl(),
+          functionToolsUseCase: sl(),
+          authUseCase: sl()));
   sl.registerFactory<LoginViewModel>(() => LoginViewModel(authUseCase: sl()));
   sl.registerFactory<SignupViewModel>(() => SignupViewModel(authUseCase: sl()));
-  sl.registerFactory<SettingsViewModel>(() => SettingsViewModel(
-      authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
+  sl.registerFactory<SettingsViewModel>(() =>
+      SettingsViewModel(
+          authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
   sl.registerFactory<FeatureFlagViewModel>(
-      () => FeatureFlagViewModel(featureFlagProvider: sl()));
+          () => FeatureFlagViewModel(featureFlagProvider: sl()));
+  sl.registerFactory<UserProfileViewModel>(() =>
+      UserProfileViewModel(authUseCase: sl(), userUseCase: sl()));
 
   // Providers
   sl.registerLazySingleton<TokenProvider>(() => TokenProviderImpl());
@@ -44,36 +49,37 @@ void initInjection() {
 
   // Use Cases
   sl.registerLazySingleton<ChatUseCase>(
-      () => ChatUseCase(chatRepository: sl()));
+          () => ChatUseCase(chatRepository: sl()));
 
   sl.registerLazySingleton<ChatSessionUseCase>(
-      () => ChatSessionUseCase(repository: sl()));
+          () => ChatSessionUseCase(repository: sl()));
 
   sl.registerLazySingleton<FunctionToolsUseCase>(() => FunctionToolsUseCase());
 
   sl.registerLazySingleton<AuthUseCase>(
-      () => AuthUseCase(repository: sl(), tokenProvider: sl()));
-  sl.registerLazySingleton<UserUseCase>(() => UserUseCase(repository: sl()));
+          () => AuthUseCase(repository: sl(), tokenProvider: sl()));
+  sl.registerLazySingleton<UserUseCase>(
+          () => UserUseCase(repository: sl(), tokenProvider: sl()));
 
   // Repositories
   sl.registerLazySingleton<ChatRepository>(() =>
       ChatRepositoryImp(openAIDataSource: sl(), functionToolsDataSource: sl()));
   sl.registerLazySingleton<ChatSessionRepository>(
-      () => ChatSessionRepositoryImpl());
+          () => ChatSessionRepositoryImpl());
   sl.registerLazySingleton<AuthRepository>(
-      () => AuthRepositoryImpl(client: sl(), authClient: sl()));
+          () => AuthRepositoryImpl(client: sl(), authClient: sl()));
   sl.registerLazySingleton<UserRepository>(
-      () => UserRepositoryImpl(authClient: sl()));
+          () => UserRepositoryImpl(authClient: sl()));
 
   // Data Sources
   sl.registerLazySingleton<OpenAIDataSource>(
-      () => ChatRemoteDataSourceImpl(client: sl()));
+          () => ChatRemoteDataSourceImpl(client: sl()));
   sl.registerLazySingleton<FunctionToolsDataSource>(
-      () => FunctionToolsDataSourceImp());
+          () => FunctionToolsDataSourceImp());
 
   // External
   sl.registerLazySingleton(() => http.Client());
   sl.registerLazySingleton<AuthenticatedHttpClient>(
-      () => AuthenticatedHttpClient(sl(), sl()));
+          () => AuthenticatedHttpClient(sl(), sl()));
   ;
 }

@@ -26,7 +26,6 @@ class AuthUseCase {
     return;
   }
 
-  @override
   Future<bool> isLoggedIn() async {
     final token = await tokenProvider.getToken();
     return token != null;

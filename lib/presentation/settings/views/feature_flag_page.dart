@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:swiftcomp/presentation/more/providers/feature_flag_provider.dart';
+import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
 
 import '../../../injection_container.dart';
 import '../viewModels/feature_flag_view_model.dart';

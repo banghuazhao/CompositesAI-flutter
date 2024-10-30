@@ -27,4 +27,14 @@ class UserRepositoryImpl implements UserRepository {
       throw Exception('Failed to sign up. Status code: ${response.statusCode}');
     }
   }
+
+  @override
+  Future<void> deleteAccount() async {
+    final url = Uri.parse('http://localhost:3000/api/users/me');
+    final response = await authClient.delete(url);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete account. Status code: ${response.statusCode}');
+    }
+  }
 }

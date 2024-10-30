@@ -39,11 +39,10 @@ class _SignupFormState extends State<SignupForm> {
       if (user != null) {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Signup successful!")),
+          SnackBar(content: Text("Signup successful!"), duration: Duration(seconds: 2),),
         );
 
         // Wait for a short delay before popping the screen
-        await Future.delayed(Duration(seconds: 1));
         Navigator.pop(context, user);
       } else if (viewModel.errorMessage != null) {
         // Display an error message

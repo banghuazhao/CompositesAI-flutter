@@ -1,7 +1,7 @@
 import 'package:domain/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:swiftcomp/presentation/more/views/sigup_page.dart';
+import 'package:swiftcomp/presentation/settings/views/sigup_page.dart';
 
 import '../../../../injection_container.dart';
 import '../viewModels/login_view_model.dart';
@@ -27,7 +27,7 @@ class _LoginPageState extends State<NewLoginPage> {
       if (accessToken != null) {
         // Login successful
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Successful!')),
+          SnackBar(content: Text('Login Successful!'), duration: Duration(seconds: 2),),
         );
         Navigator.pop(context, "Log in Success");
       } else if (viewModel.errorMessage != null) {
@@ -54,6 +54,7 @@ class _LoginPageState extends State<NewLoginPage> {
                       children: [
                         // Username Field
                         TextFormField(
+                          controller: _usernameController,
                           decoration: InputDecoration(labelText: 'Username'),
                           onChanged: (value) => username = value.trim(),
                           validator: (value) {

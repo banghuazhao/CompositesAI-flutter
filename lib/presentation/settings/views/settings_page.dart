@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
+import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import '../login/old_login_page.dart';
 import '../viewModels/settings_view_model.dart';
 import 'feature_flag_page.dart';
@@ -58,14 +59,15 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       subtitle: Text(viewModel.user?.email ?? ""),
                       onTap: () {
-                        // Optional: Navigate to Profile Page or Show Profile Options
+                        Navigator.push(context,
+                                MaterialPageRoute(builder: (context) => UserProfilePage()))
+                            .then((value) {
+                          if (value == 'refresh') {
+                            viewModel.fetchAuthSessionNew();
+                          }
+                        });
                       },
                     ),
-                  if (viewModel.isNewLoginEnabled && viewModel.isLoggedIn)
-                    MoreRow(
-                        title: "New Logout",
-                        leadingIcon: Icons.person_rounded,
-                        onTap: () async => viewModel.newLogout(context)),
                   MoreRow(
                     title: viewModel.isSignedIn ? "Logout" : "Login",
                     leadingIcon: Icons.person_rounded,

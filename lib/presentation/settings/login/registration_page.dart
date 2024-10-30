@@ -2,8 +2,8 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:swiftcomp/presentation/more/login/login_button.dart';
-import 'package:swiftcomp/presentation/more/login/login_input.dart';
+import 'package:swiftcomp/presentation/settings/login/login_button.dart';
+import 'package:swiftcomp/presentation/settings/login/login_input.dart';
 import 'package:swiftcomp/util/string_util.dart';
 
 import 'email_confimation_screen.dart';

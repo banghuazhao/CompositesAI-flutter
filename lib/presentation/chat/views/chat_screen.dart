@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:swiftcomp/presentation/more/providers/feature_flag_provider.dart';
+import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
 
 import '../../../injection_container.dart';
 import '../../../main.dart';
-import '../../more/views/login_page.dart';
+import '../../settings/views/login_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_message_list.dart';
 import 'chat_session_drawer.dart';

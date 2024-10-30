@@ -8,7 +8,7 @@ import 'package:linalg/matrix.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart';
-import 'package:swiftcomp/presentation/more/views/tool_setting_page.dart';
+import 'package:swiftcomp/presentation/settings/views/tool_setting_page.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
 class LaminateStressStrainResultPage extends StatefulWidget {

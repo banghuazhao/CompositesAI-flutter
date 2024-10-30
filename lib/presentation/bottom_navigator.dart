@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
-import 'package:swiftcomp/presentation/more/providers/feature_flag_provider.dart';
+import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
 import 'package:swiftcomp/presentation/tools/page/tool_page.dart';
 
 import 'chat/views/chat_screen.dart';
-import 'more/views/settings_page.dart';
+import 'settings/views/settings_page.dart';
 
 class BottomNavigator extends StatefulWidget {
   const BottomNavigator({Key? key}) : super(key: key);
