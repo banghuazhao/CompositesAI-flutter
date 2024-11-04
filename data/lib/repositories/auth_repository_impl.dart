@@ -66,4 +66,61 @@ class AuthRepositoryImpl implements AuthRepository {
           'Logout failed with status code: ${response.statusCode}');
     }
   }
+
+  Future<void> forgetPassword(String email) async {
+    final url = Uri.parse('http://localhost:3000/api/auth/forget-password');
+    try {
+      final response = await client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      if (response.statusCode != 200) {
+        // Handle error responses from the server
+        final responseData = jsonDecode(response.body);
+        final errorMessage =
+            responseData['message'] ?? 'Failed to send reset email';
+        throw ServerException(errorMessage);
+      }
+      // If statusCode is 200, assume the request was successful
+    } catch (error) {
+      // Re-throw network or parsing errors as custom exceptions
+      throw Exception('An error occurred. Please try again.');
+    }
+  }
+
+  Future<String> resetPasswordVerify(String token) async {
+    final url = Uri.parse(
+        'http://localhost:3000/api/auth/reset-password-verify/$token');
+    final response = await client.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['message'];
+    } else {
+      throw ServerException(
+          'Password reset verification failed with status code: ${response.statusCode}');
+    }
+  }
+
+  Future<String> resetPassword(String token, String newPassword) async {
+    final url =
+        Uri.parse('http://localhost:3000/api/auth/reset-password/$token');
+    final response = await client.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'password': newPassword}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['message'];
+    } else {
+      throw ServerException(
+          'Password reset failed with status code: ${response.statusCode}');
+    }
+  }
 }

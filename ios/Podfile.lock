@@ -4,6 +4,8 @@ PODS:
     - FlutterMacOS
   - amplify_secure_storage (0.0.1):
     - Flutter
+  - app_links (0.0.2):
+    - Flutter
   - app_tracking_transparency (0.0.1):
     - Flutter
   - device_info (0.0.1):
@@ -37,6 +39,7 @@ PODS:
 DEPENDENCIES:
   - amplify_auth_cognito (from `.symlinks/plugins/amplify_auth_cognito/darwin`)
   - amplify_secure_storage (from `.symlinks/plugins/amplify_secure_storage/ios`)
+  - app_links (from `.symlinks/plugins/app_links/ios`)
   - app_tracking_transparency (from `.symlinks/plugins/app_tracking_transparency/ios`)
   - device_info (from `.symlinks/plugins/device_info/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
@@ -60,6 +63,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/amplify_auth_cognito/darwin"
   amplify_secure_storage:
     :path: ".symlinks/plugins/amplify_secure_storage/ios"
+  app_links:
+    :path: ".symlinks/plugins/app_links/ios"
   app_tracking_transparency:
     :path: ".symlinks/plugins/app_tracking_transparency/ios"
   device_info:
@@ -90,6 +95,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   amplify_auth_cognito: 76b5a54f05f66f69966b468b8121a0dd33a32c70
   amplify_secure_storage: be403397a8ba39f5e0f2a05303b3ca03b53b9ee9
+  app_links: e7a6750a915a9e161c58d91bc610e8cd1d4d0ad0
   app_tracking_transparency: e169b653478da7bb15a6c61209015378ca73e375
   device_info: d7d233b645a32c40dfdc212de5cf646ca482f175
   device_info_plus: 97af1d7e84681a90d0693e63169a5d50e0839a0d

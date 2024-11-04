@@ -30,4 +30,16 @@ class AuthUseCase {
     final token = await tokenProvider.getToken();
     return token != null;
   }
+
+  Future<void> forgetPassword(String email) async {
+    return await repository.forgetPassword(email);
+  }
+
+  Future<String> resetPasswordVerify(String token) async {
+    return await repository.resetPasswordVerify(token);
+  }
+
+  Future<String> resetPassword(String token, String newPassword) async {
+    return await repository.resetPassword(token, newPassword);
+  }
 }

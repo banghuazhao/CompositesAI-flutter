@@ -67,9 +67,13 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> fetchUser() async {
-    user = await userUserCase.fetchMe();
-    print(user);
-    notifyListeners();
+    try {
+      user = await userUserCase.fetchMe();
+      print(user);
+      notifyListeners();
+    } catch (e) {
+      isLoggedIn = false;
+    }
   }
 
   void fetchFeatureFlags() {

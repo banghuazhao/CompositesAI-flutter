@@ -9,7 +9,7 @@ import 'package:swiftcomp/presentation/settings/login/registration_page.dart';
 import 'package:swiftcomp/util/string_util.dart';
 
 import 'email_confimation_screen.dart';
-import 'forget_password_page.dart';
+import 'forget_password_page_old.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -80,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
                         enable: true,
                         onPressed: () {
                           Navigator.push(context,
-                              MaterialPageRoute(builder: (context) => const ForgetPasswordPage()));
+                              MaterialPageRoute(builder: (context) => const ForgetPasswordPageOld()));
                         },
                       )),
                 ],

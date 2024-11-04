@@ -5,14 +5,14 @@ import 'package:swiftcomp/presentation/settings/login/login_button.dart';
 import 'package:swiftcomp/presentation/settings/login/login_input.dart';
 import 'package:swiftcomp/util/string_util.dart';
 
-class ForgetPasswordPage extends StatefulWidget {
-  const ForgetPasswordPage({Key? key}) : super(key: key);
+class ForgetPasswordPageOld extends StatefulWidget {
+  const ForgetPasswordPageOld({Key? key}) : super(key: key);
 
   @override
-  _ForgetPasswordPageState createState() => _ForgetPasswordPageState();
+  _ForgetPasswordPageOldState createState() => _ForgetPasswordPageOldState();
 }
 
-class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
+class _ForgetPasswordPageOldState extends State<ForgetPasswordPageOld> {
   bool confirmEnable = false;
   bool resetEnable = false;
   String? email;

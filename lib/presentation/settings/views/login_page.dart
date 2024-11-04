@@ -5,6 +5,7 @@ import 'package:swiftcomp/presentation/settings/views/sigup_page.dart';
 
 import '../../../../injection_container.dart';
 import '../viewModels/login_view_model.dart';
+import 'forget_password_page.dart';
 
 class NewLoginPage extends StatefulWidget {
   const NewLoginPage({Key? key}) : super(key: key);
@@ -27,7 +28,10 @@ class _LoginPageState extends State<NewLoginPage> {
       if (accessToken != null) {
         // Login successful
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Successful!'), duration: Duration(seconds: 2),),
+          SnackBar(
+            content: Text('Login Successful!'),
+            duration: Duration(seconds: 2),
+          ),
         );
         Navigator.pop(context, "Log in Success");
       } else if (viewModel.errorMessage != null) {
@@ -83,8 +87,20 @@ class _LoginPageState extends State<NewLoginPage> {
                         viewModel.isLoading
                             ? CircularProgressIndicator()
                             : ElevatedButton(
-                          onPressed: () => _login(viewModel),
-                          child: Text('Login'),
+                                onPressed: () => _login(viewModel),
+                                child: Text('Login'),
+                              ),
+                        SizedBox(height: 50.0),
+
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ForgetPasswordPage()),
+                            );
+                          },
+                          child: Text('Forget Password'),
                         ),
                         SizedBox(height: 50.0),
 

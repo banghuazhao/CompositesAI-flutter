@@ -2,7 +2,7 @@ import 'package:data/data_sources/authenticated_http_client.dart';
 import 'package:data/data_sources/function_tools_data_source.dart';
 import 'package:data/data_sources/open_ai_data_source.dart';
 import 'package:data/providers/token_provider_impl.dart';
-import 'package:data/repositories/auth_repository.dart';
+import 'package:data/repositories/auth_repository_impl.dart';
 import 'package:data/repositories/chat_repository_impl.dart';
 import 'package:data/repositories/chat_session_repository_imp.dart';
 import 'package:data/repositories/user_repository.dart';
@@ -17,7 +17,9 @@ import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/feature_flag_view_model.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/forget_password_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/reset_password_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/signup_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/user_profile_view_model.dart';
@@ -42,6 +44,8 @@ void initInjection() {
           () => FeatureFlagViewModel(featureFlagProvider: sl()));
   sl.registerFactory<UserProfileViewModel>(() =>
       UserProfileViewModel(authUseCase: sl(), userUseCase: sl()));
+  sl.registerFactory<ResetPasswordViewModel>(() => ResetPasswordViewModel(authUseCase: sl()));
+  sl.registerFactory<ForgetPasswordViewModel>(() => ForgetPasswordViewModel(authUseCase: sl()));
 
   // Providers
   sl.registerLazySingleton<TokenProvider>(() => TokenProviderImpl());
