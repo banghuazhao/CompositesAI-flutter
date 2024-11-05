@@ -122,9 +122,16 @@ class _SignupFormState extends State<SignupForm> {
                   // Signup Button
                   viewModel.isLoading
                       ? CircularProgressIndicator()
-                      : ElevatedButton(
+                      : MaterialButton(
                     onPressed: () => _signup(viewModel),
-                    child: Text('Signup'),
+                    height: 45,
+                    minWidth: double.infinity,
+                    color: Color.fromRGBO(150, 150, 150, 1), // Match the grey color of "Register" button
+                    disabledColor: Color.fromRGBO(150, 150, 150, 0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6), // Rounded corners
+                    ),
+                    child: Text('Signup', style: TextStyle(color: Colors.white, fontSize: 16),),
                   ),                ],
               )),
         ));

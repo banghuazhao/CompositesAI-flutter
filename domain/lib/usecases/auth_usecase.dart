@@ -42,4 +42,8 @@ class AuthUseCase {
   Future<String> resetPassword(String token, String newPassword) async {
     return await repository.resetPassword(token, newPassword);
   }
+
+  confirmPasswordReset(String email, String newPassword, String confirmationCode) {}
+
+  
 }

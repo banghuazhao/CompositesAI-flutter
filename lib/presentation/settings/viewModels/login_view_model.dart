@@ -14,6 +14,14 @@ class LoginViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  bool _isButtonEnabled = false;
+  bool get isButtonEnabled => _isButtonEnabled;
+
+  void updateButtonState(String username, String password) {
+    _isButtonEnabled = username.isNotEmpty && password.isNotEmpty;
+    notifyListeners();
+  }
+
   Future<String?> login(String username, String password) async {
     _isLoading = true;
     _errorMessage = null;

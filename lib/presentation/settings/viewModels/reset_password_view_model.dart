@@ -10,9 +10,8 @@ class ResetPasswordViewModel extends ChangeNotifier {
   ResetPasswordViewModel({required this.authUseCase});
 
   Future<void> verifyToken(String token) async {
-    isLoading = true;
+    _setLoadingState(true);
     errorMessage = '';
-    notifyListeners();
 
     try {
       await authUseCase.resetPasswordVerify(token);
@@ -21,15 +20,13 @@ class ResetPasswordViewModel extends ChangeNotifier {
       isTokenValid = false;
       errorMessage = 'Invalid or expired token';
     } finally {
-      isLoading = false;
-      notifyListeners();
+      _setLoadingState(false);
     }
   }
 
   Future<String?> resetPassword(String token, String newPassword) async {
-    isLoading = true;
+    _setLoadingState(true);
     errorMessage = '';
-    notifyListeners();
 
     try {
       await authUseCase.resetPassword(token, newPassword);
@@ -38,8 +35,12 @@ class ResetPasswordViewModel extends ChangeNotifier {
       errorMessage = 'Failed to reset password. Please try again.';
       return null;
     } finally {
-      isLoading = false;
-      notifyListeners();
+      _setLoadingState(false);
     }
+  }
+
+  void _setLoadingState(bool value) {
+    isLoading = value;
+    notifyListeners();
   }
 }

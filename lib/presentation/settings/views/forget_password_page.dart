@@ -10,6 +10,8 @@ class ForgetPasswordPage extends StatefulWidget {
 
 class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   final _emailController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmationCodeController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -19,8 +21,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text("Forget Password"),
-          backgroundColor:
-              Colors.grey[800], // Customize the AppBar color as needed
+          backgroundColor: Color(0xFF33424E), // Customize the AppBar color as needed
         ),
         body: Consumer<ForgetPasswordViewModel>(
           builder: (context, viewModel, child) {
@@ -29,55 +30,140 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
               child: Form(
                 key: _formKey,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Email Input Field
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: "Email",
-                        hintText: "Input Email",
-                        border: UnderlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 10),
 
-                    // Reset Password Button
-                    ElevatedButton(
-                      onPressed: viewModel.isLoading
-                          ? null
-                          : () async {
-                              if (_formKey.currentState!.validate()) {
-                                await viewModel
-                                    .forgetPassword(_emailController.text);
-                                if (viewModel.errorMessage.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content:
-                                            Text('Password reset email sent.')),
-                                  );
-                                  Navigator.pop(
-                                      context); // Go back after successful reset
-                                }
-                              }
-                            },
-                      child: viewModel.isLoading
-                          ? CircularProgressIndicator(
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            )
-                          : Text("Reset Password"),
-                    ),
+                    // If password reset flow has started, show confirmation form
+                    if (viewModel.isPasswordResetting) ...[
+                      // New Password Input
+                      TextFormField(
+                        controller: _newPasswordController,
+                        decoration: InputDecoration(
+                          labelText: "New Password",
+                          hintText: "Input New Password",
+                          border: UnderlineInputBorder(),
+                        ),
+                        obscureText: true,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your new password';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 20),
+
+                      // Confirmation Code Input
+                      TextFormField(
+                        controller: _confirmationCodeController,
+                        decoration: InputDecoration(
+                          labelText: "Confirmation Code",
+                          hintText: "Input Code",
+                          border: UnderlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.length != 6) {
+                            return 'The confirmation code is invalid';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 20),
+
+                      // Confirm Button
+                      MaterialButton(
+                        onPressed: viewModel.isLoading
+                            ? null
+                            : () async {
+                          if (_formKey.currentState!.validate()) {
+                            await viewModel.confirmPasswordReset(
+                              _emailController.text,
+                              _newPasswordController.text,
+                              _confirmationCodeController.text,
+                            );
+                            if (viewModel.errorMessage.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Password reset successful.'),
+                                ),
+                              );
+                              Navigator.pop(context);
+                            }
+                          }
+                        },
+                        height: 45,
+                        minWidth: double.infinity,
+                        color: Color.fromRGBO(150, 150, 150, 1),
+                        disabledColor: Color.fromRGBO(150, 150, 150, 0.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: viewModel.isLoading
+                            ? CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
+                            : Text(
+                          "Confirm",
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ),
+                    ] else ...[
+                      // Email Input Field
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          labelText: "Email",
+                          hintText: "Input Email",
+                          border: UnderlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 20),
+
+                      // Reset Password Button
+                      MaterialButton(
+                        onPressed: viewModel.isLoading
+                            ? null
+                            : () async {
+                          if (_formKey.currentState!.validate()) {
+                            await viewModel.forgetPassword(_emailController.text);
+                            if (viewModel.errorMessage.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Password reset email sent.'),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        height: 45,
+                        minWidth: double.infinity,
+                        color: Color.fromRGBO(150, 150, 150, 1),
+                        disabledColor: Color.fromRGBO(150, 150, 150, 0.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: viewModel.isLoading
+                            ? CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
+                            : Text(
+                          "Reset Password",
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ),
+                    ],
 
                     // Error Message
                     if (viewModel.errorMessage.isNotEmpty)
@@ -101,6 +187,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   @override
   void dispose() {
     _emailController.dispose();
+    _newPasswordController.dispose();
+    _confirmationCodeController.dispose();
     super.dispose();
   }
 }
