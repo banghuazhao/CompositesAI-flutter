@@ -34,7 +34,9 @@ class _LoginPageState extends State<NewLoginPage> {
 
   void _checkFields() {
     setState(() {
-      isButtonEnabled = _usernameController.text.isNotEmpty && _passwordController.text.isNotEmpty;
+      isButtonEnabled = _usernameController.text.isNotEmpty &&
+          _passwordController.text.isNotEmpty &&
+          _passwordController.text.length >= 6;
     });
   }
 
@@ -86,7 +88,6 @@ class _LoginPageState extends State<NewLoginPage> {
     }
   }
 
-
   @override
   void dispose() {
     _usernameController.dispose();
@@ -105,16 +106,31 @@ class _LoginPageState extends State<NewLoginPage> {
               padding: EdgeInsets.all(16.0),
               child: Form(
                 key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   children: [
                     // Username Field
                     TextFormField(
                       controller: _usernameController,
-                      decoration: InputDecoration(labelText: 'Username'),
+                      decoration: InputDecoration(
+                        labelText: 'Username',
+                        errorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: Color(0xFFB71C1C)), // Underline color when there’s an error
+                        ),
+                        focusedErrorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color:
+                              Color(0xFFB71C1C)), // Underline color when focused and there’s an error
+                        ),
+                        errorStyle: TextStyle(color: Color(0xFFB71C1C)), // Error text color
+                      ),
+                      style: TextStyle(color: Colors.black), // Text color when typing
+                      obscureText: false,
                       onChanged: (value) => username = value.trim(),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter a username';
+                          return 'Username should not be empty';
                         }
                         return null;
                       },
@@ -124,15 +140,27 @@ class _LoginPageState extends State<NewLoginPage> {
                     // Password Field
                     TextFormField(
                       controller: _passwordController,
-                      decoration: InputDecoration(labelText: 'Password'),
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        errorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: Color(0xFFB71C1C)), // Underline color when there’s an error
+                        ),
+                        focusedErrorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color:
+                              Color(0xFFB71C1C)), // Underline color when focused and there’s an error
+                        ),
+                        errorStyle: TextStyle(color: Color(0xFFB71C1C)), // Error text color
+                      ),
+                      style: TextStyle(color: Colors.black), // Text color when typing
                       obscureText: true,
                       onChanged: (value) => password = value.trim(),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
+                          return 'Password should not be empty';
+                        } else if (value.length < 6) {
+                          return 'Password should be at least 6 characters';
                         }
                         return null;
                       },
@@ -143,23 +171,22 @@ class _LoginPageState extends State<NewLoginPage> {
                     viewModel.isLoading
                         ? CircularProgressIndicator()
                         : MaterialButton(
-                      minWidth: double.infinity,
-                      height: 45,
-                      color: isButtonEnabled
-                          ? Color.fromRGBO(51, 66, 78, 1) // Enabled color
-                          : Color.fromRGBO(180, 180, 180, 1), // Grey color for disabled button
-                      disabledColor: Color.fromRGBO(140, 150, 153, 1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      onPressed: isButtonEnabled
-                          ? () => _login(viewModel)
-                          : null,
-                      child: Text(
-                        'Login',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ),
+                            minWidth: double.infinity,
+                            height: 45,
+                            color: isButtonEnabled
+                                ? Color.fromRGBO(51, 66, 78, 1) // Enabled color
+                                : Color.fromRGBO(
+                                    180, 180, 180, 1), // Grey color for disabled button
+                            disabledColor: Color.fromRGBO(140, 150, 153, 1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            onPressed: isButtonEnabled ? () => _login(viewModel) : null,
+                            child: Text(
+                              'Login',
+                              style: TextStyle(color: Colors.white, fontSize: 16),
+                            ),
+                          ),
                     SizedBox(height: 20.0),
 
                     // Forget Password Button
@@ -191,7 +218,8 @@ class _LoginPageState extends State<NewLoginPage> {
                     MaterialButton(
                       minWidth: double.infinity,
                       height: 45,
-                      color: Color.fromRGBO(51, 66, 78, 1), // Darker color matching "Forget Password" button
+                      color: Color.fromRGBO(
+                          51, 66, 78, 1), // Darker color matching "Forget Password" button
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
                       ),
@@ -209,7 +237,6 @@ class _LoginPageState extends State<NewLoginPage> {
         }));
   }
 
-
   void _signup() async {
     final result = await Navigator.push(
       context,
@@ -224,7 +251,4 @@ class _LoginPageState extends State<NewLoginPage> {
       });
     }
   }
-
-
-
 }

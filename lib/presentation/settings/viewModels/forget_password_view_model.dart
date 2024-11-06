@@ -15,24 +15,26 @@ class ForgetPasswordViewModel extends ChangeNotifier {
     errorMessage = '';
 
     try {
+      // Call the auth use case to send the confirmation code to the email
       await authUseCase.forgetPassword(email);
-      isPasswordResetting = true; // Move to the confirm reset stage
+      isPasswordResetting = true;
     } catch (error) {
-      errorMessage = error.toString();
+      errorMessage = 'Failed to send confirmation code.';
     } finally {
       _setLoadingState(false);
     }
   }
 
-  Future<void> confirmPasswordReset(String email, String newPassword, String confirmationCode) async {
+  Future<void> confirmResetPassword(email, newPassword, confirmCode) async {
     _setLoadingState(true);
     errorMessage = '';
 
     try {
-      await authUseCase.confirmPasswordReset(email, newPassword, confirmationCode);
-      isPasswordResetting = false; // Reset process completed
+      // Call the auth use case to send the confirmation code to the email
+      await authUseCase.resetPassword(email, newPassword, confirmCode);
+
     } catch (error) {
-      errorMessage = error.toString();
+      errorMessage = 'Failed to send confirmation code.';
     } finally {
       _setLoadingState(false);
     }

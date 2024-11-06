@@ -1,5 +1,6 @@
 // lib/domain/usecases/signup_usecase.dart
 
+
 import '../entities/user.dart';
 import '../repositories_abstract/auth_repository.dart';
 import '../repositories_abstract/token_provider.dart';
@@ -23,7 +24,6 @@ class AuthUseCase {
   Future<void> logout() async {
     await repository.logout();
     tokenProvider.deleteToken();
-    return;
   }
 
   Future<bool> isLoggedIn() async {
@@ -31,19 +31,15 @@ class AuthUseCase {
     return token != null;
   }
 
+  // Change return type to Future<String>
   Future<void> forgetPassword(String email) async {
+    // Assuming repository.forgetPassword returns a reset token
     return await repository.forgetPassword(email);
   }
 
-  Future<String> resetPasswordVerify(String token) async {
-    return await repository.resetPasswordVerify(token);
+  Future<String> resetPassword(email, newPassword, confirmationCode) async {
+    return await repository.resetPassword(email, newPassword, confirmationCode);
   }
-
-  Future<String> resetPassword(String token, String newPassword) async {
-    return await repository.resetPassword(token, newPassword);
-  }
-
-  confirmPasswordReset(String email, String newPassword, String confirmationCode) {}
+}
 
   
-}

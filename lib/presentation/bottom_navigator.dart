@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
-import 'package:swiftcomp/presentation/settings/views/reset_password_page.dart';
 import 'package:swiftcomp/presentation/tools/page/tool_page.dart';
 
 import 'chat/views/chat_screen.dart';
@@ -26,16 +25,6 @@ class _BottomNavigatorState extends State<BottomNavigator> {
   final _defaultColor = Colors.white;
   final _activeColor = Colors.green;
   int _currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    if (kIsWeb) {
-      _handleWebLink();
-    } else {
-      _setupAppLinks();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,51 +79,5 @@ class _BottomNavigatorState extends State<BottomNavigator> {
           activeIcon,
         ),
         label: title);
-  }
-
-  void _handleWebLink() {
-    final uri = Uri.base;
-    final pathSegments = uri.pathSegments;
-    if (uri.host == 'compositesai.com' || uri.host == 'localhost') {
-      if (uri.pathSegments.isNotEmpty && pathSegments[0] == 'reset-password') {
-        final token = pathSegments[1];
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _navigateToResetPasswordPage(token);
-        });
-      }
-    }
-  }
-
-  void _setupAppLinks() async {
-    _appLinks = AppLinks();
-
-    _appLinks.getInitialLink().then((uri) {
-      if (uri != null) {
-        print(uri);
-      }
-    });
-
-    _appLinks.uriLinkStream.listen((uri) {
-      print(uri);
-      final token =
-          uri.pathSegments.length > 1 && uri.pathSegments[0] == 'reset-password'
-              ? uri.pathSegments[1]
-              : uri.queryParameters['token'];
-      print(token);
-      if (token != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _navigateToResetPasswordPage(token);
-        });
-      }
-    });
-  }
-
-  void _navigateToResetPasswordPage(String token) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ResetPasswordPage(token: token),
-      ),
-    );
   }
 }

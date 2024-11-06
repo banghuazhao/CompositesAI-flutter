@@ -90,29 +90,17 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  Future<String> resetPasswordVerify(String token) async {
-    final url = Uri.parse(
-        'http://localhost:3000/api/auth/reset-password-verify/$token');
-    final response = await client.get(
-      url,
-      headers: {'Content-Type': 'application/json'},
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['message'];
-    } else {
-      throw ServerException(
-          'Password reset verification failed with status code: ${response.statusCode}');
-    }
-  }
-
-  Future<String> resetPassword(String token, String newPassword) async {
+  Future<String> resetPassword(String email, String newPassword, String confirmationCode) async {
     final url =
-        Uri.parse('http://localhost:3000/api/auth/reset-password/$token');
+        Uri.parse('http://localhost:3000/api/auth/reset-password');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'password': newPassword}),
+      body: jsonEncode({
+        "email": email,
+        'password': newPassword,
+        "confirmationCode": confirmationCode
+      }),
     );
 
     if (response.statusCode == 200) {

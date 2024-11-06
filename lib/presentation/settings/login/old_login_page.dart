@@ -54,6 +54,16 @@ class _LoginPageState extends State<LoginPage> {
                       checkInput();
                     },
                   ),
+
+                  if (password != null && password!.length < 6)
+                    Padding(
+                      padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+                      child: Text(
+                        'Password should be at least 6 characters',
+                        style: TextStyle(color: Colors.red, fontSize: 14),
+                      ),
+                    ),
+
                   Padding(
                       padding: EdgeInsets.only(left: 20, right: 20, top: 20),
                       child: LoginButton(
@@ -92,15 +102,21 @@ class _LoginPageState extends State<LoginPage> {
 
   void checkInput() {
     bool enable;
-    if (isNotEmpty(email) && isNotEmpty(password)) {
+
+    if (isNotEmpty(email) && password != null && password!.length >= 6) {
       enable = true;
     } else {
       enable = false;
+      if (password == null || password!.length < 6) {
+        print("Password should be at least 6 characters");
+      }
     }
+
     setState(() {
       loginEnable = enable;
     });
   }
+
 
   void _loginButtonOnPressed(BuildContext context) async {
     final progress = ProgressHUD.of(context);
