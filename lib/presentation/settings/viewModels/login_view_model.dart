@@ -24,18 +24,19 @@ class LoginViewModel extends ChangeNotifier {
   }
 
 
-  void updateButtonState(String username, String password) {
-    _isButtonEnabled = username.isNotEmpty && password.isNotEmpty;
+  void updateButtonState(String email, String password) {
+    final isEmailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
+    _isButtonEnabled = isEmailValid && password.isNotEmpty && password.length >= 6;
     notifyListeners();
   }
 
-  Future<String?> login(String username, String password) async {
+  Future<String?> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final accessToken = await authUseCase.login(username, password);
+      final accessToken = await authUseCase.login(email, password);
       return accessToken; // Successful login returns the access token
     } catch (e) {
       _errorMessage = 'Login failed: ${e.toString()}';

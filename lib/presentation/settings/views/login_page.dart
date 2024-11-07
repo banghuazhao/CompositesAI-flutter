@@ -17,11 +17,11 @@ class NewLoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<NewLoginPage> {
   final _formKey = GlobalKey<FormState>();
-  String username = '';
+  String email = '';
   String password = '';
   bool isLoading = false;
   bool isButtonEnabled = false;
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
 
@@ -29,13 +29,14 @@ class _LoginPageState extends State<NewLoginPage> {
   void initState() {
     super.initState();
     // Add listeners to check if the fields are non-empty
-    _usernameController.addListener(_checkFields);
+    _emailController.addListener(_checkFields);
     _passwordController.addListener(_checkFields);
   }
 
   void _checkFields() {
     setState(() {
-      isButtonEnabled = _usernameController.text.isNotEmpty &&
+      final isEmailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(_emailController.text);
+      isButtonEnabled = isEmailValid &&
           _passwordController.text.isNotEmpty &&
           _passwordController.text.length >= 6;
     });
@@ -46,7 +47,7 @@ class _LoginPageState extends State<NewLoginPage> {
 
     try {
       // Call login from viewModel and pass the credentials
-      final accessToken = await viewModel.login(username, password);
+      final accessToken = await viewModel.login(_emailController.text, _passwordController.text);
 
       if (accessToken != null) {
         // Login successful
@@ -91,7 +92,7 @@ class _LoginPageState extends State<NewLoginPage> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -112,9 +113,9 @@ class _LoginPageState extends State<NewLoginPage> {
                   children: [
                     // Username Field
                     TextFormField(
-                      controller: _usernameController,
+                      controller: _emailController,
                       decoration: InputDecoration(
-                        labelText: 'Username',
+                        labelText: 'Email',
                         errorBorder: UnderlineInputBorder(
                           borderSide: BorderSide(
                               color: Color(0xFFB71C1C)), // Underline color when there’s an error
@@ -128,10 +129,13 @@ class _LoginPageState extends State<NewLoginPage> {
                       ),
                       style: TextStyle(color: Colors.black), // Text color when typing
                       obscureText: false,
-                      onChanged: (value) => username = value.trim(),
+                      onChanged: (value) => email = value.trim(),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Username should not be empty';
+                          return 'Email address should not be empty';
+                        }
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                          return 'Please enter a valid email';
                         }
                         return null;
                       },
@@ -252,10 +256,10 @@ class _LoginPageState extends State<NewLoginPage> {
     );
 
     if (result != null && result is User) {
-      print(result.username);
+      print(result.email);
       setState(() {
-        username = result.username;
-        _usernameController.text = username;
+        email = result.email;
+        _emailController.text = email;
       });
     }
   }
