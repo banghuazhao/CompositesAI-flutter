@@ -23,7 +23,20 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   String? newPassword;
   String? confirmCode;
   bool confirmEnable = false;
+  bool _obscureTextNewPassword = true;
+  bool _obscureTextConfirmPassword = true;
 
+  void _toggleNewPasswordVisibility() {
+    setState(() {
+      _obscureTextNewPassword = !_obscureTextNewPassword;
+    });
+  }
+
+  void _toggleConfirmPasswordVisibility() {
+    setState(() {
+      _obscureTextConfirmPassword = !_obscureTextConfirmPassword;
+    });
+  }
   @override
   void initState() {
     super.initState();
@@ -90,7 +103,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     // New Password Field
                     if (viewModel.isPasswordResetting)
                       TextFormField(
-                        obscureText: true,
+                        obscureText: _obscureTextNewPassword,
                         decoration: InputDecoration(
                           labelText: "New Password",
                           hintText: "Input new password",
@@ -102,6 +115,12 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             borderSide: BorderSide(color: Color(0xFFB71C1C)),
                           ),
                           errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureTextNewPassword ? Icons.visibility_off : Icons.visibility,
+                            ),
+                            onPressed: _toggleNewPasswordVisibility,
+                          ),
                         ),
                         onChanged: (text) {
                           newPassword = text;
@@ -123,7 +142,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     if (viewModel.isPasswordResetting)
                       TextFormField(
                         controller: _confirmPasswordController,
-                        obscureText: true,
+                        obscureText: _obscureTextConfirmPassword,
                         decoration: InputDecoration(
                           labelText: "Re-enter Password",
                           hintText: "Re-enter password",
@@ -135,6 +154,12 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             borderSide: BorderSide(color: Color(0xFFB71C1C)),
                           ),
                           errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureTextConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                            ),
+                            onPressed: _toggleConfirmPasswordVisibility,
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -197,8 +222,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           if (viewModel.errorMessage.isNotEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
-                                    'Failed to reset password: ${viewModel.errorMessage}.'),
+                                content:
+                                    Text('Failed to reset password: ${viewModel.errorMessage}.'),
                               ),
                             );
                           } else {
@@ -218,35 +243,33 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           onPressed: viewModel.isLoading
                               ? null
                               : () async {
-                            if (_formKey.currentState!.validate()) {
-                              await viewModel.forgetPassword(_emailController.text);
+                                  if (_formKey.currentState!.validate()) {
+                                    await viewModel.forgetPassword(_emailController.text);
 
-                              if (viewModel.errorMessage.isNotEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content:
-                                    Text('Failed to send confirmation code.'),
-                                  ),
-                                );
-                              }
-                            }
-                          },
+                                    if (viewModel.errorMessage.isNotEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to send confirmation code.'),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
                           height: 45,
                           minWidth: double.infinity,
-                          color:
-                          isEmailValid ? Color(0xFF33424E) : Color(0xFF8C9699),
+                          color: isEmailValid ? Color(0xFF33424E) : Color(0xFF8C9699),
                           disabledColor: Color(0xFF8C9699),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: viewModel.isLoading
                               ? CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          )
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                )
                               : Text(
-                            "Reset Password",
-                            style: TextStyle(color: Colors.white, fontSize: 16),
-                          ),
+                                  "Reset Password",
+                                  style: TextStyle(color: Colors.white, fontSize: 16),
+                                ),
                         ),
                       ),
                   ],
