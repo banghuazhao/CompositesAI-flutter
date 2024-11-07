@@ -23,20 +23,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   String? newPassword;
   String? confirmCode;
   bool confirmEnable = false;
-  bool _obscureTextNewPassword = true;
-  bool _obscureTextConfirmPassword = true;
 
-  void _toggleNewPasswordVisibility() {
-    setState(() {
-      _obscureTextNewPassword = !_obscureTextNewPassword;
-    });
-  }
-
-  void _toggleConfirmPasswordVisibility() {
-    setState(() {
-      _obscureTextConfirmPassword = !_obscureTextConfirmPassword;
-    });
-  }
   @override
   void initState() {
     super.initState();
@@ -103,7 +90,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     // New Password Field
                     if (viewModel.isPasswordResetting)
                       TextFormField(
-                        obscureText: _obscureTextNewPassword,
+                        obscureText: viewModel.obscureTextNewPassword,
                         decoration: InputDecoration(
                           labelText: "New Password",
                           hintText: "Input new password",
@@ -117,9 +104,9 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           errorStyle: TextStyle(color: Color(0xFFB71C1C)),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscureTextNewPassword ? Icons.visibility_off : Icons.visibility,
+                              viewModel.obscureTextNewPassword ? Icons.visibility_off : Icons.visibility,
                             ),
-                            onPressed: _toggleNewPasswordVisibility,
+                            onPressed: viewModel.toggleNewPasswordVisibility,
                           ),
                         ),
                         onChanged: (text) {
@@ -142,7 +129,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     if (viewModel.isPasswordResetting)
                       TextFormField(
                         controller: _confirmPasswordController,
-                        obscureText: _obscureTextConfirmPassword,
+                        obscureText: viewModel.obscureTextConfirmPassword,
                         decoration: InputDecoration(
                           labelText: "Re-enter Password",
                           hintText: "Re-enter password",
@@ -156,9 +143,9 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           errorStyle: TextStyle(color: Color(0xFFB71C1C)),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscureTextConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                              viewModel.obscureTextConfirmPassword ? Icons.visibility_off : Icons.visibility,
                             ),
-                            onPressed: _toggleConfirmPasswordVisibility,
+                            onPressed: viewModel.toggleConfirmPasswordVisibility,
                           ),
                         ),
                         validator: (value) {

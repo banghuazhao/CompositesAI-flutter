@@ -23,13 +23,7 @@ class _LoginPageState extends State<NewLoginPage> {
   bool isButtonEnabled = false;
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _obscureText = true;
 
-  void _togglePasswordVisibility() {
-    setState(() {
-      _obscureText = !_obscureText;
-    });
-  }
 
   @override
   void initState() {
@@ -147,7 +141,7 @@ class _LoginPageState extends State<NewLoginPage> {
                     // Password Field
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: _obscureText, // Controls whether the text is hidden
+                      obscureText: viewModel.obscureText, // Controls whether the text is hidden
                       decoration: InputDecoration(
                         labelText: 'Password',
                         errorBorder: UnderlineInputBorder(
@@ -163,9 +157,9 @@ class _LoginPageState extends State<NewLoginPage> {
                         errorStyle: TextStyle(color: Color(0xFFB71C1C)), // Error text color
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscureText ? Icons.visibility_off : Icons.visibility,
+                            viewModel.obscureText ? Icons.visibility_off : Icons.visibility,
                           ),
-                          onPressed: _togglePasswordVisibility,
+                          onPressed: viewModel.togglePasswordVisibility,
                         ),
                       ),
                       style: TextStyle(color: Colors.black),

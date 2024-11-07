@@ -16,6 +16,13 @@ class LoginViewModel extends ChangeNotifier {
 
   bool _isButtonEnabled = false;
   bool get isButtonEnabled => _isButtonEnabled;
+  bool obscureText = true;
+
+  void togglePasswordVisibility() {
+      obscureText = !obscureText;
+      notifyListeners();
+  }
+
 
   void updateButtonState(String username, String password) {
     _isButtonEnabled = username.isNotEmpty && password.isNotEmpty;

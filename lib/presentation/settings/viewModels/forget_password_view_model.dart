@@ -8,6 +8,19 @@ class ForgetPasswordViewModel extends ChangeNotifier {
 
   final AuthUseCase authUseCase;
 
+  bool obscureTextNewPassword = true;
+  bool obscureTextConfirmPassword = true;
+
+  void toggleNewPasswordVisibility() {
+    obscureTextNewPassword = !obscureTextNewPassword;
+    notifyListeners(); // Notify the UI about the change
+  }
+
+  void toggleConfirmPasswordVisibility() {
+    obscureTextConfirmPassword = !obscureTextConfirmPassword;
+    notifyListeners(); // Notify the UI about the change
+  }
+
   ForgetPasswordViewModel({required this.authUseCase});
 
   Future<void> forgetPassword(String email) async {
@@ -44,4 +57,5 @@ class ForgetPasswordViewModel extends ChangeNotifier {
     isLoading = value;
     notifyListeners();
   }
+
 }
