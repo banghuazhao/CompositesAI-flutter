@@ -12,6 +12,10 @@ class UserUseCase {
     return await repository.fetchMe();
   }
 
+  Future<void> updateMe(String newName) async {
+    return await repository.updateMe(newName);
+  }
+
   Future<void> deleteAccount() async {
     await repository.deleteAccount();
     tokenProvider.deleteToken();

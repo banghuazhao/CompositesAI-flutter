@@ -33,12 +33,13 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<String> login(String email, String password) async {
+  Future<String> login(String email, String password, {String? nickname}) async {
     final url = Uri.parse('http://localhost:3000/api/auth/login');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
+      body: jsonEncode({'email': email, 'password': password,
+        if (nickname != null) 'nickname': nickname,}),
     );
 
     if (response.statusCode == 200) {

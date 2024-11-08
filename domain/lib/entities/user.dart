@@ -1,7 +1,7 @@
 class User {
   final String username;
   final String email;
-  final String? name;
+  String? name;
   final String? description;
   final String? avatarUrl;
 

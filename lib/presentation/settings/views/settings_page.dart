@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
+import 'package:swiftcomp/presentation/settings/views/update_name_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import '../login/old_login_page.dart';
 import '../viewModels/settings_view_model.dart';
@@ -41,9 +42,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       leadingIcon: Icons.person_rounded,
                       onTap: () async {
                         String? result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const NewLoginPage()));
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NewLoginPage(),
+                          ),
+                        );
                         if (result == "Log in Success") {
                           await viewModel.fetchAuthSessionNew();
                         }
@@ -53,15 +56,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     ListTile(
                       leading: Icon(Icons.account_circle, size: 40),
                       title: Text(
-                        viewModel.user?.username ?? "",
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                        viewModel.user?.name ?? "",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(viewModel.user?.email ?? ""),
                       onTap: () {
-                        Navigator.push(context,
-                                MaterialPageRoute(builder: (context) => UserProfilePage()))
-                            .then((value) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => UserProfilePage()),
+                        ).then((value) {
                           if (value == 'refresh') {
                             viewModel.fetchAuthSessionNew();
                           }
@@ -74,22 +77,23 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: viewModel.isSignedIn
                         ? () => viewModel.logout(context)
                         : () async {
-                            final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => const LoginPage()));
-                            if (result == "Log in Success") {
-                              viewModel.fetchAuthSession();
-                            }
-                          },
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                      );
+                      if (result == "Log in Success") {
+                        viewModel.fetchAuthSession();
+                      }
+                    },
                   ),
                   MoreRow(
                     title: "Tools Settings",
                     leadingIcon: Icons.settings_rounded,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (context) => ToolSettingPage()),
+                      MaterialPageRoute(builder: (context) => ToolSettingPage()),
                     ),
                   ),
                   MoreRow(
@@ -115,10 +119,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   GestureDetector(
                     onTap: () => viewModel.handleTap(
-                      () => Navigator.push(
+                          () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => FeatureFlagPage()),
+                        MaterialPageRoute(builder: (context) => FeatureFlagPage()),
                       ),
                     ),
                     child: Container(

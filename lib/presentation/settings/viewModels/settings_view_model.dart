@@ -235,4 +235,20 @@ class SettingsViewModel extends ChangeNotifier {
       navigateToFeatureFlagPage();
     }
   }
+
+  Future<void> updateUserName(String newName) async {
+    try {
+      // Call the update method in userUserCase to update the name in the backend or database
+      await userUserCase.updateMe(newName);
+
+      // Update the local user object if it exists
+      if (user != null) {
+        user!.name = newName; // Update the user’s name
+        notifyListeners(); // Notify the UI to refresh
+      }
+    } catch (error) {
+      // Handle any errors that may occur
+      print("Failed to update user name: $error");
+    }
+  }
 }

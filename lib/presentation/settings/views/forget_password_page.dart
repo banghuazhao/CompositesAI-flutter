@@ -23,6 +23,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   String? newPassword;
   String? confirmCode;
   bool confirmEnable = false;
+  bool isNewPasswordValid = false;
 
   @override
   void initState() {
@@ -77,10 +78,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
+                          return 'Please enter your email address';
                         }
                         if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                          return 'Please enter a valid email';
+                          return 'Please enter a valid email address';
                         }
                         return null;
                       },
@@ -89,41 +90,51 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
 
                     // New Password Field
                     if (viewModel.isPasswordResetting)
-                      TextFormField(
-                        obscureText: viewModel.obscureTextNewPassword,
-                        decoration: InputDecoration(
-                          labelText: "New Password",
-                          hintText: "Input new password",
-                          border: UnderlineInputBorder(),
-                          errorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                          ),
-                          focusedErrorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                          ),
-                          errorStyle: TextStyle(color: Color(0xFFB71C1C)),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              viewModel.obscureTextNewPassword ? Icons.visibility_off : Icons.visibility,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextFormField(
+                            obscureText: viewModel.obscureTextNewPassword,
+                            decoration: InputDecoration(
+                              labelText: "New Password",
+                              hintText: "Enter new password",
+                              border: UnderlineInputBorder(),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  viewModel.obscureTextNewPassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                ),
+                                onPressed: viewModel.toggleNewPasswordVisibility,
+                              ),
                             ),
-                            onPressed: viewModel.toggleNewPasswordVisibility,
+                            onChanged: (text) {
+                              newPassword = text;
+                              setState(() {
+                                isNewPasswordValid = newPassword!.length >= 6;
+                              });
+                              checkConfirmInput();
+                            },
                           ),
-                        ),
-                        onChanged: (text) {
-                          newPassword = text;
-                          checkConfirmInput();
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          if (value.length < 6) {
-                            return 'Password should be at least 6 characters';
-                          }
-                          return null;
-                        },
+                          SizedBox(height: 4.0),
+
+                          // Message aligned with the New Password input field
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 3.0),
+                              child: Text(
+                                isNewPasswordValid ? '' : 'Password must be at least 6 characters long',
+                                style: TextStyle(
+                                  color: isNewPasswordValid ? Colors.transparent : Colors.black54,
+                                  fontSize: 14.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 18),
+                        ],
                       ),
-                    SizedBox(height: 20),
 
                     // Confirm Password Field
                     if (viewModel.isPasswordResetting)
@@ -131,8 +142,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                         controller: _confirmPasswordController,
                         obscureText: viewModel.obscureTextConfirmPassword,
                         decoration: InputDecoration(
-                          labelText: "Re-enter Password",
-                          hintText: "Re-enter password",
+                          labelText: "Confirm Password",
+                          hintText: "Re-enter your password",
                           border: UnderlineInputBorder(),
                           errorBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: Color(0xFFB71C1C)),
@@ -143,17 +154,19 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           errorStyle: TextStyle(color: Color(0xFFB71C1C)),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              viewModel.obscureTextConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                              viewModel.obscureTextConfirmPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                             onPressed: viewModel.toggleConfirmPasswordVisibility,
                           ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please re-enter your password';
+                            return 'Please confirm your password';
                           }
                           if (value != newPassword) {
-                            return "Passwords don't match";
+                            return "The passwords do not match";
                           }
                           return null;
                         },
@@ -163,11 +176,11 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     // Confirmation Message
                     if (viewModel.isPasswordResetting)
                       Text(
-                        "An email confirmation code is sent to ${_emailController.text}. Please type the code to confirm your email.",
+                        "A confirmation code has been sent to ${_emailController.text}. Please enter the code to verify your email address.",
                         style: Theme.of(context).textTheme.bodyText2,
                         textAlign: TextAlign.center,
                       ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 18),
 
                     // Confirmation Code Input
                     if (viewModel.isPasswordResetting)
@@ -187,7 +200,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                         ),
                         validator: (value) {
                           if (value == null || value.length != 6) {
-                            return "The confirmation code is invalid";
+                            return "Please enter a valid confirmation code to proceed";
                           }
                           return null;
                         },
@@ -201,7 +214,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     // Confirm Button
                     if (viewModel.isPasswordResetting)
                       LoginButton(
-                        'Confirm',
+                        'Reset',
                         enable: confirmEnable,
                         onPressed: () async {
                           await viewModel.confirmResetPassword(
@@ -209,8 +222,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           if (viewModel.errorMessage.isNotEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content:
-                                    Text('Failed to reset password: ${viewModel.errorMessage}.'),
+                                content: Text('Failed to reset password: ${viewModel.errorMessage}.'),
                               ),
                             );
                           } else {
@@ -230,18 +242,18 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           onPressed: viewModel.isLoading
                               ? null
                               : () async {
-                                  if (_formKey.currentState!.validate()) {
-                                    await viewModel.forgetPassword(_emailController.text);
+                            if (_formKey.currentState!.validate()) {
+                              await viewModel.forgetPassword(_emailController.text);
 
-                                    if (viewModel.errorMessage.isNotEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Failed to send confirmation code.'),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
+                              if (viewModel.errorMessage.isNotEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to send confirmation code.'),
+                                  ),
+                                );
+                              }
+                            }
+                          },
                           height: 45,
                           minWidth: double.infinity,
                           color: isEmailValid ? Color(0xFF33424E) : Color(0xFF8C9699),
@@ -251,12 +263,12 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           ),
                           child: viewModel.isLoading
                               ? CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                )
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
                               : Text(
-                                  "Reset Password",
-                                  style: TextStyle(color: Colors.white, fontSize: 16),
-                                ),
+                            "Reset Password",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                         ),
                       ),
                   ],

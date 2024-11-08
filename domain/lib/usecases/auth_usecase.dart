@@ -15,8 +15,8 @@ class AuthUseCase {
     return await repository.signup(username, email, password);
   }
 
-  Future<String> login(String email, String password) async {
-    String accessToken = await repository.login(email, password);
+  Future<String> login(String email, String password, {String? nickname}) async {
+    String accessToken = await repository.login(email, password, nickname: nickname);
     await tokenProvider.saveToken(accessToken);
     return accessToken;
   }

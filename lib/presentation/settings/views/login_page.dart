@@ -19,10 +19,13 @@ class _LoginPageState extends State<NewLoginPage> {
   final _formKey = GlobalKey<FormState>();
   String email = '';
   String password = '';
+  String nickname = '';
   bool isLoading = false;
   bool isButtonEnabled = false;
+  bool isPasswordValid = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _nicknameController = TextEditingController();
 
 
   @override
@@ -45,9 +48,12 @@ class _LoginPageState extends State<NewLoginPage> {
   void _login(LoginViewModel viewModel) async {
     if (!_formKey.currentState!.validate()) return;
 
+
     try {
       // Call login from viewModel and pass the credentials
-      final accessToken = await viewModel.login(_emailController.text, _passwordController.text);
+      nickname = _nicknameController.text.trim();
+      final accessToken = await viewModel.login(_emailController.text, _passwordController.text,
+        nickname: nickname.isNotEmpty ? nickname : null,);
 
       if (accessToken != null) {
         // Login successful
@@ -132,15 +138,29 @@ class _LoginPageState extends State<NewLoginPage> {
                       onChanged: (value) => email = value.trim(),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Email address should not be empty';
+                          return 'Please enter your email address';
                         }
                         if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                          return 'Please enter a valid email';
+                          return 'Please enter a valid email address';
                         }
                         return null;
                       },
                     ),
                     SizedBox(height: 16.0),
+
+                    TextFormField(
+                      controller: _nicknameController,
+                      decoration: InputDecoration(
+                        labelText: 'Nickname (optional)',
+                        hintText: 'Enter your nickname', // Optional hint text
+                        border: UnderlineInputBorder(),
+                      ),
+                      style: TextStyle(color: Colors.black), // Text color when typing
+                      obscureText: false,
+                      onChanged: (value) => nickname = value.trim(),
+                    ),
+                    SizedBox(height: 16.0),
+
 
                     // Password Field
                     TextFormField(
@@ -148,17 +168,6 @@ class _LoginPageState extends State<NewLoginPage> {
                       obscureText: viewModel.obscureText, // Controls whether the text is hidden
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        errorBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xFFB71C1C), // Underline color when there’s an error
-                          ),
-                        ),
-                        focusedErrorBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xFFB71C1C), // Underline color when focused and there’s an error
-                          ),
-                        ),
-                        errorStyle: TextStyle(color: Color(0xFFB71C1C)), // Error text color
                         suffixIcon: IconButton(
                           icon: Icon(
                             viewModel.obscureText ? Icons.visibility_off : Icons.visibility,
@@ -167,18 +176,29 @@ class _LoginPageState extends State<NewLoginPage> {
                         ),
                       ),
                       style: TextStyle(color: Colors.black),
-                      onChanged: (value) => password = value.trim(),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Password should not be empty';
-                        } else if (value.length < 6) {
-                          return 'Password should be at least 6 characters';
-                        }
-                        return null;
+                      onChanged: (value) {
+                        password = value.trim();
+                        setState(() {
+                          isPasswordValid = password.length >= 6;
+                        });
                       },
                     ),
-                    SizedBox(height: 30.0),
+                    SizedBox(height: 4.0),
 
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 3.0), // Adjust this padding to match the input field
+                        child: Text(
+                          isPasswordValid ? '' : 'Password must be at least 6 characters long',
+                          style: TextStyle(
+                            color: isPasswordValid ? Colors.transparent : Colors.black54,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 30.0),
                     // Login Button
                     viewModel.isLoading
                         ? CircularProgressIndicator()
@@ -218,7 +238,7 @@ class _LoginPageState extends State<NewLoginPage> {
                         );
                       },
                       child: Text(
-                        'Forget Password',
+                        'Reset Password',
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ),
