@@ -11,12 +11,12 @@ class AuthUseCase {
 
   AuthUseCase({required this.repository, required this.tokenProvider});
 
-  Future<User> signup(String username, String email, String password) async {
-    return await repository.signup(username, email, password);
+  Future<User> signup(String email, String password, {String? name}) async {
+    return await repository.signup(email, password, name: name);
   }
 
-  Future<String> login(String email, String password, {String? nickname}) async {
-    String accessToken = await repository.login(email, password, nickname: nickname);
+  Future<String> login(String email, String password) async {
+    String accessToken = await repository.login(email, password);
     await tokenProvider.saveToken(accessToken);
     return accessToken;
   }

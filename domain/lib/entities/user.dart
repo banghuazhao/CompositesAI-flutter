@@ -1,12 +1,12 @@
 class User {
-  final String username;
+  final String? username;
   final String email;
   String? name;
   final String? description;
   final String? avatarUrl;
 
   User(
-      {required this.username,
+      {this.username,
       required this.email,
       this.name,
       this.description,

@@ -16,30 +16,30 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required this.client, required this.authClient});
 
   @override
-  Future<User> signup(String username, String email, String password) async {
+  Future<User> signup(String email, String password, {String? name}) async {
     final url = Uri.parse('http://localhost:3000/api/users/');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(
-          {'username': username, 'email': email, 'password': password}),
+          {'email': email, 'password': password,
+            if (name != null) 'name': name,}),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return User(username: username, email: email);
+      return User(email: email, name: name,);
     } else {
       throw Exception('Failed to sign up. Status code: ${response.statusCode}');
     }
   }
 
   @override
-  Future<String> login(String email, String password, {String? nickname}) async {
+  Future<String> login(String email, String password) async {
     final url = Uri.parse('http://localhost:3000/api/auth/login');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password,
-        if (nickname != null) 'nickname': nickname,}),
+      body: jsonEncode({'email': email, 'password': password,}),
     );
 
     if (response.statusCode == 200) {

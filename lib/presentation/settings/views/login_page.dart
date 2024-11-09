@@ -19,13 +19,12 @@ class _LoginPageState extends State<NewLoginPage> {
   final _formKey = GlobalKey<FormState>();
   String email = '';
   String password = '';
-  String nickname = '';
   bool isLoading = false;
   bool isButtonEnabled = false;
   bool isPasswordValid = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _nicknameController = TextEditingController();
+
 
 
   @override
@@ -51,9 +50,8 @@ class _LoginPageState extends State<NewLoginPage> {
 
     try {
       // Call login from viewModel and pass the credentials
-      nickname = _nicknameController.text.trim();
-      final accessToken = await viewModel.login(_emailController.text, _passwordController.text,
-        nickname: nickname.isNotEmpty ? nickname : null,);
+
+      final accessToken = await viewModel.login(_emailController.text, _passwordController.text,);
 
       if (accessToken != null) {
         // Login successful
@@ -147,20 +145,6 @@ class _LoginPageState extends State<NewLoginPage> {
                       },
                     ),
                     SizedBox(height: 16.0),
-
-                    TextFormField(
-                      controller: _nicknameController,
-                      decoration: InputDecoration(
-                        labelText: 'Nickname (optional)',
-                        hintText: 'Enter your nickname', // Optional hint text
-                        border: UnderlineInputBorder(),
-                      ),
-                      style: TextStyle(color: Colors.black), // Text color when typing
-                      obscureText: false,
-                      onChanged: (value) => nickname = value.trim(),
-                    ),
-                    SizedBox(height: 16.0),
-
 
                     // Password Field
                     TextFormField(
