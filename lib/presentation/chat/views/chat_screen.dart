@@ -23,13 +23,11 @@ class _ChatScreenState extends State<ChatScreen>
 
   @override
   Widget build(BuildContext context) {
-    final featureFlagProvider = Provider.of<FeatureFlagProvider>(context);
-    final isNewLoginEnabled = featureFlagProvider.getFeatureFlag("NewLogin");
     return Consumer<ChatViewModel>(builder: (context, viewModel, _) {
       return Scaffold(
         appBar: AppBar(title: const Text("Chat")),
-        drawer: (viewModel.isLoggedIn || !isNewLoginEnabled) ? ChatDrawer() : null,
-        body: (viewModel.isLoggedIn || !isNewLoginEnabled)
+        drawer: (viewModel.isLoggedIn) ? ChatDrawer() : null,
+        body: (viewModel.isLoggedIn)
             ? ChatMessageList()
             : Center(
                 child: Column(

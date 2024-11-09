@@ -3,8 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FeatureFlagProvider extends ChangeNotifier {
   Map<String, bool> _featureFlags = {
-    'Chat': false,
-    'NewLogin': false,
+    'Chat': false
   };
 
   FeatureFlagProvider() {

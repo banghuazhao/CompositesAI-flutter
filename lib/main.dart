@@ -1,9 +1,4 @@
 import 'dart:async';
-
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
-import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -46,25 +41,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Future<void> _configureAmplify() async {
-    try {
-      // Add the following line to add Auth plugin to your app.
-      await Amplify.addPlugin(AmplifyAuthCognito());
-
-      // call Amplify.configure to use the initialized categories in your app
-      final amplifyconfig = dotenv.env['AMPLIFY_CONFIG'] ?? "";
-      await Amplify.configure(amplifyconfig);
-    } on Exception catch (e) {
-      print('An error occurred configuring Amplify: $e');
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _configureAmplify();
-  }
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(

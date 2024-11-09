@@ -1,5 +1,3 @@
-import 'package:app_links/app_links.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
@@ -17,7 +15,6 @@ class BottomNavigator extends StatefulWidget {
 }
 
 class _BottomNavigatorState extends State<BottomNavigator> {
-  late final AppLinks _appLinks;
   final PageController _controller = PageController(
     initialPage: 0,
   );

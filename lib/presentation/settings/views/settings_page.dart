@@ -3,9 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
-import 'package:swiftcomp/presentation/settings/views/update_name_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
-import '../login/old_login_page.dart';
 import '../viewModels/settings_view_model.dart';
 import 'feature_flag_page.dart';
 import 'login_page.dart';
@@ -36,9 +34,9 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Builder(
               builder: (context) => ListView(
                 children: [
-                  if (viewModel.isNewLoginEnabled && !viewModel.isLoggedIn)
+                  if (!viewModel.isLoggedIn)
                     MoreRow(
-                      title: "New Login",
+                      title: "Login",
                       leadingIcon: Icons.person_rounded,
                       onTap: () async {
                         String? result = await Navigator.push(
@@ -52,7 +50,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         }
                       },
                     ),
-                  if (viewModel.isNewLoginEnabled && viewModel.isLoggedIn)
+                  if (viewModel.isLoggedIn)
                     ListTile(
                       leading: Icon(Icons.account_circle, size: 40),
                       title: Text(
@@ -71,23 +69,6 @@ class _SettingsPageState extends State<SettingsPage> {
                         });
                       },
                     ),
-                  MoreRow(
-                    title: viewModel.isSignedIn ? "Logout" : "Login",
-                    leadingIcon: Icons.person_rounded,
-                    onTap: viewModel.isSignedIn
-                        ? () => viewModel.logout(context)
-                        : () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                      );
-                      if (result == "Log in Success") {
-                        viewModel.fetchAuthSession();
-                      }
-                    },
-                  ),
                   MoreRow(
                     title: "Tools Settings",
                     leadingIcon: Icons.settings_rounded,
@@ -111,12 +92,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     leadingIcon: Icons.share_rounded,
                     onTap: () => viewModel.shareApp(context),
                   ),
-                  if (viewModel.isSignedIn)
-                    MoreRow(
-                      title: "Delete Current Account",
-                      leadingIcon: Icons.delete_outlined,
-                      onTap: () => viewModel.deleteAccount(context),
-                    ),
                   GestureDetector(
                     onTap: () => viewModel.handleTap(
                           () => Navigator.push(

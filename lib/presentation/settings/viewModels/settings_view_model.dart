@@ -1,7 +1,6 @@
 // lib/presentation/viewmodels/settings_view_model.dart
 
 import 'dart:io';
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:device_info/device_info.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
@@ -20,9 +19,7 @@ class SettingsViewModel extends ChangeNotifier {
   final UserUseCase userUserCase;
   final FeatureFlagProvider featureFlagProvider;
 
-  bool isNewLoginEnabled = false;
   bool isLoggedIn = false;
-  bool isSignedIn = false;
   String version = '';
   User? user;
 
@@ -35,21 +32,9 @@ class SettingsViewModel extends ChangeNotifier {
       {required this.authUseCase,
       required this.userUserCase,
       required this.featureFlagProvider}) {
-    fetchAuthSession();
     initPackageInfo();
-    fetchFeatureFlags();
   }
 
-  Future<void> fetchAuthSession() async {
-    try {
-      AuthSession authResult = await Amplify.Auth.fetchAuthSession();
-      isSignedIn = authResult.isSignedIn;
-
-      notifyListeners();
-    } catch (e) {
-      print("Failed to fetch auth session: $e");
-    }
-  }
 
   Future<void> fetchAuthSessionNew() async {
     try {
@@ -74,19 +59,6 @@ class SettingsViewModel extends ChangeNotifier {
     } catch (e) {
       isLoggedIn = false;
     }
-  }
-
-  void fetchFeatureFlags() {
-    isNewLoginEnabled = featureFlagProvider.getFeatureFlag('NewLogin');
-    notifyListeners();
-
-    featureFlagProvider.addListener(() {
-      final newFlagStatus = featureFlagProvider.getFeatureFlag('NewLogin');
-      if (newFlagStatus != isNewLoginEnabled) {
-        isNewLoginEnabled = newFlagStatus;
-        notifyListeners();
-      }
-    });
   }
 
   Future<void> initPackageInfo() async {
@@ -116,50 +88,6 @@ class SettingsViewModel extends ChangeNotifier {
       if (kDebugMode) {
         print(e);
       }
-    }
-  }
-
-  Future<void> logout(BuildContext context) async {
-    try {
-      await Amplify.Auth.signOut();
-      isSignedIn = false;
-      Fluttertoast.showToast(
-        msg: "Logged out",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        backgroundColor: Colors.black,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-      notifyListeners();
-    } catch (e) {
-      print("Logout failed: $e");
-    }
-  }
-
-  Future<void> deleteAccount(BuildContext context) async {
-    try {
-      await Amplify.Auth.deleteUser();
-      isSignedIn = false;
-      Fluttertoast.showToast(
-        msg: "Account deleted successfully",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        backgroundColor: Colors.black,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-      notifyListeners();
-    } catch (e) {
-      print("Account deletion failed: $e");
-      Fluttertoast.showToast(
-        msg: "Delete account failed",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        backgroundColor: Colors.black,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
     }
   }
 
