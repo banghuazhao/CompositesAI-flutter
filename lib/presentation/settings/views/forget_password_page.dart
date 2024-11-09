@@ -74,10 +74,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email address';
+                          return 'Please enter your email address to receive a confirmation code to reset your password.';
                         }
                         if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                          return 'Please enter a valid email address';
+                          return 'Please enter a valid email address to receive a confirmation code to reset your password.';
                         }
                         return null;
                       },

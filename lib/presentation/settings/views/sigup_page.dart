@@ -31,11 +31,15 @@ class _SignupFormState extends State<SignupForm> {
   String email = '';
   String password = '';
   String confirmPassword = '';
+  String? verificationCode;
   bool isLoading = false;
   String nickname = '';
   final TextEditingController _nicknameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _verificationCodeController = TextEditingController();
   bool isButtonEnabled = false;
   bool isPasswordValid = false;
+  bool isEmailValid = false;
 
   void _checkFields() {
     setState(() {
@@ -43,8 +47,27 @@ class _SignupFormState extends State<SignupForm> {
           RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email) &&
           password.isNotEmpty &&
           password.length >= 6 &&
-          confirmPassword == password;
+          confirmPassword == password &&
+          _verificationCodeController.text.isNotEmpty &&
+              _verificationCodeController.text.length == 6;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_validateEmail);
+    _verificationCodeController.addListener(_checkFields);
+  }
+
+  void _validateEmail() {
+    email = _emailController.text;
+    final isValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
+    if (isValid != isEmailValid) {
+      setState(() {
+        isEmailValid = isValid;
+      });
+    }
   }
 
   void _signup(SignupViewModel viewModel) async {
@@ -54,6 +77,7 @@ class _SignupFormState extends State<SignupForm> {
       User? user = await viewModel.signup(
         email,
         password,
+        _verificationCodeController.text,
         name: nickname.isNotEmpty ? nickname : null,
       );
       setState(() => isLoading = false);
@@ -61,8 +85,8 @@ class _SignupFormState extends State<SignupForm> {
       if (user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Signup successful!"),
-            duration: Duration(seconds: 2),
+            content: Text("Sign-up complete! Welcome aboard!"),
+            duration: Duration(seconds: 5),
           ),
         );
         Navigator.pop(context, user);
@@ -77,7 +101,6 @@ class _SignupFormState extends State<SignupForm> {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<SignupViewModel>(context);
-
     return Scaffold(
       appBar: AppBar(title: Text('Signup')),
       body: SingleChildScrollView(
@@ -89,8 +112,10 @@ class _SignupFormState extends State<SignupForm> {
             children: [
               // Username Field
               TextFormField(
+                controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
+                  hintText: "Input Email",
                   errorBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: Color(0xFFB71C1C)),
                   ),
@@ -103,6 +128,7 @@ class _SignupFormState extends State<SignupForm> {
                   email = value.trim();
                   _checkFields();
                 },
+                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Please enter your email';
                   if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) return 'Enter a valid email';
@@ -112,6 +138,7 @@ class _SignupFormState extends State<SignupForm> {
               SizedBox(height: 16.0),
 
               // Nickname Field (Optional)
+              if(viewModel.isSignUp)
               TextFormField(
                 controller: _nicknameController,
                 decoration: InputDecoration(
@@ -126,6 +153,7 @@ class _SignupFormState extends State<SignupForm> {
               SizedBox(height: 16.0),
 
               // Password Field
+              if(viewModel.isSignUp)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -169,6 +197,7 @@ class _SignupFormState extends State<SignupForm> {
               SizedBox(height: 16.0),
 
               // Confirm Password Field
+              if(viewModel.isSignUp)
               TextFormField(
                 decoration: InputDecoration(
                   labelText: 'Confirm Password',
@@ -197,9 +226,38 @@ class _SignupFormState extends State<SignupForm> {
                   _checkFields();
                 },
               ),
-              SizedBox(height: 30.0),
+              SizedBox(height: 16.0),
+
+              if(viewModel.isSignUp)
+              TextFormField(
+                keyboardType: TextInputType.number,
+                controller: _verificationCodeController,
+                decoration: InputDecoration(
+                  labelText: "Verification Code",
+                  border: UnderlineInputBorder(),
+                  errorBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                  ),
+                  focusedErrorBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                  ),
+                  errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                ),
+                validator: (value) {
+                  if (value == null || value.length != 6) {
+                    return "Please enter a valid verification code to proceed";
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  verificationCode = value;
+                  _checkFields();
+                },
+              ),
+              SizedBox(height: 20),
 
               // Signup Button
+              if(viewModel.isSignUp)
               viewModel.isLoading || isLoading
                   ? CircularProgressIndicator()
                   : MaterialButton(
@@ -215,6 +273,50 @@ class _SignupFormState extends State<SignupForm> {
                 ),
                 child: Text('Signup', style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
+
+              if (!viewModel.isSignUp)
+                Padding(
+                  padding: const EdgeInsets.only(top: 1.0), // Adjust top padding here
+                  child: MaterialButton(
+                    onPressed: viewModel.isLoading
+                        ? null
+                        : () async {
+                      if (_formKey.currentState!.validate()) {
+                        await viewModel.continueSignUp(email);
+
+                        if (viewModel.errorMessage != null && viewModel.errorMessage!.isNotEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(viewModel.errorMessage!),
+                            ),
+                          );
+                        } else if (viewModel.isSignUp) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Verification code sent successfully.'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    height: 45,
+                    minWidth: double.infinity,
+                    color: isEmailValid ? const Color(0xFF33424E) : const Color(0xFF8C9699),
+                    disabledColor: const Color(0xFF8C9699),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: viewModel.isLoading
+                        ? const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    )
+                        : const Text(
+                      "Send Verification Code",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                ),
+
             ],
           ),
         ),

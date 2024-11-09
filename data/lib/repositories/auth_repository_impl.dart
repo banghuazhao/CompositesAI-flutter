@@ -16,14 +16,14 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required this.client, required this.authClient});
 
   @override
-  Future<User> signup(String email, String password, {String? name}) async {
+  Future<User> signup(String email, String password, String verificationCode, {String? name}) async {
     final url = Uri.parse('http://localhost:3000/api/users/');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(
           {'email': email, 'password': password,
-            if (name != null) 'name': name,}),
+          'verificationCode': verificationCode,  if (name != null) 'name': name,},),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -110,6 +110,40 @@ class AuthRepositoryImpl implements AuthRepository {
     } else {
       throw ServerException(
           'Password reset failed with status code: ${response.statusCode}');
+    }
+  }
+
+  Future<void> sendSignupVerificationCode(String email) async {
+    final url =
+    Uri.parse('http://localhost:3000/api/auth/send-verification');
+    try {
+      final response = await client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      if (response.statusCode == 200) {
+        // Request was successful, exit the function
+        return;
+      }
+
+      // Decode the server response to retrieve the error message
+      final responseData = jsonDecode(response.body);
+      final errorMessage = responseData['message'] ?? 'Failed to send verification email';
+
+      // Throw specific error based on the status code
+      if (response.statusCode == 400) {
+        throw ServerException('Invalid email address');
+      } else if (response.statusCode == 409) {
+        throw ServerException('Email is already registered');
+      } else {
+        throw ServerException(errorMessage);
+      }
+      // If statusCode is 200, assume the request was successful
+    } catch (error) {
+      // Re-throw network or parsing errors as custom exceptions
+      throw Exception('An error occurred. Please try again.');
     }
   }
 }

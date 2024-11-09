@@ -11,8 +11,8 @@ class AuthUseCase {
 
   AuthUseCase({required this.repository, required this.tokenProvider});
 
-  Future<User> signup(String email, String password, {String? name}) async {
-    return await repository.signup(email, password, name: name);
+  Future<User> signup(String email, String password,String verificationCode,{String? name}) async {
+    return await repository.signup(email, password, verificationCode, name: name);
   }
 
   Future<String> login(String email, String password) async {
@@ -39,6 +39,10 @@ class AuthUseCase {
 
   Future<String> resetPassword(email, newPassword, confirmationCode) async {
     return await repository.resetPassword(email, newPassword, confirmationCode);
+  }
+
+  Future<void> sendSignupVerificationCode(String email) async {
+    return await repository.sendSignupVerificationCode(email);
   }
 }
 
