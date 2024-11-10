@@ -44,6 +44,10 @@ class AuthUseCase {
   Future<void> sendSignupVerificationCode(String email) async {
     return await repository.sendSignupVerificationCode(email);
   }
+
+  Future<String> updatePassword(String newPassword) async {
+    return await repository.updatePassword(newPassword);
+  }
 }
 
   

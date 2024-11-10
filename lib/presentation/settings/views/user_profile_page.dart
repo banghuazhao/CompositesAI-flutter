@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/update_name_page.dart';
+import 'package:swiftcomp/presentation/settings/views/update_password.dart';
 import '../../../injection_container.dart';
 import '../viewModels/user_profile_view_model.dart';
 
@@ -26,37 +27,52 @@ class UserProfilePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Center(
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 3,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              viewModel.user?.name ?? '',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.5, // 50% of the screen width
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 3,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.account_circle,
+                                size: 55,
+                                color: Colors.blueGrey,
                               ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              viewModel.user?.email ?? '',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.blueGrey[500],
+                              SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    viewModel.user?.name ?? '',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    viewModel.user?.email ?? '',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.blueGrey[500],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    )
+
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
@@ -86,6 +102,33 @@ class UserProfilePage extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 16),
+
+                  ElevatedButton(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UpdatePasswordPage(),
+                        ),
+                      );
+                      if (result == 'refresh') {
+                        await viewModel.fetchAuthSessionNew();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: Size(MediaQuery.of(context).size.width * 0.5, 50),
+                      backgroundColor: Colors.blueGrey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      "Update Password",
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+
                   ElevatedButton(
                     onPressed: () async {
                       await viewModel.logoutUser();

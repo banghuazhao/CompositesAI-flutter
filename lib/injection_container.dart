@@ -5,7 +5,7 @@ import 'package:data/providers/token_provider_impl.dart';
 import 'package:data/repositories/auth_repository_impl.dart';
 import 'package:data/repositories/chat_repository_impl.dart';
 import 'package:data/repositories/chat_session_repository_imp.dart';
-import 'package:data/repositories/user_repository.dart';
+import 'package:data/repositories/user_repository_impl.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:domain/repositories_abstract/token_provider.dart';
@@ -21,6 +21,7 @@ import 'package:swiftcomp/presentation/settings/viewModels/forget_password_view_
 import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/signup_view_model.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/update_password_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/user_profile_view_model.dart';
 import 'presentation/chat/viewModels/chat_view_model.dart';
 
@@ -44,6 +45,7 @@ void initInjection() {
   sl.registerFactory<UserProfileViewModel>(() =>
       UserProfileViewModel(authUseCase: sl(), userUseCase: sl()));
   sl.registerFactory<ForgetPasswordViewModel>(() => ForgetPasswordViewModel(authUseCase: sl()));
+  sl.registerFactory<UpdatePasswordViewModel>(() => UpdatePasswordViewModel(authUseCase: sl()));
 
   // Providers
   sl.registerLazySingleton<TokenProvider>(() => TokenProviderImpl());

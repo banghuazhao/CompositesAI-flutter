@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewModels/settings_view_model.dart';
 
@@ -18,11 +17,6 @@ class _UpdateNamePageState extends State<UpdateNamePage> {
   final TextEditingController _nameController = TextEditingController();
   bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController.text = widget.currentName;
-  }
 
   @override
   void dispose() {
@@ -83,10 +77,12 @@ class _UpdateNamePageState extends State<UpdateNamePage> {
             ),
             SizedBox(height: 20.0),
             _isLoading
-                ? CircularProgressIndicator()
-                : ElevatedButton(
-              onPressed: _saveName,
-              child: Text("Save"),
+                ? Center(child: CircularProgressIndicator()) // Center the loading indicator
+                : Center(
+              child: ElevatedButton(
+                onPressed: _saveName,
+                child: Text("Save"),
+              ),
             ),
           ],
         ),

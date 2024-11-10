@@ -146,4 +146,24 @@ class AuthRepositoryImpl implements AuthRepository {
       throw Exception('An error occurred. Please try again.');
     }
   }
+
+  Future<String> updatePassword(String newPassword) async {
+    final url =
+    Uri.parse('http://localhost:3000/api/auth/update-password');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'password': newPassword
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['message'];
+    } else {
+      throw ServerException(
+          'Password update failed with status code: ${response.statusCode}');
+    }
+  }
 }

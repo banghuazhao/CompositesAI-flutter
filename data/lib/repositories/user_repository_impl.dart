@@ -35,7 +35,6 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<void> updateMe(String newName) async {
-
     try {
       final response = await authClient.patch(
         Uri.parse('http://localhost:3000/api/users/me'), // Adjust URL as necessary

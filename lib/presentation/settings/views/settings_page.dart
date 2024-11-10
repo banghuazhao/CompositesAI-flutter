@@ -52,7 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   if (viewModel.isLoggedIn)
                     ListTile(
-                      leading: Icon(Icons.account_circle, size: 40),
+                      leading: Icon(Icons.account_circle, size: 45, color: Colors.blueGrey,),
                       title: Text(
                         viewModel.user?.name ?? "",
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

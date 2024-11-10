@@ -8,11 +8,11 @@ class UserProfileViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
   final UserUseCase userUseCase;
 
-
   bool isLoading = false;
   User? user;
   bool isSignedIn = false;
   bool isLoggedIn = false;
+  String errorMessage = '';
 
   UserProfileViewModel({required this.authUseCase, required this.userUseCase}) {
     fetchUserDetails();
@@ -79,6 +79,7 @@ class UserProfileViewModel extends ChangeNotifier {
     isLoading = value;
     notifyListeners();
   }
+
   Future<void> updateUserName(String newName) async {
     try {
       // Call the update method in userUserCase to update the name in the backend or database
@@ -93,5 +94,10 @@ class UserProfileViewModel extends ChangeNotifier {
       // Handle any errors that may occur
       print("Failed to update user name: $error");
     }
+  }
+
+  void _setLoadingState(bool value) {
+    isLoading = value;
+    notifyListeners();
   }
 }
