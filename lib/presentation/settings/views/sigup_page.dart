@@ -282,7 +282,7 @@ class _SignupFormState extends State<SignupForm> {
                         ? null
                         : () async {
                       if (_formKey.currentState!.validate()) {
-                        await viewModel.continueSignUp(email);
+                        await viewModel.signUpFor(email);
 
                         if (viewModel.errorMessage != null && viewModel.errorMessage!.isNotEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(

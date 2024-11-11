@@ -1,9 +1,8 @@
 // lib/data/datasources/authenticated_http_client.dart
 
+import 'package:domain/entities/domain_exceptions.dart';
 import 'package:domain/repositories_abstract/token_provider.dart';
 import 'package:http/http.dart' as http;
-
-import '../core/exceptions.dart';
 
 class AuthenticatedHttpClient extends http.BaseClient {
   final http.Client _inner;
@@ -25,7 +24,7 @@ class AuthenticatedHttpClient extends http.BaseClient {
       await _tokenProvider.deleteToken();
 
       // Notify the app or handle as needed
-      throw UnauthenticatedException('Token expired');
+      throw UnauthorizedException('Token expired');
     }
 
     return response;

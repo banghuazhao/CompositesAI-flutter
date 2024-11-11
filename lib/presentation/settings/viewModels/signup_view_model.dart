@@ -1,9 +1,9 @@
 // lib/presentation/viewmodels/signup_view_model.dart
 
+import 'package:domain/entities/domain_exceptions.dart';
 import 'package:domain/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:domain/usecases/auth_usecase.dart';
-
 
 class SignupViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
@@ -11,7 +11,6 @@ class SignupViewModel extends ChangeNotifier {
   bool obscureTextNewPassword = true;
   bool obscureTextConfirmPassword = true;
   bool isSignUp = false;
-
 
   void toggleNewPasswordVisibility() {
     obscureTextNewPassword = !obscureTextNewPassword;
@@ -23,22 +22,25 @@ class SignupViewModel extends ChangeNotifier {
     notifyListeners(); // Notify the UI about the change
   }
 
-
   SignupViewModel({required this.authUseCase});
 
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
 
   String? _errorMessage;
+
   String? get errorMessage => _errorMessage;
 
-  Future<User?> signup(String email, String password,String verificationCode, {String? name}) async {
+  Future<User?> signup(String email, String password, String verificationCode,
+      {String? name}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      User user = await authUseCase.signup(email, password, verificationCode, name: name);
+      User user = await authUseCase.signup(email, password, verificationCode,
+          name: name);
       return user;
     } catch (e) {
       _errorMessage = 'Signup failed: ${e.toString()}';
@@ -49,7 +51,7 @@ class SignupViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> continueSignUp(String email) async {
+  Future<void> signUpFor(String email) async {
     _setLoadingState(true);
     _errorMessage = '';
 
@@ -60,14 +62,7 @@ class SignupViewModel extends ChangeNotifier {
     } catch (error) {
       final errorMessage = error.toString();
       print("Error Message: $errorMessage");
-
-      if (errorMessage.contains("already registered")) {
-        _errorMessage = 'Email is already registered';
-      } else if (errorMessage.contains("Invalid email")) {
-        _errorMessage = 'Invalid email address';
-      } else {
-        _errorMessage = 'Failed to send verification code.';
-      }
+      _errorMessage = errorMessage;
     } finally {
       _setLoadingState(false);
     }
