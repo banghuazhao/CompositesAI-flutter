@@ -83,20 +83,38 @@ class _SignupFormState extends State<SignupForm> {
       setState(() => isLoading = false);
 
       if (user != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Sign-up complete! Welcome aboard!"),
-            duration: Duration(seconds: 5),
-          ),
-        );
-        Navigator.pop(context, user);
+        // Attempt to login after successful sign-up
+        String? token = await viewModel.login(email, password);
+        if (token != null) {
+          // Successful login
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Sign-up complete! You have been logged in."),
+              duration: Duration(seconds: 3),
+            ),
+          );
+
+          // Navigate to the home screen
+          Navigator.pop(context, "sign up success");
+        } else {
+          // Sign-up succeeded, but login failed
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Sign-up successful but login failed. Please try logging in manually."),
+            ),
+          );
+        }
       } else if (viewModel.errorMessage != null) {
+        // Sign-up failed
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(viewModel.errorMessage!)),
         );
       }
     }
   }
+
+
+
 
   @override
   Widget build(BuildContext context) {

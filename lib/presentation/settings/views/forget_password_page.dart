@@ -12,6 +12,7 @@ class ForgetPasswordPage extends StatefulWidget {
 class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _confirmationCodeController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool isEmailValid = false;
@@ -24,7 +25,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   @override
   void initState() {
     super.initState();
-    _emailController.addListener(_validateEmail);
+    _emailController.addListener(_validateEmail);//these functions to automatically run whenever the text in the associated input field changes
+    _newPasswordController.addListener(checkConfirmInput); //these functions to automatically run whenever the text in the associated input field changes
+    _confirmPasswordController.addListener(checkConfirmInput);
+    _confirmationCodeController.addListener(checkConfirmInput);
   }
 
   void _validateEmail() {
@@ -90,6 +94,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           TextFormField(
+                            controller: _newPasswordController,
                             obscureText: viewModel.obscureTextNewPassword,
                             decoration: InputDecoration(
                               labelText: "New Password",
@@ -161,7 +166,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           if (value == null || value.isEmpty) {
                             return 'Please confirm your password';
                           }
-                          if (value != newPassword) {
+                          if (value != _newPasswordController.text) {
                             return "The passwords do not match";
                           }
                           return null;
@@ -201,7 +206,6 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           return null;
                         },
                         onChanged: (value) {
-                          confirmCode = value;
                           checkConfirmInput();
                         },
                       ),
@@ -214,7 +218,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                         enable: confirmEnable,
                         onPressed: () async {
                           await viewModel.confirmResetPassword(
-                              _emailController.text, newPassword, confirmCode);
+                              _emailController.text, _newPasswordController.text , _confirmationCodeController.text);
                           if (viewModel.errorMessage.isNotEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -286,11 +290,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   void checkConfirmInput() {
     setState(() {
       confirmEnable = _emailController.text.isNotEmpty &&
-          (newPassword?.isNotEmpty ?? false) &&
-          (newPassword?.length ?? 0) >= 6 &&
-          _confirmPasswordController.text == newPassword &&
-          (confirmCode?.isNotEmpty ?? false) &&
-          (confirmCode?.length ?? 0) == 6;
+          (isEmailValid) &&
+          (_newPasswordController.text.isNotEmpty && _newPasswordController.text.length >= 6) &&
+          (_confirmPasswordController.text == _newPasswordController.text) &&
+          (_confirmationCodeController.text.isNotEmpty && _confirmationCodeController.text.length == 6);
     });
   }
 }

@@ -10,9 +10,11 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:launch_review/launch_review.dart';
 import 'package:share/share.dart';
+
 
 class SettingsViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
@@ -128,9 +130,36 @@ class SettingsViewModel extends ChangeNotifier {
     }
   }
 
-  void rateApp() {
-    LaunchReview.launch(
-        androidAppId: "com.banghuazhao.swiftcomp", iOSAppId: "1297825946");
+  void openAppStore() async {
+    if (kIsWeb) {
+      // Handle the web case if necessary, such as showing an error or a message.
+      print("App store link is not supported on web.");
+      return;
+    }
+
+    final Uri androidUrl = Uri.parse('https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp');
+    final Uri iOSUrl = Uri.parse('https://apps.apple.com/app/id1297825946');
+
+    final Uri url = Platform.isAndroid ? androidUrl : iOSUrl;
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Could not open the app store URL';
+    }
+  }
+
+  void rateApp() async {
+    try {
+      await LaunchReview.launch(
+        androidAppId: "com.banghuazhao.swiftcomp",
+        iOSAppId: "1297825946",
+        writeReview: true,
+      );
+    } catch (e) {
+      // Use fallback to open the app store directly if `LaunchReview` fails
+      openAppStore();
+    }
   }
 
   Future<void> shareApp(BuildContext context) async {

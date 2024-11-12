@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
+import 'package:launch_review/launch_review.dart';
 import '../viewModels/settings_view_model.dart';
 import 'feature_flag_page.dart';
 import 'login_page.dart';
@@ -85,8 +86,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   MoreRow(
                     title: "Rate this App",
                     leadingIcon: Icons.thumb_up_rounded,
-                    onTap: viewModel.rateApp,
+                    onTap: () {
+                      print("Rate App button tapped"); // Debug print
+                      viewModel.rateApp();
+                    },
                   ),
+
                   MoreRow(
                     title: "Share this App",
                     leadingIcon: Icons.share_rounded,

@@ -136,7 +136,7 @@ class UserProfilePage extends StatelessWidget {
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(MediaQuery.of(context).size.width * 0.5, 50),
-                      backgroundColor: Colors.orange,
+                      backgroundColor: Colors.orangeAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),

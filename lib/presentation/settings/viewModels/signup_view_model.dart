@@ -31,6 +31,8 @@ class SignupViewModel extends ChangeNotifier {
   String? _errorMessage;
 
   String? get errorMessage => _errorMessage;
+  String? _loginErrorMessage;
+  String? get loginErrorMessage => _loginErrorMessage;
 
   Future<User?> signup(String email, String password, String verificationCode,
       {String? name}) async {
@@ -71,5 +73,22 @@ class SignupViewModel extends ChangeNotifier {
   void _setLoadingState(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  Future<String?> login(String email,String password) async {
+    _isLoading = true;
+    _loginErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final accessToken = await authUseCase.login(email, password);
+      return accessToken; // Successful login returns the access token
+    } catch (e) {
+      _loginErrorMessage = 'Login failed: ${e.toString()}';
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

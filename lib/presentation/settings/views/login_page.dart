@@ -222,7 +222,7 @@ class _LoginPageState extends State<NewLoginPage> {
                         );
                       },
                       child: Text(
-                        'Reset Password',
+                        'Forgot Password',
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ),
@@ -259,12 +259,8 @@ class _LoginPageState extends State<NewLoginPage> {
       MaterialPageRoute(builder: (context) => SignupPage()),
     );
 
-    if (result != null && result is User) {
-      print(result.email);
-      setState(() {
-        email = result.email;
-        _emailController.text = email;
-      });
+    if (result == "sign up success") {
+        Navigator.pop(context, "Log in Success");
     }
   }
 }
