@@ -4,18 +4,18 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/sigup_page.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-import '../../../../injection_container.dart';
+import '../../../app/injection_container.dart';
 import '../viewModels/login_view_model.dart';
 import 'forget_password_page.dart';
 
-class NewLoginPage extends StatefulWidget {
-  const NewLoginPage({Key? key}) : super(key: key);
+class LoginPage extends StatefulWidget {
+  const LoginPage({Key? key}) : super(key: key);
 
   @override
-  State<NewLoginPage> createState() => _LoginPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<NewLoginPage> {
+class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   String email = '';
   String password = '';

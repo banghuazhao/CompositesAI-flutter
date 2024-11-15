@@ -23,7 +23,7 @@ import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.d
 import 'package:swiftcomp/presentation/settings/viewModels/signup_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/update_password_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/user_profile_view_model.dart';
-import 'presentation/chat/viewModels/chat_view_model.dart';
+import '../presentation/chat/viewModels/chat_view_model.dart';
 
 final sl = GetIt.instance;
 

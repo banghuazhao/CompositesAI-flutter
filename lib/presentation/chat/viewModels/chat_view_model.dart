@@ -68,6 +68,9 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> checkAuthStatus() async {
     isLoggedIn = await _authUseCase.isLoggedIn();
     print("isLoggedIn: $isLoggedIn");
+
+    // Temporarily set it to true for demonstration
+    isLoggedIn = true;
     notifyListeners();
   }
 

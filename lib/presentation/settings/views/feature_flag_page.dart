@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../injection_container.dart';
+import '../../../app/injection_container.dart';
 import '../viewModels/feature_flag_view_model.dart';
 
 class FeatureFlagPage extends StatelessWidget {

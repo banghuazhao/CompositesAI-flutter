@@ -43,7 +43,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         String? result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const NewLoginPage(),
+                            builder: (context) => const LoginPage(),
                           ),
                         );
                         if (result == "Log in Success") {

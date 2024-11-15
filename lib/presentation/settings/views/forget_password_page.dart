@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/login_button.dart';
 import '../viewModels/forget_password_view_model.dart'; // Adjust the import path as necessary
-import '../../../injection_container.dart'; // Import your service locator to inject dependencies
+import '../../../app/injection_container.dart'; // Import your service locator to inject dependencies
 
 class ForgetPasswordPage extends StatefulWidget {
   @override

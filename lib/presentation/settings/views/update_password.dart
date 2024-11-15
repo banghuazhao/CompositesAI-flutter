@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/update_password_view_model.dart';
 
-import '../../../injection_container.dart';
+import '../../../app/injection_container.dart';
 import '../viewModels/user_profile_view_model.dart';
 
 class UpdatePasswordPage extends StatefulWidget {

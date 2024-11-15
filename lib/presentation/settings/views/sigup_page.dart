@@ -2,7 +2,7 @@ import 'package:domain/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../injection_container.dart';
+import '../../../app/injection_container.dart';
 import '../viewModels/signup_view_model.dart';
 
 class SignupPage extends StatelessWidget {

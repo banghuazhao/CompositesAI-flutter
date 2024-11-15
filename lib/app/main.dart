@@ -12,7 +12,7 @@ import 'package:swiftcomp/util/in_app_reviewer_helper.dart';
 import 'package:swiftcomp/util/others.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
-import 'presentation/bottom_navigator.dart';
+import '../presentation/bottom_navigator.dart';
 import 'injection_container.dart';
 
 void main() async {

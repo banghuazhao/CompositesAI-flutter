@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
 
-import '../../../injection_container.dart';
-import '../../../main.dart';
 import '../../settings/views/login_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_message_list.dart';
@@ -43,7 +40,7 @@ class _ChatScreenState extends State<ChatScreen>
                         String? result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const NewLoginPage()));
+                                builder: (context) => const LoginPage()));
                         if (result == "Log in Success") {
                           await viewModel.checkAuthStatus();
                         }

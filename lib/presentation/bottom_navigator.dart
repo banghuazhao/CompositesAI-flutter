@@ -28,16 +28,12 @@ class _BottomNavigatorState extends State<BottomNavigator> {
     final chatViewModel = Provider.of<ChatViewModel>(context);
     return Consumer<FeatureFlagProvider>(
         builder: (context, featureFlagProvider, _) {
-      bool isChatEnabled = featureFlagProvider.getFeatureFlag('Chat');
-      if (!isChatEnabled && _currentIndex == 2) {
-        _currentIndex = 1;
-      }
       return Scaffold(
           body: PageView(
             controller: _controller,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              if (isChatEnabled) ChatScreen(),
+              ChatScreen(),
               ToolPage(),
               SettingsPage()
             ],
@@ -54,13 +50,13 @@ class _BottomNavigatorState extends State<BottomNavigator> {
                 setState(() {
                   _currentIndex = index;
                 });
-                if (_currentIndex == 0 && isChatEnabled) {
+                if (_currentIndex == 0) {
                   chatViewModel.checkAuthStatus();
                 }
               },
               type: BottomNavigationBarType.fixed,
               items: [
-                if (isChatEnabled) _bottomItem(Icons.chat, Icons.chat, "Chat"),
+                _bottomItem(Icons.chat, Icons.chat, "Chat"),
                 _bottomItem(Icons.view_list, Icons.view_list, "Tools"),
                 _bottomItem(Icons.more_horiz, Icons.more_horiz, "Settings"),
               ]));

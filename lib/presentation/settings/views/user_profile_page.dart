@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/update_name_page.dart';
 import 'package:swiftcomp/presentation/settings/views/update_password.dart';
-import '../../../injection_container.dart';
+import '../../../app/injection_container.dart';
 import '../viewModels/user_profile_view_model.dart';
 
 class UserProfilePage extends StatelessWidget {
