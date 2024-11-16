@@ -43,10 +43,11 @@ class QASettingsViewModel extends ChangeNotifier {
       await authUseCase.logout();
     } catch (e) {
       print('Error during logout: $e');
+    } finally {
+      await apiEnvironmentUseCase.changeAPIEnvironment(environment);
+      currentEnvironment = environment;
+      isLoading = false;
+      notifyListeners();
     }
-    await apiEnvironmentUseCase.changeAPIEnvironment(environment);
-    currentEnvironment = environment;
-    isLoading = false;
-    notifyListeners();
   }
 }

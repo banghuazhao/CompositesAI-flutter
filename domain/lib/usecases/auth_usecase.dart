@@ -22,12 +22,16 @@ class AuthUseCase {
   }
 
   Future<void> logout() async {
+    final accessToken = await tokenProvider.getToken();
+    if (accessToken == null || accessToken == "") {
+      return;
+    }
     try {
       await repository.logout();
     } catch (e) {
       rethrow;
     } finally {
-      tokenProvider.deleteToken();
+      await tokenProvider.deleteToken();
     }
   }
 

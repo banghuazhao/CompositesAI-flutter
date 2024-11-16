@@ -24,9 +24,9 @@ class APIEnvironmentRepositoryImpl implements APIEnvironmentRepository {
     final prefs = await SharedPreferences.getInstance();
     final String currentEnvironment = prefs.getString(_environmentKey) ?? "production";
     if (currentEnvironment == "production") {
-       return "http://localhost:8080/api";
-    } else {
       return "http://compositesai.eba-dxj2wppi.us-west-2.elasticbeanstalk.com/api";
+    } else {
+      return "http://localhost:8080/api";
     }
   }
 }
