@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:data/mappers/domain_exception_mapper.dart';
 import 'package:domain/entities/domain_exceptions.dart';
 import 'package:domain/entities/user.dart';
+import 'package:domain/repositories_abstract/api_env_repository.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:http/http.dart' as http;
 
@@ -13,13 +14,18 @@ import '../data_sources/authenticated_http_client.dart';
 class AuthRepositoryImpl implements AuthRepository {
   final http.Client client;
   final AuthenticatedHttpClient authClient;
+  final APIEnvironmentRepository apiEnvironmentRepository;
 
-  AuthRepositoryImpl({required this.client, required this.authClient});
+  AuthRepositoryImpl(
+      {required this.client,
+      required this.authClient,
+      required this.apiEnvironmentRepository});
 
   @override
   Future<User> signup(String email, String password, String verificationCode,
       {String? name}) async {
-    final url = Uri.parse('http://localhost:3000/api/users/');
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url = Uri.parse('$baseURL/users/');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -45,7 +51,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<String> login(String email, String password) async {
-    final url = Uri.parse('http://localhost:3000/api/auth/login');
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url = Uri.parse('$baseURL/auth/login');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -59,13 +66,14 @@ class AuthRepositoryImpl implements AuthRepository {
       final data = jsonDecode(response.body);
       return data['accessToken']; // Return access token on success
     } else {
-      throw Exception('Login failed');
+      throw mapServerErrorToDomainException(response);
     }
   }
 
   @override
   Future<void> logout() async {
-    final url = Uri.parse('http://localhost:3000/api/auth/logout');
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url = Uri.parse('$baseURL/auth/logout');
 
     final response = await authClient.post(
       url,
@@ -80,7 +88,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<void> forgetPassword(String email) async {
-    final url = Uri.parse('http://localhost:3000/api/auth/forget-password');
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url = Uri.parse('$baseURL/auth/forget-password');
     try {
       final response = await client.post(
         url,
@@ -100,7 +109,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   Future<String> resetPassword(
       String email, String newPassword, String confirmationCode) async {
-    final url = Uri.parse('http://localhost:3000/api/auth/reset-password');
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url = Uri.parse('$baseURL/auth/reset-password');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -120,7 +130,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<void> sendSignupVerificationCode(String email) async {
-    final url = Uri.parse('http://localhost:3000/api/auth/send-verification');
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url = Uri.parse('$baseURL/auth/send-verification');
 
     final response = await client.post(
       url,
@@ -141,7 +152,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<String> updatePassword(String newPassword) async {
-    final url = Uri.parse('http://localhost:3000/api/auth/update-password');
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url = Uri.parse('$baseURL/auth/update-password');
     final response = await authClient.post(
       url,
       headers: {'Content-Type': 'application/json'},

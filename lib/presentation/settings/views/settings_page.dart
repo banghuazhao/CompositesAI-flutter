@@ -3,10 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
+import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import 'package:launch_review/launch_review.dart';
 import '../viewModels/settings_view_model.dart';
-import 'feature_flag_page.dart';
 import 'login_page.dart';
 import 'tool_setting_page.dart';
 
@@ -53,16 +53,22 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   if (viewModel.isLoggedIn)
                     ListTile(
-                      leading: Icon(Icons.account_circle, size: 45, color: Colors.blueGrey,),
+                      leading: Icon(
+                        Icons.account_circle,
+                        size: 45,
+                        color: Colors.blueGrey,
+                      ),
                       title: Text(
                         viewModel.user?.name ?? "",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(viewModel.user?.email ?? ""),
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => UserProfilePage()),
+                          MaterialPageRoute(
+                              builder: (context) => UserProfilePage()),
                         ).then((value) {
                           if (value == 'refresh') {
                             viewModel.fetchAuthSessionNew();
@@ -75,7 +81,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     leadingIcon: Icons.settings_rounded,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ToolSettingPage()),
+                      MaterialPageRoute(
+                          builder: (context) => ToolSettingPage()),
                     ),
                   ),
                   MoreRow(
@@ -91,7 +98,6 @@ class _SettingsPageState extends State<SettingsPage> {
                       viewModel.rateApp();
                     },
                   ),
-
                   MoreRow(
                     title: "Share this App",
                     leadingIcon: Icons.share_rounded,
@@ -99,10 +105,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   GestureDetector(
                     onTap: () => viewModel.handleTap(
-                          () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => FeatureFlagPage()),
-                      ),
+                      () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => QASettingsPage()),
+                        );
+                        viewModel.fetchAuthSessionNew();
+                      },
                     ),
                     child: Container(
                       margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),

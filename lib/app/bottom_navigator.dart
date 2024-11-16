@@ -4,8 +4,8 @@ import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
 import 'package:swiftcomp/presentation/tools/page/tool_page.dart';
 
-import 'chat/views/chat_screen.dart';
-import 'settings/views/settings_page.dart';
+import '../presentation/chat/views/chat_screen.dart';
+import '../presentation/settings/views/settings_page.dart';
 
 class BottomNavigator extends StatefulWidget {
   const BottomNavigator({Key? key}) : super(key: key);

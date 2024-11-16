@@ -22,8 +22,13 @@ class AuthUseCase {
   }
 
   Future<void> logout() async {
-    await repository.logout();
-    tokenProvider.deleteToken();
+    try {
+      await repository.logout();
+    } catch (e) {
+      rethrow;
+    } finally {
+      tokenProvider.deleteToken();
+    }
   }
 
   Future<bool> isLoggedIn() async {
