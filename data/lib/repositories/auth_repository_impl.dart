@@ -17,9 +17,7 @@ class AuthRepositoryImpl implements AuthRepository {
   final APIEnvironmentRepository apiEnvironmentRepository;
 
   AuthRepositoryImpl(
-      {required this.client,
-      required this.authClient,
-      required this.apiEnvironmentRepository});
+      {required this.client, required this.authClient, required this.apiEnvironmentRepository});
 
   @override
   Future<User> signup(String email, String password, String verificationCode,
@@ -40,9 +38,10 @@ class AuthRepositoryImpl implements AuthRepository {
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
+      final responseData = jsonDecode(response.body);
       return User(
-        email: email,
-        name: name,
+        email: responseData['user']['email'],
+        name: responseData['user']['name'],
       );
     } else {
       throw Exception('Failed to sign up. Status code: ${response.statusCode}');
@@ -107,18 +106,14 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  Future<String> resetPassword(
-      String email, String newPassword, String confirmationCode) async {
+  Future<String> resetPassword(String email, String newPassword, String confirmationCode) async {
     final baseURL = await apiEnvironmentRepository.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/reset-password');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "email": email,
-        'password': newPassword,
-        "confirmationCode": confirmationCode
-      }),
+      body: jsonEncode(
+          {"email": email, 'password': newPassword, "confirmationCode": confirmationCode}),
     );
 
     if (response.statusCode == 200) {
@@ -163,6 +158,42 @@ class AuthRepositoryImpl implements AuthRepository {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['message'];
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  Future<String> syncUser(String? displayName, String email, String? photoUrl) async {
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url = Uri.parse('$baseURL/auth/sync-user');
+    final response = await client.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        if (displayName != null) 'displayName': displayName,
+        'email': email,
+        if (photoUrl != null) 'photoUrl': photoUrl,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      // User already exists, backend returns an access token
+      final accessToken = data['accessToken'];
+      if (accessToken != null) {
+        return accessToken; // Return the access token
+      } else {
+        throw Exception('Access token missing in response');
+      }
+    } else if (response.statusCode == 201) {
+      // New user created, backend returns a success message
+      final accessToken = data['accessToken'];
+      if (accessToken != null) {
+        return accessToken; // Return the access token
+      } else {
+        throw Exception('Access token missing in response');
+      }
     } else {
       throw mapServerErrorToDomainException(response);
     }

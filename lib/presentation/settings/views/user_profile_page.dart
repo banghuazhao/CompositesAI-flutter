@@ -28,7 +28,7 @@ class UserProfilePage extends StatelessWidget {
                 children: [
                   Center(
                     child: Container(
-                      width: MediaQuery.of(context).size.width * 0.5, // 50% of the screen width
+                      width: MediaQuery.of(context).size.width, // 50% of the screen width
                       child: Card(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

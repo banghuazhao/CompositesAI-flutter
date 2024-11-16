@@ -24,8 +24,6 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-
-
   @override
   void initState() {
     super.initState();
@@ -46,11 +44,13 @@ class _LoginPageState extends State<LoginPage> {
   void _login(LoginViewModel viewModel) async {
     if (!_formKey.currentState!.validate()) return;
 
-
     try {
       // Call login from viewModel and pass the credentials
 
-      final accessToken = await viewModel.login(_emailController.text, _passwordController.text,);
+      final accessToken = await viewModel.login(
+        _emailController.text,
+        _passwordController.text,
+      );
 
       if (accessToken != null) {
         // Login successful
@@ -93,6 +93,33 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _googleSignIn(LoginViewModel viewModel) async {
+    await viewModel.signInWithGoogle();
+    if (viewModel.user != null) {
+      Fluttertoast.showToast(
+        msg: "Logged in with Google",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 2,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+
+      Navigator.pop(context, "Log in Success");
+    } else {
+      Fluttertoast.showToast(
+        msg: "Google Sign-In failed",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 2,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -103,154 +130,195 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-        create: (_) => sl<LoginViewModel>(),
-        child: Consumer<LoginViewModel>(builder: (context, viewModel, child) {
-          return Scaffold(
-            appBar: AppBar(title: Text('Login')),
-            body: SingleChildScrollView(
-              padding: EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: Column(
-                  children: [
-                    // Username Field
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        errorBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                              color: Color(0xFFB71C1C)), // Underline color when there’s an error
-                        ),
-                        focusedErrorBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                              color:
-                              Color(0xFFB71C1C)), // Underline color when focused and there’s an error
-                        ),
-                        errorStyle: TextStyle(color: Color(0xFFB71C1C)), // Error text color
+      create: (_) => sl<LoginViewModel>(),
+      child: Consumer<LoginViewModel>(builder: (context, viewModel, child) {
+        return Scaffold(
+          appBar: AppBar(title: Text('Login')),
+          body: SingleChildScrollView(
+            padding: EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch, // Ensure elements span the full width
+                children: [
+                  // Email Field
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      errorBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFB71C1C)),
                       ),
-                      style: TextStyle(color: Colors.black), // Text color when typing
-                      obscureText: false,
-                      onChanged: (value) => email = value.trim(),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email address';
-                        }
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                          return 'Please enter a valid email address';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: 16.0),
-
-                    // Password Field
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: viewModel.obscureText, // Controls whether the text is hidden
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            viewModel.obscureText ? Icons.visibility_off : Icons.visibility,
-                          ),
-                          onPressed: viewModel.togglePasswordVisibility,
-                        ),
+                      focusedErrorBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFB71C1C)),
                       ),
-                      style: TextStyle(color: Colors.black),
-                      onChanged: (value) {
-                        password = value.trim();
-                        setState(() {
-                          isPasswordValid = password.length >= 6;
-                        });
-                      },
+                      errorStyle: TextStyle(color: Color(0xFFB71C1C)),
                     ),
-                    SizedBox(height: 4.0),
+                    style: TextStyle(color: Colors.black),
+                    obscureText: false,
+                    onChanged: (value) => email = value.trim(),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email address';
+                      }
+                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                        return 'Please enter a valid email address';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16.0),
 
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 3.0), // Adjust this padding to match the input field
-                        child: Text(
-                          isPasswordValid ? '' : 'Password must be at least 6 characters long',
-                          style: TextStyle(
-                            color: isPasswordValid ? Colors.transparent : Colors.black54,
-                            fontSize: 14.0,
-                          ),
+                  // Password Field
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: viewModel.obscureText,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          viewModel.obscureText ? Icons.visibility_off : Icons.visibility,
                         ),
+                        onPressed: viewModel.togglePasswordVisibility,
                       ),
                     ),
-                    SizedBox(height: 30.0),
-                    // Login Button
-                    viewModel.isLoading
-                        ? CircularProgressIndicator()
-                        : MaterialButton(
-                            minWidth: double.infinity,
-                            height: 45,
-                            color: isButtonEnabled
-                                ? Color.fromRGBO(51, 66, 78, 1) // Enabled color
-                                : Color.fromRGBO(
-                                    180, 180, 180, 1), // Grey color for disabled button
-                            disabledColor: Color.fromRGBO(140, 150, 153, 1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            onPressed: isButtonEnabled ? () => _login(viewModel) : null,
-                            child: Text(
-                              'Login',
-                              style: TextStyle(color: Colors.white, fontSize: 16),
-                            ),
-                          ),
-                    SizedBox(height: 20.0),
+                    style: TextStyle(color: Colors.black),
+                    onChanged: (value) {
+                      password = value.trim();
+                      setState(() {
+                        isPasswordValid = password.length >= 6;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 4.0),
 
-                    // Forget Password Button
-                    MaterialButton(
-                      minWidth: double.infinity,
-                      height: 45,
-                      color: Color.fromRGBO(51, 66, 78, 1), // Darker color
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ForgetPasswordPage(),
-                          ),
-                        );
-                      },
+                  // Password Validation Message
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 3.0),
                       child: Text(
-                        'Forgot Password',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        isPasswordValid ? '' : 'Password must be at least 6 characters long',
+                        style: TextStyle(
+                          color: isPasswordValid ? Colors.transparent : Colors.black54,
+                          fontSize: 14.0,
+                        ),
                       ),
                     ),
-                    SizedBox(height: 20.0),
+                  ),
+                  SizedBox(height: 30.0),
 
-                    // Signup Section
-                    Text("Don't have an account?"),
-                    SizedBox(height: 5.0),
-                    MaterialButton(
-                      minWidth: double.infinity,
-                      height: 45,
-                      color: Color.fromRGBO(
-                          51, 66, 78, 1), // Darker color matching "Forget Password" button
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      onPressed: _signup,
-                      child: Text(
-                        'Signup',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
+                  // Login Button
+                  viewModel.isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : MaterialButton(
+                    minWidth: double.infinity,
+                    height: 45,
+                    color: isButtonEnabled
+                        ? Color.fromRGBO(51, 66, 78, 1)
+                        : Color.fromRGBO(180, 180, 180, 1),
+                    disabledColor: Color.fromRGBO(140, 150, 153, 1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                  ],
-                ),
+                    onPressed: isButtonEnabled ? () => _login(viewModel) : null,
+                    child: Text(
+                      'Login',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                  SizedBox(height: 20.0),
+
+                  // Social Login Section
+                  Text(
+                    "Or log in using:",
+                    style: TextStyle(fontSize: 15),
+                      textAlign: TextAlign.center
+                  ),
+                  SizedBox(height: 5.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildSocialButton('images/google_logo.png', () => _googleSignIn(viewModel)),
+                      _buildSocialButton('images/apple_logo.png', () => _googleSignIn(viewModel)),
+                    ],
+                  ),
+                  SizedBox(height: 16.0),
+
+                  // Forgot Password Button
+                  MaterialButton(
+                    minWidth: double.infinity,
+                    height: 45,
+                    color: Color.fromRGBO(51, 66, 78, 1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ForgetPasswordPage(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Forgot Password',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                  SizedBox(height: 20.0),
+
+                  // Signup Section
+                  Text("Not a member yet? Sign up for free",
+                      style: TextStyle(fontSize: 15),
+                      textAlign: TextAlign.center),
+                  SizedBox(height: 5.0),
+                  MaterialButton(
+                    minWidth: double.infinity,
+                    height: 45,
+                    color: Color.fromRGBO(51, 66, 78, 1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    onPressed: _signup,
+                    child: Text(
+                      'Signup',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                ],
               ),
             ),
-          );
-        }));
+          ),
+        );
+      }),
+    );
   }
+
+// Helper Method for Social Buttons
+  Widget _buildSocialButton(String imagePath, VoidCallback onPressed) {
+    return Container(
+      width: 45,
+      height: 45,
+      margin: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: IconButton(
+        icon: Image.asset(
+          imagePath,
+          height: 40,
+          width: 40,
+          fit: BoxFit.contain,
+        ),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
 
   void _signup() async {
     final result = await Navigator.push(
@@ -259,7 +327,7 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     if (result == "sign up success") {
-        Navigator.pop(context, "Log in Success");
+      Navigator.pop(context, "Log in Success");
     }
   }
 }

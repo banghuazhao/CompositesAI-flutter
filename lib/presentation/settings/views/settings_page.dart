@@ -27,8 +27,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SettingsViewModel>(
-      builder: (context, viewModel, _) {
+    return Consumer<SettingsViewModel>( // listen to changes in SettingsViewModel
+      builder: (context, viewModel, _) {//If every part of the widget depends on the state or changes dynamically, there’s no need to pass a child. Let the Consumer rebuild the entire widget tree.
         return Scaffold(
           appBar: AppBar(title: const Text("Settings")),
           body: ProgressHUD(

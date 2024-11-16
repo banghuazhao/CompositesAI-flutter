@@ -10,4 +10,5 @@ abstract class AuthRepository {
   Future<String> resetPassword(String email, String newPassword, String confirmationCode);
   Future<void> sendSignupVerificationCode(String email);
   Future<String> updatePassword(String newPassword);
+  Future<String> syncUser(String? displayName, String email, String? photoUrl);
 }

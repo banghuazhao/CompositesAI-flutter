@@ -53,6 +53,13 @@ class AuthUseCase {
   Future<String> updatePassword(String newPassword) async {
     return await repository.updatePassword(newPassword);
   }
+
+  Future<String> syncUser(String? displayName, String email, String? photoUrl) async {
+    String accessToken = await repository.syncUser(displayName, email, photoUrl);
+    await tokenProvider.saveToken(accessToken);
+    return accessToken;
+  }
+
 }
 
   

@@ -81,3 +81,5 @@ key
 .env
 ios/fastlane/metadata
 iOS/fastlane/screenshots
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json

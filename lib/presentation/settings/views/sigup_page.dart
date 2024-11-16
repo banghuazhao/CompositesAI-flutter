@@ -94,7 +94,7 @@ class _SignupFormState extends State<SignupForm> {
             ),
           );
 
-          // Navigate to the home screen
+          // Navigate to the previous screen
           Navigator.pop(context, "sign up success");
         } else {
           // Sign-up succeeded, but login failed
