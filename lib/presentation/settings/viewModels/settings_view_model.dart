@@ -35,13 +35,13 @@ class SettingsViewModel extends ChangeNotifier {
       required this.userUserCase,
       required this.featureFlagProvider}) {
     initPackageInfo();
+    fetchAuthSessionNew();
   }
 
 
   Future<void> fetchAuthSessionNew() async {
     try {
-      isLoggedIn = await authUseCase.isLoggedIn();
-      notifyListeners();
+      final isLoggedIn = await authUseCase.isLoggedIn();
       if (isLoggedIn) {
         fetchUser();
       }
@@ -57,9 +57,11 @@ class SettingsViewModel extends ChangeNotifier {
     try {
       user = await userUserCase.fetchMe();
       print(user);
+      isLoggedIn = true;
       notifyListeners();
     } catch (e) {
       isLoggedIn = false;
+      notifyListeners();
     }
   }
 

@@ -15,18 +15,7 @@ class UserProfileViewModel extends ChangeNotifier {
   String errorMessage = '';
 
   UserProfileViewModel({required this.authUseCase, required this.userUseCase}) {
-    fetchUserDetails();
     fetchAuthSessionNew();
-  }
-
-  Future<void> fetchUserDetails() async {
-    setLoading(true);
-    try {
-      user = await userUseCase.fetchMe(); // Assuming a getUser method
-    } catch (e) {
-      print("Failed to fetch user details: $e");
-    }
-    setLoading(false);
   }
 
   Future<void> fetchAuthSessionNew() async {
