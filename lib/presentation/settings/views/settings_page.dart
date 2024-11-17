@@ -19,11 +19,13 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   @override
-  void didChangeDependencies() {
+  Future<void> didChangeDependencies() async {
     super.didChangeDependencies();
+    // Fetch the latest auth session when dependencies change
     final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
-    viewModel.fetchAuthSessionNew();
+    await viewModel.fetchAuthSessionNew();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   if (viewModel.isLoggedIn)
                     ListTile(
+                      key: ValueKey(viewModel.user?.name ?? ""),
                       leading: Icon(
                         Icons.account_circle,
                         size: 45,
@@ -70,9 +73,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           MaterialPageRoute(
                               builder: (context) => UserProfilePage()),
                         ).then((value) {
-                          if (value == 'refresh') {
                             viewModel.fetchAuthSessionNew();
-                          }
                         });
                       },
                     ),
