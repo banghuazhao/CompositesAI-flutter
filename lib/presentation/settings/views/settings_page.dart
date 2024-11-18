@@ -18,13 +18,27 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  @override
+ /* @override
   Future<void> didChangeDependencies() async {
     super.didChangeDependencies();
     // Fetch the latest auth session when dependencies change
     final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
     await viewModel.fetchAuthSessionNew();
   }
+  */
+  late SettingsViewModel viewModel;
+  @override
+  void initState() {
+    super.initState();
+    viewModel = Provider.of<SettingsViewModel>(context, listen: false);
+    _fetchAuthSession();
+  }
+
+  Future<void> _fetchAuthSession() async {
+    await viewModel.fetchAuthSessionNew();
+    setState(() {});
+  }
+
 
 
   @override
@@ -67,14 +81,14 @@ class _SettingsPageState extends State<SettingsPage> {
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(viewModel.user?.email ?? ""),
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => UserProfilePage()),
-                        ).then((value) {
-                            viewModel.fetchAuthSessionNew();
-                        });
+                            builder: (context) => UserProfilePage(),
+                          ),
+                        );
+                        await _fetchAuthSession();
                       },
                     ),
                   MoreRow(

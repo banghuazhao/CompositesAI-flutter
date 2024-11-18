@@ -41,28 +41,34 @@ class SettingsViewModel extends ChangeNotifier {
 
   Future<void> fetchAuthSessionNew() async {
     try {
-      final isLoggedIn = await authUseCase.isLoggedIn();
+      isLoggedIn = await authUseCase.isLoggedIn();
       if (isLoggedIn) {
-        fetchUser();
+        await fetchUser();
+      } else {
+        user = null; // Ensure user is null if not logged in
       }
     } catch (e) {
       if (kDebugMode) {
         print(e);
       }
       isLoggedIn = false;
+      user = null; // Ensure proper reset
     }
+    notifyListeners();
   }
 
   Future<void> fetchUser() async {
     try {
       user = await userUserCase.fetchMe();
-      print(user);
-      isLoggedIn = true;
-      notifyListeners();
+      isLoggedIn = true; // Ensure isLoggedIn is updated correctly
     } catch (e) {
-      isLoggedIn = false;
-      notifyListeners();
+      if (kDebugMode) {
+        print(e);
+      }
+      isLoggedIn = false; // Handle fetch user failure
+      user = null;
     }
+    notifyListeners();
   }
 
   Future<void> initPackageInfo() async {

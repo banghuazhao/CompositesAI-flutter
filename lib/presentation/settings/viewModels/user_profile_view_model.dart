@@ -2,7 +2,8 @@ import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/user_usercase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:domain/usecases/auth_usecase.dart'; // Assuming your use cases are here
+import 'package:domain/usecases/auth_usecase.dart';
+import 'package:fluttertoast/fluttertoast.dart'; // Assuming your use cases are here
 
 class UserProfileViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
@@ -21,25 +22,29 @@ class UserProfileViewModel extends ChangeNotifier {
   Future<void> fetchAuthSessionNew() async {
     try {
       isLoggedIn = await authUseCase.isLoggedIn();
-      notifyListeners();
       if (isLoggedIn) {
-        fetchUser();
+        await fetchUser(); // Fetch user only if logged in
+      } else {
+        user = null; // Clear user data when not logged in
       }
     } catch (e) {
       if (kDebugMode) {
         print(e);
       }
       isLoggedIn = false;
+      user = null; // Ensure user data is cleared on error
     }
+    notifyListeners(); // Notify listeners about state changes
   }
 
   Future<void> fetchUser() async {
     try {
       user = await userUseCase.fetchMe();
-      print(user);
       notifyListeners();
     } catch (e) {
       isLoggedIn = false;
+      user = null; // Clear user data in case of an error
+      notifyListeners(); // Ensure the UI is updated
     }
   }
 
@@ -47,6 +52,17 @@ class UserProfileViewModel extends ChangeNotifier {
     setLoading(true);
     try {
       await authUseCase.logout();
+      Fluttertoast.showToast(
+        msg: "Logged out",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      isLoggedIn = false; // Explicitly set isLoggedIn to false
+      user = null; // Clear user data
+      notifyListeners();
     } catch (e) {
       print("Logout failed: $e");
     }
