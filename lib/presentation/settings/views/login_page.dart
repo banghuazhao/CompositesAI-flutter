@@ -241,7 +241,7 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildSocialButton('images/google_logo.png', () => _googleSignIn(viewModel)),
-                      _buildSocialButton('images/apple_logo.png', () => _googleSignIn(viewModel)),
+                      //_buildSocialButton('images/apple_logo.png', () => _googleSignIn(viewModel)),
                     ],
                   ),
                   SizedBox(height: 16.0),
