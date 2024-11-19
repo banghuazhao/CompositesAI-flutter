@@ -30,7 +30,7 @@ class ChatViewModel extends ChangeNotifier {
     "Calculate laminate 3D properties",
     "Calculate laminar strain",
     "Calculate laminate stress",
-    "Calculates the UDFRC (Unidirectional fibre-reinforced composites) properties by rules of mixture",
+    "Calculates the UDFRC properties by rules of mixture",
     // "Give me some math equations.",
   ];
 

@@ -1,4 +1,8 @@
+import 'dart:math';
+
 import 'package:domain/domain.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -23,65 +27,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
       children: [
         Expanded(
           child: messages.isEmpty
-              ? SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Icon(
-                          Icons.chat_bubble_outline,
-                          size: 60,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      Text(
-                        "Select a tool to get started!",
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
-                      ),
-                      SizedBox(height: 20),
-                      // Default questions displayed as cards or buttons
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Determine the number of columns based on the screen width
-                          double width = constraints.maxWidth;
-                          int crossAxisCount = 2;
-                          if (width >= 800) {
-                            crossAxisCount = 4;
-                          } else if (width >= 500) {
-                            crossAxisCount = 3;
-                          }
-
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              // Number of items in a row
-                              childAspectRatio: 1.2,
-                              // Width to height ratio of each item
-                              crossAxisSpacing: 10.0,
-                              mainAxisSpacing: 10.0,
-                            ),
-                            itemCount: chatViewModel.defaultQuestions.length,
-                            padding: EdgeInsets.all(16),
-                            itemBuilder: (context, index) {
-                              return InkWell(
-                                onTap: () async {
-                                  await chatViewModel
-                                      .onDefaultQuestionsTapped(index);
-                                },
-                                child: _buildDefaultQuestionCard(
-                                    chatViewModel.defaultQuestions[index]),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      SizedBox(height: 20),
-                    ],
-                  ),
-                )
+              ? defaultQuestionView(chatViewModel)
               : ListView.builder(
                   controller: chatViewModel.scrollController,
                   itemCount: chatList(chatViewModel).length,
@@ -90,43 +36,73 @@ class _ChatMessageListState extends State<ChatMessageList> {
                   },
                 ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                    controller: textController,
-                    decoration: InputDecoration(
-                      hintText: 'Ask a question...',
-                    ),
-                    onSubmitted: (value) {
-                      if (textController.text.isNotEmpty &&
-                          !chatViewModel.isLoading) {
-                        final text = textController.text;
-                        textController.clear();
-                        chatViewModel.sendInputMessage(text);
-                      }
-                    },
-                    onChanged: (value) {
-                      setState(() {});
-                    }),
-              ),
-              chatViewModel.isLoading
-                  ? CircularProgressIndicator() // Show loading indicator
-                  : IconButton(
-                      icon: Icon(Icons.send),
-                      onPressed: textController.text.isEmpty
-                          ? null
-                          : () async {
-                              final text = textController.text;
-                              textController.clear();
-                              await chatViewModel.sendInputMessage(text);
-                            }),
-            ],
-          ),
-        ),
+        if (messages.isNotEmpty || !kIsWeb) inputBar(chatViewModel)
       ],
+    );
+  }
+
+  Widget defaultQuestionView(ChatViewModel viewModel) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Icon(
+              Icons.chat_bubble_outline,
+              size: 80,
+              color: Colors.grey,
+            ),
+          ),
+          Text(
+            "What can I help with?",
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 20),
+          if (kIsWeb) inputBar(viewModel),
+          // Default questions displayed as cards or buttons
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Determine the number of columns based on the screen width
+              double width = constraints.maxWidth;
+              int crossAxisCount = 2;
+              if (width >= 1000) {
+                crossAxisCount = 5;
+              } else if (width >= 800) {
+                crossAxisCount = 4;
+              } else if (width >= 600) {
+                crossAxisCount = 3;
+              }
+              crossAxisCount = max(width ~/ 200, 2);
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  // Number of items in a row
+                  childAspectRatio: 2,
+                  // Width to height ratio of each item
+                  crossAxisSpacing: 10.0,
+                  mainAxisSpacing: 10.0,
+                ),
+                itemCount: viewModel.defaultQuestions.length,
+                padding: EdgeInsets.all(12),
+                itemBuilder: (context, index) {
+                  return InkWell(
+                    onTap: () async {
+                      await viewModel.onDefaultQuestionsTapped(index);
+                    },
+                    child: _buildDefaultQuestionCard(
+                        viewModel.defaultQuestions[index]),
+                  );
+                },
+              );
+            },
+          ),
+          SizedBox(height: 20),
+        ],
+      ),
     );
   }
 
@@ -180,6 +156,54 @@ class _ChatMessageListState extends State<ChatMessageList> {
         }));
 
     return result;
+  }
+
+  Widget inputBar(ChatViewModel viewModel) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(24.0),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                  controller: textController,
+                  decoration: InputDecoration(
+                    hintText: 'Ask a question...',
+                    border: InputBorder.none, // Remove the line under the TextField
+                    enabledBorder: InputBorder.none, // No border when active
+                    focusedBorder: InputBorder.none, // No border when focused
+                  ),
+                  onSubmitted: (value) {
+                    if (textController.text.isNotEmpty && !viewModel.isLoading) {
+                      final text = textController.text;
+                      textController.clear();
+                      viewModel.sendInputMessage(text);
+                    }
+                  },
+                  onChanged: (value) {
+                    setState(() {});
+                  }),
+            ),
+            viewModel.isLoading
+                ? CircularProgressIndicator() // Show loading indicator
+                : IconButton(
+                    icon: Icon(Icons.send),
+                    onPressed: textController.text.isEmpty
+                        ? null
+                        : () async {
+                            final text = textController.text;
+                            textController.clear();
+                            await viewModel.sendInputMessage(text);
+                          }),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget streamWidget(AsyncSnapshot<Message> snapshot) {
