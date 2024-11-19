@@ -32,13 +32,14 @@ platform :android do
 
   desc "Deploy a new version to the Google Play"
   lane :deploy do
-    increment_version_code_time()
+    new_version_code = increment_version_code_time()
     gradle(
       task: "assemble",
       build_type: "Release"
     )
     upload_to_play_store(
       track: 'production',
+      version_code: new_version_code,
       release_status: 'draft'
     )
   end
@@ -75,11 +76,10 @@ platform :android do
     # Update the version code in pubspec.yaml
     new_pubspec_content = pubspec_content.gsub(/version:\s(\d+\.\d+\.\d+)\+\d+/, "version: #{version_name}+#{new_version_code}")
 
-  
     # Write the updated pubspec.yaml content
     File.open(pubspec_path, "w") { |file| file.puts new_pubspec_content }
 
-    # puts "Updated version code in build.gradle to #{new_version_code}"
+    version_code
   end
   
 end
