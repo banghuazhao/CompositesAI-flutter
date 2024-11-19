@@ -103,5 +103,28 @@
     <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
     <img class="center" aria-hidden="true" src="splash/img/light-1x.png" />
   </picture>
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+  
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyCf9rVUE0ASwnvklI43co3AG81x4fq41IA",
+      authDomain: "swiftcomp-16fe5.firebaseapp.com",
+      projectId: "swiftcomp-16fe5",
+      storageBucket: "swiftcomp-16fe5.firebasestorage.app",
+      messagingSenderId: "448898848827",
+      appId: "1:448898848827:web:1f31d2008a3f988338a41e",
+      measurementId: "G-MZB2SMKR94"
+    };
+  
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
 </body>
 </html>
