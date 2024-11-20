@@ -131,7 +131,7 @@ class UserProfilePage extends StatelessWidget {
 
                   ElevatedButton(
                     onPressed: () async {
-                      await viewModel.logoutUser();
+                      await viewModel.logoutUser(context);
                       Navigator.of(context).pop("refresh");
                     },
                     style: ElevatedButton.styleFrom(

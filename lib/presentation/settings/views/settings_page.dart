@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
-import 'package:launch_review/launch_review.dart';
 import '../viewModels/settings_view_model.dart';
 import 'login_page.dart';
 import 'tool_setting_page.dart';

@@ -3,7 +3,7 @@ import 'package:domain/usecases/user_usercase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:domain/usecases/auth_usecase.dart';
-import 'package:fluttertoast/fluttertoast.dart'; // Assuming your use cases are here
+// Assuming your use cases are here
 
 class UserProfileViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
@@ -48,26 +48,39 @@ class UserProfileViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> logoutUser() async {
+  Future<void> logoutUser(BuildContext context) async {
     setLoading(true);
     try {
       await authUseCase.logout();
-      Fluttertoast.showToast(
-        msg: "Logged out",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        backgroundColor: Colors.black,
-        textColor: Colors.white,
-        fontSize: 16.0,
+
+      // Display a success Snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Logged out"),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.black,
+        ),
       );
+
+      // Update state
       isLoggedIn = false; // Explicitly set isLoggedIn to false
       user = null; // Clear user data
       notifyListeners();
     } catch (e) {
+      // Log the error and display an error Snackbar
       print("Logout failed: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Logout failed. Please try again."),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setLoading(false); // Ensure loading state is cleared
     }
-    setLoading(false);
   }
+
 
   Future<void> deleteUser() async {
     setLoading(true);

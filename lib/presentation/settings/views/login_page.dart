@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/sigup_page.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+
 
 import '../../../app/injection_container.dart';
 import '../viewModels/login_view_model.dart';
@@ -41,12 +41,11 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  void _login(LoginViewModel viewModel) async {
+  void _login(LoginViewModel viewModel, BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
     try {
       // Call login from viewModel and pass the credentials
-
       final accessToken = await viewModel.login(
         _emailController.text,
         _passwordController.text,
@@ -54,71 +53,69 @@ class _LoginPageState extends State<LoginPage> {
 
       if (accessToken != null) {
         // Login successful
-        Fluttertoast.showToast(
-          msg: "Logged in",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 2,
-          backgroundColor: Colors.black,
-          textColor: Colors.white,
-          fontSize: 16.0,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Logged in"),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.black,
+          ),
         );
 
         Navigator.pop(context, "Log in Success");
       } else {
         // Login failed - error handled within viewModel and errorMessage will be populated
         if (viewModel.errorMessage != null) {
-          Fluttertoast.showToast(
-            msg: viewModel.errorMessage!,
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.CENTER,
-            timeInSecForIosWeb: 2,
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-            fontSize: 16.0,
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(viewModel.errorMessage!),
+              duration: Duration(seconds: 2),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
     } catch (e) {
       // General error handling, if something unexpected happens
-      Fluttertoast.showToast(
-        msg: 'An unexpected error occurred: ${e.toString()}',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 2,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An unexpected error occurred: ${e.toString()}'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
-  void _googleSignIn(LoginViewModel viewModel) async {
+  void _googleSignIn(LoginViewModel viewModel, BuildContext context) async {
     await viewModel.signInWithGoogle();
+
     if (viewModel.user != null) {
-      Fluttertoast.showToast(
-        msg: "Logged in with Google",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 2,
-        backgroundColor: Colors.black,
-        textColor: Colors.white,
-        fontSize: 16.0,
+      // Display success Snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Logged in with Google"),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.black,
+        ),
       );
 
+      // Navigate to the next screen
       Navigator.pop(context, "Log in Success");
     } else {
-      Fluttertoast.showToast(
-        msg: "Google Sign-In failed",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        timeInSecForIosWeb: 2,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
+      // Display failure Snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Google Sign-In failed"),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
+
+
+
+
 
   @override
   void dispose() {
@@ -222,7 +219,7 @@ class _LoginPageState extends State<LoginPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    onPressed: isButtonEnabled ? () => _login(viewModel) : null,
+                    onPressed: isButtonEnabled ? () => _login(viewModel, context) : null,
                     child: Text(
                       'Login',
                       style: TextStyle(color: Colors.white, fontSize: 16),
@@ -240,7 +237,7 @@ class _LoginPageState extends State<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildSocialButton('images/google_logo.png', () => _googleSignIn(viewModel)),
+                      _buildSocialButton('images/google_logo.png', () => _googleSignIn(viewModel, context)),
                       //_buildSocialButton('images/apple_logo.png', () => _googleSignIn(viewModel)),
                     ],
                   ),

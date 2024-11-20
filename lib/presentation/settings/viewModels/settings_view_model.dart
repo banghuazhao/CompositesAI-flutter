@@ -1,19 +1,17 @@
 // lib/presentation/viewmodels/settings_view_model.dart
 
 import 'dart:io';
-import 'package:device_info/device_info.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/user_usercase.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:launch_review/launch_review.dart';
-import 'package:share/share.dart';
 
 
 class SettingsViewModel extends ChangeNotifier {
@@ -84,13 +82,14 @@ class SettingsViewModel extends ChangeNotifier {
   Future<void> newLogout(BuildContext context) async {
     try {
       await authUseCase.logout();
-      Fluttertoast.showToast(
-        msg: "Logged out",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
-        backgroundColor: Colors.black,
-        textColor: Colors.white,
-        fontSize: 16.0,
+
+      // Display Snackbar for success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Logged out"),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.black,
+        ),
       );
       isLoggedIn = false;
       notifyListeners();
@@ -98,8 +97,17 @@ class SettingsViewModel extends ChangeNotifier {
       if (kDebugMode) {
         print(e);
       }
+      // Display Snackbar for error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to log out. Please try again."),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+
 
   Future<void> openFeedback() async {
     final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
@@ -158,16 +166,7 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   void rateApp() async {
-    try {
-      await LaunchReview.launch(
-        androidAppId: "com.banghuazhao.swiftcomp",
-        iOSAppId: "1297825946",
-        writeReview: true,
-      );
-    } catch (e) {
-      // Use fallback to open the app store directly if `LaunchReview` fails
-      openAppStore();
-    }
+    openAppStore();
   }
 
   Future<void> shareApp(BuildContext context) async {
