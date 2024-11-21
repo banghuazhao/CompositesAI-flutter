@@ -36,7 +36,8 @@ class LoginViewModel extends ChangeNotifier {
 
   void updateButtonState(String email, String password) {
     final isEmailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
-    _isButtonEnabled = isEmailValid && password.isNotEmpty && password.length >= 6;
+    _isButtonEnabled =
+        isEmailValid && password.isNotEmpty && password.length >= 6;
     notifyListeners();
   }
 
@@ -57,20 +58,8 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
-  static String GOOGLE_SIGNIN_CLIENT_ID_WEB = dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_WEB'] ?? "";
-  static String GOOGLE_SIGNIN_CLIENT_ID_IOS = dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_IOS'] ?? "";
-  static String GOOGLE_SIGNIN_CLIENT_ID_AND = dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_AND'] ?? "";
-
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: kIsWeb
-        ? GOOGLE_SIGNIN_CLIENT_ID_WEB
-        : Platform.isIOS
-            ? GOOGLE_SIGNIN_CLIENT_ID_IOS
-            : GOOGLE_SIGNIN_CLIENT_ID_AND,
-    scopes: <String>[
-      'email',
-    ],
-  );
+  static String GOOGLE_SIGNIN_CLIENT_ID_WEB =
+      dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_WEB'] ?? "";
 
   bool _isSigningIn = false;
 
@@ -86,7 +75,18 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _user = await _googleSignIn.signIn();
+      final GoogleSignIn googleSignIn;
+      if (kIsWeb) {
+        googleSignIn = GoogleSignIn(
+          clientId: GOOGLE_SIGNIN_CLIENT_ID_WEB,
+          scopes: <String>['email'],
+        );
+      } else {
+        googleSignIn = GoogleSignIn(
+          scopes: <String>['email'],
+        );
+      }
+      _user = await googleSignIn.signIn();
       if (_user != null) {
         print('Logged in with Google: ${_user!.email}');
         await syncUser(_user!.displayName, _user!.email, _user!.photoUrl);
@@ -104,13 +104,27 @@ class LoginViewModel extends ChangeNotifier {
 
   // Function to handle Google Sign-Out
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    final GoogleSignIn googleSignIn;
+    if (kIsWeb) {
+      googleSignIn = GoogleSignIn(
+        clientId: GOOGLE_SIGNIN_CLIENT_ID_WEB,
+        scopes: <String>['email'],
+      );
+    } else {
+      googleSignIn = GoogleSignIn(
+        scopes: <String>['email'],
+      );
+    }
+
+    await googleSignIn.signOut();
     _user = null;
     notifyListeners();
   }
 
-  Future<String> syncUser(String? displayName, String email, String? photoUrl) async {
-    final accessToken = await authUseCase.syncUser(displayName, email, photoUrl);
+  Future<String> syncUser(
+      String? displayName, String email, String? photoUrl) async {
+    final accessToken =
+        await authUseCase.syncUser(displayName, email, photoUrl);
     return accessToken;
   }
 
@@ -124,11 +138,12 @@ class LoginViewModel extends ChangeNotifier {
         ],
         webAuthenticationOptions: WebAuthenticationOptions(
           clientId: 'com.example.swiftcompsignin',
-          redirectUri: kIsWeb //This is where Apple sends the user back after they sign in.
-              ? Uri.parse('https://compositesai.com/')
-              : Uri.parse(
-            'https://flutter-sign-in-with-apple-example.glitch.me/callbacks/sign_in_with_apple',
-          ),
+          redirectUri:
+              kIsWeb //This is where Apple sends the user back after they sign in.
+                  ? Uri.parse('https://compositesai.com/')
+                  : Uri.parse(
+                      'https://flutter-sign-in-with-apple-example.glitch.me/callbacks/sign_in_with_apple',
+                    ),
         ),
       );
 
@@ -139,7 +154,8 @@ class LoginViewModel extends ChangeNotifier {
       }
       // Send token to backend for validation
       // This is where app sends token to backend to check if the the "identityToken" is real and safe to use.
-      final validateTokenEndpoint = Uri.parse('http://localhost:8080/api/auth/sign_in_with_apple');
+      final validateTokenEndpoint =
+          Uri.parse('http://localhost:8080/api/auth/sign_in_with_apple');
       final validationResponse = await http.Client().post(
         validateTokenEndpoint,
         headers: {
@@ -174,5 +190,4 @@ class LoginViewModel extends ChangeNotifier {
       rethrow; // Optionally rethrow for higher-level error handling
     }
   }
-
 }
