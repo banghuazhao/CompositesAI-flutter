@@ -11,7 +11,8 @@ class AuthUseCase {
 
   AuthUseCase({required this.repository, required this.tokenProvider});
 
-  Future<User> signup(String email, String password,String verificationCode,{String? name}) async {
+  Future<User> signup(String email, String password, String verificationCode,
+      {String? name}) async {
     return await repository.signup(email, password, verificationCode, name: name);
   }
 
@@ -64,6 +65,10 @@ class AuthUseCase {
     return accessToken;
   }
 
-}
+  Future<String> validateAppleToken(String identityToken) async {
+    String email = await repository.validateAppleToken(identityToken);
+    return email;
+  }
 
-  
+
+}

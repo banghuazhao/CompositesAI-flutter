@@ -29,6 +29,8 @@ class LoginViewModel extends ChangeNotifier {
   bool get isButtonEnabled => _isButtonEnabled;
   bool obscureText = true;
 
+  String? email;
+
   void togglePasswordVisibility() {
     obscureText = !obscureText;
     notifyListeners();
@@ -122,6 +124,7 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   Future<void> signInWithApple() async {
+    String? email;
     try {
       _isSigningIn = false;
       // Request credentials from Apple
@@ -141,42 +144,16 @@ class LoginViewModel extends ChangeNotifier {
         ),
       );
 
+      print('Apple credential: $credential');
+      // Get the identity token
       final identityToken = credential.identityToken;
 
       if (identityToken == null) {
         throw Exception('Identity token not available in Apple credentials');
       }
-      // Send token to backend for validation
-      // This is where app sends token to backend to check if the the "identityToken" is real and safe to use.
-      final validateTokenEndpoint =
-          Uri.parse('http://localhost:8080/api/auth/sign_in_with_apple');
-      final response = await http.Client().post(
-        validateTokenEndpoint,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'identityToken': identityToken,
-        }),
-      );
+      // Validate the token with backend and retrieve email if valid
+      email = await validateAppleToken(identityToken);
 
-      if (response.statusCode != 200) {
-        print('Token validation failed: ${response.body}');
-        throw Exception('Failed to validate token with backend');
-      }
-      print('Token validated successfully: ${response.body}');
-
-      // Extract user information
-      final responseJson = jsonDecode(response.body);
-      final String? email = responseJson["payload"]["email"];
-
-      if (email == null) {
-        throw Exception('Email not available in Apple credentials');
-      } else {
-        print(email);
-      }
-
-      // Sync user with backend (you may modify syncUser based on backend response if needed)
       await syncUser(null, email, null);
 
       _isSigningIn = true;
@@ -186,5 +163,9 @@ class LoginViewModel extends ChangeNotifier {
       print('Sign in with Apple failed: $e');
       rethrow; // Optionally rethrow for higher-level error handling
     }
+  }
+
+  Future<String> validateAppleToken(String identityToken) async {
+    return await authUseCase.validateAppleToken(identityToken);
   }
 }

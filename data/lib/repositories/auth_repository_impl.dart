@@ -198,4 +198,33 @@ class AuthRepositoryImpl implements AuthRepository {
       throw mapServerErrorToDomainException(response);
     }
   }
+
+  @override
+  Future<String> validateAppleToken(String identityToken) async {
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url =
+    Uri.parse('http://localhost:8080/api/auth/sign_in_with_apple');
+    final response = await client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'identityToken': identityToken,
+      }),
+    );
+    if (response.statusCode != 200) {
+      print('Token validation failed: ${response.body}');
+      throw Exception('Failed to validate token with backend');
+    }
+    final responseJson = jsonDecode(response.body);
+
+    // Extract email from the payload
+    final String? email = responseJson["payload"]?["email"]; // Safely access payload
+
+    if (email == null || email.isEmpty) {
+      throw Exception('Validation failed: email not retrieved from token');
+    }
+    return email;
+  }
 }

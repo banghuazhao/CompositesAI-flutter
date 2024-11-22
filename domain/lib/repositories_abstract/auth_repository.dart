@@ -11,4 +11,5 @@ abstract class AuthRepository {
   Future<void> sendSignupVerificationCode(String email);
   Future<String> updatePassword(String newPassword);
   Future<String> syncUser(String? displayName, String email, String? photoUrl);
+  Future<String> validateAppleToken(String identityToken);
 }
