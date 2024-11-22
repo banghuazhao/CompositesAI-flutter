@@ -89,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
   void _googleSignIn(LoginViewModel viewModel, BuildContext context) async {
     await viewModel.signInWithGoogle();
 
-    if (viewModel.user != null) {
+    if (viewModel.isSigningIn) {
       // Display success Snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -113,8 +113,32 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _appleSignIn(LoginViewModel viewModel, BuildContext context) async {
+    await viewModel.signInWithApple();
 
+    if (viewModel.isSigningIn) {
+      // Display success Snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Logged in with Apple"),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.black,
+        ),
+      );
 
+      // Navigate to the next screen
+      Navigator.pop(context, "Log in Success");
+    } else {
+      // Display failure Snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Apple Sign-In failed"),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
 
   @override
@@ -238,7 +262,7 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildSocialButton('images/google_logo.png', () => _googleSignIn(viewModel, context)),
-                      //_buildSocialButton('images/apple_logo.png', () => _googleSignIn(viewModel)),
+                      _buildSocialButton('images/apple_logo.png', () => _appleSignIn(viewModel, context)),
                     ],
                   ),
                   SizedBox(height: 16.0),

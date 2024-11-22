@@ -62,16 +62,11 @@ class LoginViewModel extends ChangeNotifier {
       dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_WEB'] ?? "";
 
   bool _isSigningIn = false;
-
   bool get isSigningIn => _isSigningIn;
-
-  GoogleSignInAccount? _user;
-
-  GoogleSignInAccount? get user => _user;
 
   // Function to handle Google Sign-In
   Future<void> signInWithGoogle() async {
-    _isSigningIn = true;
+    _isSigningIn = false;
     notifyListeners();
 
     try {
@@ -86,18 +81,17 @@ class LoginViewModel extends ChangeNotifier {
           scopes: <String>['email'],
         );
       }
-      _user = await googleSignIn.signIn();
+      GoogleSignInAccount? _user = await googleSignIn.signIn();
       if (_user != null) {
         print('Logged in with Google: ${_user!.email}');
         await syncUser(_user!.displayName, _user!.email, _user!.photoUrl);
         notifyListeners();
         // You could also notify listeners here if you want to update the UI
       }
+      _isSigningIn = true;
     } catch (error) {
       print('Error during Google Sign-In: $error');
-      _user = null;
     } finally {
-      _isSigningIn = false;
       notifyListeners();
     }
   }
@@ -117,7 +111,6 @@ class LoginViewModel extends ChangeNotifier {
     }
 
     await googleSignIn.signOut();
-    _user = null;
     notifyListeners();
   }
 
@@ -130,6 +123,7 @@ class LoginViewModel extends ChangeNotifier {
 
   Future<void> signInWithApple() async {
     try {
+      _isSigningIn = false;
       // Request credentials from Apple
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
@@ -156,7 +150,7 @@ class LoginViewModel extends ChangeNotifier {
       // This is where app sends token to backend to check if the the "identityToken" is real and safe to use.
       final validateTokenEndpoint =
           Uri.parse('http://localhost:8080/api/auth/sign_in_with_apple');
-      final validationResponse = await http.Client().post(
+      final response = await http.Client().post(
         validateTokenEndpoint,
         headers: {
           'Content-Type': 'application/json',
@@ -166,23 +160,26 @@ class LoginViewModel extends ChangeNotifier {
         }),
       );
 
-      if (validationResponse.statusCode != 200) {
-        print('Token validation failed: ${validationResponse.body}');
+      if (response.statusCode != 200) {
+        print('Token validation failed: ${response.body}');
         throw Exception('Failed to validate token with backend');
       }
-      print('Token validated successfully: ${validationResponse.body}');
+      print('Token validated successfully: ${response.body}');
 
       // Extract user information
-      final String? email = credential.email;
-      final String? givenName = credential.givenName;
+      final responseJson = jsonDecode(response.body);
+      final String? email = responseJson["payload"]["email"];
 
       if (email == null) {
         throw Exception('Email not available in Apple credentials');
+      } else {
+        print(email);
       }
 
       // Sync user with backend (you may modify syncUser based on backend response if needed)
-      await syncUser(givenName, email, null);
+      await syncUser(null, email, null);
 
+      _isSigningIn = true;
       // Notify listeners for UI update
       notifyListeners();
     } catch (e) {
