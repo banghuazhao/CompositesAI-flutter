@@ -38,8 +38,7 @@ class LoginViewModel extends ChangeNotifier {
 
   void updateButtonState(String email, String password) {
     final isEmailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
-    _isButtonEnabled =
-        isEmailValid && password.isNotEmpty && password.length >= 6;
+    _isButtonEnabled = isEmailValid && password.isNotEmpty && password.length >= 6;
     notifyListeners();
   }
 
@@ -60,8 +59,7 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
-  static String GOOGLE_SIGNIN_CLIENT_ID_WEB =
-      dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_WEB'] ?? "";
+  static String GOOGLE_SIGNIN_CLIENT_ID_WEB = dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_WEB'] ?? "";
 
   bool _isSigningIn = false;
   bool get isSigningIn => _isSigningIn;
@@ -76,21 +74,34 @@ class LoginViewModel extends ChangeNotifier {
       if (kIsWeb) {
         googleSignIn = GoogleSignIn(
           clientId: GOOGLE_SIGNIN_CLIENT_ID_WEB,
-          scopes: <String>['email'],
+          scopes: <String>['email', 'openid', 'profile'],
         );
+        GoogleSignInAccount? _user = await googleSignIn.signIn();
+        await syncUser(_user?.displayName, _user!.email, _user?.photoUrl);
+        notifyListeners();
+        _isSigningIn = true;
       } else {
         googleSignIn = GoogleSignIn(
-          scopes: <String>['email'],
+          scopes: <String>['email', 'openid', 'profile'],
         );
-      }
-      GoogleSignInAccount? _user = await googleSignIn.signIn();
-      if (_user != null) {
-        print('Logged in with Google: ${_user!.email}');
-        await syncUser(_user!.displayName, _user!.email, _user!.photoUrl);
+        GoogleSignInAccount? _user = await googleSignIn.signIn();
+        if (_user == null) {
+          // User canceled the sign-in
+          throw Exception('Sign-in was canceled by the user.');
+        }
+        final GoogleSignInAuthentication auth = await _user.authentication;
+        if (auth.idToken == null) {
+          throw Exception('Unable to retrieve ID token. Please try again.');
+          // You could also notify listeners here if you want to update the UI
+        }
+        final bool isValid = await authUseCase.validateGoogleToken(auth.idToken!);
+        if (!isValid) {
+          throw Exception('Google token validation failed.');
+        }
+        await syncUser(_user.displayName, _user.email, _user.photoUrl);
         notifyListeners();
-        // You could also notify listeners here if you want to update the UI
+        _isSigningIn = true;
       }
-      _isSigningIn = true;
     } catch (error) {
       print('Error during Google Sign-In: $error');
     } finally {
@@ -104,11 +115,11 @@ class LoginViewModel extends ChangeNotifier {
     if (kIsWeb) {
       googleSignIn = GoogleSignIn(
         clientId: GOOGLE_SIGNIN_CLIENT_ID_WEB,
-        scopes: <String>['email'],
+        scopes: <String>['email', 'openid'],
       );
     } else {
       googleSignIn = GoogleSignIn(
-        scopes: <String>['email'],
+        scopes: <String>['email', 'openid'],
       );
     }
 
@@ -116,10 +127,8 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String> syncUser(
-      String? displayName, String email, String? photoUrl) async {
-    final accessToken =
-        await authUseCase.syncUser(displayName, email, photoUrl);
+  Future<String> syncUser(String? displayName, String email, String? photoUrl) async {
+    final accessToken = await authUseCase.syncUser(displayName, email, photoUrl);
     return accessToken;
   }
 
@@ -135,12 +144,11 @@ class LoginViewModel extends ChangeNotifier {
         ],
         webAuthenticationOptions: WebAuthenticationOptions(
           clientId: 'com.example.swiftcompsignin',
-          redirectUri:
-              kIsWeb //This is where Apple sends the user back after they sign in.
-                  ? Uri.parse('https://compositesai.com/')
-                  : Uri.parse(
-                      'https://flutter-sign-in-with-apple-example.glitch.me/callbacks/sign_in_with_apple',
-                    ),
+          redirectUri: kIsWeb //This is where Apple sends the user back after they sign in.
+              ? Uri.parse('https://compositesai.com/')
+              : Uri.parse(
+                  'https://flutter-sign-in-with-apple-example.glitch.me/callbacks/sign_in_with_apple',
+                ),
         ),
       );
 

@@ -12,4 +12,5 @@ abstract class AuthRepository {
   Future<String> updatePassword(String newPassword);
   Future<String> syncUser(String? displayName, String email, String? photoUrl);
   Future<String> validateAppleToken(String identityToken);
+  Future<bool> validateGoogleToken(String idToken);
 }

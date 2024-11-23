@@ -203,7 +203,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<String> validateAppleToken(String identityToken) async {
     final baseURL = await apiEnvironmentRepository.getBaseUrl();
     final url =
-    Uri.parse('http://localhost:8080/api/auth/sign_in_with_apple');
+    Uri.parse('$baseURL/auth/sign_in_with_apple');
     final response = await client.post(
       url,
       headers: {
@@ -227,4 +227,34 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     return email;
   }
+
+  @override
+  Future<bool> validateGoogleToken(String idToken) async {
+    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final url = Uri.parse('$baseURL/auth/sign_in_with_google');
+
+    try {
+      final response = await client.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'idToken': idToken,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Token validated successfully');
+        return true; // Validation succeeded
+      } else {
+        print('Token validation failed: ${response.body}');
+        return false; // Validation failed
+      }
+    } catch (e) {
+      print('Error during token validation: $e');
+      throw Exception('Failed to validate token');
+    }
+  }
+
 }

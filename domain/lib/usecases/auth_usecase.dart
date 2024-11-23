@@ -69,6 +69,9 @@ class AuthUseCase {
     String email = await repository.validateAppleToken(identityToken);
     return email;
   }
-
+  Future<bool> validateGoogleToken(String idToken) async {
+    bool response =  await repository.validateGoogleToken(idToken);
+    return response;
+  }
 
 }
