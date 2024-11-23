@@ -145,7 +145,7 @@ class LoginViewModel extends ChangeNotifier {
         webAuthenticationOptions: WebAuthenticationOptions(
           clientId: 'com.example.swiftcompsignin',
           redirectUri: kIsWeb //This is where Apple sends the user back after they sign in.
-              ? Uri.parse('https://compositesai.com/')
+              ? Uri.parse('https://compositesai.com')
               : Uri.parse(
                   'https://flutter-sign-in-with-apple-example.glitch.me/callbacks/sign_in_with_apple',
                 ),
