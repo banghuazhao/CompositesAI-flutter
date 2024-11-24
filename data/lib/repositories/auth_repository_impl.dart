@@ -7,6 +7,7 @@ import 'package:domain/entities/domain_exceptions.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/repositories_abstract/api_env_repository.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../data_sources/authenticated_http_client.dart';
@@ -211,6 +212,7 @@ class AuthRepositoryImpl implements AuthRepository {
       },
       body: jsonEncode({
         'identityToken': identityToken,
+        'platform': kIsWeb ? 'web' : 'other',
       }),
     );
     if (response.statusCode != 200) {

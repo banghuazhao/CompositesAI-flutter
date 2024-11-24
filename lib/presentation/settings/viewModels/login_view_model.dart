@@ -133,7 +133,6 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   Future<void> signInWithApple() async {
-    String? email;
     try {
       _isSigningIn = false;
       // Request credentials from Apple
@@ -143,7 +142,7 @@ class LoginViewModel extends ChangeNotifier {
           AppleIDAuthorizationScopes.fullName,
         ],
         webAuthenticationOptions: WebAuthenticationOptions(
-          clientId: 'com.example.swiftcompsignin',
+          clientId: kIsWeb ? 'com.example.swiftcompsignin' : 'com.cdmHUB.SwiftComp',
           redirectUri: kIsWeb //This is where Apple sends the user back after they sign in.
               ? Uri.parse('https://compositesai.com')
               : Uri.parse(
@@ -160,7 +159,7 @@ class LoginViewModel extends ChangeNotifier {
         throw Exception('Identity token not available in Apple credentials');
       }
       // Validate the token with backend and retrieve email if valid
-      email = await validateAppleToken(identityToken);
+      final email = await validateAppleToken(identityToken);
 
       await syncUser(null, email, null);
 
