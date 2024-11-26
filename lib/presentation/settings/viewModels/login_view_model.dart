@@ -66,45 +66,57 @@ class LoginViewModel extends ChangeNotifier {
 
   // Function to handle Google Sign-In
   Future<void> signInWithGoogle() async {
+    // Initialize as not signing in
     _isSigningIn = false;
     notifyListeners();
 
     try {
-      final GoogleSignIn googleSignIn;
+      // Initialize GoogleSignIn instance
+      final GoogleSignIn googleSignIn = kIsWeb
+          ? GoogleSignIn(
+        clientId: GOOGLE_SIGNIN_CLIENT_ID_WEB,
+        scopes: <String>['email', 'openid', 'profile'],
+      )
+          : GoogleSignIn(
+        scopes: <String>['email', 'openid', 'profile'],
+      );
+
+      // Sign in the user
+      final GoogleSignInAccount? user = await googleSignIn.signIn();
+
+      if (user == null) {
+        // User canceled the sign-in
+        throw Exception('Sign-in was canceled by the user.');
+      }
+
+      // For web, sync the user immediately since ID token may not always be available
       if (kIsWeb) {
-        googleSignIn = GoogleSignIn(
-          clientId: GOOGLE_SIGNIN_CLIENT_ID_WEB,
-          scopes: <String>['email', 'openid', 'profile'],
-        );
-        GoogleSignInAccount? _user = await googleSignIn.signIn();
-        await syncUser(_user?.displayName, _user!.email, _user?.photoUrl);
-        notifyListeners();
-        _isSigningIn = true;
+        await syncUser(user.displayName, user.email, user.photoUrl);
       } else {
-        googleSignIn = GoogleSignIn(
-          scopes: <String>['email', 'openid', 'profile'],
-        );
-        GoogleSignInAccount? _user = await googleSignIn.signIn();
-        if (_user == null) {
-          // User canceled the sign-in
-          throw Exception('Sign-in was canceled by the user.');
-        }
-        final GoogleSignInAuthentication auth = await _user.authentication;
+        // For non-web platforms, retrieve authentication details
+        final GoogleSignInAuthentication auth = await user.authentication;
+
+        // Ensure ID token is present
         if (auth.idToken == null) {
           throw Exception('Unable to retrieve ID token. Please try again.');
-          // You could also notify listeners here if you want to update the UI
         }
+
+        // Validate the ID token with your backend
         final bool isValid = await authUseCase.validateGoogleToken(auth.idToken!);
         if (!isValid) {
           throw Exception('Google token validation failed.');
         }
-        await syncUser(_user.displayName, _user.email, _user.photoUrl);
-        notifyListeners();
-        _isSigningIn = true;
+
+        // Sync the user data
+        await syncUser(user.displayName, user.email, user.photoUrl);
       }
+      // Mark signing-in as successful
+      _isSigningIn = true;
     } catch (error) {
+      // Handle any errors during the process
       print('Error during Google Sign-In: $error');
     } finally {
+      // Notify listeners regardless of success or failure
       notifyListeners();
     }
   }
