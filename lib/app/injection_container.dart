@@ -1,26 +1,23 @@
-import 'package:data/data_sources/authenticated_http_client.dart';
 import 'package:data/data_sources/function_tools_data_source.dart';
 import 'package:data/data_sources/open_ai_data_source.dart';
-import 'package:data/providers/token_provider_impl.dart';
 import 'package:data/repositories/auth_repository_impl.dart';
 import 'package:data/repositories/chat_repository_impl.dart';
 import 'package:data/repositories/chat_session_repository_imp.dart';
 import 'package:data/repositories/user_repository_impl.dart';
-import 'package:data/repositories/api_env_repository_impl.dart';
 
-import 'package:domain/repositories_abstract/api_env_repository.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
-import 'package:domain/repositories_abstract/token_provider.dart';
 import 'package:domain/repositories_abstract/user_repository.dart';
 
 import 'package:domain/domain.dart';
-import 'package:domain/usecases/api_env_usecase.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/function_tools_usecase.dart';
 import 'package:domain/usecases/user_usercase.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
-import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
+import 'package:infrastructure/api_environment.dart';
+import 'package:infrastructure/authenticated_http_client.dart';
+import 'package:infrastructure/feature_flag_provider.dart';
+import 'package:infrastructure/token_provider.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/forget_password_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
@@ -45,7 +42,7 @@ void initInjection() {
       authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
   sl.registerFactory<QASettingsViewModel>(() => QASettingsViewModel(
       featureFlagProvider: sl(),
-      apiEnvironmentUseCase: sl(),
+      apiEnvironment: sl(),
       authUseCase: sl()));
   sl.registerFactory<UserProfileViewModel>(
       () => UserProfileViewModel(authUseCase: sl(), userUseCase: sl()));
@@ -53,10 +50,6 @@ void initInjection() {
       () => ForgetPasswordViewModel(authUseCase: sl()));
   sl.registerFactory<UpdatePasswordViewModel>(
       () => UpdatePasswordViewModel(authUseCase: sl()));
-
-  // Providers
-  sl.registerLazySingleton<TokenProvider>(() => TokenProviderImpl());
-  sl.registerLazySingleton<FeatureFlagProvider>(() => FeatureFlagProvider());
 
   // Use Cases
   sl.registerLazySingleton<ChatUseCase>(
@@ -71,8 +64,6 @@ void initInjection() {
       () => AuthUseCase(repository: sl(), tokenProvider: sl()));
   sl.registerLazySingleton<UserUseCase>(
       () => UserUseCase(repository: sl(), tokenProvider: sl()));
-  sl.registerLazySingleton<APIEnvironmentUseCase>(
-      () => APIEnvironmentUseCase(repository: sl()));
 
   // Repositories
   sl.registerLazySingleton<ChatRepository>(() =>
@@ -80,11 +71,9 @@ void initInjection() {
   sl.registerLazySingleton<ChatSessionRepository>(
       () => ChatSessionRepositoryImpl());
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(
-      client: sl(), authClient: sl(), apiEnvironmentRepository: sl()));
+      client: sl(), authClient: sl(), apiEnvironment: sl()));
   sl.registerLazySingleton<UserRepository>(() =>
-      UserRepositoryImpl(authClient: sl(), apiEnvironmentRepository: sl()));
-  sl.registerLazySingleton<APIEnvironmentRepository>(
-      () => APIEnvironmentRepositoryImpl());
+      UserRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
 
   // Data Sources
   sl.registerLazySingleton<OpenAIDataSource>(
@@ -92,9 +81,12 @@ void initInjection() {
   sl.registerLazySingleton<FunctionToolsDataSource>(
       () => FunctionToolsDataSourceImp());
 
-  // External
+  // Infrastructure
   sl.registerLazySingleton(() => http.Client());
   sl.registerLazySingleton<AuthenticatedHttpClient>(
       () => AuthenticatedHttpClient(sl(), sl()));
-  ;
+  sl.registerLazySingleton<APIEnvironment>(
+          () => APIEnvironment());
+  sl.registerLazySingleton<TokenProvider>(() => TokenProvider());
+  sl.registerLazySingleton<FeatureFlagProvider>(() => FeatureFlagProvider());
 }

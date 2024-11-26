@@ -13,7 +13,7 @@ DomainException mapServerErrorToDomainException(Response response) {
     case 400:
       return BadRequestException(message ?? 'Bad Request');
     case 401:
-      return UnauthorizedException(message ?? 'Unauthorized');
+      return UnauthorizedException(message ?? 'Unauthorized. Access Token is expired or invalid.');
     case 403:
       return ForbiddenException(message ?? 'Forbidden');
     case 404:

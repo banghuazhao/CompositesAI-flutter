@@ -444,7 +444,7 @@ packages:
     source: hosted
     version: "4.0.2"
   in_app_review:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: in_app_review
       sha256: "36a06771b88fb0e79985b15e7f2ac0f1142e903fe72517f3c055d78bc3bc1819"
@@ -459,6 +459,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.5"
+  infrastructure:
+    dependency: "direct main"
+    description:
+      path: "packages/infrastructure"
+      relative: true
+    source: path
+    version: "0.0.1"
   intl:
     dependency: "direct main"
     description:
@@ -724,7 +731,7 @@ packages:
     source: hosted
     version: "3.4.0"
   shared_preferences:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: shared_preferences
       sha256: d3bbe5553a986e83980916ded2f0b435ef2e1893dfaa29d5a7a790d0eca12180

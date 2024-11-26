@@ -1,6 +1,5 @@
 // lib/presentation/viewmodels/signup_view_model.dart
 
-import 'package:domain/entities/domain_exceptions.dart';
 import 'package:domain/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:domain/usecases/auth_usecase.dart';

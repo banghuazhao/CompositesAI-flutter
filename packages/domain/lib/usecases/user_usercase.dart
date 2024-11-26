@@ -1,5 +1,6 @@
+import 'package:infrastructure/token_provider.dart';
+
 import '../entities/user.dart';
-import '../repositories_abstract/token_provider.dart';
 import '../repositories_abstract/user_repository.dart';
 
 class UserUseCase {

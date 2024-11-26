@@ -1,9 +1,10 @@
 // lib/domain/usecases/signup_usecase.dart
 
 
+import 'package:infrastructure/token_provider.dart';
+
 import '../entities/user.dart';
 import '../repositories_abstract/auth_repository.dart';
-import '../repositories_abstract/token_provider.dart';
 
 class AuthUseCase {
   final AuthRepository repository;

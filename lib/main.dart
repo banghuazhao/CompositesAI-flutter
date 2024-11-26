@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:infrastructure/in_app_reviewer_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
-import 'package:swiftcomp/presentation/settings/providers/feature_flag_provider.dart';
+import 'package:infrastructure/feature_flag_provider.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
-import 'package:swiftcomp/util/in_app_reviewer_helper.dart';
 import 'package:swiftcomp/util/others.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 

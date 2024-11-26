@@ -1,7 +1,6 @@
-name: data
+name: infrastructure
 description: "A new Flutter package project."
 version: 0.0.1
-publish_to: none
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -10,19 +9,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^0.13.3
-  domain:
-    path: ../domain
-  infrastructure:
-    path: ../infrastructure
-  uuid: ^4.5.1
+  in_app_review: ^2.0.10
   shared_preferences: ^2.2.3
+  flutter_secure_storage: ^9.2.2
+  http: ^0.13.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  flutter_dotenv: ^5.0.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

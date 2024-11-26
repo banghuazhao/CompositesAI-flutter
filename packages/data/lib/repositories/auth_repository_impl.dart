@@ -5,25 +5,25 @@ import 'dart:convert';
 import 'package:data/mappers/domain_exception_mapper.dart';
 import 'package:domain/entities/domain_exceptions.dart';
 import 'package:domain/entities/user.dart';
-import 'package:domain/repositories_abstract/api_env_repository.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:infrastructure/api_environment.dart';
+import 'package:infrastructure/authenticated_http_client.dart';
 
-import '../data_sources/authenticated_http_client.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final http.Client client;
   final AuthenticatedHttpClient authClient;
-  final APIEnvironmentRepository apiEnvironmentRepository;
+  final APIEnvironment apiEnvironment;
 
   AuthRepositoryImpl(
-      {required this.client, required this.authClient, required this.apiEnvironmentRepository});
+      {required this.client, required this.authClient, required this.apiEnvironment});
 
   @override
   Future<User> signup(String email, String password, String verificationCode,
       {String? name}) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/users/');
     final response = await client.post(
       url,
@@ -51,7 +51,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<String> login(String email, String password) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/login');
     final response = await client.post(
       url,
@@ -72,7 +72,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/logout');
 
     final response = await authClient.post(
@@ -88,7 +88,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<void> forgetPassword(String email) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/forget-password');
     try {
       final response = await client.post(
@@ -108,7 +108,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<String> resetPassword(String email, String newPassword, String confirmationCode) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/reset-password');
     final response = await client.post(
       url,
@@ -126,7 +126,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<void> sendSignupVerificationCode(String email) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/send-verification');
 
     final response = await client.post(
@@ -148,7 +148,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<String> updatePassword(String newPassword) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/update-password');
     final response = await authClient.post(
       url,
@@ -165,7 +165,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<String> syncUser(String? displayName, String email, String? photoUrl) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/sync-user');
     final response = await client.post(
       url,
@@ -202,7 +202,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<String> validateAppleToken(String identityToken) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url =
     Uri.parse('$baseURL/auth/sign_in_with_apple');
     final response = await client.post(
@@ -232,7 +232,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<bool> validateGoogleToken(String idToken) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/sign_in_with_google');
 
     try {

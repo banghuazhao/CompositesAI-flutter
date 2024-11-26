@@ -23,6 +23,8 @@ dependencies:
     path: packages/domain
   data:
     path: packages/data
+  infrastructure:
+    path: packages/infrastructure
 
   composite_calculator: ^1.0.1
   cupertino_icons: ^1.0.8
@@ -35,8 +37,6 @@ dependencies:
   url_launcher: ^6.0.20
   share_plus: ^7.2.2
   linalg: ^0.4.0
-  in_app_review: ^2.0.10
-  shared_preferences: ^2.2.3
   intl: ^0.18.1
   auto_size_text: ^3.0.0
   provider: ^6.0.2

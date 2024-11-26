@@ -3,21 +3,21 @@
 import 'dart:convert';
 
 import 'package:domain/entities/user.dart';
-import 'package:domain/repositories_abstract/api_env_repository.dart';
 import 'package:domain/repositories_abstract/user_repository.dart';
+import 'package:infrastructure/api_environment.dart';
+import 'package:infrastructure/authenticated_http_client.dart';
 
-import '../data_sources/authenticated_http_client.dart';
 import '../mappers/domain_exception_mapper.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final AuthenticatedHttpClient authClient;
-  final APIEnvironmentRepository apiEnvironmentRepository;
+  final APIEnvironment apiEnvironment;
 
-  UserRepositoryImpl({required this.authClient, required this.apiEnvironmentRepository});
+  UserRepositoryImpl({required this.authClient, required this.apiEnvironment});
 
   @override
   Future<User> fetchMe() async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/users/me');
 
     // No need to add Authorization header; AuthenticatedHttpClient handles it
@@ -37,7 +37,7 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<void> updateMe(String newName) async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
 
     final response = await authClient.patch(
       Uri.parse('$baseURL/users/me'), // Adjust URL as necessary
@@ -56,7 +56,7 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<void> deleteAccount() async {
-    final baseURL = await apiEnvironmentRepository.getBaseUrl();
+    final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/users/me');
     final response = await authClient.delete(url);
 

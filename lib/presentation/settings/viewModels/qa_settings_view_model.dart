@@ -2,12 +2,12 @@
 
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:flutter/material.dart';
-import '../providers/feature_flag_provider.dart';
-import "package:domain/usecases/api_env_usecase.dart";
+import 'package:infrastructure/api_environment.dart';
+import 'package:infrastructure/feature_flag_provider.dart';
 
 class QASettingsViewModel extends ChangeNotifier {
   final FeatureFlagProvider featureFlagProvider;
-  final APIEnvironmentUseCase apiEnvironmentUseCase;
+  final APIEnvironment apiEnvironment;
   final AuthUseCase authUseCase;
 
   String? currentEnvironment;
@@ -15,7 +15,7 @@ class QASettingsViewModel extends ChangeNotifier {
 
   QASettingsViewModel(
       {required this.featureFlagProvider,
-      required this.apiEnvironmentUseCase,
+      required this.apiEnvironment,
       required this.authUseCase}) {
     _loadCurrentEnvironment();
   }
@@ -32,7 +32,7 @@ class QASettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> _loadCurrentEnvironment() async {
-    currentEnvironment = await apiEnvironmentUseCase.getCurrentAPIEnvironment();
+    currentEnvironment = await apiEnvironment.getCurrentEnvironment();
     notifyListeners();
   }
 
@@ -44,7 +44,7 @@ class QASettingsViewModel extends ChangeNotifier {
     } catch (e) {
       print('Error during logout: $e');
     } finally {
-      await apiEnvironmentUseCase.changeAPIEnvironment(environment);
+      await apiEnvironment.setEnvironment(environment);
       currentEnvironment = environment;
       isLoading = false;
       notifyListeners();
