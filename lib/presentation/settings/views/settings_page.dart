@@ -69,7 +69,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   if (viewModel.isLoggedIn)
                     ListTile(
                       key: ValueKey(viewModel.user?.name ?? ""),
-                      leading: Icon(
+                      leading: viewModel.user?.avatarUrl != null
+                          ? CircleAvatar(
+                        backgroundImage: NetworkImage(viewModel.user!.avatarUrl!),
+                        radius: 22.5, // Adjust the radius to match the icon size
+                      )
+                          : Icon(
                         Icons.account_circle,
                         size: 45,
                         color: Colors.blueGrey,

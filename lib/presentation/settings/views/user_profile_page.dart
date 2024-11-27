@@ -40,7 +40,12 @@ class UserProfilePage extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Icon(
+                              viewModel.user?.avatarUrl != null
+                                  ? CircleAvatar(
+                                backgroundImage: NetworkImage(viewModel.user!.avatarUrl!),
+                                radius: 27.5, // Matches size of 55
+                              )
+                                  : Icon(
                                 Icons.account_circle,
                                 size: 55,
                                 color: Colors.blueGrey,

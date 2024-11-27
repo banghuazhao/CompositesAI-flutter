@@ -101,7 +101,6 @@ class LoginViewModel extends ChangeNotifier {
         if (!isValid) {
           throw Exception('Google token validation failed.');
         }
-
         // Sync the user data
         await syncUser(user.displayName, user.email, user.photoUrl);
       }
@@ -161,6 +160,7 @@ class LoginViewModel extends ChangeNotifier {
       print('Apple credential: $credential');
       // Get the identity token
       final identityToken = credential.identityToken;
+      final String? name = credential.givenName;
 
       if (identityToken == null) {
         throw Exception('Identity token not available in Apple credentials');
@@ -168,7 +168,7 @@ class LoginViewModel extends ChangeNotifier {
       // Validate the token with backend and retrieve email if valid
       final email = await validateAppleToken(identityToken);
 
-      await syncUser(null, email, null);
+      await syncUser(name, email, null);
 
       _isSigningIn = true;
       // Notify listeners for UI update
