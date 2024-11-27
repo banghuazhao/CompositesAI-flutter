@@ -61,7 +61,7 @@ void initInjection() {
   sl.registerLazySingleton<FunctionToolsUseCase>(() => FunctionToolsUseCase());
 
   sl.registerLazySingleton<AuthUseCase>(
-      () => AuthUseCase(repository: sl(), tokenProvider: sl()));
+      () => AuthUseCaseImpl(repository: sl(), tokenProvider: sl()));
   sl.registerLazySingleton<UserUseCase>(
       () => UserUseCase(repository: sl(), tokenProvider: sl()));
 

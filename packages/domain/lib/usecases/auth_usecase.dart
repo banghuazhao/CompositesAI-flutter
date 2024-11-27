@@ -6,11 +6,25 @@ import 'package:infrastructure/token_provider.dart';
 import '../entities/user.dart';
 import '../repositories_abstract/auth_repository.dart';
 
-class AuthUseCase {
+abstract class AuthUseCase {
+  Future<User> signup(String email, String password, String verificationCode,{String? name});
+  Future<String> login(String email, String password);
+  Future<void> logout();
+  Future<void> forgetPassword(String email);
+  Future<String> resetPassword(String email, String newPassword, String confirmationCode);
+  Future<void> sendSignupVerificationCode(String email);
+  Future<String> updatePassword(String newPassword);
+  Future<String> syncUser(String? displayName, String email, String? photoUrl);
+  Future<String> validateAppleToken(String identityToken);
+  Future<bool> validateGoogleToken(String idToken);
+  Future<bool> isLoggedIn();
+}
+
+class AuthUseCaseImpl implements AuthUseCase {
   final AuthRepository repository;
   final TokenProvider tokenProvider;
 
-  AuthUseCase({required this.repository, required this.tokenProvider});
+  AuthUseCaseImpl({required this.repository, required this.tokenProvider});
 
   Future<User> signup(String email, String password, String verificationCode,
       {String? name}) async {
