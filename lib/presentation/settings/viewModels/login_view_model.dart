@@ -150,7 +150,7 @@ class LoginViewModel extends ChangeNotifier {
         throw Exception('Identity token not available in Apple credentials');
       }
       // Validate the token with backend and retrieve email if valid
-      final email = await validateAppleToken(identityToken);
+      final email = await authUseCase.validateAppleToken(identityToken);
 
       await syncUser(name, email, null);
 
@@ -163,7 +163,5 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
-  Future<String> validateAppleToken(String identityToken) async {
-    return await authUseCase.validateAppleToken(identityToken);
-  }
+
 }

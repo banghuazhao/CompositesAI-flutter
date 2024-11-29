@@ -62,7 +62,7 @@ class AuthUseCaseImpl implements AuthUseCase {
     return await repository.forgetPassword(email);
   }
 
-  Future<String> resetPassword(email, newPassword, confirmationCode) async {
+  Future<String> resetPassword(String email, String newPassword, String confirmationCode) async {
     return await repository.resetPassword(email, newPassword, confirmationCode);
   }
 
@@ -71,7 +71,8 @@ class AuthUseCaseImpl implements AuthUseCase {
   }
 
   Future<String> updatePassword(String newPassword) async {
-    return await repository.updatePassword(newPassword);
+    String message =  await repository.updatePassword(newPassword);
+    return message;
   }
 
   Future<String> syncUser(String? displayName, String email, String? photoUrl) async {

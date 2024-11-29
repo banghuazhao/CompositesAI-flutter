@@ -22,14 +22,16 @@ class UpdatePasswordViewModel extends ChangeNotifier {
 
   UpdatePasswordViewModel({required this.authUseCase});
 
-  Future<void> updatePassword(String newPassword) async {
+  Future<String> updatePassword(String newPassword) async {
     _setLoadingState(true);
     errorMessage = '';
     try {
       // Call the auth use case to update the password
-      await authUseCase.updatePassword(newPassword);
+      final message = await authUseCase.updatePassword(newPassword);
+      return message;
     } catch (error) {
       errorMessage = 'Failed to update password.';
+      return errorMessage;
     } finally {
       _setLoadingState(false);
     }
