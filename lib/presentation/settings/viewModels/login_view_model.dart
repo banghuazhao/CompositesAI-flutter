@@ -116,22 +116,6 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   // Function to handle Google Sign-Out
-  Future<void> signOut() async {
-    final GoogleSignIn googleSignIn;
-    if (kIsWeb) {
-      googleSignIn = GoogleSignIn(
-        clientId: GOOGLE_SIGNIN_CLIENT_ID_WEB,
-        scopes: <String>['email', 'openid'],
-      );
-    } else {
-      googleSignIn = GoogleSignIn(
-        scopes: <String>['email', 'openid'],
-      );
-    }
-
-    await googleSignIn.signOut();
-    notifyListeners();
-  }
 
   Future<String> syncUser(String? displayName, String email, String? photoUrl) async {
     final accessToken = await authUseCase.syncUser(displayName, email, photoUrl);
