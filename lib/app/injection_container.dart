@@ -13,10 +13,13 @@ import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/function_tools_usecase.dart';
 import 'package:domain/usecases/user_usercase.dart';
 import 'package:get_it/get_it.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
+import 'package:infrastructure/apple_sign_in_service.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 import 'package:infrastructure/feature_flag_provider.dart';
+import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:infrastructure/token_provider.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/forget_password_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
@@ -32,11 +35,9 @@ final sl = GetIt.instance;
 void initInjection() {
   // ViewModels
   sl.registerFactory<ChatViewModel>(() => ChatViewModel(
-      chatUseCase: sl(),
-      chatSessionUseCase: sl(),
-      functionToolsUseCase: sl(),
-      authUseCase: sl()));
-  sl.registerFactory<LoginViewModel>(() => LoginViewModel(authUseCase: sl()));
+      chatUseCase: sl(), chatSessionUseCase: sl(), functionToolsUseCase: sl(), authUseCase: sl()));
+  sl.registerFactory<LoginViewModel>(
+      () => LoginViewModel(authUseCase: sl(), appleSignInService: sl(), googleSignInService: sl()));
   sl.registerFactory<SignupViewModel>(() => SignupViewModel(authUseCase: sl()));
   sl.registerFactory<SettingsViewModel>(() => SettingsViewModel(
       authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
@@ -89,4 +90,6 @@ void initInjection() {
           () => APIEnvironment());
   sl.registerLazySingleton<TokenProvider>(() => TokenProvider());
   sl.registerLazySingleton<FeatureFlagProvider>(() => FeatureFlagProvider());
+  sl.registerLazySingleton<AppleSignInService>(() => AppleSignInServiceImpl());
+  sl.registerLazySingleton<GoogleSignInService>(() => GoogleSignInServiceImpl());
 }

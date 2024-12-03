@@ -186,15 +186,35 @@ class UserProfilePage extends StatelessWidget {
           content: Text('Are you sure you want to delete your account?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
                 Navigator.of(dialogContext).pop(); // Close the dialog first
                 await viewModel.deleteUser();
-                // Check if the widget is still mounted before navigating back
-                if (context.mounted) {
+
+                if (viewModel.errorMessage != null) {
+                  // Display error dialog if there's an error
+                  if (context.mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text("Error"),
+                        content: Text(viewModel.errorMessage!),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the error dialog
+                            },
+                            child: Text('OK'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                } else if (context.mounted) {
+                  // Navigate back with "refresh" if no error
                   Navigator.of(context).pop("refresh");
                 }
               },

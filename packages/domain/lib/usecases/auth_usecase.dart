@@ -14,7 +14,7 @@ abstract class AuthUseCase {
   Future<String> resetPassword(String email, String newPassword, String confirmationCode);
   Future<void> sendSignupVerificationCode(String email);
   Future<String> updatePassword(String newPassword);
-  Future<String> syncUser(String? displayName, String email, String? photoUrl);
+  Future<void> syncUser(String? displayName, String email, String? photoUrl);
   Future<String> validateAppleToken(String identityToken);
   Future<bool> validateGoogleToken(String idToken);
   Future<bool> isLoggedIn();
@@ -75,10 +75,10 @@ class AuthUseCaseImpl implements AuthUseCase {
     return message;
   }
 
-  Future<String> syncUser(String? displayName, String email, String? photoUrl) async {
+  Future<void> syncUser(String? displayName, String email, String? photoUrl) async {
     String accessToken = await repository.syncUser(displayName, email, photoUrl);
     await tokenProvider.saveToken(accessToken);
-    return accessToken;
+    return;
   }
 
   Future<String> validateAppleToken(String identityToken) async {

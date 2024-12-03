@@ -4,12 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:infrastructure/apple_sign_in_service.dart';
+import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
+  final AppleSignInService appleSignInService;
+  final GoogleSignInService googleSignInService;
 
-  LoginViewModel({required this.authUseCase});
+  LoginViewModel({required this.authUseCase, required this.appleSignInService, required this.googleSignInService});
 
   bool _isLoading = false;
 
@@ -67,17 +72,16 @@ class LoginViewModel extends ChangeNotifier {
 
     try {
       // Initialize GoogleSignIn instance
-      final GoogleSignIn googleSignIn = kIsWeb
-          ? GoogleSignIn(
-        clientId: GOOGLE_SIGNIN_CLIENT_ID_WEB,
-        scopes: <String>['email', 'openid', 'profile'],
-      )
-          : GoogleSignIn(
-        scopes: <String>['email', 'openid', 'profile'],
-      );
+      final GoogleSignInUser? user = kIsWeb
+          ? await googleSignInService.signIn(
+              clientId: GOOGLE_SIGNIN_CLIENT_ID_WEB,
+              scopes: <String>['email', 'openid', 'profile'],
+            )
+          : await googleSignInService.signIn(
+              scopes: <String>['email', 'openid', 'profile'],
+            );
 
-      // Sign in the user
-      final GoogleSignInAccount? user = await googleSignIn.signIn();
+      print(user);
 
       if (user == null) {
         // User canceled the sign-in
@@ -89,15 +93,15 @@ class LoginViewModel extends ChangeNotifier {
         await syncUser(user.displayName, user.email, user.photoUrl);
       } else {
         // For non-web platforms, retrieve authentication details
-        final GoogleSignInAuthentication auth = await user.authentication;
+        final idToken = user.idToken;
 
         // Ensure ID token is present
-        if (auth.idToken == null) {
+        if (idToken == null) {
           throw Exception('Unable to retrieve ID token. Please try again.');
         }
 
         // Validate the ID token with your backend
-        final bool isValid = await authUseCase.validateGoogleToken(auth.idToken!);
+        final bool isValid = await authUseCase.validateGoogleToken(idToken);
         if (!isValid) {
           throw Exception('Google token validation failed.');
         }
@@ -109,6 +113,7 @@ class LoginViewModel extends ChangeNotifier {
     } catch (error) {
       // Handle any errors during the process
       print('Error during Google Sign-In: $error');
+      _errorMessage = error.toString();
     } finally {
       // Notify listeners regardless of success or failure
       notifyListeners();
@@ -117,16 +122,16 @@ class LoginViewModel extends ChangeNotifier {
 
   // Function to handle Google Sign-Out
 
-  Future<String> syncUser(String? displayName, String email, String? photoUrl) async {
+  Future<void> syncUser(String? displayName, String email, String? photoUrl) async {
     final accessToken = await authUseCase.syncUser(displayName, email, photoUrl);
-    return accessToken;
   }
 
   Future<void> signInWithApple() async {
     try {
       _isSigningIn = false;
+      _errorMessage = null;
       // Request credentials from Apple
-      final credential = await SignInWithApple.getAppleIDCredential(
+      final credential = await appleSignInService.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
@@ -158,8 +163,9 @@ class LoginViewModel extends ChangeNotifier {
       // Notify listeners for UI update
       notifyListeners();
     } catch (e) {
-      print('Sign in with Apple failed: $e');
-      rethrow; // Optionally rethrow for higher-level error handling
+      _errorMessage = 'Sign in with Apple failed: $e';
+      _isSigningIn = false; // Reset signing in state
+      notifyListeners();// Optionally rethrow for higher-level error handling
     }
   }
 

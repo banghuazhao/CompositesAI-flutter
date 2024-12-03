@@ -13,7 +13,8 @@ class UserProfileViewModel extends ChangeNotifier {
   User? user;
   bool isSignedIn = false;
   bool isLoggedIn = false;
-  String errorMessage = '';
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
 
   UserProfileViewModel({required this.authUseCase, required this.userUseCase}) {
     fetchAuthSessionNew();
@@ -84,13 +85,16 @@ class UserProfileViewModel extends ChangeNotifier {
 
   Future<void> deleteUser() async {
     setLoading(true);
+    _errorMessage = null;
     try {
       await userUseCase.deleteAccount();
       print("Account deleted successfully");
     } catch (e) {
-      print("Account deletion failed: $e");
+      _errorMessage = 'Delete failed: ${e.toString()}';
+      return null;
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   void setLoading(bool value) {

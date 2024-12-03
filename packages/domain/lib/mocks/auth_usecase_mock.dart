@@ -17,7 +17,7 @@ class MockAuthUseCase extends Mock implements AuthUseCase {
           returnValueForMissingStub: Future.value(true));
 
   @override
-  Future<String> syncUser(String? displayName, String email, String? photoUrl) =>
+  Future<void> syncUser(String? displayName, String email, String? photoUrl) =>
       super.noSuchMethod(Invocation.method(#syncUser, [displayName, email, photoUrl]),
           returnValue: Future.value(''),
           returnValueForMissingStub: Future.value(''));

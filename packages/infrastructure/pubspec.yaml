@@ -13,6 +13,9 @@ dependencies:
   shared_preferences: ^2.2.3
   flutter_secure_storage: ^9.2.2
   http: ^0.13.3
+  google_sign_in: ^6.2.2
+  sign_in_with_apple: ^6.1.3
+  mockito: ^5.0.17
 
 dev_dependencies:
   flutter_test:
