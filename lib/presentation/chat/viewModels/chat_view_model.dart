@@ -1,16 +1,21 @@
 import 'dart:async';
 import 'package:domain/domain.dart';
+import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/function_tools_usecase.dart';
+import 'package:domain/usecases/user_usercase.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 
 class ChatViewModel extends ChangeNotifier {
   final ChatUseCase _chatUseCase;
   final ChatSessionUseCase _chatSessionUseCase;
   final FunctionToolsUseCase _functionToolsUseCase;
   final AuthUseCase _authUseCase;
+  final UserUseCase _userUserCase;
 
   bool isLoggedIn = false;
+  User? user;
 
   final ScrollController scrollController = ScrollController();
   bool isLoading = false;
@@ -34,17 +39,53 @@ class ChatViewModel extends ChangeNotifier {
     // "Give me some math equations.",
   ];
 
-  ChatViewModel(
-      {required ChatUseCase chatUseCase,
-      required ChatSessionUseCase chatSessionUseCase,
-      required FunctionToolsUseCase functionToolsUseCase,
-      required AuthUseCase authUseCase})
-      : _chatUseCase = chatUseCase,
+  ChatViewModel({
+    required ChatUseCase chatUseCase,
+    required ChatSessionUseCase chatSessionUseCase,
+    required FunctionToolsUseCase functionToolsUseCase,
+    required AuthUseCase authUseCase,
+    required UserUseCase userUserCase,
+  })  : _chatUseCase = chatUseCase,
         _chatSessionUseCase = chatSessionUseCase,
         _functionToolsUseCase = functionToolsUseCase,
-        _authUseCase = authUseCase{
+        _authUseCase = authUseCase,
+        _userUserCase = userUserCase {
     checkAuthStatus();
     initializeChatSessions();
+  }
+
+
+
+  Future<void> fetchAuthSessionNew() async {
+    try {
+      isLoggedIn = await _authUseCase.isLoggedIn();
+      if (isLoggedIn) {
+        await fetchUser();
+      } else {
+        user = null; // Ensure user is null if not logged in
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print(e);
+      }
+      isLoggedIn = false;
+      user = null; // Ensure proper reset
+    }
+    notifyListeners();
+  }
+
+  Future<void> fetchUser() async {
+    try {
+      user = await _userUserCase.fetchMe();
+      isLoggedIn = true; // Ensure isLoggedIn is updated correctly
+    } catch (e) {
+      if (kDebugMode) {
+        print(e);
+      }
+      isLoggedIn = false; // Handle fetch user failure
+      user = null;
+    }
+    notifyListeners();
   }
 
   @override
@@ -68,9 +109,11 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> checkAuthStatus() async {
     isLoggedIn = await _authUseCase.isLoggedIn();
     print("isLoggedIn: $isLoggedIn");
-
-    // Temporarily set it to true for demonstration
-    isLoggedIn = true;
+    if (isLoggedIn) {
+      await fetchUser();
+    } else {
+      user = null; // Ensure user is null if not logged in
+    }
     notifyListeners();
   }
 

@@ -176,8 +176,7 @@ class UserProfilePage extends StatelessWidget {
   }
 
 
-  void _confirmDeleteUser(
-      BuildContext context, UserProfileViewModel viewModel) {
+  void _confirmDeleteUser(BuildContext context, UserProfileViewModel viewModel) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -192,28 +191,27 @@ class UserProfilePage extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 Navigator.of(dialogContext).pop(); // Close the dialog first
+
                 await viewModel.deleteUser();
 
+                if (!context.mounted) return; // Exit if widget is unmounted
+
                 if (viewModel.errorMessage != null) {
-                  // Display error dialog if there's an error
-                  if (context.mounted) {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text("Error"),
-                        content: Text(viewModel.errorMessage!),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop(); // Close the error dialog
-                            },
-                            child: Text('OK'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                } else if (context.mounted) {
+                  // Show error dialog if an error occurred
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text("Error"),
+                      content: Text(viewModel.errorMessage!),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                } else {
                   // Navigate back with "refresh" if no error
                   Navigator.of(context).pop("refresh");
                 }

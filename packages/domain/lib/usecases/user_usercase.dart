@@ -19,6 +19,6 @@ class UserUseCase {
 
   Future<void> deleteAccount() async {
     await repository.deleteAccount();
-    tokenProvider.deleteToken();
+    await tokenProvider.deleteToken();
   }
 }

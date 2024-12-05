@@ -17,14 +17,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
- /* @override
-  Future<void> didChangeDependencies() async {
-    super.didChangeDependencies();
-    // Fetch the latest auth session when dependencies change
-    final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
-    await viewModel.fetchAuthSessionNew();
-  }
-  */
+
   late SettingsViewModel viewModel;
   @override
   void initState() {
@@ -37,8 +30,6 @@ class _SettingsPageState extends State<SettingsPage> {
     await viewModel.fetchAuthSessionNew();
     setState(() {});
   }
-
-
 
   @override
   Widget build(BuildContext context) {

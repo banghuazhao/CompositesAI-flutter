@@ -62,8 +62,7 @@ class UserRepositoryImpl implements UserRepository {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to delete account. Status code: ${response.statusCode}');
-    } else {
-      throw mapServerErrorToDomainException(response);
     }
+    return;
   }
 }

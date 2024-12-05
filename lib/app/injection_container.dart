@@ -35,59 +35,51 @@ final sl = GetIt.instance;
 void initInjection() {
   // ViewModels
   sl.registerFactory<ChatViewModel>(() => ChatViewModel(
-      chatUseCase: sl(), chatSessionUseCase: sl(), functionToolsUseCase: sl(), authUseCase: sl()));
+      chatUseCase: sl(),
+      chatSessionUseCase: sl(),
+      functionToolsUseCase: sl(),
+      authUseCase: sl(),
+      userUserCase: sl()));
   sl.registerFactory<LoginViewModel>(
       () => LoginViewModel(authUseCase: sl(), appleSignInService: sl(), googleSignInService: sl()));
   sl.registerFactory<SignupViewModel>(() => SignupViewModel(authUseCase: sl()));
-  sl.registerFactory<SettingsViewModel>(() => SettingsViewModel(
-      authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
-  sl.registerFactory<QASettingsViewModel>(() => QASettingsViewModel(
-      featureFlagProvider: sl(),
-      apiEnvironment: sl(),
-      authUseCase: sl()));
+  sl.registerFactory<SettingsViewModel>(
+      () => SettingsViewModel(authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
+  sl.registerFactory<QASettingsViewModel>(() =>
+      QASettingsViewModel(featureFlagProvider: sl(), apiEnvironment: sl(), authUseCase: sl()));
   sl.registerFactory<UserProfileViewModel>(
       () => UserProfileViewModel(authUseCase: sl(), userUseCase: sl()));
-  sl.registerFactory<ForgetPasswordViewModel>(
-      () => ForgetPasswordViewModel(authUseCase: sl()));
-  sl.registerFactory<UpdatePasswordViewModel>(
-      () => UpdatePasswordViewModel(authUseCase: sl()));
+  sl.registerFactory<ForgetPasswordViewModel>(() => ForgetPasswordViewModel(authUseCase: sl()));
+  sl.registerFactory<UpdatePasswordViewModel>(() => UpdatePasswordViewModel(authUseCase: sl()));
 
   // Use Cases
-  sl.registerLazySingleton<ChatUseCase>(
-      () => ChatUseCase(chatRepository: sl()));
+  sl.registerLazySingleton<ChatUseCase>(() => ChatUseCase(chatRepository: sl()));
 
-  sl.registerLazySingleton<ChatSessionUseCase>(
-      () => ChatSessionUseCase(repository: sl()));
+  sl.registerLazySingleton<ChatSessionUseCase>(() => ChatSessionUseCase(repository: sl()));
 
   sl.registerLazySingleton<FunctionToolsUseCase>(() => FunctionToolsUseCase());
 
   sl.registerLazySingleton<AuthUseCase>(
       () => AuthUseCaseImpl(repository: sl(), tokenProvider: sl()));
-  sl.registerLazySingleton<UserUseCase>(
-      () => UserUseCase(repository: sl(), tokenProvider: sl()));
+  sl.registerLazySingleton<UserUseCase>(() => UserUseCase(repository: sl(), tokenProvider: sl()));
 
   // Repositories
-  sl.registerLazySingleton<ChatRepository>(() =>
-      ChatRepositoryImp(openAIDataSource: sl(), functionToolsDataSource: sl()));
-  sl.registerLazySingleton<ChatSessionRepository>(
-      () => ChatSessionRepositoryImpl());
-  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(
-      client: sl(), authClient: sl(), apiEnvironment: sl()));
-  sl.registerLazySingleton<UserRepository>(() =>
-      UserRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
+  sl.registerLazySingleton<ChatRepository>(
+      () => ChatRepositoryImp(openAIDataSource: sl(), functionToolsDataSource: sl()));
+  sl.registerLazySingleton<ChatSessionRepository>(() => ChatSessionRepositoryImpl());
+  sl.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(client: sl(), authClient: sl(), apiEnvironment: sl()));
+  sl.registerLazySingleton<UserRepository>(
+      () => UserRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
 
   // Data Sources
-  sl.registerLazySingleton<OpenAIDataSource>(
-      () => ChatRemoteDataSourceImpl(client: sl()));
-  sl.registerLazySingleton<FunctionToolsDataSource>(
-      () => FunctionToolsDataSourceImp());
+  sl.registerLazySingleton<OpenAIDataSource>(() => ChatRemoteDataSourceImpl(client: sl()));
+  sl.registerLazySingleton<FunctionToolsDataSource>(() => FunctionToolsDataSourceImp());
 
   // Infrastructure
   sl.registerLazySingleton(() => http.Client());
-  sl.registerLazySingleton<AuthenticatedHttpClient>(
-      () => AuthenticatedHttpClient(sl(), sl()));
-  sl.registerLazySingleton<APIEnvironment>(
-          () => APIEnvironment());
+  sl.registerLazySingleton<AuthenticatedHttpClient>(() => AuthenticatedHttpClient(sl(), sl()));
+  sl.registerLazySingleton<APIEnvironment>(() => APIEnvironment());
   sl.registerLazySingleton<TokenProvider>(() => TokenProvider());
   sl.registerLazySingleton<FeatureFlagProvider>(() => FeatureFlagProvider());
   sl.registerLazySingleton<AppleSignInService>(() => AppleSignInServiceImpl());

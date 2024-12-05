@@ -91,7 +91,7 @@ class UserProfileViewModel extends ChangeNotifier {
       print("Account deleted successfully");
     } catch (e) {
       _errorMessage = 'Delete failed: ${e.toString()}';
-      return null;
+
     } finally {
       setLoading(false);
     }
