@@ -51,7 +51,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
             child: Icon(
               Icons.chat_bubble_outline,
               size: 80,
-              color: Colors.grey,
+              color: Colors.blueGrey,
             ),
           ),
           Text(

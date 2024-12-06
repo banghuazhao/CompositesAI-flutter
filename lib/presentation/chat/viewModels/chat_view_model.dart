@@ -49,12 +49,7 @@ class ChatViewModel extends ChangeNotifier {
         _chatSessionUseCase = chatSessionUseCase,
         _functionToolsUseCase = functionToolsUseCase,
         _authUseCase = authUseCase,
-        _userUserCase = userUserCase {
-    checkAuthStatus();
-    initializeChatSessions();
-  }
-
-
+        _userUserCase = userUserCase;
 
   Future<void> fetchAuthSessionNew() async {
     try {
@@ -96,7 +91,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   // Initialize session if no sessions exist
-  void initializeChatSessions() async {
+  Future<void> initializeChatSessions() async {
     sessions = await _chatSessionUseCase.getAllSessions();
     if (sessions.isEmpty) {
       addNewSession();

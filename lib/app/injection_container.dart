@@ -53,9 +53,9 @@ void initInjection() {
   sl.registerFactory<UpdatePasswordViewModel>(() => UpdatePasswordViewModel(authUseCase: sl()));
 
   // Use Cases
-  sl.registerLazySingleton<ChatUseCase>(() => ChatUseCase(chatRepository: sl()));
+  sl.registerLazySingleton<ChatUseCase>(() => ChatUseCaseImpl(chatRepository: sl()));
 
-  sl.registerLazySingleton<ChatSessionUseCase>(() => ChatSessionUseCase(repository: sl()));
+  sl.registerLazySingleton<ChatSessionUseCase>(() => ChatSessionUseCaseImpl(repository: sl()));
 
   sl.registerLazySingleton<FunctionToolsUseCase>(() => FunctionToolsUseCase());
 

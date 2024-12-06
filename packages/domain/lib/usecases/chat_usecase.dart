@@ -1,9 +1,13 @@
 import 'package:domain/domain.dart';
 
-class ChatUseCase {
+abstract class ChatUseCase {
+  Stream<Message> sendMessage(Message newMessage, ChatSession session);
+}
+
+class ChatUseCaseImpl implements ChatUseCase {
   final ChatRepository chatRepository;
 
-  ChatUseCase({required this.chatRepository});
+  ChatUseCaseImpl({required this.chatRepository});
 
   final Message systemMessage = Message(
       role: "system",

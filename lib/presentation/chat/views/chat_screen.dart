@@ -26,11 +26,17 @@ class _ChatScreenState extends State<ChatScreen>
   void initState() {
     super.initState();
     viewModel = Provider.of<ChatViewModel>(context, listen: false);
+    _initializeChatSessions();
     _fetchAuthSession();
   }
 
   Future<void> _fetchAuthSession() async {
     await viewModel.fetchAuthSessionNew();
+    setState(() {});
+  }
+
+  Future<void> _initializeChatSessions() async {
+    await viewModel.initializeChatSessions();
     setState(() {});
   }
 
@@ -48,7 +54,7 @@ class _ChatScreenState extends State<ChatScreen>
                   if (!viewModel.isLoggedIn) {
                     // If the user is not logged in, show login icon
                     return IconButton(
-                      icon: const Icon(Icons.login),
+                      icon: const Icon(Icons.manage_accounts),
                       color: Colors.white,
                       tooltip: "Sign In",
                       onPressed: () async {
@@ -124,7 +130,7 @@ class _ChatScreenState extends State<ChatScreen>
                       const Icon(
                         Icons.chat_bubble_outline,
                         size: 100,
-                        color: Colors.blueAccent,
+                        color: Colors.blueGrey,
                       ),
                       const SizedBox(height: 20),
                       const Text(
@@ -150,7 +156,7 @@ class _ChatScreenState extends State<ChatScreen>
                             setState(() {}); // Trigger UI rebuild
                           }
                         },
-                        icon: const Icon(Icons.login, size: 20),
+                        icon: const Icon(Icons.manage_accounts, size: 22),
                         label: const Text(
                           "Login to Chat",
                           style: TextStyle(fontSize: 16),

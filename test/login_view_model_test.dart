@@ -32,6 +32,7 @@ void main() {
       // Clean up resources or reset mock state after each test
       reset(mockAuthUseCase);
       reset(mockAppleSignInService);
+      reset(mockGoogleSignInService);
     });
 
     group('togglePasswordVisibility', () {

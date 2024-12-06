@@ -2,10 +2,21 @@ import '../entities/chat_session.dart';
 import '../entities/message.dart';
 import '../repositories_abstract/chat_session_repository.dart';
 
-class ChatSessionUseCase {
+abstract class ChatSessionUseCase {
+  Future<List<ChatSession>> getAllSessions();
+  Future<void> saveSession(ChatSession session);
+  Future<void> deleteSession(String sessionId);
+  ChatSession createNewSession();
+  void addMessageToSession(ChatSession session, Message message);
+  bool isLastMessageAssistInSession(ChatSession session);
+  void updateLastAssistantMessage(ChatSession session, Message message);
+}
+
+
+class ChatSessionUseCaseImpl implements ChatSessionUseCase {
   final ChatSessionRepository repository;
 
-  ChatSessionUseCase({required this.repository});
+  ChatSessionUseCaseImpl({required this.repository});
 
   Future<List<ChatSession>> getAllSessions() async {
     return repository.getAllSessions();
