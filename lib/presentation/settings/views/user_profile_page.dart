@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:domain/entities/user.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,10 +9,14 @@ import '../../../app/injection_container.dart';
 import '../viewModels/user_profile_view_model.dart';
 
 class UserProfilePage extends StatelessWidget {
+  User? user;
+
+  UserProfilePage({Key? key, required this.user}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => sl<UserProfileViewModel>(),
+      create: (_) => UserProfileViewModel(authUseCase: sl(), userUseCase: sl(), user: user),
       child: Scaffold(
         appBar: AppBar(
           title: const Text("User Profile"),
@@ -103,7 +108,7 @@ class UserProfilePage extends StatelessWidget {
                         ),
                       );
                       if (result == 'refresh') {
-                        await viewModel.fetchAuthSessionNew();
+                        await viewModel.fetchUser();
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -129,7 +134,7 @@ class UserProfilePage extends StatelessWidget {
                         ),
                       );
                       if (result == 'refresh') {
-                        await viewModel.fetchAuthSessionNew();
+                        await viewModel.fetchUser();
                       }
                     },
                     style: ElevatedButton.styleFrom(

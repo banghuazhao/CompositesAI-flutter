@@ -78,7 +78,9 @@ class _ChatScreenState extends State<ChatScreen>
                             String? result = await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => UserProfilePage(),
+                                builder: (context) => UserProfilePage(
+                                  user: viewModel.user,
+                                ),
                               ),
                             );
                             if (result == "refresh") {

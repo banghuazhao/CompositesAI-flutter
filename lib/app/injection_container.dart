@@ -47,8 +47,6 @@ void initInjection() {
       () => SettingsViewModel(authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
   sl.registerFactory<QASettingsViewModel>(() =>
       QASettingsViewModel(featureFlagProvider: sl(), apiEnvironment: sl(), authUseCase: sl()));
-  sl.registerFactory<UserProfileViewModel>(
-      () => UserProfileViewModel(authUseCase: sl(), userUseCase: sl()));
   sl.registerFactory<ForgetPasswordViewModel>(() => ForgetPasswordViewModel(authUseCase: sl()));
   sl.registerFactory<UpdatePasswordViewModel>(() => UpdatePasswordViewModel(authUseCase: sl()));
 

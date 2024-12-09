@@ -8,42 +8,20 @@ import 'package:domain/usecases/auth_usecase.dart';
 class UserProfileViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
   final UserUseCase userUseCase;
+  User? user;
 
   bool isLoading = false;
-  User? user;
   bool isSignedIn = false;
-  bool isLoggedIn = false;
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  UserProfileViewModel({required this.authUseCase, required this.userUseCase}) {
-    fetchAuthSessionNew();
-  }
-
-  Future<void> fetchAuthSessionNew() async {
-    try {
-      isLoggedIn = await authUseCase.isLoggedIn();
-      if (isLoggedIn) {
-        await fetchUser(); // Fetch user only if logged in
-      } else {
-        user = null; // Clear user data when not logged in
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print(e);
-      }
-      isLoggedIn = false;
-      user = null; // Ensure user data is cleared on error
-    }
-    notifyListeners(); // Notify listeners about state changes
-  }
+  UserProfileViewModel({required this.authUseCase, required this.userUseCase, required this.user});
 
   Future<void> fetchUser() async {
     try {
       user = await userUseCase.fetchMe();
       notifyListeners();
     } catch (e) {
-      isLoggedIn = false;
       user = null; // Clear user data in case of an error
       notifyListeners(); // Ensure the UI is updated
     }
@@ -64,7 +42,6 @@ class UserProfileViewModel extends ChangeNotifier {
       );
 
       // Update state
-      isLoggedIn = false; // Explicitly set isLoggedIn to false
       user = null; // Clear user data
       notifyListeners();
     } catch (e) {

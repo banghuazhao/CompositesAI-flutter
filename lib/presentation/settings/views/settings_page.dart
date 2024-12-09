@@ -95,7 +95,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => UserProfilePage(),
+                            builder: (context) => UserProfilePage(user: viewModel.user),
                           ),
                         );
                         await _fetchAuthSession();

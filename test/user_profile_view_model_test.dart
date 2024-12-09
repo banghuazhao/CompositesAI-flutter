@@ -141,7 +141,8 @@ void main() {
       test('should set loading to true during the process and back to false after success', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
-        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase);
+        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
+            authUseCase: mockAuthUseCase, userUseCase: mockUserUseCase, user: User(email: "email"));
         // Arrange
         when(mockUserUseCase.deleteAccount()).thenAnswer((_) async {});
 
@@ -163,7 +164,8 @@ void main() {
       test('should set loading to true during the process and back to false after failure', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
-        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase);
+        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
+            authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase, user: User(email: "email"));
         // Arrange
         when(mockUserUseCase.deleteAccount()).thenThrow(Exception('Deletion failed'));
 
@@ -194,7 +196,8 @@ void main() {
       test('should handle exceptions and print an error message on failure', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
-        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase);
+        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
+            authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase, user: User(email: "email"));
         // Arrange
         when(mockUserUseCase.deleteAccount()).thenThrow(Exception('Deletion failed'));
 
@@ -213,7 +216,8 @@ void main() {
       test('should update isLoading and notify listeners when set to true', () {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
-        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase);
+        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
+            authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase, user: User(email: "email"));
         // Act
         userProfileViewModel.setLoading(true);
 
@@ -224,7 +228,8 @@ void main() {
       test('should update isLoading and notify listeners when set to false', () {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
-        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase);
+        final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
+            authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase, user: User(email: "email"));
         // Arrange
         userProfileViewModel.setLoading(true); // Start with true
 
