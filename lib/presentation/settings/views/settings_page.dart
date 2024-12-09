@@ -8,6 +8,8 @@ import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import '../viewModels/settings_view_model.dart';
 import 'login_page.dart';
 import 'tool_setting_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -62,14 +64,27 @@ class _SettingsPageState extends State<SettingsPage> {
                       key: ValueKey(viewModel.user?.name ?? ""),
                       leading: viewModel.user?.avatarUrl != null
                           ? CircleAvatar(
-                        backgroundImage: NetworkImage(viewModel.user!.avatarUrl!),
                         radius: 22.5, // Adjust the radius to match the icon size
+                        backgroundColor: Colors.transparent,
+                        child: ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: viewModel.user!.avatarUrl!,
+                            placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                            errorWidget: (context, url, error) {
+                              debugPrint('Error loading image: $url, Error: $error');
+                              return const Icon(Icons.error, color: Colors.red);
+                            },
+                            fit: BoxFit.cover,
+                          ),
+
+                        ),
                       )
-                          : Icon(
+                          : const Icon(
                         Icons.account_circle,
                         size: 45,
                         color: Colors.blueGrey,
                       ),
+
                       title: Text(
                         viewModel.user?.name ?? "",
                         style: TextStyle(

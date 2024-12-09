@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,10 +43,21 @@ class UserProfilePage extends StatelessWidget {
                             children: [
                               viewModel.user?.avatarUrl != null
                                   ? CircleAvatar(
-                                backgroundImage: NetworkImage(viewModel.user!.avatarUrl!),
-                                radius: 27.5, // Matches size of 55
+                                radius: 27.5, // Adjust the radius to match the icon size
+                                backgroundColor: Colors.transparent,
+                                child: ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: viewModel.user!.avatarUrl!,
+                                    placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                                    errorWidget: (context, url, error) {
+                                      debugPrint('Error loading image: $url, Error: $error');
+                                      return const Icon(Icons.error, color: Colors.red);
+                                    },
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
                               )
-                                  : Icon(
+                                  : const Icon(
                                 Icons.account_circle,
                                 size: 55,
                                 color: Colors.blueGrey,

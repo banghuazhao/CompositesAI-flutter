@@ -87,25 +87,53 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _googleSignIn(LoginViewModel viewModel, BuildContext context) async {
-    await viewModel.signInWithGoogle();
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent closing the dialog by tapping outside
+      builder: (BuildContext context) {
+        return Center(
+          child: CircularProgressIndicator(), // Display loading indicator
+        );
+      },
+    );
 
-    if (viewModel.isSigningIn) {
-      // Display success Snackbar
+    try {
+      // Perform Google Sign-In
+      await viewModel.signInWithGoogle();
+
+      // Dismiss loading dialog before performing further actions
+      Navigator.of(context, rootNavigator: true).pop();
+
+      // Check the result of the sign-in
+      if (viewModel.isSigningIn) {
+        // Display success Snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Logged in with Google"),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.black,
+          ),
+        );
+
+        // Navigate to the next screen
+        Navigator.pop(context, "Log in Success"); // Pop the current screen
+      } else {
+        // Display failure Snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(viewModel.errorMessage ?? "Google Sign-In failed"),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle any unexpected errors
+      Navigator.of(context, rootNavigator: true).pop(); // Dismiss loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Logged in with Google"),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.black,
-        ),
-      );
-
-      // Navigate to the next screen
-      Navigator.pop(context, "Log in Success");
-    } else {
-      // Display failure Snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(viewModel.errorMessage ?? "Google Sign-In failed"),
+          content: Text("An error occurred: $e"),
           duration: Duration(seconds: 2),
           backgroundColor: Colors.red,
         ),
@@ -113,26 +141,55 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+
   void _appleSignIn(LoginViewModel viewModel, BuildContext context) async {
-    await viewModel.signInWithApple();
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent closing the dialog by tapping outside
+      builder: (BuildContext context) {
+        return Center(
+          child: CircularProgressIndicator(), // Display loading indicator
+        );
+      },
+    );
 
-    if (viewModel.isSigningIn) {
-      // Display success Snackbar
+    try {
+      // Perform Apple Sign-In
+      await viewModel.signInWithApple();
+
+      // Dismiss loading dialog before performing further actions
+      Navigator.of(context, rootNavigator: true).pop();
+
+      // Check the result of the sign-in
+      if (viewModel.isSigningIn) {
+        // Display success Snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Logged in with Apple"),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.black,
+          ),
+        );
+
+        // Navigate to the next screen
+        Navigator.pop(context, "Log in Success"); // Pass result back
+      } else {
+        // Display failure Snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(viewModel.errorMessage ?? "Apple Sign in failed"),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle any unexpected errors
+      Navigator.of(context, rootNavigator: true).pop(); // Ensure dialog is dismissed
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Logged in with Apple"),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.black,
-        ),
-      );
-
-      // Navigate to the next screen
-      Navigator.pop(context, "Log in Success");
-    } else {
-      // Display failure Snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(viewModel.errorMessage ?? "Apple Sign in failed"),
+          content: Text("An error occurred: $e"),
           duration: Duration(seconds: 2),
           backgroundColor: Colors.red,
         ),
