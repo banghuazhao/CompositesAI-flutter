@@ -31,7 +31,7 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
       final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
       final result = await viewModel.submitApplication(_reasonController.text);
 
-      if (result == 'This user has already submitted an expert application. Please wait for approval.' ||
+      if (result == 'Application successfully submitted. Please wait for approval.' ||
           result == 'This user has already submitted an expert application. Please wait for approval.' ||
           result == 'Submission failed due to an internal error. Please try again later.') {
         // Show a dialog and wait for the user to close it
@@ -70,7 +70,7 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Expert Apply")),
+      appBar: AppBar(title: const Text("Expert Application")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -83,7 +83,7 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
             TextFormField(
               controller: _reasonController,
               decoration: InputDecoration(
-                hintText: "Tell us the reason you want to apply to be an expert",
+                hintText: "Tell us why you’re applying to be an expert...",
               ),
             ),
             SizedBox(height: 20.0),
@@ -92,7 +92,7 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
                 : Center(
               child: ElevatedButton(
                 onPressed: _submitApplication,
-                child: Text("Submit"),
+                child: Text("Apply"),
               ),
             ),
           ],

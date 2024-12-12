@@ -223,7 +223,7 @@ class SettingsViewModel extends ChangeNotifier {
     try {
       submission = await userUserCase.submitApplication(reason);
       if (submission == 'success') {
-        result = 'This user has already submitted an expert application. Please wait for approval.';
+        result = 'Application successfully submitted. Please wait for approval.';
         return result;
       } else if (submission == 'failed') {
         result = 'This user has already submitted an expert application. Please wait for approval.';
