@@ -15,7 +15,7 @@ class UserProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
+    return ChangeNotifierProvider(//Creates the UserProfileViewModel object. 2.Makes it available to the page and any widgets below it in the widget tree.
       create: (_) => UserProfileViewModel(authUseCase: sl(), userUseCase: sl(), user: user),
       child: Scaffold(
         appBar: AppBar(
@@ -23,7 +23,7 @@ class UserProfilePage extends StatelessWidget {
           backgroundColor: Color(0xFF33424E),
           elevation: 4.0,
         ),
-        body: Consumer<UserProfileViewModel>(
+        body: Consumer<UserProfileViewModel>(//The page accesses the ViewModel through a Consumer
           builder: (context, viewModel, _) {
             return viewModel.isLoading
                 ? Center(child: CircularProgressIndicator())

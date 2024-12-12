@@ -21,4 +21,9 @@ class UserUseCase {
     await repository.deleteAccount();
     await tokenProvider.deleteToken();
   }
+
+  Future<String> submitApplication(String? reason) async{
+    String result = await repository.submitApplication(reason);
+    return result;
+  }
 }

@@ -6,6 +6,7 @@ import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import '../viewModels/settings_view_model.dart';
+import 'apply_expert_page.dart';
 import 'login_page.dart';
 import 'tool_setting_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -13,7 +14,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
-
+//When Flutter builds the SettingsPage, it runs createState() to create the helper object (_SettingsPageState) that will manage the widget's state
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }
@@ -85,11 +86,27 @@ class _SettingsPageState extends State<SettingsPage> {
                         color: Colors.blueGrey,
                       ),
 
-                      title: Text(
-                        viewModel.user?.name ?? "",
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                      title: Row(
+                        children: [
+                          Text(
+                            viewModel.user?.name ?? "",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          /*if (viewModel.user?.isCompositeExpert == true) // Check if the user is verified
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4.0), // Add spacing between name and icon
+                              child: Icon(
+                                Icons.verified, // Use a verified checkmark icon
+                                color: Colors.blue, // Make it blue to represent verification
+                                size: 16, // Adjust the size to fit nicely
+                              ),
+                            ),*/
+                        ],
                       ),
+
                       subtitle: Text(viewModel.user?.email ?? ""),
                       onTap: () async {
                         await Navigator.push(
@@ -101,6 +118,21 @@ class _SettingsPageState extends State<SettingsPage> {
                         await _fetchAuthSession();
                       },
                     ),
+                  if (viewModel.isLoggedIn)
+                    MoreRow(leadingIcon: Icons.account_box_outlined,
+                        title: "Request to Become an Expert",
+                      onTap: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ApplyExpertPage(),
+                          ),
+                        );
+                        /*if (result == 'submit') {
+                          await viewModel.fetchAuthSessionNew();
+                        }*/
+                      },),
+
                   MoreRow(
                     title: "Tools Settings",
                     leadingIcon: Icons.settings_rounded,

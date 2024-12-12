@@ -19,7 +19,7 @@ class UserRepositoryImpl implements UserRepository {
   Future<User> fetchMe() async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/users/me');
-
+    //convert plain url(string) to Uri object
     // No need to add Authorization header; AuthenticatedHttpClient handles it
     final response = await authClient.get(url, headers: {
       'Content-Type': 'application/json',
@@ -29,6 +29,7 @@ class UserRepositoryImpl implements UserRepository {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return User.fromJson(data);
+
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -64,5 +65,27 @@ class UserRepositoryImpl implements UserRepository {
       throw Exception('Failed to delete account. Status code: ${response.statusCode}');
     }
     return;
+  }
+
+  @override
+  Future<String> submitApplication(String? reason) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/experts/register-expert');
+    final response = await authClient.post(
+        url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(
+        {
+          if (reason != null) 'reason': reason,
+        },
+      ),
+    );
+    if (response.statusCode == 200) {
+      return 'success';
+    } else if (response.statusCode == 400) {
+      return 'failed';
+    } else {
+      return 'error';
+    }
   }
 }

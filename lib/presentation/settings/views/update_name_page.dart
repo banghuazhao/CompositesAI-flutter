@@ -39,6 +39,7 @@ class _UpdateNamePageState extends State<UpdateNamePage> {
 
     try {
       // Access the view model and update the user's name
+      // looks for an instance of SettingsViewModel that has been provided by a Provider widget (like ChangeNotifierProvider) somewhere higher in the widget tree
       final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
       await viewModel.updateUserName(_nameController.text);
 

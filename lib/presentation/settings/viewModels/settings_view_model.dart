@@ -22,6 +22,8 @@ class SettingsViewModel extends ChangeNotifier {
   bool isLoggedIn = false;
   String version = '';
   User? user;
+  String submission = '';
+
 
   int _tapCount = 0;
   final int _maxTaps = 5;
@@ -215,4 +217,25 @@ class SettingsViewModel extends ChangeNotifier {
       print("Failed to update user name: $error");
     }
   }
+
+  Future<String> submitApplication(String reason) async {
+    String result = '';
+    try {
+      submission = await userUserCase.submitApplication(reason);
+      if (submission == 'success') {
+        result = 'This user has already submitted an expert application. Please wait for approval.';
+        return result;
+      } else if (submission == 'failed') {
+        result = 'This user has already submitted an expert application. Please wait for approval.';
+            return result;
+      } else {
+        result = 'Submission failed due to an internal error. Please try again later.';
+        return result;
+      }
+    } catch (error) {
+      result = 'failed to submit: $error';
+      return result;
+    }
+  }
+
 }
