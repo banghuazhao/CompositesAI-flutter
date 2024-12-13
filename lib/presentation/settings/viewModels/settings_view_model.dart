@@ -23,6 +23,8 @@ class SettingsViewModel extends ChangeNotifier {
   String version = '';
   User? user;
   String submission = '';
+  bool isExpert = false;
+
 
 
   int _tapCount = 0;
@@ -60,7 +62,8 @@ class SettingsViewModel extends ChangeNotifier {
   Future<void> fetchUser() async {
     try {
       user = await userUserCase.fetchMe();
-      isLoggedIn = true; // Ensure isLoggedIn is updated correctly
+      isLoggedIn = true;
+      isExpert = user!.isCompositeExpert;// Ensure isLoggedIn is updated correctly
     } catch (e) {
       if (kDebugMode) {
         print(e);

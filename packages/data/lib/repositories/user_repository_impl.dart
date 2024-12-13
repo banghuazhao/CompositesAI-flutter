@@ -28,6 +28,7 @@ class UserRepositoryImpl implements UserRepository {
     // Check the response status and handle accordingly
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
+      print(User.fromJson(data));
       return User.fromJson(data);
 
     } else {

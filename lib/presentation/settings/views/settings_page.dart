@@ -95,7 +95,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          /*if (viewModel.user?.isCompositeExpert == true) // Check if the user is verified
+                          if (viewModel.user?.isCompositeExpert == true) // Check if the user is verified
                             Padding(
                               padding: const EdgeInsets.only(left: 4.0), // Add spacing between name and icon
                               child: Icon(
@@ -103,7 +103,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 color: Colors.blue, // Make it blue to represent verification
                                 size: 16, // Adjust the size to fit nicely
                               ),
-                            ),*/
+                            ),
                         ],
                       ),
 
@@ -118,7 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         await _fetchAuthSession();
                       },
                     ),
-                  if (viewModel.isLoggedIn)
+                  if (viewModel.isLoggedIn && !viewModel.isExpert)
                     MoreRow(leadingIcon: Icons.account_box_outlined,
                         title: "Request to Become an Expert",
                       onTap: () async {

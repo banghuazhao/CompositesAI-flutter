@@ -71,14 +71,27 @@ class UserProfilePage extends StatelessWidget {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    viewModel.user?.name ?? '',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        viewModel.user?.name ?? "",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (viewModel.user?.isCompositeExpert == true) // Check if the user is verified
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 4.0), // Add spacing between name and icon
+                                          child: Icon(
+                                            Icons.verified, // Use a verified checkmark icon
+                                            color: Colors.blue, // Make it blue to represent verification
+                                            size: 16, // Adjust the size to fit nicely
+                                          ),
+                                        ),
+                                    ],
                                   ),
+
                                   SizedBox(height: 8),
                                   Text(
                                     viewModel.user?.email ?? '',
