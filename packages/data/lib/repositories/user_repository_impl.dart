@@ -27,7 +27,7 @@ class UserRepositoryImpl implements UserRepository {
 
     // Check the response status and handle accordingly
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      final data = jsonDecode(response.body); //jsonDecode convert a JSON string into a Dart object(which is Dart Map->Map<String, dynamic>)
       print(User.fromJson(data));
       return User.fromJson(data);
 

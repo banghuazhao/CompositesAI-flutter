@@ -24,8 +24,7 @@ class SettingsViewModel extends ChangeNotifier {
   User? user;
   String submission = '';
   bool isExpert = false;
-
-
+  bool isAdmin = false;
 
   int _tapCount = 0;
   final int _maxTaps = 5;
@@ -63,7 +62,8 @@ class SettingsViewModel extends ChangeNotifier {
     try {
       user = await userUserCase.fetchMe();
       isLoggedIn = true;
-      isExpert = user!.isCompositeExpert;// Ensure isLoggedIn is updated correctly
+      isExpert = user!.isCompositeExpert;
+      isAdmin  = user!.isAdmin;// Ensure isLoggedIn is updated correctly
     } catch (e) {
       if (kDebugMode) {
         print(e);

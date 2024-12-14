@@ -5,23 +5,26 @@ import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
+import '../../../app/injection_container.dart';
+import '../viewModels/manage_composite_experts_view_model.dart';
 import '../viewModels/settings_view_model.dart';
 import 'apply_expert_page.dart';
 import 'login_page.dart';
+import 'manage_composite_experts_page.dart';
 import 'tool_setting_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
+
 //When Flutter builds the SettingsPage, it runs createState() to create the helper object (_SettingsPageState) that will manage the widget's state
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-
   late SettingsViewModel viewModel;
+
   @override
   void initState() {
     super.initState();
@@ -36,8 +39,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SettingsViewModel>( // listen to changes in SettingsViewModel
-      builder: (context, viewModel, _) {//If every part of the widget depends on the state or changes dynamically, there’s no need to pass a child. Let the Consumer rebuild the entire widget tree.
+    return Consumer<SettingsViewModel>(
+      // listen to changes in SettingsViewModel
+      builder: (context, viewModel, _) {
+        //If every part of the widget depends on the state or changes dynamically, there’s no need to pass a child. Let the Consumer rebuild the entire widget tree.
         return Scaffold(
           appBar: AppBar(title: const Text("Settings")),
           body: ProgressHUD(
@@ -65,27 +70,26 @@ class _SettingsPageState extends State<SettingsPage> {
                       key: ValueKey(viewModel.user?.name ?? ""),
                       leading: viewModel.user?.avatarUrl != null
                           ? CircleAvatar(
-                        radius: 22.5, // Adjust the radius to match the icon size
-                        backgroundColor: Colors.transparent,
-                        child: ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: viewModel.user!.avatarUrl!,
-                            placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
-                            errorWidget: (context, url, error) {
-                              debugPrint('Error loading image: $url, Error: $error');
-                              return const Icon(Icons.error, color: Colors.red);
-                            },
-                            fit: BoxFit.cover,
-                          ),
-
-                        ),
-                      )
+                              radius: 22.5, // Adjust the radius to match the icon size
+                              backgroundColor: Colors.transparent,
+                              child: ClipOval(
+                                child: CachedNetworkImage(
+                                  imageUrl: viewModel.user!.avatarUrl!,
+                                  placeholder: (context, url) =>
+                                      const CircularProgressIndicator(strokeWidth: 2),
+                                  errorWidget: (context, url, error) {
+                                    debugPrint('Error loading image: $url, Error: $error');
+                                    return const Icon(Icons.error, color: Colors.red);
+                                  },
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            )
                           : const Icon(
-                        Icons.account_circle,
-                        size: 45,
-                        color: Colors.blueGrey,
-                      ),
-
+                              Icons.account_circle,
+                              size: 45,
+                              color: Colors.blueGrey,
+                            ),
                       title: Row(
                         children: [
                           Text(
@@ -95,9 +99,11 @@ class _SettingsPageState extends State<SettingsPage> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          if (viewModel.user?.isCompositeExpert == true) // Check if the user is verified
+                          if (viewModel.user?.isCompositeExpert ==
+                              true) // Check if the user is verified
                             Padding(
-                              padding: const EdgeInsets.only(left: 4.0), // Add spacing between name and icon
+                              padding: const EdgeInsets.only(left: 4.0),
+                              // Add spacing between name and icon
                               child: Icon(
                                 Icons.verified, // Use a verified checkmark icon
                                 color: Colors.blue, // Make it blue to represent verification
@@ -106,7 +112,6 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                         ],
                       ),
-
                       subtitle: Text(viewModel.user?.email ?? ""),
                       onTap: () async {
                         await Navigator.push(
@@ -118,9 +123,31 @@ class _SettingsPageState extends State<SettingsPage> {
                         await _fetchAuthSession();
                       },
                     ),
+                  if (viewModel.isLoggedIn && viewModel.isAdmin && viewModel.user != null)
+                    MoreRow(
+                      leadingIcon: Icons.construction_rounded,
+                      title: "Manage Expert Application",
+                      onTap: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChangeNotifierProvider(
+                                create: (_) => ManageCompositeExpertsViewModel(
+                                    userUseCase: sl(),
+                                    compositeExpertUseCase: sl(),
+                                    user: viewModel.user!),
+                                child: ManageCompositeExpertsPage()),
+                          ),
+                        );
+                        /*if (result == 'submit') {
+                          await viewModel.fetchAuthSessionNew();
+                        }*/
+                      },
+                    ),
                   if (viewModel.isLoggedIn && !viewModel.isExpert)
-                    MoreRow(leadingIcon: Icons.account_box_outlined,
-                        title: "Request to Become an Expert",
+                    MoreRow(
+                      leadingIcon: Icons.account_box_outlined,
+                      title: "Request to Become an Expert",
                       onTap: () async {
                         final result = await Navigator.push(
                           context,
@@ -131,15 +158,14 @@ class _SettingsPageState extends State<SettingsPage> {
                         /*if (result == 'submit') {
                           await viewModel.fetchAuthSessionNew();
                         }*/
-                      },),
-
+                      },
+                    ),
                   MoreRow(
                     title: "Tools Settings",
                     leadingIcon: Icons.settings_rounded,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (context) => ToolSettingPage()),
+                      MaterialPageRoute(builder: (context) => ToolSettingPage()),
                     ),
                   ),
                   MoreRow(
@@ -165,8 +191,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       () async {
                         await Navigator.push(
                           context,
-                          MaterialPageRoute(
-                              builder: (context) => QASettingsPage()),
+                          MaterialPageRoute(builder: (context) => QASettingsPage()),
                         );
                         viewModel.fetchAuthSessionNew();
                       },
