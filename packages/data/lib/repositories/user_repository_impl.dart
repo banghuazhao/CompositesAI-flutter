@@ -27,10 +27,10 @@ class UserRepositoryImpl implements UserRepository {
 
     // Check the response status and handle accordingly
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body); //jsonDecode convert a JSON string into a Dart object(which is Dart Map->Map<String, dynamic>)
+      final data = jsonDecode(response
+          .body); //jsonDecode convert a JSON string into a Dart object(which is Dart Map->Map<String, dynamic>)
       print(User.fromJson(data));
       return User.fromJson(data);
-
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -73,7 +73,7 @@ class UserRepositoryImpl implements UserRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/experts/register-expert');
     final response = await authClient.post(
-        url,
+      url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(
         {
@@ -81,7 +81,7 @@ class UserRepositoryImpl implements UserRepository {
         },
       ),
     );
-    if (response.statusCode == 200) {
+    if (response.statusCode == 201) {
       return 'success';
     } else if (response.statusCode == 400) {
       return 'failed';
@@ -89,4 +89,51 @@ class UserRepositoryImpl implements UserRepository {
       return 'error';
     }
   }
+
+  @override
+  Future<User> getUserById(int userId) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/users/$userId');
+    final response = await authClient.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final data = jsonDecode(response.body); // Parse JSON response
+        return User.fromJson(data); // Convert to User object
+      } catch (e) {
+        throw Exception("Failed to parse user data: $e");
+      }
+    } else if (response.statusCode == 404) {
+      throw Exception("User not found"); // Handle 'User not found' error
+    } else {
+      throw mapServerErrorToDomainException(response); // Handle other server errors
+    }
+  }
+
+  @override
+  Future<void> becomeExpert(int userId) async {
+    try {
+      final baseURL = await apiEnvironment.getBaseUrl();
+      final url = Uri.parse('$baseURL/users/expert');
+
+      final response = await authClient.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId}),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception("Failed to add the expert: ${response.statusCode}");
+      }
+    } catch (e) {
+      // Log or rethrow the error
+      print("Error in becomeExpert: $e");
+      throw Exception("An error occurred while adding the expert.");
+    }
+  }
+
+
 }

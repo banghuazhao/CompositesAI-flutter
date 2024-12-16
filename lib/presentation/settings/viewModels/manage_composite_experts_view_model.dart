@@ -1,3 +1,4 @@
+
 import 'package:domain/entities/application.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/composite_expert_usecase.dart';
@@ -37,4 +38,45 @@ class ManageCompositeExpertsViewModel extends ChangeNotifier {
     isLoading = value;
     notifyListeners();
   }
+  Future<User> getUserById(int userId) async {
+    try {
+      // Call the use case to fetch user by ID
+      User user = await userUseCase.getUserById(userId);
+      return user;
+    } catch (e) {
+      // Log the error for debugging
+      print("Error fetching user: $e");
+
+      // Re-throw the error or handle it appropriately
+      throw Exception("Failed to fetch user with ID: $userId");
+    }
+  }
+
+  Future<void> approveExpert(int userId) async {
+    try {
+      // First step: Make user an expert
+      await userUseCase.becomeExpert(userId);
+      // Second step: Delete the user's application
+      await compositeExpertUseCase.deleteApplication(userId);
+      // Update the list by removing the approved application
+      applications.removeWhere((app) => app.userId == userId);
+      // Notify listeners about the state change
+      notifyListeners();
+    } catch (e) {
+      print("Error in approveExpert: $e");
+      throw Exception("Failed to approve expert with user ID: $userId.");
+    }
+  }
+
+  Future<void> disapproveExpert(int userId) async {
+    try {
+      await compositeExpertUseCase.deleteApplication(userId);
+      applications.removeWhere((app) => app.userId == userId);
+      notifyListeners();
+    } catch (e) {
+      print("Error in disapprove Expert: $e");
+      throw Exception("Failed to disapprove expert with user ID: $userId.");
+    }
+  }
+
 }

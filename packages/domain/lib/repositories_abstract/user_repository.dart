@@ -1,3 +1,4 @@
+
 import '../entities/user.dart';
 
 abstract class UserRepository {
@@ -5,4 +6,6 @@ abstract class UserRepository {
   Future<void> updateMe(String newName);
   Future<void> deleteAccount();
   Future<String> submitApplication(String? reason);
+  Future<User> getUserById(int userId);
+  Future<void> becomeExpert(int userId);
 }

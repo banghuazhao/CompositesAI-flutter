@@ -12,4 +12,8 @@ class CompositeExpertUseCase {
   Future<List<CompositeExpertRequest>> getAllApplications() async {
     return await repository.getAllApplications();
   }
+
+  Future<void> deleteApplication(int userId) async {
+    await repository.deleteApplication(userId);
+  }
 }

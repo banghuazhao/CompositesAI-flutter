@@ -30,6 +30,22 @@ class CompositeExpertRepositoryImpl implements CompositeExpertRepository {
     }
   }
 
+  @override
+
+  Future<void> deleteApplication(int userId) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final response = await authClient.delete(
+      Uri.parse('$baseURL/experts/applications/applicant'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'userId': userId}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete applicant. Status code: ${response.statusCode}');
+    }
+    return;
+  }
+
+
 
 }
 
