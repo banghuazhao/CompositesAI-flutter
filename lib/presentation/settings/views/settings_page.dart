@@ -139,9 +139,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                 child: ManageCompositeExpertsPage()),
                           ),
                         );
-                        /*if (result == 'submit') {
-                          await viewModel.fetchAuthSessionNew();
-                        }*/
                       },
                     ),
                   if (viewModel.isLoggedIn && !viewModel.isExpert)
@@ -155,9 +152,6 @@ class _SettingsPageState extends State<SettingsPage> {
                             builder: (context) => ApplyExpertPage(),
                           ),
                         );
-                        /*if (result == 'submit') {
-                          await viewModel.fetchAuthSessionNew();
-                        }*/
                       },
                     ),
                   MoreRow(

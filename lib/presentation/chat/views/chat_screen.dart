@@ -88,16 +88,45 @@ class _ChatScreenState extends State<ChatScreen>
                               setState(() {}); // Rebuild the UI
                             }
                           },
-                          child: viewModel.user?.avatarUrl != null
-                              ? CircleAvatar(
-                            backgroundImage: NetworkImage(viewModel.user!.avatarUrl!),
-                            radius: 16, // Adjust radius to fit in the app bar
-                          )
-                              : const Icon(
-                            Icons.account_circle,
-                            size: 40,
-                            color: Colors.white,
+                          child: Stack(
+                            alignment: Alignment.topRight, // Align everything to the top-right corner
+                            children: [
+                              // Avatar or default icon
+                              viewModel.user?.avatarUrl != null
+                                  ? CircleAvatar(
+                                backgroundImage: NetworkImage(viewModel.user!.avatarUrl!),
+                                radius: 20, // Slightly bigger radius for better visuals
+                              )
+                                  : const Icon(
+                                Icons.account_circle,
+                                size: 48, // Adjusted size for consistency
+                                color: Colors.white,
+                              ),
+
+                              // Blue verified icon with a white circular background
+                              if (viewModel.user?.isCompositeExpert == true)
+                                Positioned(
+                                  right: 0, // Align to the top-right corner
+                                  top: 0,
+                                  child: Container(
+                                    width: 20, // Ensure fixed width
+                                    height: 20, // Ensure fixed height
+                                    decoration: BoxDecoration(
+                                      color: Colors.white, // White background for contrast
+                                      shape: BoxShape.circle, // Ensure a perfect circle
+                                    ),
+                                    alignment: Alignment.center, // Center the icon
+                                    child: Icon(
+                                      Icons.verified,
+                                      color: Colors.blue, // Blue verification icon
+                                      size: 16, // Size of the icon itself
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
+
+
                         ),
                         const SizedBox(width: 8),
                       ],

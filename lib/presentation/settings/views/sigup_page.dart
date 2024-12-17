@@ -118,7 +118,7 @@ class _SignupFormState extends State<SignupForm> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = Provider.of<SignupViewModel>(context);
+    final viewModel = Provider.of<SignupViewModel>(context); //access an already provided instance of SignupViewModel
     return Scaffold(
       appBar: AppBar(title: Text('Signup')),
       body: SingleChildScrollView(

@@ -44,13 +44,13 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => sl<ForgetPasswordViewModel>(),
+      create: (_) => sl<ForgetPasswordViewModel>(),//Creates an instance of the ForgetPasswordViewModel using the create function
       child: Scaffold(
         appBar: AppBar(
           title: Text("Reset Password"),
           backgroundColor: Color(0xFF33424E),
         ),
-        body: Consumer<ForgetPasswordViewModel>(
+        body: Consumer<ForgetPasswordViewModel>(//widget listens to changes in the ForgetPasswordViewModel
           builder: (context, viewModel, child) {
             return Padding(
               padding: const EdgeInsets.all(16.0),
