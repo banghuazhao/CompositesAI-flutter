@@ -23,8 +23,8 @@ class UserUseCase {
     await tokenProvider.deleteToken();
   }
 
-  Future<String> submitApplication(String? reason) async{
-    String result = await repository.submitApplication(reason);
+  Future<String> submitApplication(String? reason, String? link) async{
+    String result = await repository.submitApplication(reason, link);
     return result;
   }
 

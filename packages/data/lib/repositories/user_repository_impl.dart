@@ -69,7 +69,7 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
-  Future<String> submitApplication(String? reason) async {
+  Future<String> submitApplication(String? reason, String? link) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/experts/register-expert');
     final response = await authClient.post(
@@ -78,6 +78,7 @@ class UserRepositoryImpl implements UserRepository {
       body: jsonEncode(
         {
           if (reason != null) 'reason': reason,
+          if (link != null) 'link': link,
         },
       ),
     );

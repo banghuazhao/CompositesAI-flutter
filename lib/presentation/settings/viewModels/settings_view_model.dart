@@ -221,10 +221,10 @@ class SettingsViewModel extends ChangeNotifier {
     }
   }
 
-  Future<String> submitApplication(String reason) async {
+  Future<String> submitApplication(String reason, String link) async {
     String result = '';
     try {
-      submission = await userUserCase.submitApplication(reason);
+      submission = await userUserCase.submitApplication(reason, link);
       if (submission == 'success') {
         result = 'Application successfully submitted. Please wait for approval.';
         return result;

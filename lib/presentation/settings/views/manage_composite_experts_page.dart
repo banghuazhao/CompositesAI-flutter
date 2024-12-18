@@ -1,12 +1,11 @@
 
-
-import 'package:domain/entities/application.dart';
 import 'package:domain/entities/user.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 
 import '../viewModels/manage_composite_experts_view_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ManageCompositeExpertsPage extends StatefulWidget {
   const ManageCompositeExpertsPage({Key? key}) : super(key: key);
@@ -26,6 +25,7 @@ class _ManageCompositeExpertsPageState extends State<ManageCompositeExpertsPage>
       await viewModel.getAllApplications();
     });
   }
+
 
 
   @override
@@ -52,8 +52,30 @@ class _ManageCompositeExpertsPageState extends State<ManageCompositeExpertsPage>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text("Reason: ${application?.reason}"),
-                                    Text("User ID: ${application?.userId}"),
+                                    Text("Reason: ${application?.reason?.isNotEmpty == true ? application?.reason : "Not available"}", ),
+                                    application?.link?.isNotEmpty == true
+                                        ? GestureDetector(
+                                      onTap: () async {
+                                        final Uri uri = Uri.parse(application!.link!);
+                                        if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+                                          throw 'Could not launch ${application.link}';
+                                        }
+                                      },
+                                      child: RichText(
+                                        text: TextSpan(
+                                          text: "Profile Link: ", // The first part with black color
+                                          style: const TextStyle(color: Colors.black), // Style for "Profile Link:"
+                                          children: [
+                                            TextSpan(
+                                              text: application.link, // The link with blue color
+                                              style: const TextStyle(color: Colors.blue),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    )
+                                        : const Text("Profile Link: Not available"),
+
                                     FutureBuilder<User>(
                                       future: userFuture, // Call your function
                                       builder: (context, snapshot) {

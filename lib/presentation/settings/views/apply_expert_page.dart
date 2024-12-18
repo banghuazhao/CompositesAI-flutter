@@ -13,15 +13,35 @@ class ApplyExpertPage extends StatefulWidget {
 
 class _ApplyExpertPage extends State<ApplyExpertPage> {
   final TextEditingController _reasonController = TextEditingController();
+  final TextEditingController _profileLinkController = TextEditingController();
   bool _isLoading = false;
 
   @override
+  @override
   void dispose() {
     _reasonController.dispose();
+    _profileLinkController.dispose();
     super.dispose();
   }
 
+
+  bool _isUrlValid(String url) {
+    final urlPattern =
+        r'^(https?:\/\/)?(www\.)?([a-zA-Z0-9-_]+\.)+[a-zA-Z]{2,}(:\d+)?(\/.*)?$';
+    return RegExp(urlPattern).hasMatch(url);
+  }
+
+
   Future<void> _submitApplication() async {
+    final profileLink = _profileLinkController.text;
+
+    if (profileLink.isNotEmpty && !_isUrlValid(profileLink)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please enter a valid URL.")),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -29,7 +49,7 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
     try {
       // Access the view model and submit the application
       final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
-      final result = await viewModel.submitApplication(_reasonController.text);
+      final result = await viewModel.submitApplication(_reasonController.text, profileLink);
 
       if (result == 'Application successfully submitted. Please wait for approval.' ||
           result == 'This user has already submitted an expert application. Please wait for approval.' ||
@@ -56,7 +76,7 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
       await Future.delayed(Duration(milliseconds: 300)); // Optional delay
       Navigator.pop(context, 'submit'); // Navigate back after dialog interaction
     } catch (error) {
-      // Show error message if update fails
+      print("Submission error: $error"); // Log the error for debugging
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Failed to submit: $error")),
       );
@@ -70,14 +90,24 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Expert Application")),
+      appBar: AppBar(title: const Text("Expert Applications")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Reason (optional):",
+              "Filling these fields will increase your chances of approval and speed up the process.",
+              style: TextStyle(
+                fontSize: 16, // Slightly larger text
+                fontWeight: FontWeight.w500, // Medium weight for emphasis
+                color: Colors.blueAccent, // Use a subtle blue color for emphasis
+              ),
+              textAlign: TextAlign.center, // Center the text horizontally
+            ),
+            SizedBox(height: 25.0),
+            Text(
+              "Reason:",
               style: TextStyle(fontSize: 16.0),
             ),
             TextFormField(
@@ -85,6 +115,18 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
               decoration: InputDecoration(
                 hintText: "Tell us why you’re applying to be an expert...",
               ),
+            ),
+            SizedBox(height: 20.0),
+            Text(
+              "LinkedIn or Other Professional Profile Link:",
+              style: TextStyle(fontSize: 16.0),
+            ),
+            TextFormField(
+              controller: _profileLinkController,
+              decoration: InputDecoration(
+                hintText: "a link to showcase your professional work...",
+              ),
+              keyboardType: TextInputType.url, // URL-specific keyboard
             ),
             SizedBox(height: 20.0),
             _isLoading
