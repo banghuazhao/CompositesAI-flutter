@@ -123,6 +123,9 @@ class _ChatMessageListState extends State<ChatMessageList> {
           result.add(Align(
             alignment: Alignment.centerRight,
             child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.6, // Half the screen width
+              ),
               margin: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
               padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
               decoration: BoxDecoration(
