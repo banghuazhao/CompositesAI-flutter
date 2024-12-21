@@ -4,6 +4,7 @@ import 'package:domain/domain.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'markdown_with_math.dart';
@@ -16,6 +17,14 @@ class ChatMessageList extends StatefulWidget {
 
 class _ChatMessageListState extends State<ChatMessageList> {
   final TextEditingController textController = TextEditingController();
+  final FocusNode focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    focusNode.dispose();
+    textController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,8 +102,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
                     onTap: () async {
                       await viewModel.onDefaultQuestionsTapped(index);
                     },
-                    child: _buildDefaultQuestionCard(
-                        viewModel.defaultQuestions[index]),
+                    child: _buildDefaultQuestionCard(viewModel.defaultQuestions[index]),
                   );
                 },
               );
@@ -150,8 +158,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
           return Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                  padding:
-                      EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                  padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
                   child: streamWidget(snapshot)));
         }));
 
@@ -170,36 +177,72 @@ class _ChatMessageListState extends State<ChatMessageList> {
         child: Row(
           children: [
             Expanded(
-              child: TextField(
+              child: KeyboardListener(
+                focusNode: FocusNode(),
+                onKeyEvent: (KeyEvent event) {
+                  if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
+                    // Check if the Shift key is pressed
+                    final isShiftPressed = HardwareKeyboard.instance.logicalKeysPressed
+                            .contains(LogicalKeyboardKey.shiftLeft) ||
+                        HardwareKeyboard.instance.logicalKeysPressed
+                            .contains(LogicalKeyboardKey.shiftRight);
+
+                    if (isShiftPressed) {
+                      // Add a newline only when Shift + Enter is pressed
+                      final text = textController.text.trim(); // Clean up text
+                      textController.text = "$text\n";
+                      textController.selection = TextSelection.fromPosition(
+                        TextPosition(offset: textController.text.length),
+                      );
+                    } else {
+                      // Submit the text and clear TextField on Enter
+                      final text = textController.text.trim(); // Remove extra spaces/newlines
+                      if (text.isNotEmpty) {
+                        textController.clear(); // Clear input immediately
+                        viewModel.sendInputMessage(text); // Send message
+                      }
+                    }
+                    // Defer the cursor position update to avoid timing issues
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      focusNode.requestFocus();
+                    });
+                  }
+                },
+                child: TextField(
                   controller: textController,
+                  focusNode: focusNode,
                   decoration: InputDecoration(
                     hintText: 'Ask a question...',
-                    border: InputBorder.none, // Remove the line under the TextField
-                    enabledBorder: InputBorder.none, // No border when active
-                    focusedBorder: InputBorder.none, // No border when focused
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                   ),
-                  onSubmitted: (value) {
-                    if (textController.text.isNotEmpty && !viewModel.isLoading) {
-                      final text = textController.text;
-                      textController.clear();
-                      viewModel.sendInputMessage(text);
-                    }
-                  },
-                  onChanged: (value) {
-                    setState(() {});
-                  }),
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.done,
+                  // Treat Enter as Done
+                  maxLines: null,
+                  onChanged: (text) {
+                    setState(() {}); // Ensure the button updates
+                  },// Allow multiple lines if Shift + Enter is used
+                ),
+              ),
             ),
+
             viewModel.isLoading
-                ? CircularProgressIndicator() // Show loading indicator
+                ? CircularProgressIndicator()
                 : IconButton(
                     icon: Icon(Icons.send),
                     onPressed: textController.text.isEmpty
                         ? null
-                        : () async {
-                            final text = textController.text;
-                            textController.clear();
-                            await viewModel.sendInputMessage(text);
-                          }),
+                        : () {
+                            final text = textController.text.trim(); // Clean text
+                            if (text.isNotEmpty) {
+                              textController.clear(); // Clear input field
+                              viewModel.sendInputMessage(text);
+                              focusNode.requestFocus();
+                            }
+                          },
+                  ),
           ],
         ),
       ),
