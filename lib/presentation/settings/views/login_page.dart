@@ -70,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(viewModel.errorMessage!),
-              duration: Duration(seconds: 2),
+              duration: Duration(seconds: 4),
               backgroundColor: Colors.red,
             ),
           );
@@ -308,13 +308,7 @@ class _LoginPageState extends State<LoginPage> {
                         alignment: Alignment.centerLeft,
                         child: Padding(
                           padding: const EdgeInsets.only(left: 3.0),
-                          child: Text(
-                            isPasswordValid ? '' : 'Password must be at least 6 characters long',
-                            style: TextStyle(
-                              color: isPasswordValid ? Colors.transparent : Colors.black54,
-                              fontSize: 14.0,
-                            ),
-                          ),
+
                         ),
                       ),
                       const SizedBox(height: 20.0),
