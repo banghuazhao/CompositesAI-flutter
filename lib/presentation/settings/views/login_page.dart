@@ -373,7 +373,7 @@ class _LoginPageState extends State<LoginPage> {
                             padding: EdgeInsets.symmetric(horizontal: 8.0), // Space around "OR"
                             child: Text(
                               'OR',
-                              style: TextStyle(fontSize: 15, color: Colors.black54), // Style for "OR"
+                              style: TextStyle(fontSize: 15, color: Colors.black), // Style for "OR"
                             ),
                           ),
                           Expanded(

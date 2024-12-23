@@ -192,14 +192,16 @@ class _ChatMessageListState extends State<ChatMessageList> {
 
                     if (isShiftPressed) {
                       // Add a newline only when Shift + Enter is pressed
-                      final text = textController.text.trim(); // Clean up text
+                      final text = textController.text; // Clean up text
                       textController.text = "$text\n";
                       textController.selection = TextSelection.fromPosition(
                         TextPosition(offset: textController.text.length),
                       );
+
+
                     } else {
                       // Submit the text and clear TextField on Enter
-                      final text = textController.text.trim(); // Remove extra spaces/newlines
+                      final text = textController.text; // Remove extra spaces/newlines
                       if (text.isNotEmpty) {
                         textController.clear(); // Clear input immediately
                         viewModel.sendInputMessage(text); // Send message
@@ -238,7 +240,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
                     onPressed: textController.text.isEmpty
                         ? null
                         : () {
-                            final text = textController.text.trim(); // Clean text
+                            final text = textController.text; // Clean text
                             if (text.isNotEmpty) {
                               textController.clear(); // Clear input field
                               viewModel.sendInputMessage(text);
