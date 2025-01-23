@@ -13,7 +13,6 @@ class ChatViewModel extends ChangeNotifier {
   final FunctionToolsUseCase _functionToolsUseCase;
   final AuthUseCase _authUseCase;
   final UserUseCase _userUserCase;
-
   bool isLoggedIn = false;
   User? user;
 

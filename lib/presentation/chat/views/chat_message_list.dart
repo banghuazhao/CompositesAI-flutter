@@ -16,7 +16,7 @@ class ChatMessageList extends StatefulWidget {
 }
 
 class _ChatMessageListState extends State<ChatMessageList> {
-  final TextEditingController textController = TextEditingController();
+  final TextEditingController textController = TextEditingController(); // final means can assign the TextEditingController object to the variable only once.
   final FocusNode focusNode = FocusNode();
 
   @override

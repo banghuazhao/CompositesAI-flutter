@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../viewModels/chat_view_model.dart';
+import 'composites_tools.dart';
 
 class ChatDrawer extends StatelessWidget {
   @override
@@ -24,6 +25,28 @@ class ChatDrawer extends StatelessWidget {
               ),
             ),
           ),
+          // New Session comes first
+          ListTile(
+            leading: Icon(Icons.add),
+            title: Text('New Session'),
+            onTap: () {
+              chatViewModel.addNewSession();
+              Navigator.pop(context); // Close the drawer after creating a new session
+            },
+          ),
+          // CompositeAi Tools comes second
+          ListTile(
+            leading: Icon(Icons.build), // Choose an appropriate icon
+            title: Text('Composites Tools'),
+            onTap: () {
+              Navigator.pop(context); // Close the drawer after selection
+              Navigator.push( // Navigate to CompositesAiTool page
+                context,
+                MaterialPageRoute(builder: (context) => CompositesTools()),
+              );
+            },
+          ),
+          // Chat sessions are listed last
           ...chatViewModel.sessions.map((session) {
             return ListTile(
               leading: Icon(Icons.chat),
@@ -34,14 +57,6 @@ class ChatDrawer extends StatelessWidget {
               },
             );
           }).toList(),
-          ListTile(
-            leading: Icon(Icons.add),
-            title: Text('New Session'),
-            onTap: () {
-              chatViewModel.addNewSession();
-              Navigator.pop(context); // Close the drawer after creating a new session
-            },
-          ),
         ],
       ),
     );

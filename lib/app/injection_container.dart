@@ -1,17 +1,20 @@
 import 'package:data/data_sources/function_tools_data_source.dart';
 import 'package:data/data_sources/open_ai_data_source.dart';
+import 'package:data/repositories/composites_tools_repository_impl.dart';
 import 'package:data/repositories/applications_repository_impl.dart';
 import 'package:data/repositories/auth_repository_impl.dart';
 import 'package:data/repositories/chat_repository_impl.dart';
 import 'package:data/repositories/chat_session_repository_imp.dart';
 import 'package:data/repositories/user_repository_impl.dart';
 import 'package:domain/entities/user.dart';
+import 'package:domain/repositories_abstract/composites_tools_repository.dart';
 import 'package:domain/repositories_abstract/composite_expert_repository.dart';
 
 import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:domain/repositories_abstract/user_repository.dart';
 
 import 'package:domain/domain.dart';
+import 'package:domain/usecases/composites_tools_usecase.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/composite_expert_usecase.dart';
 import 'package:domain/usecases/function_tools_usecase.dart';
@@ -24,12 +27,15 @@ import 'package:infrastructure/authenticated_http_client.dart';
 import 'package:infrastructure/feature_flag_provider.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:infrastructure/token_provider.dart';
+import 'package:swiftcomp/presentation/chat/viewModels/composites_tools_view_model.dart';
+import 'package:swiftcomp/presentation/chat/views/composites_tools.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/forget_password_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/signup_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/update_password_view_model.dart';
 import '../presentation/chat/viewModels/chat_view_model.dart';
+import '../presentation/chat/viewModels/composites_tools_view_model.dart';
 import '../presentation/settings/viewModels/qa_settings_view_model.dart';
 
 final sl = GetIt.instance;
@@ -51,6 +57,7 @@ void initInjection() {
       QASettingsViewModel(featureFlagProvider: sl(), apiEnvironment: sl(), authUseCase: sl()));
   sl.registerFactory<ForgetPasswordViewModel>(() => ForgetPasswordViewModel(authUseCase: sl()));
   sl.registerFactory<UpdatePasswordViewModel>(() => UpdatePasswordViewModel(authUseCase: sl()));
+  sl.registerFactory<CompositesToolsViewModel>(() => CompositesToolsViewModel(toolUseCase: sl()));
 
   // Use Cases
   sl.registerLazySingleton<ChatUseCase>(() => ChatUseCaseImpl(chatRepository: sl()));
@@ -62,7 +69,9 @@ void initInjection() {
   sl.registerLazySingleton<AuthUseCase>(
       () => AuthUseCaseImpl(repository: sl(), tokenProvider: sl()));
   sl.registerLazySingleton<UserUseCase>(() => UserUseCase(repository: sl(), tokenProvider: sl()));
-  sl.registerLazySingleton<CompositeExpertUseCase>(() => CompositeExpertUseCase(repository: sl(), tokenProvider: sl()));
+  sl.registerLazySingleton<CompositeExpertUseCase>(
+      () => CompositeExpertUseCase(repository: sl(), tokenProvider: sl()));
+  sl.registerLazySingleton<CompositesToolsUseCase>(() => CompositesToolsUseCaseImpl(repository: sl()));
 
   // Repositories
   sl.registerLazySingleton<ChatRepository>(
@@ -73,7 +82,9 @@ void initInjection() {
   sl.registerLazySingleton<UserRepository>(
       () => UserRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
   sl.registerLazySingleton<CompositeExpertRepository>(
-          () => CompositeExpertRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
+      () => CompositeExpertRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
+  sl.registerLazySingleton<CompositesToolsRepository>(
+      () => CompositesToolsRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
 
   // Data Sources
   sl.registerLazySingleton<OpenAIDataSource>(() => ChatRemoteDataSourceImpl(client: sl()));

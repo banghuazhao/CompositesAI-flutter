@@ -42,8 +42,8 @@ class _ChatScreenState extends State<ChatScreen>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Ensure AutomaticKeepAliveClientMixin works
-    return Consumer<ChatViewModel>(
+    super.build(context);
+    return Consumer<ChatViewModel>(//Consumer widget dynamically rebuilds the UI whenever the ChatViewModel changes
       builder: (context, viewModel, _) {
         return Scaffold(
           appBar: AppBar(
