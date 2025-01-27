@@ -1,7 +1,7 @@
-import 'package:domain/entities/assistant_message.dart';
-import '../entities/message.dart';
-import '../entities/thread.dart';
+import 'package:domain/entities/thread_message.dart';
 
 abstract class MessagesRepository {
-  Future<AssistantMessage> createMessage(Thread thread, Message message);
+  Future<ThreadMessage> createMessage(String threadId, String message);
+  Future<List<ThreadMessage>> listMessage(String threadId);
+  Future<ThreadMessage> retrieveMessage(String threadId, String messageId);
 }

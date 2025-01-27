@@ -1,4 +1,4 @@
-class AssistantMessage {
+class ThreadMessage {
   final String id;
   final String object;
   final int createdAt;
@@ -10,7 +10,7 @@ class AssistantMessage {
   final List<dynamic> attachments;
   final Map<String, dynamic> metadata;
 
-  AssistantMessage({
+  ThreadMessage({
     required this.id,
     required this.object,
     required this.createdAt,
@@ -23,7 +23,7 @@ class AssistantMessage {
     required this.metadata,
   });
 
-  factory AssistantMessage.fromJson(Map<String, dynamic> json) {
+  factory ThreadMessage.fromJson(Map<String, dynamic> json) {
     var contentList = <Content>[];
     if (json['content'] != null) {
       contentList = (json['content'] as List)
@@ -31,7 +31,7 @@ class AssistantMessage {
           .toList();
     }
 
-    return AssistantMessage(
+    return ThreadMessage(
       id: json['id'],
       object: json['object'],
       createdAt: json['created_at'],

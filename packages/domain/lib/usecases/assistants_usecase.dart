@@ -1,18 +1,16 @@
 import 'package:domain/entities/assistant.dart';
-import 'package:domain/entities/assistant_message.dart';
 
-import '../entities/thread.dart';
-import '../repositories_abstract/assistant_repository.dart';
+import '../repositories_abstract/assistants_repository.dart';
 
-abstract class AssistantUseCase {
+abstract class AssistantsUseCase {
   Future<Assistant> createCompositeAssistant();
   String getCompositeAssistantId();
 }
 
-class AssistantUseCaseImpl implements AssistantUseCase {
-  final AssistantRepository repository;
+class AssistantsUseCaseImpl implements AssistantsUseCase {
+  final AssistantsRepository repository;
 
-  AssistantUseCaseImpl({required this.repository});
+  AssistantsUseCaseImpl({required this.repository});
 
   @override
   Future<Assistant> createCompositeAssistant() async {

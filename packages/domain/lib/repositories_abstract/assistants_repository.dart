@@ -1,8 +1,6 @@
 import '../entities/assistant.dart';
-import '../entities/thread.dart';
 
-abstract class AssistantRepository {
+abstract class AssistantsRepository {
   Future<Assistant> createCompositeAssistant();
   String getCompositeAssistantId();
-  Future<Thread> createThread();
 }
