@@ -8,10 +8,10 @@ import 'package:domain/repositories_abstract/assistants_repository.dart';
 
 import '../utils/api_constants.dart';
 
-class AssistantsRepositoryImp implements AssistantsRepository {
+class AssistantsRepositoryImpl implements AssistantsRepository {
   final http.Client client;
 
-  AssistantsRepositoryImp(
+  AssistantsRepositoryImpl(
       {required this.client});
 
   @override

@@ -7,10 +7,10 @@ import 'package:http/http.dart' as http;
 
 import '../utils/api_constants.dart';
 
-class ThreadsRepositoryImp implements ThreadsRepository {
+class ThreadsRepositoryImpl implements ThreadsRepository {
   final http.Client client;
 
-  ThreadsRepositoryImp(
+  ThreadsRepositoryImpl(
       {required this.client});
 
   @override

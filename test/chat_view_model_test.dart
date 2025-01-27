@@ -1,5 +1,8 @@
 import 'package:domain/entities/user.dart';
 import 'package:domain/mocks/auth_usecase_mock.dart';
+import 'package:domain/mocks/messages_usecase_mock.dart';
+import 'package:domain/mocks/thread_runs_usecase_mock.dart';
+import 'package:domain/mocks/threads_usecase_mock.dart';
 import 'package:domain/mocks/user_usecase_mock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -15,6 +18,9 @@ void main() {
     late MockFunctionToolsUseCase mockFunctionToolsUseCase;
     late MockAuthUseCase mockAuthUseCase;
     late MockUserUseCase mockUserUseCase;
+    late MockMessagesUseCase mockMessagesUseCase;
+    late MockThreadsUseCase mockThreadsUseCase;
+    late MockThreadRunsUseCase mockThreadRunsUseCase;
     late ChatViewModel chatViewModel;
 
     setUp(() {
@@ -24,12 +30,18 @@ void main() {
       mockChatUseCase = MockChatUseCase();
       mockChatSessionUseCase = MockChatSessionUseCase();
       mockFunctionToolsUseCase = MockFunctionToolsUseCase();
+      mockMessagesUseCase = MockMessagesUseCase();
+      mockThreadsUseCase = MockThreadsUseCase();
+      mockThreadRunsUseCase = MockThreadRunsUseCase();
       chatViewModel = ChatViewModel(
         chatUseCase: mockChatUseCase,
         authUseCase: mockAuthUseCase,
         userUserCase: mockUserUseCase,
         chatSessionUseCase: mockChatSessionUseCase,
         functionToolsUseCase: mockFunctionToolsUseCase,
+        messagesUseCase: mockMessagesUseCase,
+        threadsUseCase: mockThreadsUseCase,
+        threadRunsUseCase: mockThreadRunsUseCase,
       );
     });
 

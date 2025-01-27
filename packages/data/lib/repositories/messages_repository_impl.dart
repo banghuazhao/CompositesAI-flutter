@@ -7,10 +7,10 @@ import 'package:http/http.dart' as http;
 
 import '../utils/api_constants.dart';
 
-class MessagesRepositoryImp implements MessagesRepository {
+class MessagesRepositoryImpl implements MessagesRepository {
   final http.Client client;
 
-  MessagesRepositoryImp({required this.client});
+  MessagesRepositoryImpl({required this.client});
 
   @override
   Future<ThreadMessage> createMessage(String threadId, String message) async {

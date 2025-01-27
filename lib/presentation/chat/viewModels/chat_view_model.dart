@@ -3,6 +3,9 @@ import 'package:domain/domain.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/function_tools_usecase.dart';
+import 'package:domain/usecases/messages_usecase.dart';
+import 'package:domain/usecases/thread_runs_usecase.dart';
+import 'package:domain/usecases/threads_usecase.dart';
 import 'package:domain/usecases/user_usercase.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -13,6 +16,10 @@ class ChatViewModel extends ChangeNotifier {
   final FunctionToolsUseCase _functionToolsUseCase;
   final AuthUseCase _authUseCase;
   final UserUseCase _userUserCase;
+  final MessagesUseCase _messagesUseCase;
+  final ThreadsUseCase _threadsUseCase;
+  final ThreadRunsUseCase _threadRunsUseCase;
+
   bool isLoggedIn = false;
   User? user;
 
@@ -44,11 +51,17 @@ class ChatViewModel extends ChangeNotifier {
     required FunctionToolsUseCase functionToolsUseCase,
     required AuthUseCase authUseCase,
     required UserUseCase userUserCase,
+    required MessagesUseCase messagesUseCase,
+    required ThreadsUseCase threadsUseCase,
+    required ThreadRunsUseCase threadRunsUseCase,
   })  : _chatUseCase = chatUseCase,
         _chatSessionUseCase = chatSessionUseCase,
         _functionToolsUseCase = functionToolsUseCase,
         _authUseCase = authUseCase,
-        _userUserCase = userUserCase;
+        _userUserCase = userUserCase,
+        _messagesUseCase = messagesUseCase,
+        _threadsUseCase = threadsUseCase,
+        _threadRunsUseCase = threadRunsUseCase;
 
   Future<void> fetchAuthSessionNew() async {
     try {

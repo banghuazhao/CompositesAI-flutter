@@ -9,10 +9,10 @@ import 'package:http/http.dart' as http;
 
 import '../utils/api_constants.dart';
 
-class ThreadRunsRepositoryImp implements ThreadRunsRepository {
+class ThreadRunsRepositoryImpl implements ThreadRunsRepository {
   final http.Client client;
 
-  ThreadRunsRepositoryImp({required this.client});
+  ThreadRunsRepositoryImpl({required this.client});
 
   @override
   Future<ThreadRun> createRun(Assistant assistant) async {
