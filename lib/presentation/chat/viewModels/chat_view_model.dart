@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:domain/domain.dart';
+import 'package:domain/entities/tool_creation_requests.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
+import 'package:domain/usecases/composites_tools_usecase.dart';
 import 'package:domain/usecases/function_tools_usecase.dart';
 import 'package:domain/usecases/messages_usecase.dart';
 import 'package:domain/usecases/thread_runs_usecase.dart';
@@ -19,12 +21,18 @@ class ChatViewModel extends ChangeNotifier {
   final MessagesUseCase _messagesUseCase;
   final ThreadsUseCase _threadsUseCase;
   final ThreadRunsUseCase _threadRunsUseCase;
+  final CompositesToolsUseCase _toolsUseCase;
 
   bool isLoggedIn = false;
   User? user;
+  List<ToolCreationRequest> tools = [];
 
   final ScrollController scrollController = ScrollController();
   bool isLoading = false;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
 
   List<ChatSession> sessions = [];
   ChatSession? _selectedSession;
@@ -54,6 +62,7 @@ class ChatViewModel extends ChangeNotifier {
     required MessagesUseCase messagesUseCase,
     required ThreadsUseCase threadsUseCase,
     required ThreadRunsUseCase threadRunsUseCase,
+    required CompositesToolsUseCase toolsUseCase,
   })  : _chatUseCase = chatUseCase,
         _chatSessionUseCase = chatSessionUseCase,
         _functionToolsUseCase = functionToolsUseCase,
@@ -61,7 +70,8 @@ class ChatViewModel extends ChangeNotifier {
         _userUserCase = userUserCase,
         _messagesUseCase = messagesUseCase,
         _threadsUseCase = threadsUseCase,
-        _threadRunsUseCase = threadRunsUseCase;
+        _threadRunsUseCase = threadRunsUseCase,
+        _toolsUseCase = toolsUseCase;
 
   Future<void> fetchAuthSessionNew() async {
     try {
@@ -100,6 +110,11 @@ class ChatViewModel extends ChangeNotifier {
     scrollController.dispose();
     messageStreamController.close();
     super.dispose();
+  }
+
+  void _setLoading(bool value) {
+    isLoading = value;
+    notifyListeners();
   }
 
   // Initialize session if no sessions exist
@@ -219,6 +234,25 @@ class ChatViewModel extends ChangeNotifier {
     final message = Message(role: 'user', content: question);
     await sendMessage(message);
   }
+
+  Future<List<ToolCreationRequest>> getAllTools() async {
+    _setLoading(true);
+    try {
+      // First step: Make user an expert
+     tools = await _toolsUseCase.getAllTools();
+     return tools;
+
+    } catch (e) {
+      tools = [];
+      _errorMessage = "Failed to fetch tools: $e";
+      print(_errorMessage);
+      return tools;
+    } finally {
+      // Ensure the loading state is updated regardless of success or error
+      _setLoading(false);
+    }
+  }
+
 }
 
 // Extension on the Message class
@@ -240,3 +274,4 @@ extension ChatContentExtension on Message {
     return contentText;
   }
 }
+

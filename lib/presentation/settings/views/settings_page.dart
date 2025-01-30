@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
+import 'package:swiftcomp/presentation/settings/views/tool_creation_request.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import '../../../app/injection_container.dart';
+import '../../chat/viewModels/composites_tools_view_model.dart';
 import '../viewModels/manage_composite_experts_view_model.dart';
 import '../viewModels/settings_view_model.dart';
 import 'apply_expert_page.dart';
@@ -137,6 +139,24 @@ class _SettingsPageState extends State<SettingsPage> {
                                     compositeExpertUseCase: sl(),
                                     user: viewModel.user!),
                                 child: ManageCompositeExpertsPage()),
+                          ),
+                        );
+                      },
+                    ),
+                  if (viewModel.isLoggedIn && viewModel.isAdmin && viewModel.user != null)
+                    MoreRow(
+                      leadingIcon: Icons.add_chart_outlined,
+                      title: "Manage Tool Creation Request",
+                      onTap: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChangeNotifierProvider(
+                                create: (_) => CompositesToolsViewModel(
+                                    toolUseCase: sl(),
+                                    user: viewModel.user!,
+                                  ),
+                                child: ToolCreationRequestPage()),
                           ),
                         );
                       },

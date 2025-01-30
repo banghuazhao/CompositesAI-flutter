@@ -4,9 +4,11 @@ import 'dart:typed_data';
 import 'package:domain/repositories_abstract/composites_tools_repository.dart';
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
-
+import 'package:domain/entities/tool_creation_requests.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+
+import '../mappers/domain_exception_mapper.dart';
 
 class CompositesToolsRepositoryImpl implements CompositesToolsRepository {
   final AuthenticatedHttpClient authClient;
@@ -119,4 +121,91 @@ class CompositesToolsRepositoryImpl implements CompositesToolsRepository {
     }
   }
 
+  @override
+  Future<List<ToolCreationRequest>> getAllRequests() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final response = await authClient.get(
+      Uri.parse('$baseURL/compositestools/tool-requests'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final requests = data.map((json) => ToolCreationRequest.fromJson(json)).toList();
+      return requests;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+  
+  @override
+  Future<String> approveRequest(int id) async {
+    try {
+      final baseURL = await apiEnvironment.getBaseUrl(); // Ensure this is non-null
+      final response = await authClient.patch(
+        Uri.parse('$baseURL/compositestools/tool-requests'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id': id}),
+      );
+
+      // Check the response status code
+      if (response.statusCode == 200) {
+        return "Request approved successfully";
+      } else {
+        // Log and throw a meaningful exception with response details
+        print("Failed to approve the request: ${response.statusCode} - ${response.body}");
+        throw Exception("Failed to approve the request: ${response.statusCode}");
+      }
+    } catch (e) {
+      // Handle and rethrow the error with additional context
+      print("Error in approveRequest: $e");
+      throw Exception("An error occurred while approving the request. Please try again.");
+    }
+  }
+
+  @override
+  Future<List<ToolCreationRequest>> getAllTools() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final response = await authClient.get(
+      Uri.parse('$baseURL/compositestools/tools'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final tools = data.map((json) => ToolCreationRequest.fromJson(json)).toList();
+      return tools;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<String> deleteRequest(int id) async {
+    try {
+      final baseURL = await apiEnvironment.getBaseUrl(); // Ensure this is non-null
+      final response = await authClient.delete(
+        Uri.parse('$baseURL/compositestools/tool-requests'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id': id}),
+      );
+
+      // Check the response status code
+      if (response.statusCode == 200) {
+        return "Request deleted successfully";
+      } else {
+        // Log and throw a meaningful exception with response details
+        print("Failed to delete the request: ${response.statusCode} - ${response.body}");
+        throw Exception("Failed to delete the request: ${response.statusCode}");
+      }
+    } catch (e) {
+      // Handle and rethrow the error with additional context
+      print("Error in delete request: $e");
+      throw Exception("An error occurred while deleting the request. Please try again.");
+    }
+  }
+
 }
+
+
+

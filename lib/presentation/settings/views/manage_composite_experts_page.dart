@@ -20,7 +20,7 @@ class _ManageCompositeExpertsPageState extends State<ManageCompositeExpertsPage>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {//Provider Pattern: widget using Consumer can access the ViewModel without explicitly injecting it.
       final viewModel = Provider.of<ManageCompositeExpertsViewModel>(context, listen: false);
       await viewModel.getAllApplications();
     });
