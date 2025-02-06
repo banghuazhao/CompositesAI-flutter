@@ -8,6 +8,8 @@ import '../../settings/views/user_profile_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'composites_tool_creation.dart';
 import '../viewModels/composites_tools_view_model.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart'; // For kIsWeb
 
 class CompositesTools extends StatefulWidget {
   @override
@@ -16,6 +18,7 @@ class CompositesTools extends StatefulWidget {
 
 class _CompositesToolsState extends State<CompositesTools> {
   final Set<int> hoveredIndexes = {};
+
   @override
   void initState() {
     super.initState();
@@ -93,32 +96,20 @@ class _CompositesToolsState extends State<CompositesTools> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                ChangeNotifierProvider(
-                                  create: (_) =>
-                                      CompositesToolsViewModel(
-                                        toolUseCase: sl(),
-                                        user: viewModel.user!,
-                                      ),
-                                  child: CompositesToolCreation(),
-                                ),
+                            builder: (context) => ChangeNotifierProvider(
+                              create: (_) => CompositesToolsViewModel(
+                                toolUseCase: sl(),
+                                user: viewModel.user!,
+                              ),
+                              child: CompositesToolCreation(),
+                            ),
                           ),
                         );
                       }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal,
-                      elevation: 4, // Default elevation
-                    ).copyWith(
-                      overlayColor: MaterialStateProperty.all(Colors.teal.shade300), // Hover background color
-                      elevation: MaterialStateProperty.resolveWith<double>(
-                            (states) {
-                          if (states.contains(MaterialState.hovered)) {
-                            return 8; // Increased elevation on hover
-                          }
-                          return 4; // Default elevation
-                        },
-                      ),
+                      elevation: 4,
                     ),
                     child: const Text(
                       '+ Contribute',
@@ -191,124 +182,85 @@ class _CompositesToolsState extends State<CompositesTools> {
             return const Center(child: Text("No tools found"));
           }
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Text(
-                        "Featured Tools",
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
-                      ),
-                    ),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: constraints.maxWidth * 1,
-                      ),
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 20.0,
-                          mainAxisSpacing: 20.0,
-                          childAspectRatio: 1.7,
-                        ),
-                        itemCount: viewModel.tools!.length,
-                        itemBuilder: (context, index) {
-                          final tool = viewModel.tools![index];
-                          final isHovered = hoveredIndexes.contains(index);
-
-                          return InkWell(
-                            onTap: () {},
-                            onHover: (hovering) {
-                              setState(() {
-                                if (hovering) {
-                                  hoveredIndexes.add(index); // Add to hovered state
-                                } else {
-                                  hoveredIndexes.remove(index); // Remove from hovered state
-                                }
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(12.0),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 100),
-                              curve: Curves.easeInOut,
-                              decoration: BoxDecoration(
-                                color: isHovered ? Colors.teal.shade300 : Colors.teal.shade500,
-                                borderRadius: BorderRadius.circular(12.0),
-                                boxShadow: isHovered
-                                    ? [BoxShadow(color: Colors.black26, blurRadius: 8.0, spreadRadius: 2.0)]
-                                    : [],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor: Colors.grey[300],
-                                      backgroundImage: tool.toolAvatar != null
-                                          ? NetworkImage(tool.toolAvatar!)
-                                          : null,
-                                      child: tool.toolAvatar == null
-                                          ? const Icon(Icons.account_circle, size: 45, color: Colors.blue)
-                                          : null,
-                                    ),
-                                    const SizedBox(height: 10.0),
-                                    Text(
-                                      tool.title.isNotEmpty ? tool.title : "Not available",
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4.0),
-                                    Expanded(
-                                      child: Text(
-                                        tool.description?.isNotEmpty == true ? tool.description! : "",
-                                        style: const TextStyle(fontSize: 15, color: Colors.white70),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2.0),
-                                    Expanded(
-                                      child: Text(
-                                        tool.instructions?.isNotEmpty == true ? tool.instructions! : "",
-                                        style: const TextStyle(fontSize: 15, color: Colors.white70),
-                                        maxLines: 3,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2.0),
-                                    Text(
-                                      "By ${tool.userName ?? "Unknown user"}",
-                                      style: const TextStyle(fontSize: 14, color: Colors.white),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+          return kIsWeb
+              ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 20.0,
+                mainAxisSpacing: 20.0,
+                childAspectRatio: 1.7,
+              ),
+              itemCount: viewModel.tools!.length,
+              itemBuilder: (context, index) => _buildToolCard(viewModel, index),
+            ),
+          )
+              : ListView.builder(
+            itemCount: viewModel.tools!.length,
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: _buildToolCard(viewModel, index),
+            ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildToolCard(ChatViewModel viewModel, int index) {
+    final tool = viewModel.tools![index];
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.grey[300],
+              child: ClipOval(
+                child: tool.toolAvatar != null && tool.toolAvatar!.isNotEmpty
+                    ? Image.network(
+                  tool.toolAvatar!,
+                  fit: BoxFit.cover,
+                  width: 48,
+                  height: 48,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.account_circle, size: 45, color: Colors.blue);
+                  },
+                )
+                    : Icon(Icons.account_circle, size: 45, color: Colors.blue),
+              ),
+            ),
+            const SizedBox(height: 10.0),
+            Text(
+              tool.title.isNotEmpty ? tool.title : "Not available",
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4.0),
+            Text(
+              tool.description?.isNotEmpty == true ? tool.description! : "",
+              style: const TextStyle(fontSize: 15, color: Colors.black54),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2.0),
+            Text(
+              "By ${tool.userName ?? "Unknown user"}",
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+          ],
+        ),
       ),
     );
   }

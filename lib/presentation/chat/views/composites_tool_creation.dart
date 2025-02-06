@@ -279,7 +279,8 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File selected: $fileDisplay')),
+          SnackBar(content: Text('File selected: $fileDisplay'),
+            duration: Duration(seconds: 1),),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

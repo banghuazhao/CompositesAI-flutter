@@ -445,7 +445,7 @@ class _LoginPageState extends State<LoginPage> {
 
 
 // Helper Method for Social Buttons
-  Widget _buildSocialButton({
+  Widget _buildSocialButton({//a function that returns a widget (Widget type)
     required String iconPath,
     required String text,
     required VoidCallback onPressed,
