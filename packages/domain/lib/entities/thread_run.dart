@@ -22,7 +22,7 @@ class ThreadRun {
   final int maxPromptTokens;
   final int maxCompletionTokens;
   final TruncationStrategy truncationStrategy;
-  final String responseFormat;
+  final Map<String, dynamic> responseFormat;
   final String toolChoice;
   final bool parallelToolCalls;
 

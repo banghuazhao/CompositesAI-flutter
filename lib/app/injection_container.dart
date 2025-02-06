@@ -101,7 +101,7 @@ void initInjection() {
   sl.registerLazySingleton<CompositesToolsRepository>(
       () => CompositesToolsRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
   sl.registerFactory<ThreadsRepository>(() => ThreadsRepositoryImpl(client: sl()));
-  sl.registerFactory<ThreadRunsRepository>(() => ThreadRunsRepositoryImpl(client: sl()));
+  sl.registerFactory<ThreadRunsRepository>(() => ThreadRunsRepositoryImpl());
   sl.registerFactory<MessagesRepository>(() => MessagesRepositoryImpl(client: sl()));
 
   // Data Sources

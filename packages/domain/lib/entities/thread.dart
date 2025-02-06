@@ -1,4 +1,6 @@
-class Thread {
+import 'package:domain/entities/thread_response.dart';
+
+class Thread extends ThreadResponse {
   final String id;
   final String object;
   final int createdAt;

@@ -1,7 +1,8 @@
-import '../entities/assistant.dart';
-import '../entities/thread_run.dart';
+import 'package:domain/entities/thread_response.dart';
+
+import '../entities/message.dart';
 
 abstract class ThreadRunsRepository {
-    Future<ThreadRun> createRun(Assistant assistant);
-    Future<ThreadRun> createMessageAndRun(Assistant assistant, String message);
+    Stream<Message> createRunStream(String threadId, String assistantId);
+    Stream<ThreadResponse> createMessageAndRunStream(String assistantId, String message);
 }

@@ -17,6 +17,7 @@ dependencies:
     path: ../infrastructure
   uuid: ^4.5.1
   shared_preferences: ^2.2.3
+  fetch_client: ^1.0.2
 
 dev_dependencies:
   flutter_test:

@@ -3,8 +3,9 @@ import 'package:uuid/uuid.dart';
 
 class ChatSession {
   final String id;
-  final String title;
+  String title;
   List<Message> messages;
+  String? threadId;
 
   // Constructor
   ChatSession({

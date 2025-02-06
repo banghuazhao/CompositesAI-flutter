@@ -50,7 +50,11 @@ class ChatDrawer extends StatelessWidget {
           ...chatViewModel.sessions.map((session) {
             return ListTile(
               leading: Icon(Icons.chat),
-              title: Text(session.title),
+              title: Text(
+                session.title,
+                overflow: TextOverflow.ellipsis, // Truncate with ...
+                maxLines: 1, // Limit to one line
+              ),
               onTap: () {
                 chatViewModel.selectSession(session);
                 Navigator.pop(context); // Close the drawer after selecting a session

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:domain/domain.dart';
+import 'package:domain/entities/thread_response.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,8 @@ class ChatMessageList extends StatefulWidget {
 }
 
 class _ChatMessageListState extends State<ChatMessageList> {
-  final TextEditingController textController = TextEditingController(); // final means can assign the TextEditingController object to the variable only once.
+  final TextEditingController textController =
+      TextEditingController(); // final means can assign the TextEditingController object to the variable only once.
   final FocusNode focusNode = FocusNode();
 
   @override
@@ -102,7 +104,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
                     onTap: () async {
                       await viewModel.onDefaultQuestionsTapped(index);
                     },
-                    child: _buildDefaultQuestionCard(viewModel.defaultQuestions[index]),
+                    child: _buildDefaultQuestionCard(
+                        viewModel.defaultQuestions[index]),
                   );
                 },
               );
@@ -124,7 +127,10 @@ class _ChatMessageListState extends State<ChatMessageList> {
             alignment: Alignment.centerRight,
             child: Container(
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.6, // Half the screen width
+                maxWidth: max(
+                    280,
+                    MediaQuery.of(context).size.width *
+                        0.6), // Half the screen width
               ),
               margin: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
               padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
@@ -155,17 +161,35 @@ class _ChatMessageListState extends State<ChatMessageList> {
       }
     }
 
-    result.add(StreamBuilder<Message>(
+    result.add(messageStream(viewModel));
+
+    return result;
+  }
+
+  StreamBuilder<Message> messageStream(ChatViewModel viewModel) {
+    return StreamBuilder<Message>(
         stream: viewModel.messageStreamController.stream,
         builder: (context, snapshot) {
           return Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                  padding:
+                      EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
                   child: streamWidget(snapshot)));
-        }));
+        });
+  }
 
-    return result;
+  Widget streamWidget(AsyncSnapshot<Message> snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return Text("●"); // Loading indicator while waiting for data
+    } else if (snapshot.hasError) {
+      return Text('Error: ${snapshot.error}'); // Display error message
+    } else if (snapshot.data != null) {
+      final message = snapshot.data!;
+      return MarkdownWithMath(markdownData: message.chatContent + " ●");
+    } else {
+      return Container();
+    }
   }
 
   Widget inputBar(ChatViewModel viewModel) {
@@ -183,9 +207,11 @@ class _ChatMessageListState extends State<ChatMessageList> {
               child: KeyboardListener(
                 focusNode: FocusNode(),
                 onKeyEvent: (KeyEvent event) {
-                  if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
+                  if (event is KeyDownEvent &&
+                      event.logicalKey == LogicalKeyboardKey.enter) {
                     // Check if the Shift key is pressed
-                    final isShiftPressed = HardwareKeyboard.instance.logicalKeysPressed
+                    final isShiftPressed = HardwareKeyboard
+                            .instance.logicalKeysPressed
                             .contains(LogicalKeyboardKey.shiftLeft) ||
                         HardwareKeyboard.instance.logicalKeysPressed
                             .contains(LogicalKeyboardKey.shiftRight);
@@ -197,11 +223,10 @@ class _ChatMessageListState extends State<ChatMessageList> {
                       textController.selection = TextSelection.fromPosition(
                         TextPosition(offset: textController.text.length),
                       );
-
-
                     } else {
                       // Submit the text and clear TextField on Enter
-                      final text = textController.text; // Remove extra spaces/newlines
+                      final text =
+                          textController.text; // Remove extra spaces/newlines
                       if (text.isNotEmpty) {
                         textController.clear(); // Clear input immediately
                         viewModel.sendInputMessage(text); // Send message
@@ -228,11 +253,10 @@ class _ChatMessageListState extends State<ChatMessageList> {
                   maxLines: null,
                   onChanged: (text) {
                     setState(() {}); // Ensure the button updates
-                  },// Allow multiple lines if Shift + Enter is used
+                  }, // Allow multiple lines if Shift + Enter is used
                 ),
               ),
             ),
-
             viewModel.isLoading
                 ? CircularProgressIndicator()
                 : IconButton(
@@ -252,19 +276,6 @@ class _ChatMessageListState extends State<ChatMessageList> {
         ),
       ),
     );
-  }
-
-  Widget streamWidget(AsyncSnapshot<Message> snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return Text("●"); // Loading indicator while waiting for data
-    } else if (snapshot.hasError) {
-      return Text('Error: ${snapshot.error}'); // Display error message
-    } else if (snapshot.data != null) {
-      final message = snapshot.data!;
-      return MarkdownWithMath(markdownData: message.chatContent + " ●");
-    } else {
-      return Container();
-    }
   }
 }
 

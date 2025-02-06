@@ -1,12 +1,11 @@
-import 'package:domain/entities/assistant.dart';
-
-import '../entities/thread_run.dart';
+import '../entities/message.dart';
+import '../entities/thread_response.dart';
 import '../repositories_abstract/thread_runs_repository.dart';
 
-
 abstract class ThreadRunsUseCase {
-  Future<ThreadRun> createRun(Assistant assistant);
-  Future<ThreadRun> createMessageAndRun(Assistant assistant, String message);
+  Stream<Message> createRunStream(String threadId, String assistantId);
+
+  Stream<ThreadResponse> createMessageAndRunStream(String assistantId, String message);
 }
 
 class ThreadRunsUseCaseImpl implements ThreadRunsUseCase {
@@ -15,12 +14,13 @@ class ThreadRunsUseCaseImpl implements ThreadRunsUseCase {
   ThreadRunsUseCaseImpl({required this.repository});
 
   @override
-  Future<ThreadRun> createRun(Assistant assistant) async {
-    return await repository.createRun(assistant);
+  Stream<Message> createRunStream(String threadId, String assistantId) {
+    return repository.createRunStream(threadId, assistantId);
   }
 
   @override
-  Future<ThreadRun> createMessageAndRun(Assistant assistant, String message) async {
-    return await repository.createMessageAndRun(assistant, message);
+  Stream<ThreadResponse> createMessageAndRunStream(
+      String assistantId, String message) {
+    return repository.createMessageAndRunStream(assistantId, message);
   }
 }

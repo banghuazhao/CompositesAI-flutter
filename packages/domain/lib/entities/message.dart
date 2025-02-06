@@ -1,19 +1,19 @@
+import 'package:domain/entities/thread_response.dart';
 import 'package:uuid/uuid.dart';
 
-class Message {
-  final String id;
+class Message extends ThreadResponse {
+  String id;
   final String role;
   String content;
   List<ToolCalls>? toolCalls;
   String? tool_call_id;
 
   Message(
-      {String? id,
+      {this.id = '',
       required this.role,
       this.content = '',
       this.toolCalls,
-      this.tool_call_id})
-      : id = id ?? const Uuid().v1();
+      this.tool_call_id});
 
   Message.fromJson(Map<String, dynamic> json)
       : id = json['id'] ?? '',

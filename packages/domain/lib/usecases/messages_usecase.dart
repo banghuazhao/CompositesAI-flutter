@@ -27,6 +27,4 @@ class MessagesUseCaseImpl implements MessagesUseCase {
   Future<ThreadMessage> retrieveMessage(String threadId, String messageId) async {
     return await retrieveMessage(threadId, messageId);
   }
-
-
 }
