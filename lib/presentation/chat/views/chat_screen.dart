@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:html' as html;
+import 'dart:io';
 import 'dart:ui';
 
+import 'package:domain/entities/message.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +14,8 @@ import '../../settings/views/user_profile_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_message_list.dart';
 import 'chat_session_drawer.dart';
+import 'package:path_provider/path_provider.dart';
+
 
 class ChatScreen extends StatefulWidget {
   @override
@@ -73,6 +80,56 @@ class _ChatScreenState extends State<ChatScreen>
                     return Row(
                       mainAxisSize: MainAxisSize.min, // Keep it compact
                       children: [
+                        // Export Chat Dropdown Button
+                        PopupMenuButton<String>(
+                          icon: Row(
+                            children: const [
+                              Icon(Icons.download, color: Colors.teal),
+                              SizedBox(width: 5),
+                              Text(
+                                "Export Chat",
+                                style: TextStyle(fontSize: 14, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                          onSelected: (String value) async {
+                            final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+                            if (value == 'Export Jsonl') {
+                              await exportChatMessages(chatViewModel, context); // Call export JSON function
+                            } else if (value == 'Export Xlsx') {
+                              // Implement your Export XLSX logic here
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Export XLSX selected")),
+                              );
+                            }
+                          },
+                          itemBuilder: (BuildContext context) => [
+                            const PopupMenuItem<String>(
+                              value: 'Export Jsonl',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.file_download, color: Colors.black),
+                                  SizedBox(width: 9),
+                                  Text("Export Jsonl"),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'Export Xlsx',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.table_chart, color: Colors.black),
+                                  SizedBox(width: 9),
+                                  Text("Export Xlsx"),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8), // Spacing between the button and the avatar
+
+                        // Avatar or Profile Button
                         GestureDetector(
                           onTap: () async {
                             String? result = await Navigator.push(
@@ -125,12 +182,12 @@ class _ChatScreenState extends State<ChatScreen>
                                 ),
                             ],
                           ),
-
-
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 8), // Spacing between elements
                       ],
                     );
+
+
                   }
                 },
               ),
@@ -210,4 +267,73 @@ class _ChatScreenState extends State<ChatScreen>
       },
     );
   }
+
+
+
+
+  Future<void> exportChatMessages(ChatViewModel chatViewModel, BuildContext context) async {
+    try {
+      // Get the list of messages from ChatViewModel
+      final List<Message> messages = chatViewModel.messages;
+
+      // Convert messages to JSON format
+      //.map() function goes through each message in the messages list one by one.
+      final List<Map<String, dynamic>> messageData = messages.map((message) {
+        return {
+          "role": message.role, // e.g., "user" or "assistant"
+          "content": message.content, // message text
+        };
+      }).toList();
+     //.toList() Collects the Results:After processing all messages, .toList() takes all the resulting dictionaries from .map() and combines them into a new list.
+      // Create a JSON string
+      final String jsonString = jsonEncode({"messages": messageData});
+
+      if (kIsWeb) {
+        // Web: Use browser's download functionality.
+        final blob = html.Blob([jsonString], 'application/json');
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..target = 'blank'
+          ..download = "chat_export.json"; // Suggest "Downloads" behavior
+        anchor.click();
+        html.Url.revokeObjectUrl(url);
+
+        // Notify the user about the export
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Chat exported as chat_export.json in browser"),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      } else {
+        // Mobile/Desktop: Save to the Downloads directory
+        final Directory? downloadsDirectory = await getDownloadsDirectory();
+        if (downloadsDirectory == null) {
+          throw Exception("Downloads directory is not available");
+        }
+
+        final File file = File('${downloadsDirectory.path}/chat_export.json');
+
+        // Write the JSON string to the file
+        await file.writeAsString(jsonString);
+
+        // Notify the user about the export
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Chat exported to Downloads as chat_export.json"),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+
+        print("Chat exported successfully to Downloads: ${file.path}");
+      }
+    } catch (e) {
+      // Handle errors
+      print("Error exporting chat: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to export chat: $e")),
+      );
+    }
+  }
+
 }

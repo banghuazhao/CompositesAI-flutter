@@ -257,6 +257,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 }
 
+
 // Extension on the Message class
 extension ChatContentExtension on Message {
   String get chatContent {
