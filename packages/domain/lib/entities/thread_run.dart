@@ -1,4 +1,6 @@
-class ThreadRun {
+import 'package:domain/entities/thread_response.dart';
+
+class ThreadRun extends ThreadResponse {
   final String id;
   final String object;
   final int createdAt;

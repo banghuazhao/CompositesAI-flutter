@@ -25,6 +25,8 @@ dependencies:
     path: packages/data
   infrastructure:
     path: packages/infrastructure
+  ui_components:
+    path: packages/ui_components
 
   composite_calculator: ^1.0.1
   cupertino_icons: ^1.0.8

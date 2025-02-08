@@ -1,8 +1,11 @@
 import 'package:domain/entities/thread_response.dart';
 
-import '../entities/message.dart';
-
 abstract class ThreadRunsRepository {
-    Stream<Message> createRunStream(String threadId, String assistantId);
-    Stream<ThreadResponse> createMessageAndRunStream(String assistantId, String message);
+  Stream<ThreadResponse> createRunStream(String threadId, String assistantId);
+
+  Stream<ThreadResponse> createMessageAndRunStream(
+      String threadId, String assistantId, String message);
+
+  Stream<ThreadResponse> createThreadAndRunStream(
+      String assistantId, String message);
 }

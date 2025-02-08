@@ -1,12 +1,15 @@
 import 'dart:math';
 
 import 'package:domain/domain.dart';
+import 'package:domain/entities/thread.dart';
 import 'package:domain/entities/thread_response.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:ui_components/beating_text.dart';
+import 'package:ui_components/blinking_text.dart';
 
 import 'markdown_with_math.dart';
 import '../viewModels/chat_view_model.dart';
@@ -166,9 +169,9 @@ class _ChatMessageListState extends State<ChatMessageList> {
     return result;
   }
 
-  StreamBuilder<Message> messageStream(ChatViewModel viewModel) {
-    return StreamBuilder<Message>(
-        stream: viewModel.messageStreamController.stream,
+  StreamBuilder<ThreadResponse> messageStream(ChatViewModel viewModel) {
+    return StreamBuilder<ThreadResponse>(
+        stream: viewModel.threadResponseController.stream,
         builder: (context, snapshot) {
           return Align(
               alignment: Alignment.centerLeft,
@@ -179,14 +182,27 @@ class _ChatMessageListState extends State<ChatMessageList> {
         });
   }
 
-  Widget streamWidget(AsyncSnapshot<Message> snapshot) {
+  Widget streamWidget(AsyncSnapshot<ThreadResponse> snapshot) {
     if (snapshot.connectionState == ConnectionState.waiting) {
-      return Text("●"); // Loading indicator while waiting for data
+      return BeatingText(
+        text: "●",
+        style: TextStyle(fontSize: 16.0), // Customize your text style as needed
+        period: Duration(milliseconds: 1000), // Adjust the period for speed of beat
+        minScale: 1.0,
+        maxScale: 1.2,
+      );
     } else if (snapshot.hasError) {
-      return Text('Error: ${snapshot.error}'); // Display error message
+      return Text('Error: ${snapshot.error}');
     } else if (snapshot.data != null) {
-      final message = snapshot.data!;
-      return MarkdownWithMath(markdownData: message.chatContent + " ●");
+      final threadResponse = snapshot.data!;
+      if (threadResponse is Message) {
+        return MarkdownWithMath(markdownData: "${threadResponse.chatContent} ●");
+      } else {
+        return BlinkingText(
+          text: "Thinking",
+          style: TextStyle(fontSize: 16.0), // Customize the style as needed
+        );
+      }
     } else {
       return Container();
     }

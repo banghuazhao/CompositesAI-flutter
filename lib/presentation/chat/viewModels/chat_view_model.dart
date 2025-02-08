@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:domain/domain.dart';
+import 'package:domain/entities/thread_run.dart';
 import 'package:domain/entities/tool_creation_requests.dart';
 import 'package:domain/entities/thread.dart';
 import 'package:domain/entities/thread_response.dart';
@@ -29,15 +30,11 @@ class ChatViewModel extends ChangeNotifier {
   final ScrollController scrollController = ScrollController();
   bool isLoading = false;
 
-  String? _errorMessage;
-
-  String? get errorMessage => _errorMessage;
-
   List<ChatSession> sessions = [];
   ChatSession? _selectedSession;
 
   List<Message> messages = [];
-  StreamController<Message> messageStreamController =
+  StreamController<ThreadResponse> threadResponseController =
       StreamController.broadcast();
 
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
@@ -106,7 +103,7 @@ class ChatViewModel extends ChangeNotifier {
   @override
   void dispose() {
     scrollController.dispose();
-    messageStreamController.close();
+    threadResponseController.close();
     super.dispose();
   }
 
@@ -163,85 +160,55 @@ class ChatViewModel extends ChangeNotifier {
     scrollToBottom();
   }
 
-  Future<void> sendInputMessage(text) async {
+  Future<void> sendInputMessage(String text) async {
     final message = Message(role: 'user', content: text);
-    if (messages.isEmpty) {
-      await sendFirstMessageAndRun(message);
-    } else {
-      await sendMessageAndRun(message);
-    }
-  }
-
-  Future<void> sendFirstMessageAndRun(Message newMessage) async {
     if (_selectedSession == null) return;
 
+    // Choose the proper stream builder based on whether we are starting a new thread.
+    final Stream<ThreadResponse> Function() streamBuilder = messages.isEmpty
+        ? () => _threadRunsUseCase.createThreadAndRunStream(
+            assistantId, message.content)
+        : () {
+            final threadId = _selectedSession!.threadId!;
+            return _threadRunsUseCase.createMessageAndRunStream(
+                threadId, assistantId, message.content);
+          };
+
+    await _sendMessageAndRun(message, streamBuilder);
+  }
+
+  Future<void> _sendMessageAndRun(
+    Message newMessage,
+    Stream<ThreadResponse> Function() streamBuilder,
+  ) async {
     messages.add(newMessage);
     setLoading(true);
     scrollToBottom();
 
-    messageStreamController = StreamController<Message>.broadcast();
-
+    threadResponseController = StreamController<ThreadResponse>.broadcast();
     Message? finalMessage;
 
     try {
-      final subscription = _threadRunsUseCase
-          .createMessageAndRunStream(assistantId, newMessage.content)
-          .listen(
-        (ThreadResponse threadResponse) {
-          if (threadResponse is Message) {
-            messageStreamController.add(threadResponse);
-            finalMessage = threadResponse;
-            _selectedSession?.title = threadResponse.content;
-            scrollToBottom();
-          } else if (threadResponse is Thread) {
-            _selectedSession?.threadId = threadResponse.id;
-          }
-        },
-        onError: (error) {
-          messageStreamController.addError(error);
-          print('Error receiving messages: $error');
-        },
-      );
+      final stream = streamBuilder();
 
-      await subscription.asFuture();
-    } finally {
-      messageStreamController.close();
-      if (finalMessage != null) {
-        messages.add(finalMessage!);
-        saveSession();
+      await for (final response in stream) {
+        threadResponseController.add(response);
+
+        if (response is Message) {
+          finalMessage = response;
+          _selectedSession?.title = response.content;
+          scrollToBottom();
+        } else if (response is Thread) {
+          _selectedSession?.threadId = response.id;
+        }
       }
-      setLoading(false);
-    }
-  }
-
-  Future<void> sendMessageAndRun(Message newMessage) async {
-    if (_selectedSession == null) return;
-    messages.add(newMessage);
-    setLoading(true);
-    scrollToBottom();
-    Message? finalMessage;
-    messageStreamController = StreamController.broadcast();
-    final String threadId = _selectedSession!.threadId!;
-    try {
-      await _messagesUseCase.createMessage(threadId, newMessage.content);
-      final subscription = _threadRunsUseCase
-          .createRunStream(threadId, assistantId)
-          .listen((Message message) {
-        messageStreamController.add(message);
-        finalMessage = message;
-        scrollToBottom();
-      }, onError: (error) {
-        messageStreamController.add(error);
-        print('Error receiving messages: $error');
-      }, onDone: () {
-        print("stream is done, finalMessage: $finalMessage");
-      });
-
-      await subscription.asFuture();
+    } catch (error) {
+      threadResponseController.addError(error);
+      print('Error receiving messages: $error');
     } finally {
-      messageStreamController.close();
+      await threadResponseController.close();
       if (finalMessage != null) {
-        messages.add(finalMessage!);
+        messages.add(finalMessage);
         saveSession();
       }
       setLoading(false);
@@ -269,8 +236,6 @@ class ChatViewModel extends ChangeNotifier {
       return tools;
     } catch (e) {
       tools = [];
-      _errorMessage = "Failed to fetch tools: $e";
-      print(_errorMessage);
       return tools;
     } finally {
       // Ensure the loading state is updated regardless of success or error
