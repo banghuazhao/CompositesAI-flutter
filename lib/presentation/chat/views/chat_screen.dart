@@ -95,9 +95,9 @@ class _ChatScreenState extends State<ChatScreen>
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
                           onSelected: (String value) async {
                             final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
-                            if (value == 'Export Jsonl') {
+                            if (value == 'export jsonl') {
                               await exportChatMessages(chatViewModel, context); // Call export JSON function
-                            } else if (value == 'Export Xlsx') {
+                            } else if (value == 'export xlsx') {
                               // Implement your Export XLSX logic here
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text("Export XLSX selected")),
@@ -106,22 +106,22 @@ class _ChatScreenState extends State<ChatScreen>
                           },
                           itemBuilder: (BuildContext context) => [
                             const PopupMenuItem<String>(
-                              value: 'Export Jsonl',
+                              value: 'export jsonl',
                               child: Row(
                                 children: [
                                   Icon(Icons.file_download, color: Colors.black),
-                                  SizedBox(width: 9),
-                                  Text("Export Jsonl"),
+                                  SizedBox(width: 10),
+                                  Text("export jsonl"),
                                 ],
                               ),
                             ),
                             const PopupMenuItem<String>(
-                              value: 'Export Xlsx',
+                              value: 'export xlsx',
                               child: Row(
                                 children: [
                                   Icon(Icons.table_chart, color: Colors.black),
-                                  SizedBox(width: 9),
-                                  Text("Export Xlsx"),
+                                  SizedBox(width: 10),
+                                  Text("export xlsx"),
                                 ],
                               ),
                             ),
