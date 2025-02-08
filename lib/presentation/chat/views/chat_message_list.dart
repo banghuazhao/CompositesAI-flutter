@@ -152,12 +152,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
           ));
           continue;
         case "assistant":
-          result.add(Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-                padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-                child: MarkdownWithMath(markdownData: message.chatContent)),
-          ));
+          result
+              .add(buildAssistantMessage(viewModel, message.chatContent ?? ""));
           continue;
         default:
           result.add(Container());
@@ -167,6 +163,37 @@ class _ChatMessageListState extends State<ChatMessageList> {
     result.add(messageStream(viewModel));
 
     return result;
+  }
+
+  Widget buildAssistantMessage(ChatViewModel viewModel, String text) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0),
+            child: MarkdownWithMath(markdownData: text),
+          ),
+          Row(
+            children: [
+              IconButton(
+                icon: viewModel.isCopyingMessage
+                    ? Icon(Icons.check)
+                    : Icon(Icons.copy),
+                onPressed: viewModel.isCopyingMessage
+                    ? null
+                    : () async {
+                        viewModel.copyMessage(text);
+                      },
+              ),
+              if (viewModel.isCopyingMessage) Text("Copied")
+              // You can add other buttons here if needed, e.g. thumbs up/down, etc.
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   StreamBuilder<ThreadResponse> messageStream(ChatViewModel viewModel) {
@@ -186,8 +213,10 @@ class _ChatMessageListState extends State<ChatMessageList> {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return BeatingText(
         text: "●",
-        style: TextStyle(fontSize: 16.0), // Customize your text style as needed
-        period: Duration(milliseconds: 1000), // Adjust the period for speed of beat
+        style: TextStyle(fontSize: 16.0),
+        // Customize your text style as needed
+        period: Duration(milliseconds: 1000),
+        // Adjust the period for speed of beat
         minScale: 1.0,
         maxScale: 1.2,
       );
@@ -196,7 +225,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
     } else if (snapshot.data != null) {
       final threadResponse = snapshot.data!;
       if (threadResponse is Message) {
-        return MarkdownWithMath(markdownData: "${threadResponse.chatContent} ●");
+        return MarkdownWithMath(
+            markdownData: "${threadResponse.chatContent} ●");
       } else {
         return BlinkingText(
           text: "Thinking",

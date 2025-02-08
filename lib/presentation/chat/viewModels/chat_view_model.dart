@@ -14,6 +14,7 @@ import 'package:domain/usecases/threads_usecase.dart';
 import 'package:domain/usecases/user_usercase.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 class ChatViewModel extends ChangeNotifier {
   final ChatSessionUseCase _chatSessionUseCase;
@@ -36,6 +37,8 @@ class ChatViewModel extends ChangeNotifier {
   List<Message> messages = [];
   StreamController<ThreadResponse> threadResponseController =
       StreamController.broadcast();
+
+  bool isCopyingMessage = false;
 
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
 
@@ -241,6 +244,16 @@ class ChatViewModel extends ChangeNotifier {
       // Ensure the loading state is updated regardless of success or error
       _setLoading(false);
     }
+  }
+
+  void copyMessage(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    isCopyingMessage = true;
+    notifyListeners();
+    Future.delayed(Duration(seconds: 1), () {
+      isCopyingMessage = false;
+      notifyListeners();
+    });
   }
 }
 
