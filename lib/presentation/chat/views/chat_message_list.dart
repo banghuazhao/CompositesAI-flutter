@@ -23,6 +23,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
   final TextEditingController textController =
       TextEditingController(); // final means can assign the TextEditingController object to the variable only once.
   final FocusNode focusNode = FocusNode();
+  int? copyingMessageIndex;
 
   @override
   void dispose() {
@@ -107,8 +108,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
                     onTap: () async {
                       await viewModel.onDefaultQuestionsTapped(index);
                     },
-                    child: _buildDefaultQuestionCard(
-                        viewModel.defaultQuestions[index]),
+                    child: _buildDefaultQuestionCard(viewModel.defaultQuestions[index]),
                   );
                 },
               );
@@ -128,32 +128,57 @@ class _ChatMessageListState extends State<ChatMessageList> {
         case "user":
           result.add(Align(
             alignment: Alignment.centerRight,
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: max(
-                    280,
-                    MediaQuery.of(context).size.width *
-                        0.6), // Half the screen width
-              ),
-              margin: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-              padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(20.0),
-              ),
-              child: Text(
-                message.content ?? "",
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.black,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  constraints: BoxConstraints(
+                    maxWidth: max(280, MediaQuery.of(context).size.width * 0.6),
+                  ),
+                  margin: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
+                  padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                  child: Text(
+                    message.content ?? "",
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.black,
+                    ),
+                  ),
                 ),
-              ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: viewModel.copyingMessage == message.content
+                            ? Icon(Icons.check, size: 18)
+                            : Icon(Icons.copy, size: 18),
+                        onPressed: viewModel.copyingMessage == message.content
+                            ? null
+                            : () async {
+                                viewModel.copyMessage(message.content ?? "");
+                              },
+                      ),
+                      if (viewModel.copyingMessage.isNotEmpty &&
+                          viewModel.copyingMessage == message.content)
+                        Padding(
+                          padding: EdgeInsets.only(right: 15.0),
+                          child: Text("Copied"),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ));
           continue;
         case "assistant":
-          result
-              .add(buildAssistantMessage(viewModel, message.chatContent ?? ""));
+          result.add(buildAssistantMessage(viewModel, message.chatContent ?? ""));
           continue;
         default:
           result.add(Container());
@@ -178,16 +203,17 @@ class _ChatMessageListState extends State<ChatMessageList> {
           Row(
             children: [
               IconButton(
-                icon: viewModel.isCopyingMessage
-                    ? Icon(Icons.check, size: 20) // Adjust size for the check icon
+                icon: viewModel.copyingMessage == text
+                    ? Icon(Icons.check, size: 18) // Adjust size for the check icon
                     : Icon(Icons.copy, size: 18), // Adjust size for the copy icon
-                onPressed: viewModel.isCopyingMessage
+                onPressed: viewModel.copyingMessage == text
                     ? null
                     : () async {
-                  viewModel.copyMessage(text);
-                },
+                        viewModel.copyMessage(text);
+                      },
               ),
-              if (viewModel.isCopyingMessage) Text("Copied")
+              if (viewModel.copyingMessage.isNotEmpty && viewModel.copyingMessage == text)
+                Text("Copied")
               // You can add other buttons here if needed, e.g. thumbs up/down, etc.
             ],
           ),
@@ -203,8 +229,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
           return Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                  padding:
-                      EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                  padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
                   child: streamWidget(snapshot)));
         });
   }
@@ -225,8 +250,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
     } else if (snapshot.data != null) {
       final threadResponse = snapshot.data!;
       if (threadResponse is Message) {
-        return MarkdownWithMath(
-            markdownData: "${threadResponse.chatContent} ●");
+        return MarkdownWithMath(markdownData: "${threadResponse.chatContent} ●");
       } else {
         return BlinkingText(
           text: "Thinking...",
@@ -253,11 +277,9 @@ class _ChatMessageListState extends State<ChatMessageList> {
               child: KeyboardListener(
                 focusNode: FocusNode(),
                 onKeyEvent: (KeyEvent event) {
-                  if (event is KeyDownEvent &&
-                      event.logicalKey == LogicalKeyboardKey.enter) {
+                  if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
                     // Check if the Shift key is pressed
-                    final isShiftPressed = HardwareKeyboard
-                            .instance.logicalKeysPressed
+                    final isShiftPressed = HardwareKeyboard.instance.logicalKeysPressed
                             .contains(LogicalKeyboardKey.shiftLeft) ||
                         HardwareKeyboard.instance.logicalKeysPressed
                             .contains(LogicalKeyboardKey.shiftRight);
@@ -271,8 +293,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
                       );
                     } else {
                       // Submit the text and clear TextField on Enter
-                      final text =
-                          textController.text; // Remove extra spaces/newlines
+                      final text = textController.text; // Remove extra spaces/newlines
                       if (text.isNotEmpty) {
                         textController.clear(); // Clear input immediately
                         viewModel.sendInputMessage(text); // Send message

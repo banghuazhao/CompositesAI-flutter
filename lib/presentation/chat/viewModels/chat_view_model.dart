@@ -24,6 +24,7 @@ class ChatViewModel extends ChangeNotifier {
   final ThreadRunsUseCase _threadRunsUseCase;
   final CompositesToolsUseCase _toolsUseCase;
 
+
   bool isLoggedIn = false;
   User? user;
   List<ToolCreationRequest> tools = [];
@@ -38,7 +39,7 @@ class ChatViewModel extends ChangeNotifier {
   StreamController<ThreadResponse> threadResponseController =
       StreamController.broadcast();
 
-  bool isCopyingMessage = false;
+  String copyingMessage = "";
 
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
 
@@ -248,10 +249,10 @@ class ChatViewModel extends ChangeNotifier {
 
   void copyMessage(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
-    isCopyingMessage = true;
+    copyingMessage = text;
     notifyListeners();
     Future.delayed(Duration(seconds: 1), () {
-      isCopyingMessage = false;
+      copyingMessage = "";
       notifyListeners();
     });
   }
