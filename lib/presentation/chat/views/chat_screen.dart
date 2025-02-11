@@ -80,6 +80,33 @@ class _ChatScreenState extends State<ChatScreen>
                     return Row(
                       mainAxisSize: MainAxisSize.min, // Keep it compact
                       children: [
+                        if (viewModel.selectedMessages.isNotEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.clear),
+                            tooltip: "Clear Selection",
+                            onPressed: () {
+                              viewModel.selectedMessages.clear(); // Remove all selections
+                              viewModel.notifyListeners(); // Update UI
+                            },
+                          ),
+                        if (viewModel.selectedMessages.isNotEmpty)
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              exportChatMessages(viewModel, context);
+                            },
+                            icon: const Icon(Icons.download, size: 18), // Smaller icon
+                            label: const Text(
+                              "Download",
+                              style: TextStyle(fontSize: 14), // Smaller text
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10), // Smaller padding
+                              minimumSize: const Size(88, 35), // Smaller size
+                              visualDensity: VisualDensity.compact, // Makes it more compact
+                            ),
+                          ),
+
+                        const SizedBox(width: 8),
                         // Export Chat Dropdown Button
                         PopupMenuButton<String>(
                           icon: Row(
@@ -183,7 +210,7 @@ class _ChatScreenState extends State<ChatScreen>
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8), // Spacing between elements
+                        const SizedBox(width: 8),
                       ],
                     );
 

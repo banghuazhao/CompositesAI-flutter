@@ -44,13 +44,14 @@ class _ChatMessageListState extends State<ChatMessageList> {
           child: messages.isEmpty
               ? defaultQuestionView(chatViewModel)
               : ListView.builder(
-                  controller: chatViewModel.scrollController,
-                  itemCount: chatList(chatViewModel).length,
-                  itemBuilder: (context, index) {
-                    return chatList(chatViewModel)[index];
-                  },
-                ),
+            controller: chatViewModel.scrollController,
+            itemCount: chatList(context, chatViewModel).length, // Pass context
+            itemBuilder: (context, index) {
+              return chatList(context, chatViewModel)[index]; // Pass context
+            },
+          ),
         ),
+
         if (messages.isNotEmpty || !kIsWeb) inputBar(chatViewModel)
       ],
     );
@@ -120,54 +121,85 @@ class _ChatMessageListState extends State<ChatMessageList> {
     );
   }
 
-  List<Widget> chatList(ChatViewModel viewModel) {
+  List<Widget> chatList(BuildContext context, ChatViewModel viewModel) {
     List<Widget> result = [];
     final messages = viewModel.messages;
+
     for (final message in messages) {
-      switch (message.role) {
-        case "user":
-          result.add(Align(
-            alignment: Alignment.centerRight,
+      bool isSelected = viewModel.selectedMessages.contains(message); // Selection check
+
+      result.add(
+        GestureDetector(
+          onTap: () {
+            viewModel.toggleMessageSelection(message); // Toggle selection
+          },
+          child: Align(
+            alignment: message.role == "user"
+                ? Alignment.centerRight
+                : Alignment.centerLeft, // Keep alignment
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: message.role == "user"
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
-                Container(
-                  constraints: BoxConstraints(
-                    maxWidth: max(280, MediaQuery.of(context).size.width * 0.6),
-                  ),
-                  margin: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-                  padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-                  child: Text(
-                    message.content ?? "",
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.black,
+                if (message.role == "user" || isSelected) // User messages always in container, assistant only if selected
+                  IntrinsicWidth(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: message.role == "user"
+                            ? MediaQuery.of(context).size.width * 0.6 // User messages max width 60%
+                            : double.infinity, // Assistant messages take full width if selected
+                      ),
+                      margin: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
+                      padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.blue[100] // Highlight selected messages
+                            : (message.role == "user" ? Colors.grey[300] : Colors.green[300]),
+                        borderRadius: BorderRadius.circular(20.0),
+                        border: isSelected ? Border.all(color: Colors.blue, width: 2) : null,
+                      ),
+                      child: Text(
+                        message.content ?? "",
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  )
+                else // Unselected assistant messages will be displayed directly on background
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
+                    child: Text(
+                      message.content ?? "",
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black, // Normal text color
+                      ),
                     ),
                   ),
-                ),
                 Align(
-                  alignment: Alignment.centerRight,
+                  alignment: message.role == "user"
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: viewModel.copyingMessage == message.content
-                            ? Icon(Icons.check, size: 18)
-                            : Icon(Icons.copy, size: 18),
+                            ? const Icon(Icons.check, size: 18)
+                            : const Icon(Icons.copy, size: 18),
                         onPressed: viewModel.copyingMessage == message.content
                             ? null
                             : () async {
-                                viewModel.copyMessage(message.content ?? "");
-                              },
+                          viewModel.copyMessage(message.content ?? "");
+                        },
                       ),
                       if (viewModel.copyingMessage.isNotEmpty &&
                           viewModel.copyingMessage == message.content)
-                        Padding(
-                          padding: EdgeInsets.only(right: 15.0),
+                        const Padding(
+                          padding: EdgeInsets.only(left: 15.0),
                           child: Text("Copied"),
                         ),
                     ],
@@ -175,20 +207,16 @@ class _ChatMessageListState extends State<ChatMessageList> {
                 ),
               ],
             ),
-          ));
-          continue;
-        case "assistant":
-          result.add(buildAssistantMessage(viewModel, message.chatContent ?? ""));
-          continue;
-        default:
-          result.add(Container());
-      }
+          ),
+        ),
+      );
     }
 
     result.add(messageStream(viewModel));
 
     return result;
   }
+
 
   Widget buildAssistantMessage(ChatViewModel viewModel, String text) {
     return Align(

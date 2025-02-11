@@ -40,6 +40,7 @@ class ChatViewModel extends ChangeNotifier {
       StreamController.broadcast();
 
   String copyingMessage = "";
+  List<Message> selectedMessages = [];
 
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
 
@@ -255,6 +256,14 @@ class ChatViewModel extends ChangeNotifier {
       copyingMessage = "";
       notifyListeners();
     });
+  }
+  void toggleMessageSelection(Message message) {
+    if (selectedMessages.contains(message)) {
+      selectedMessages.remove(message);
+    } else {
+      selectedMessages.add(message);
+    }
+    notifyListeners();
   }
 }
 
