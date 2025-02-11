@@ -74,7 +74,7 @@ class _MyAppState extends State<MyApp> {
             }
             return Locale('en', '');
           },
-          title: 'SwiftComp',
+          title: 'Composites AI',
           theme: ThemeData(
             colorScheme: const ColorScheme.light(
               primary: Color.fromRGBO(51, 66, 78, 1),
