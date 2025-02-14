@@ -207,6 +207,9 @@ class _ChatMessageListState extends State<ChatMessageList> {
 
   Widget buildAssistantMessage(
       ChatViewModel viewModel, Message message) {
+    final originalText = message.content;
+    RegExp citationRegExp = RegExp(r'【.*?】');
+    String cleanText = originalText.replaceAll(citationRegExp, '');
     return Align(
       alignment: Alignment.centerLeft, // Keep alignment
       child: Column(
@@ -215,7 +218,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
           Padding(
             padding:
                 const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-            child: MarkdownWithMath(markdownData: message.content ?? ""),
+            child: MarkdownWithMath(markdownData: cleanText),
           ),
           Align(
             alignment: Alignment.centerLeft,
