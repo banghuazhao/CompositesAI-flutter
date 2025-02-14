@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:domain/domain.dart';
-import 'package:domain/entities/thread_run.dart';
 import 'package:domain/entities/tool_creation_requests.dart';
 import 'package:domain/entities/thread.dart';
 import 'package:domain/entities/thread_response.dart';
@@ -39,7 +38,7 @@ class ChatViewModel extends ChangeNotifier {
   StreamController<ThreadResponse> threadResponseController =
       StreamController.broadcast();
 
-  String copyingMessage = "";
+  String? copyingMessageId;
   List<Message> selectedMessages = [];
 
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
@@ -248,12 +247,12 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  void copyMessage(String text) async {
-    await Clipboard.setData(ClipboardData(text: text));
-    copyingMessage = text;
+  void copyMessage(Message message) async {
+    await Clipboard.setData(ClipboardData(text: message.content));
+    copyingMessageId = message.id;
     notifyListeners();
     Future.delayed(Duration(seconds: 1), () {
-      copyingMessage = "";
+      copyingMessageId = null;
       notifyListeners();
     });
   }
@@ -264,6 +263,14 @@ class ChatViewModel extends ChangeNotifier {
       selectedMessages.add(message);
     }
     notifyListeners();
+  }
+
+  bool isMessageCopying(Message message) {
+    return copyingMessageId == message.id;
+  }
+
+  bool isMessageSelected(Message message) {
+    return selectedMessages.contains(message);
   }
 }
 

@@ -16,7 +16,6 @@ import 'chat_message_list.dart';
 import 'chat_session_drawer.dart';
 import 'package:path_provider/path_provider.dart';
 
-
 class ChatScreen extends StatefulWidget {
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -50,7 +49,8 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Consumer<ChatViewModel>(//Consumer widget dynamically rebuilds the UI whenever the ChatViewModel changes
+    return Consumer<ChatViewModel>(
+      //Consumer widget dynamically rebuilds the UI whenever the ChatViewModel changes
       builder: (context, viewModel, _) {
         return Scaffold(
           appBar: AppBar(
@@ -67,7 +67,8 @@ class _ChatScreenState extends State<ChatScreen>
                       onPressed: () async {
                         String? result = await Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                          MaterialPageRoute(
+                              builder: (context) => const LoginPage()),
                         );
                         if (result == "Log in Success") {
                           await viewModel.checkAuthStatus();
@@ -85,24 +86,30 @@ class _ChatScreenState extends State<ChatScreen>
                             icon: const Icon(Icons.clear),
                             tooltip: "Clear Selection",
                             onPressed: () {
-                              viewModel.selectedMessages.clear(); // Remove all selections
+                              viewModel.selectedMessages
+                                  .clear(); // Remove all selections
                               viewModel.notifyListeners(); // Update UI
                             },
                           ),
                         if (viewModel.selectedMessages.isNotEmpty)
                           ElevatedButton.icon(
                             onPressed: () {
-                              exportChatMessages(viewModel, context);
+                              exportChatMessages(viewModel, context, true);
                             },
-                            icon: const Icon(Icons.download, size: 18), // Smaller icon
+                            icon: const Icon(Icons.download, size: 18),
+                            // Smaller icon
                             label: const Text(
                               "Download",
                               style: TextStyle(fontSize: 14), // Smaller text
                             ),
                             style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10), // Smaller padding
-                              minimumSize: const Size(88, 35), // Smaller size
-                              visualDensity: VisualDensity.compact, // Makes it more compact
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 6, horizontal: 10),
+                              // Smaller padding
+                              minimumSize: const Size(88, 35),
+                              // Smaller size
+                              visualDensity: VisualDensity
+                                  .compact, // Makes it more compact
                             ),
                           ),
 
@@ -115,19 +122,25 @@ class _ChatScreenState extends State<ChatScreen>
                               SizedBox(width: 5),
                               Text(
                                 "Export Chat",
-                                style: TextStyle(fontSize: 14, color: Colors.white),
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.white),
                               ),
                             ],
                           ),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0)),
                           onSelected: (String value) async {
-                            final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+                            final chatViewModel = Provider.of<ChatViewModel>(
+                                context,
+                                listen: false);
                             if (value == 'export jsonl') {
-                              await exportChatMessages(chatViewModel, context); // Call export JSON function
+                              await exportChatMessages(chatViewModel, context,
+                                  false); // Call export JSON function
                             } else if (value == 'export xlsx') {
                               // Implement your Export XLSX logic here
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Export XLSX selected")),
+                                const SnackBar(
+                                    content: Text("Export XLSX selected")),
                               );
                             }
                           },
@@ -136,7 +149,8 @@ class _ChatScreenState extends State<ChatScreen>
                               value: 'export jsonl',
                               child: Row(
                                 children: [
-                                  Icon(Icons.file_download, color: Colors.black),
+                                  Icon(Icons.file_download,
+                                      color: Colors.black),
                                   SizedBox(width: 10),
                                   Text("export jsonl"),
                                 ],
@@ -154,7 +168,8 @@ class _ChatScreenState extends State<ChatScreen>
                             ),
                           ],
                         ),
-                        const SizedBox(width: 8), // Spacing between the button and the avatar
+                        const SizedBox(width: 8),
+                        // Spacing between the button and the avatar
 
                         // Avatar or Profile Button
                         GestureDetector(
@@ -168,24 +183,28 @@ class _ChatScreenState extends State<ChatScreen>
                               ),
                             );
                             if (result == "refresh") {
-                              await viewModel.checkAuthStatus(); // Refresh the authentication status
+                              await viewModel
+                                  .checkAuthStatus(); // Refresh the authentication status
                               setState(() {}); // Rebuild the UI
                             }
                           },
                           child: Stack(
-                            alignment: Alignment.topRight, // Align everything to the top-right corner
+                            alignment: Alignment.topRight,
+                            // Align everything to the top-right corner
                             children: [
                               // Avatar or default icon
                               viewModel.user?.avatarUrl != null
                                   ? CircleAvatar(
-                                backgroundImage: NetworkImage(viewModel.user!.avatarUrl!),
-                                radius: 20, // Slightly bigger radius for better visuals
-                              )
+                                      backgroundImage: NetworkImage(
+                                          viewModel.user!.avatarUrl!),
+                                      radius:
+                                          20, // Slightly bigger radius for better visuals
+                                    )
                                   : const Icon(
-                                Icons.account_circle,
-                                size: 48, // Adjusted size for consistency
-                                color: Colors.white,
-                              ),
+                                      Icons.account_circle,
+                                      size: 48, // Adjusted size for consistency
+                                      color: Colors.white,
+                                    ),
 
                               // Blue verified icon with a white circular background
                               if (viewModel.user?.isCompositeExpert == true)
@@ -193,16 +212,22 @@ class _ChatScreenState extends State<ChatScreen>
                                   right: 0, // Align to the top-right corner
                                   top: 0,
                                   child: Container(
-                                    width: 20, // Ensure fixed width
-                                    height: 20, // Ensure fixed height
+                                    width: 20,
+                                    // Ensure fixed width
+                                    height: 20,
+                                    // Ensure fixed height
                                     decoration: BoxDecoration(
-                                      color: Colors.white, // White background for contrast
-                                      shape: BoxShape.circle, // Ensure a perfect circle
+                                      color: Colors.white,
+                                      // White background for contrast
+                                      shape: BoxShape
+                                          .circle, // Ensure a perfect circle
                                     ),
-                                    alignment: Alignment.center, // Center the icon
+                                    alignment: Alignment.center,
+                                    // Center the icon
                                     child: Icon(
                                       Icons.verified,
-                                      color: Colors.blue, // Blue verification icon
+                                      color: Colors.blue,
+                                      // Blue verification icon
                                       size: 16, // Size of the icon itself
                                     ),
                                   ),
@@ -213,8 +238,6 @@ class _ChatScreenState extends State<ChatScreen>
                         const SizedBox(width: 8),
                       ],
                     );
-
-
                   }
                 },
               ),
@@ -229,9 +252,11 @@ class _ChatScreenState extends State<ChatScreen>
               // Blur effect applied when the user is not logged in and there are more than 6 messages
               if (!viewModel.isLoggedIn && viewModel.messages.length > 6)
                 BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Adjust blur intensity
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  // Adjust blur intensity
                   child: Container(
-                    color: Colors.black.withOpacity(0.2), // Semi-transparent overlay
+                    color: Colors.black
+                        .withOpacity(0.2), // Semi-transparent overlay
                   ),
                 ),
 
@@ -277,7 +302,8 @@ class _ChatScreenState extends State<ChatScreen>
                           style: TextStyle(fontSize: 16),
                         ),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -288,20 +314,18 @@ class _ChatScreenState extends State<ChatScreen>
                 ),
             ],
           ),
-
-
         );
       },
     );
   }
 
-
-
-
-  Future<void> exportChatMessages(ChatViewModel chatViewModel, BuildContext context) async {
+  Future<void> exportChatMessages(ChatViewModel chatViewModel,
+      BuildContext context, bool shouldDownloadSelected) async {
     try {
       // Get the list of messages from ChatViewModel
-      final List<Message> messages = chatViewModel.messages;
+      final List<Message> messages = shouldDownloadSelected
+          ? chatViewModel.selectedMessages
+          : chatViewModel.messages;
 
       // Convert messages to JSON format
       //.map() function goes through each message in the messages list one by one.
@@ -311,7 +335,7 @@ class _ChatScreenState extends State<ChatScreen>
           "content": message.content, // message text
         };
       }).toList();
-     //.toList() Collects the Results:After processing all messages, .toList() takes all the resulting dictionaries from .map() and combines them into a new list.
+      //.toList() Collects the Results:After processing all messages, .toList() takes all the resulting dictionaries from .map() and combines them into a new list.
       // Create a JSON string
       final String jsonString = jsonEncode({"messages": messageData});
 
@@ -362,5 +386,4 @@ class _ChatScreenState extends State<ChatScreen>
       );
     }
   }
-
 }

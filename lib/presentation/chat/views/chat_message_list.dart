@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:ui_components/beating_text.dart';
 import 'package:ui_components/blinking_text.dart';
@@ -44,14 +45,15 @@ class _ChatMessageListState extends State<ChatMessageList> {
           child: messages.isEmpty
               ? defaultQuestionView(chatViewModel)
               : ListView.builder(
-            controller: chatViewModel.scrollController,
-            itemCount: chatList(context, chatViewModel).length, // Pass context
-            itemBuilder: (context, index) {
-              return chatList(context, chatViewModel)[index]; // Pass context
-            },
-          ),
+                  controller: chatViewModel.scrollController,
+                  itemCount:
+                      chatList(context, chatViewModel).length, // Pass context
+                  itemBuilder: (context, index) {
+                    return chatList(
+                        context, chatViewModel)[index]; // Pass context
+                  },
+                ),
         ),
-
         if (messages.isNotEmpty || !kIsWeb) inputBar(chatViewModel)
       ],
     );
@@ -109,7 +111,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
                     onTap: () async {
                       await viewModel.onDefaultQuestionsTapped(index);
                     },
-                    child: _buildDefaultQuestionCard(viewModel.defaultQuestions[index]),
+                    child: _buildDefaultQuestionCard(
+                        viewModel.defaultQuestions[index]),
                   );
                 },
               );
@@ -122,128 +125,101 @@ class _ChatMessageListState extends State<ChatMessageList> {
   }
 
   List<Widget> chatList(BuildContext context, ChatViewModel viewModel) {
-    List<Widget> result = [];
+    List<Widget> messageWidgetsList = [];
     final messages = viewModel.messages;
 
     for (final message in messages) {
-      bool isSelected = viewModel.selectedMessages.contains(message); // Selection check
-
-      result.add(
-        GestureDetector(
-          onTap: () {
-            viewModel.toggleMessageSelection(message); // Toggle selection
-          },
-          child: Align(
-            alignment: message.role == "user"
-                ? Alignment.centerRight
-                : Alignment.centerLeft, // Keep alignment
-            child: Column(
-              crossAxisAlignment: message.role == "user"
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                if (message.role == "user" || isSelected) // User messages always in container, assistant only if selected
-                  IntrinsicWidth(
-                    child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: message.role == "user"
-                            ? MediaQuery.of(context).size.width * 0.6 // User messages max width 60%
-                            : double.infinity, // Assistant messages take full width if selected
-                      ),
-                      margin: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-                      padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.blue[100] // Highlight selected messages
-                            : (message.role == "user" ? Colors.grey[300] : Colors.green[300]),
-                        borderRadius: BorderRadius.circular(20.0),
-                        border: isSelected ? Border.all(color: Colors.blue, width: 2) : null,
-                      ),
-                      child: Text(
-                        message.content ?? "",
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                  )
-                else // Unselected assistant messages will be displayed directly on background
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-                    child: Text(
-                      message.content ?? "",
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black, // Normal text color
-                      ),
-                    ),
-                  ),
-                Align(
-                  alignment: message.role == "user"
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: viewModel.copyingMessage == message.content
-                            ? const Icon(Icons.check, size: 18)
-                            : const Icon(Icons.copy, size: 18),
-                        onPressed: viewModel.copyingMessage == message.content
-                            ? null
-                            : () async {
-                          viewModel.copyMessage(message.content ?? "");
-                        },
-                      ),
-                      if (viewModel.copyingMessage.isNotEmpty &&
-                          viewModel.copyingMessage == message.content)
-                        const Padding(
-                          padding: EdgeInsets.only(left: 15.0),
-                          child: Text("Copied"),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      if (message.role == "user") {
+        messageWidgetsList.add(buildUserMessage(viewModel, message));
+      } else {
+        messageWidgetsList.add(buildAssistantMessage(viewModel, message));
+      }
     }
 
-    result.add(messageStream(viewModel));
+    messageWidgetsList.add(messageStream(viewModel));
 
-    return result;
+    return messageWidgetsList;
   }
 
-
-  Widget buildAssistantMessage(ChatViewModel viewModel, String text) {
+  Widget buildUserMessage(
+      ChatViewModel viewModel, Message message) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: Alignment.centerRight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          IntrinsicWidth(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: max(280, MediaQuery.of(context).size.width * 0.6),
+              ),
+              margin:
+                  const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
+              padding: const EdgeInsets.symmetric(
+                  vertical: 10.0, horizontal: 15.0),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              child: Text(
+                message.content ?? "",
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: buildMessageActions(viewModel, message)
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildMessageActions(ChatViewModel viewModel, Message message) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: viewModel.isMessageCopying(message)
+              ? const Icon(Icons.check, size: 18)
+              : const Icon(Icons.copy, size: 18),
+          onPressed: viewModel.isMessageCopying(message)
+              ? null
+              : () async {
+            viewModel.copyMessage(message);
+          },
+        ),
+        IconButton(
+          icon: viewModel.isMessageSelected(message)
+              ? const Icon(Icons.check_box, size: 18)
+              : const Icon(Icons.check_box_outline_blank, size: 18),
+          onPressed: () {
+            viewModel.toggleMessageSelection(message);
+          },
+        )
+      ],
+    );
+  }
+
+  Widget buildAssistantMessage(
+      ChatViewModel viewModel, Message message) {
+    return Align(
+      alignment: Alignment.centerLeft, // Keep alignment
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15.0),
-            child: MarkdownWithMath(markdownData: text),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
+            child: MarkdownWithMath(markdownData: message.content ?? ""),
           ),
-          Row(
-            children: [
-              IconButton(
-                icon: viewModel.copyingMessage == text
-                    ? Icon(Icons.check, size: 18) // Adjust size for the check icon
-                    : Icon(Icons.copy, size: 18), // Adjust size for the copy icon
-                onPressed: viewModel.copyingMessage == text
-                    ? null
-                    : () async {
-                        viewModel.copyMessage(text);
-                      },
-              ),
-              if (viewModel.copyingMessage.isNotEmpty && viewModel.copyingMessage == text)
-                Text("Copied")
-              // You can add other buttons here if needed, e.g. thumbs up/down, etc.
-            ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: buildMessageActions(viewModel, message)
           ),
         ],
       ),
@@ -257,7 +233,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
           return Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                  padding:
+                      EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
                   child: streamWidget(snapshot)));
         });
   }
@@ -278,7 +255,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
     } else if (snapshot.data != null) {
       final threadResponse = snapshot.data!;
       if (threadResponse is Message) {
-        return MarkdownWithMath(markdownData: "${threadResponse.chatContent} ●");
+        return MarkdownWithMath(
+            markdownData: "${threadResponse.chatContent} ●");
       } else {
         return BlinkingText(
           text: "Thinking...",
@@ -305,9 +283,11 @@ class _ChatMessageListState extends State<ChatMessageList> {
               child: KeyboardListener(
                 focusNode: FocusNode(),
                 onKeyEvent: (KeyEvent event) {
-                  if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
+                  if (event is KeyDownEvent &&
+                      event.logicalKey == LogicalKeyboardKey.enter) {
                     // Check if the Shift key is pressed
-                    final isShiftPressed = HardwareKeyboard.instance.logicalKeysPressed
+                    final isShiftPressed = HardwareKeyboard
+                            .instance.logicalKeysPressed
                             .contains(LogicalKeyboardKey.shiftLeft) ||
                         HardwareKeyboard.instance.logicalKeysPressed
                             .contains(LogicalKeyboardKey.shiftRight);
@@ -321,7 +301,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
                       );
                     } else {
                       // Submit the text and clear TextField on Enter
-                      final text = textController.text; // Remove extra spaces/newlines
+                      final text =
+                          textController.text; // Remove extra spaces/newlines
                       if (text.isNotEmpty) {
                         textController.clear(); // Clear input immediately
                         viewModel.sendInputMessage(text); // Send message
