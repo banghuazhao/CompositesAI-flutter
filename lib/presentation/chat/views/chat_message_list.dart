@@ -161,7 +161,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(20.0),
               ),
-              child: Text(
+              child: SelectableText(
                 message.content ?? "",
                 style: const TextStyle(
                   fontSize: 15,
