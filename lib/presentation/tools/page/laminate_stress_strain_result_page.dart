@@ -348,27 +348,27 @@ class LaminarStressStrainLineChat extends StatelessWidget {
             ),
             titlesData: FlTitlesData(
               show: true,
-              rightTitles: SideTitles(showTitles: false),
-              topTitles: SideTitles(showTitles: false),
-              leftTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 50,
-                  interval: verticalInterval > 0 ? verticalInterval : null,
-                  getTextStyles: (context, value) => const TextStyle(
-                        fontSize: 10,
-                      ),
-                  getTitles: (value) {
-                    return value.toStringAsExponential(2);
-                  }),
-              bottomTitles: SideTitles(
-                  showTitles: true,
-                  interval: horizontalInterval > 0 ? horizontalInterval : null,
-                  getTextStyles: (context, value) => const TextStyle(
-                        fontSize: 10,
-                      ),
-                  getTitles: (value) {
-                    return value.toStringAsExponential(2);
-                  }),
+              // rightTitles: SideTitles(showTitles: false),
+              // topTitles: SideTitles(showTitles: false),
+              // leftTitles: SideTitles(
+              //     showTitles: true,
+              //     reservedSize: 50,
+              //     interval: verticalInterval > 0 ? verticalInterval : null,
+              //     getTextStyles: (context, value) => const TextStyle(
+              //           fontSize: 10,
+              //         ),
+              //     getTitles: (value) {
+              //       return value.toStringAsExponential(2);
+              //     }),
+              // bottomTitles: SideTitles(
+              //     showTitles: true,
+              //     interval: horizontalInterval > 0 ? horizontalInterval : null,
+              //     getTextStyles: (context, value) => const TextStyle(
+              //           fontSize: 10,
+              //         ),
+              //     getTitles: (value) {
+              //       return value.toStringAsExponential(2);
+              //     }),
             ),
             borderData: FlBorderData(
                 show: true,
@@ -382,7 +382,7 @@ class LaminarStressStrainLineChat extends StatelessWidget {
             lineBarsData: [
               LineChartBarData(
                 isCurved: false,
-                colors: [Theme.of(context).colorScheme.primary],
+                color: Theme.of(context).colorScheme.primary,
                 barWidth: 1,
                 isStrokeCapRound: true,
                 dotData: FlDotData(show: false),

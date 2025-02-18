@@ -237,15 +237,16 @@ class _LaminaEngineeringConstantsResultPageState
             lineTouchData: LineTouchData(enabled: false),
             gridData: FlGridData(show: false),
             titlesData: FlTitlesData(
-                show: false,
-                rightTitles: SideTitles(showTitles: false),
-                topTitles: SideTitles(showTitles: false),
-                bottomTitles: SideTitles(showTitles: false)),
+              show: false,
+              // rightTitles: SideTitles(showTitles: false),
+              // topTitles: SideTitles(showTitles: false),
+              // bottomTitles: SideTitles(showTitles: false)
+            ),
             // borderData: borderData,
             lineBarsData: [
               LineChartBarData(
                 isCurved: true,
-                colors: [Theme.of(context).colorScheme.primary],
+                color: Theme.of(context).colorScheme.primary,
                 barWidth: 2,
                 isStrokeCapRound: true,
                 dotData: FlDotData(show: false),

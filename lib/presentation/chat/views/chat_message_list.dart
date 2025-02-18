@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:provider/provider.dart';
 import 'package:ui_components/beating_text.dart';
 import 'package:ui_components/blinking_text.dart';
@@ -141,8 +142,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
     return messageWidgetsList;
   }
 
-  Widget buildUserMessage(
-      ChatViewModel viewModel, Message message) {
+  Widget buildUserMessage(ChatViewModel viewModel, Message message) {
     return Align(
       alignment: Alignment.centerRight,
       child: Column(
@@ -155,8 +155,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
               ),
               margin:
                   const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-              padding: const EdgeInsets.symmetric(
-                  vertical: 10.0, horizontal: 15.0),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(20.0),
@@ -171,9 +171,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
             ),
           ),
           Align(
-            alignment: Alignment.centerRight,
-            child: buildMessageActions(viewModel, message)
-          ),
+              alignment: Alignment.centerRight,
+              child: buildMessageActions(viewModel, message)),
         ],
       ),
     );
@@ -190,8 +189,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
           onPressed: viewModel.isMessageCopying(message)
               ? null
               : () async {
-            viewModel.copyMessage(message);
-          },
+                  viewModel.copyMessage(message);
+                },
         ),
         IconButton(
           icon: viewModel.isMessageSelected(message)
@@ -205,8 +204,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
     );
   }
 
-  Widget buildAssistantMessage(
-      ChatViewModel viewModel, Message message) {
+  Widget buildAssistantMessage(ChatViewModel viewModel, Message message) {
     final originalText = message.content;
     RegExp citationRegExp = RegExp(r'【.*?】');
     String cleanText = originalText.replaceAll(citationRegExp, '');
@@ -217,13 +215,12 @@ class _ChatMessageListState extends State<ChatMessageList> {
         children: [
           Padding(
             padding:
-                const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-            child: MarkdownWithMath(markdownData: cleanText),
+                const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+            child: SelectionArea(child: GptMarkdown(cleanText)),
           ),
           Align(
-            alignment: Alignment.centerLeft,
-            child: buildMessageActions(viewModel, message)
-          ),
+              alignment: Alignment.centerLeft,
+              child: buildMessageActions(viewModel, message)),
         ],
       ),
     );
@@ -258,8 +255,10 @@ class _ChatMessageListState extends State<ChatMessageList> {
     } else if (snapshot.data != null) {
       final threadResponse = snapshot.data!;
       if (threadResponse is Message) {
-        return MarkdownWithMath(
-            markdownData: "${threadResponse.chatContent} ●");
+        final originalText = threadResponse.chatContent;
+        RegExp citationRegExp = RegExp(r'【.*?】');
+        String cleanText = originalText.replaceAll(citationRegExp, '');
+        return SelectionArea(child: GptMarkdown("$cleanText ●"));
       } else {
         return BlinkingText(
           text: "Thinking...",

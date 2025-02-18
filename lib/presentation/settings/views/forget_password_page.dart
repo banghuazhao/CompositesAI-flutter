@@ -178,7 +178,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     if (viewModel.isPasswordResetting)
                       Text(
                         "A confirmation code has been sent to ${_emailController.text}. Please enter the code to verify your email address.",
-                        style: Theme.of(context).textTheme.bodyText2,
+                        style: Theme.of(context).textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
                     SizedBox(height: 18),

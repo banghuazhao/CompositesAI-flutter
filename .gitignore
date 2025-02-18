@@ -85,3 +85,6 @@ ios/Runner/GoogleService-Info.plist
 android/app/google-services.json
 ios/Flutter/Secret.xcconfig
 android/fastlane/metadata
+
+# FVM Version Cache
+.fvm/
