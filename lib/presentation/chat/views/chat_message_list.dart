@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:domain/domain.dart';
-import 'package:domain/entities/thread.dart';
 import 'package:domain/entities/thread_response.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -13,7 +12,6 @@ import 'package:provider/provider.dart';
 import 'package:ui_components/beating_text.dart';
 import 'package:ui_components/blinking_text.dart';
 
-import 'markdown_with_math.dart';
 import '../viewModels/chat_view_model.dart';
 
 class ChatMessageList extends StatefulWidget {
@@ -301,7 +299,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
                       textController.selection = TextSelection.fromPosition(
                         TextPosition(offset: textController.text.length),
                       );
-                    } else {
+                    } else if (!viewModel.isLoading) {
                       // Submit the text and clear TextField on Enter
                       final text =
                           textController.text; // Remove extra spaces/newlines
