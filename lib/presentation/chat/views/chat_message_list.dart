@@ -43,13 +43,15 @@ class _ChatMessageListState extends State<ChatMessageList> {
         Expanded(
           child: messages.isEmpty
               ? defaultQuestionView(chatViewModel)
-              : ListView.builder(
+              : ListView.separated(
                   controller: chatViewModel.scrollController,
-                  itemCount:
-                      chatList(context, chatViewModel).length, // Pass context
+                  padding: EdgeInsets.fromLTRB(20, 10, 10, 15),
+                  itemCount: chatList(context, chatViewModel).length,
                   itemBuilder: (context, index) {
-                    return chatList(
-                        context, chatViewModel)[index]; // Pass context
+                    return chatList(context, chatViewModel)[index];
+                  },
+                  separatorBuilder: (context, index) {
+                    return SizedBox(height: 5);
                   },
                 ),
         ),
@@ -141,38 +143,30 @@ class _ChatMessageListState extends State<ChatMessageList> {
   }
 
   Widget buildUserMessage(ChatViewModel viewModel, Message message) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          IntrinsicWidth(
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: max(280, MediaQuery.of(context).size.width * 0.6),
-              ),
-              margin:
-                  const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-              padding:
-                  const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(20.0),
-              ),
-              child: SelectableText(
-                message.content ?? "",
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Colors.black,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        IntrinsicWidth(
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: max(280, MediaQuery.of(context).size.width * 0.6),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            child: SelectableText(
+              message.content ?? "",
+              style: const TextStyle(
+                fontSize: 15,
+                color: Colors.black,
               ),
             ),
           ),
-          Align(
-              alignment: Alignment.centerRight,
-              child: buildMessageActions(viewModel, message)),
-        ],
-      ),
+        ),
+        buildMessageActions(viewModel, message),
+      ],
     );
   }
 
@@ -182,45 +176,60 @@ class _ChatMessageListState extends State<ChatMessageList> {
       children: [
         IconButton(
           icon: viewModel.isMessageCopying(message)
-              ? const Icon(Icons.check, size: 18)
-              : const Icon(Icons.copy, size: 18),
+              ? const Icon(Icons.check, size: 15)
+              : const Icon(Icons.copy, size: 15),
           onPressed: viewModel.isMessageCopying(message)
               ? null
               : () async {
                   viewModel.copyMessage(message);
                 },
+          style: ButtonStyle(
+            padding: WidgetStateProperty.all(EdgeInsets.all(6)),
+            minimumSize: WidgetStateProperty.all(Size.zero),
+          ),
         ),
         IconButton(
           icon: viewModel.isMessageSelected(message)
-              ? const Icon(Icons.check_box, size: 18)
-              : const Icon(Icons.check_box_outline_blank, size: 18),
+              ? const Icon(Icons.check_box, size: 15)
+              : const Icon(Icons.check_box_outline_blank, size: 15),
           onPressed: () {
             viewModel.toggleMessageSelection(message);
           },
+          style: ButtonStyle(
+            padding: WidgetStateProperty.all(EdgeInsets.all(6)),
+            minimumSize: WidgetStateProperty.all(Size.zero),
+          ),
         )
       ],
     );
   }
 
   Widget buildAssistantMessage(ChatViewModel viewModel, Message message) {
-    final originalText = message.content;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 2,
+      children: [
+        gptResponseWidget(message.content),
+        buildMessageActions(viewModel, message),
+      ],
+    );
+  }
+
+  Widget gptResponseWidget(String originalResponse) {
     RegExp citationRegExp = RegExp(r'【.*?】');
-    String cleanText = originalText.replaceAll(citationRegExp, '');
-    return Align(
-      alignment: Alignment.centerLeft, // Keep alignment
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-            child: SelectionArea(child: GptMarkdown(cleanText)),
-          ),
-          Align(
-              alignment: Alignment.centerLeft,
-              child: buildMessageActions(viewModel, message)),
-        ],
-      ),
+    String cleanText = originalResponse.replaceAll(citationRegExp, '');
+    final lines = cleanText.split('\n\n');
+    final responseLines = lines
+        .map((line) => SelectionArea(
+                child: GptMarkdown(
+              line,
+              style: const TextStyle(fontSize: 15, color: Colors.black),
+            )))
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 10,
+      children: responseLines,
     );
   }
 
@@ -229,11 +238,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
         stream: viewModel.threadResponseController.stream,
         builder: (context, snapshot) {
           return Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                  padding:
-                      EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-                  child: streamWidget(snapshot)));
+              alignment: Alignment.centerLeft, child: streamWidget(snapshot));
         });
   }
 
@@ -241,11 +246,11 @@ class _ChatMessageListState extends State<ChatMessageList> {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return BeatingText(
         text: "●",
-        style: TextStyle(fontSize: 16.0),
+        style: TextStyle(fontSize: 15.0),
         // Customize your text style as needed
         period: Duration(milliseconds: 1000),
         // Adjust the period for speed of beat
-        minScale: 1.0,
+        minScale: 0.8,
         maxScale: 1.2,
       );
     } else if (snapshot.hasError) {
@@ -253,14 +258,11 @@ class _ChatMessageListState extends State<ChatMessageList> {
     } else if (snapshot.data != null) {
       final threadResponse = snapshot.data!;
       if (threadResponse is Message) {
-        final originalText = threadResponse.chatContent;
-        RegExp citationRegExp = RegExp(r'【.*?】');
-        String cleanText = originalText.replaceAll(citationRegExp, '');
-        return SelectionArea(child: GptMarkdown("$cleanText ●"));
+        return gptResponseWidget("${threadResponse.chatContent} ●");
       } else {
         return BlinkingText(
           text: "Thinking...",
-          style: TextStyle(fontSize: 16.0), // Customize the style as needed
+          style: TextStyle(fontSize: 15.0), // Customize the style as needed
         );
       }
     } else {
