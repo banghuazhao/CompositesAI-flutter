@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^0.13.3
+  http: ^1.2.1
   domain:
     path: ../domain
   infrastructure:

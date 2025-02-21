@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:linkedin_login/linkedin_login.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/sigup_page.dart';
-
 
 import '../../../app/injection_container.dart';
 import '../viewModels/login_view_model.dart';
@@ -144,7 +144,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-
   void _appleSignIn(LoginViewModel viewModel, BuildContext context) async {
     // Show loading dialog
     showDialog(
@@ -200,6 +199,50 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _linkedinSignIn(LoginViewModel viewModel, BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent closing the dialog by tapping outside
+      builder: (BuildContext context) {
+        return Center(
+          child: CircularProgressIndicator(), // Display loading indicator
+        );
+      },
+    );
+
+    try {
+      // Perform Google Sign-In
+      await viewModel.signInWithLinkedin();
+
+      // Dismiss loading dialog before performing further actions
+      Navigator.of(context, rootNavigator: true).pop();
+
+      // Check the result of the sign-in
+      if (viewModel.isSigningIn) {
+        // Display success Snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Logged in with Linkedin"),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.black,
+          ),
+        );
+
+        // Navigate to the next screen
+        Navigator.pop(context, "Log in Success"); // Pop the current screen
+      }
+    } catch (e) {
+      // Handle any unexpected errors
+      Navigator.of(context, rootNavigator: true).pop(); // Dismiss loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("An error occurred: $e"),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -207,8 +250,6 @@ class _LoginPageState extends State<LoginPage> {
     _passwordController.dispose();
     super.dispose();
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -225,11 +266,13 @@ class _LoginPageState extends State<LoginPage> {
           ),
           body: SingleChildScrollView(
             padding: EdgeInsets.zero, // Remove any padding for the scroll view
-            child: Container(// Ensure it matches appBar or desired color
+            child: Container(
+              // Ensure it matches appBar or desired color
               alignment: Alignment.topCenter, // Align content at the top center
               child: Container(
                 width: screenWidth > 600 ? screenWidth * 0.4 : double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), // Reduce padding
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                // Reduce padding
                 child: Form(
                   key: _formKey,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -308,7 +351,6 @@ class _LoginPageState extends State<LoginPage> {
                         alignment: Alignment.centerLeft,
                         child: Padding(
                           padding: const EdgeInsets.only(left: 3.0),
-
                         ),
                       ),
                       const SizedBox(height: 20.0),
@@ -317,32 +359,36 @@ class _LoginPageState extends State<LoginPage> {
                       viewModel.isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : MaterialButton(
-                        minWidth: double.infinity,
-                        height: 45,
-                        color: isButtonEnabled
-                            ? const Color.fromRGBO(51, 66, 78, 1)
-                            : const Color.fromRGBO(180, 180, 180, 1),
-                        disabledColor: const Color.fromRGBO(140, 150, 153, 1),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        onPressed: isButtonEnabled ? () => _login(viewModel, context) : null,
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      ),
+                              minWidth: double.infinity,
+                              height: 45,
+                              color: isButtonEnabled
+                                  ? const Color.fromRGBO(51, 66, 78, 1)
+                                  : const Color.fromRGBO(180, 180, 180, 1),
+                              disabledColor: const Color.fromRGBO(140, 150, 153, 1),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              onPressed: isButtonEnabled ? () => _login(viewModel, context) : null,
+                              child: const Text(
+                                'Login',
+                                style: TextStyle(color: Colors.white, fontSize: 16),
+                              ),
+                            ),
                       const SizedBox(height: 20.0),
 
                       RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
-                          style: const TextStyle(fontSize: 15, color: Colors.black), // Default text style
+                          style: const TextStyle(fontSize: 15, color: Colors.black),
+                          // Default text style
                           children: [
                             const TextSpan(text: 'Not a member yet? '), // Static part
                             TextSpan(
-                              text: 'Sign up', // Clickable part
-                              style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold), // Custom style for clickable text
+                              text: 'Sign up',
+                              // Clickable part
+                              style:
+                                  const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                              // Custom style for clickable text
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
                                   _signup(); // Call your signup method
@@ -387,7 +433,13 @@ class _LoginPageState extends State<LoginPage> {
                             text: 'Continue with Google',
                             onPressed: () => _googleSignIn(viewModel, context),
                           ),
-                          const SizedBox(height: 10), // Space between buttons
+                          const SizedBox(height: 10),
+                          _buildSocialButton(
+                            iconPath: 'images/linkedin_logo.png',
+                            text: 'Continue with Linkedin',
+                            onPressed: () => _linkedinSignIn(viewModel, context),
+                          ),
+                          const SizedBox(height: 10),
                           _buildSocialButton(
                             iconPath: 'images/apple_logo.png',
                             text: 'Continue with Apple',
@@ -395,7 +447,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 15.0),
 
                       // Forgot Password Button
@@ -404,9 +455,12 @@ class _LoginPageState extends State<LoginPage> {
                           alignment: Alignment.center,
                           child: TextButton(
                             style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero, // Removes extra padding for the button
-                              minimumSize: Size(50, 20), // Ensures the button has a smaller clickable area
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Shrinks the tap area
+                              padding: EdgeInsets.zero,
+                              // Removes extra padding for the button
+                              minimumSize: Size(50, 20),
+                              // Ensures the button has a smaller clickable area
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              // Shrinks the tap area
                               alignment: Alignment.center, // Centers the text inside the button
                             ),
                             onPressed: () {
@@ -422,14 +476,14 @@ class _LoginPageState extends State<LoginPage> {
                               style: TextStyle(
                                 color: Colors.blue, // Button text color
                                 fontSize: 14, // Font size for the text
-                                decoration: TextDecoration.underline, // Adds underline to make it look like a link
+                                decoration: TextDecoration
+                                    .underline, // Adds underline to make it look like a link
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 15.0),
                       ],
-
                     ],
                   ),
                 ),
@@ -441,11 +495,9 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-
-
-
 // Helper Method for Social Buttons
-  Widget _buildSocialButton({//a function that returns a widget (Widget type)
+  Widget _buildSocialButton({
+    //a function that returns a widget (Widget type)
     required String iconPath,
     required String text,
     required VoidCallback onPressed,
@@ -465,7 +517,7 @@ class _LoginPageState extends State<LoginPage> {
             Image.asset(
               iconPath,
               height: 24, // Logo height
-              width: 24,  // Logo width
+              width: 24, // Logo width
               fit: BoxFit.contain,
             ),
             const SizedBox(width: 12), // Space between logo and text
@@ -473,7 +525,7 @@ class _LoginPageState extends State<LoginPage> {
               text,
               style: const TextStyle(
                 color: Colors.black87, // Text color
-                fontSize: 16,         // Text size
+                fontSize: 16, // Text size
                 fontWeight: FontWeight.w500, // Text weight
               ),
             ),
@@ -482,7 +534,6 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-
 
   void _signup() async {
     final result = await Navigator.push(

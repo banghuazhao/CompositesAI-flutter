@@ -4,13 +4,16 @@ import 'dart:convert';
 
 import 'package:data/mappers/domain_exception_mapper.dart';
 import 'package:domain/entities/domain_exceptions.dart';
+import 'package:domain/entities/linkedinuserprofile.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
-
+import 'dart:html' as html;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final http.Client client;
@@ -203,8 +206,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<String> validateAppleToken(String identityToken) async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url =
-    Uri.parse('$baseURL/auth/sign_in_with_apple');
+    final url = Uri.parse('$baseURL/auth/sign_in_with_apple');
     final response = await client.post(
       url,
       headers: {
@@ -257,6 +259,82 @@ class AuthRepositoryImpl implements AuthRepository {
       print('Error during token validation: $e');
       throw Exception('Failed to validate token');
     }
+  }
+
+  @override
+  Future<String> handleAuthorizationCodeFromLinked(String? authorizationCode) async {
+    //Sends the authorizationCode to your backend API. then backend process it and Sends the access token back to the frontend.
+    if (authorizationCode == null) {
+      throw Exception("Failed to get authorization code from LinkedIn.");
+    }
+
+    final baseURL = await apiEnvironment.getBaseUrl();
+    print(baseURL);
+    // **Step 3: Send the authorizationCode to the backend handler
+    final response = await client.post(
+      Uri.parse('$baseURL/auth/handle_authorization'), // Send to backend
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'authorizationCode': authorizationCode}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final accessToken = data["accessToken"];
+      return accessToken;
+    } else {
+      throw Exception("Failed to get access token: ${response.body}");
+    }
+  }
+
+  Future<LinkedinUserProfile> fetchLinkedInUserProfile(String? accessToken) async {
+    if (accessToken == null || accessToken.isEmpty) {
+      throw Exception("Access token is required to fetch LinkedIn profile.");
+    }
+
+    final baseURL = await apiEnvironment.getBaseUrl();
+    print("fetchLinkedInUserProfile URL: $baseURL");
+
+    final response = await http.post(
+      Uri.parse('$baseURL/auth/linkedin-profile'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"accessToken": accessToken}),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      if (!data.containsKey('user') || data['user'] == null) {
+        throw Exception("Invalid response: Missing 'user' data.");
+      }
+      return LinkedinUserProfile.fromJson(data['user']);
+    } else {
+      throw Exception(response.statusCode);
+    }
+  }
+
+  Future<Uri> getAuthUrl() async {
+    final String clientId = dotenv.env['LINKEDIN_CLIENT_ID'] ?? '';
+    const String redirectUrlWeb = 'https://compositesai.com/auth/linkedin/callback';
+    const String redirectUrlMobile = 'https://compositesai.com/linkedin-auth';
+    const String redirectUrlDevelopment = 'http://localhost:5000/auth/linkedin/callback';
+
+    final String currentEnv = await apiEnvironment.getCurrentEnvironment();
+    final String redirectUrl;
+    if (currentEnv == 'production') {
+      redirectUrl = kIsWeb ? redirectUrlWeb : redirectUrlMobile;
+    } else {
+      redirectUrl = redirectUrlDevelopment;
+    }
+    return Uri.https(
+      'www.linkedin.com',
+      '/oauth/v2/authorization',
+      {
+        'response_type': 'code',
+        'client_id': clientId,
+        'scope': 'openid profile email',
+        'redirect_uri': redirectUrl,
+      },
+    );
   }
 
 }

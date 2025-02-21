@@ -46,6 +46,8 @@ PODS:
   - Flutter (1.0.0)
   - flutter_secure_storage (6.0.0):
     - Flutter
+  - flutter_webview_plugin (0.0.1):
+    - Flutter
   - google_sign_in_ios (0.0.1):
     - AppAuth (>= 1.7.4)
     - Flutter
@@ -87,6 +89,8 @@ PODS:
   - SwiftyGif (5.4.5)
   - url_launcher_ios (0.0.1):
     - Flutter
+  - webview_flutter_wkwebview (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - app_tracking_transparency (from `.symlinks/plugins/app_tracking_transparency/ios`)
@@ -94,6 +98,7 @@ DEPENDENCIES:
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - Flutter (from `Flutter`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - flutter_webview_plugin (from `.symlinks/plugins/flutter_webview_plugin/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
   - in_app_review (from `.symlinks/plugins/in_app_review/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
@@ -103,6 +108,7 @@ DEPENDENCIES:
   - sign_in_with_apple (from `.symlinks/plugins/sign_in_with_apple/ios`)
   - sqflite (from `.symlinks/plugins/sqflite/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
+  - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/ios`)
 
 SPEC REPOS:
   trunk:
@@ -126,6 +132,8 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  flutter_webview_plugin:
+    :path: ".symlinks/plugins/flutter_webview_plugin/ios"
   google_sign_in_ios:
     :path: ".symlinks/plugins/google_sign_in_ios/darwin"
   in_app_review:
@@ -144,6 +152,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sqflite/darwin"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
+  webview_flutter_wkwebview:
+    :path: ".symlinks/plugins/webview_flutter_wkwebview/ios"
 
 SPEC CHECKSUMS:
   app_tracking_transparency: e169b653478da7bb15a6c61209015378ca73e375
@@ -154,6 +164,7 @@ SPEC CHECKSUMS:
   file_picker: ce3938a0df3cc1ef404671531facef740d03f920
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
+  flutter_webview_plugin: ed9e8a6a96baf0c867e90e1bce2673913eeac694
   google_sign_in_ios: 07375bfbf2620bc93a602c0e27160d6afc6ead38
   GoogleSignIn: d4281ab6cf21542b1cfaff85c191f230b399d2db
   GTMAppAuth: f69bd07d68cd3b766125f7e072c45d7340dea0de
@@ -168,6 +179,7 @@ SPEC CHECKSUMS:
   sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
   SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
   url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
+  webview_flutter_wkwebview: 2a23822e9039b7b1bc52e5add778e5d89ad488d1
 
 PODFILE CHECKSUM: 4e8f8b2be68aeea4c0d5beb6ff1e79fface1d048
 

@@ -1,20 +1,27 @@
 // lib/presentation/viewmodels/login_view_model.dart
 
+import 'dart:async';
+import 'package:web/web.dart' as web;
+
 import 'package:flutter/foundation.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:infrastructure/apple_sign_in_service.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 
 class LoginViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
   final AppleSignInService appleSignInService;
   final GoogleSignInService googleSignInService;
 
-  LoginViewModel({required this.authUseCase, required this.appleSignInService, required this.googleSignInService});
+  LoginViewModel(
+      {required this.authUseCase,
+      required this.appleSignInService,
+      required this.googleSignInService});
 
   bool _isLoading = false;
 
@@ -30,6 +37,9 @@ class LoginViewModel extends ChangeNotifier {
   bool obscureText = true;
 
   String? email;
+  bool _isSigningIn = false;
+
+  bool get isSigningIn => _isSigningIn;
 
   void togglePasswordVisibility() {
     obscureText = !obscureText;
@@ -60,9 +70,6 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   static String GOOGLE_SIGNIN_CLIENT_ID_WEB = dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_WEB'] ?? "";
-
-  bool _isSigningIn = false;
-  bool get isSigningIn => _isSigningIn;
 
   // Function to handle Google Sign-In
   Future<void> signInWithGoogle() async {
@@ -165,9 +172,27 @@ class LoginViewModel extends ChangeNotifier {
     } catch (e) {
       _errorMessage = 'Sign in with Apple failed: $e';
       _isSigningIn = false; // Reset signing in state
-      notifyListeners();// Optionally rethrow for higher-level error handling
+      notifyListeners(); // Optionally rethrow for higher-level error handling
     }
   }
 
+  Future<void> signInWithLinkedin() async {
+    _isSigningIn = false;
+    _errorMessage = null;
+    try {
+      final Uri authUri = await authUseCase.getAuthUrl();
+      if (kIsWeb) {
+        web.window.location.href = authUri.toString();
+      } else {
+        if (await canLaunchUrl(authUri)) {
+          await launchUrl(authUri, mode: LaunchMode.inAppWebView);
+        } else {
+          throw Exception("Could not launch LinkedIn login page");
+        }
+      }
+    } catch (error) {
+      throw Exception("LinkedIn Sign-In Failed: $error");
+    }
+  }
 
 }

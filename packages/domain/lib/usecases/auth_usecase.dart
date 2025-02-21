@@ -3,6 +3,7 @@
 
 import 'package:infrastructure/token_provider.dart';
 
+import '../entities/linkedinuserprofile.dart';
 import '../entities/user.dart';
 import '../repositories_abstract/auth_repository.dart';
 
@@ -18,6 +19,9 @@ abstract class AuthUseCase {
   Future<String> validateAppleToken(String identityToken);
   Future<bool> validateGoogleToken(String idToken);
   Future<bool> isLoggedIn();
+  Future<String> handleAuthorizationCodeFromLinked(String? authorizationCode);
+  Future<LinkedinUserProfile> fetchLinkedInUserProfile(String? accessToken);
+  Future<Uri> getAuthUrl();
 }
 
 class AuthUseCaseImpl implements AuthUseCase {
@@ -89,5 +93,16 @@ class AuthUseCaseImpl implements AuthUseCase {
     bool response =  await repository.validateGoogleToken(idToken);
     return response;
   }
+  Future<String> handleAuthorizationCodeFromLinked(String? authorizationCode) async {
+    return await repository.handleAuthorizationCodeFromLinked(authorizationCode);
+  }
+
+  Future<LinkedinUserProfile> fetchLinkedInUserProfile(String? accessToken) async {
+    return await repository.fetchLinkedInUserProfile(accessToken);
+  }
+  Future<Uri> getAuthUrl() async {
+    return await repository.getAuthUrl();
+  }
+
 
 }

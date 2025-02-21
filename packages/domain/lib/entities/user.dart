@@ -28,4 +28,11 @@ class User {
         isAdmin: json['isAdmin'],
         isCompositeExpert: json['isCompositeExpert']);
   }
+
+  @override
+  String toString() {
+    return 'User(username: $username, email: $email, name: $name, '
+        'description: $description, avatarUrl: $avatarUrl, '
+        'isAdmin: $isAdmin, isCompositeExpert: $isCompositeExpert)';
+  }
 }

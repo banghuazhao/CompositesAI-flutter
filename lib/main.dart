@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:infrastructure/feature_flag_provider.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/others.dart';

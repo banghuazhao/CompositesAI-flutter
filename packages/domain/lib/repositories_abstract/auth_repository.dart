@@ -1,5 +1,6 @@
 // lib/domain/repositories/signup_repository.dart
 
+import '../entities/linkedinuserprofile.dart';
 import '../entities/user.dart';
 
 abstract class AuthRepository {
@@ -13,4 +14,7 @@ abstract class AuthRepository {
   Future<String> syncUser(String? displayName, String email, String? photoUrl);
   Future<String> validateAppleToken(String identityToken);
   Future<bool> validateGoogleToken(String idToken);
+  Future<String> handleAuthorizationCodeFromLinked(String? authorizationCode);
+  Future<LinkedinUserProfile> fetchLinkedInUserProfile(String? accessToken);
+  Future<Uri> getAuthUrl();
 }
