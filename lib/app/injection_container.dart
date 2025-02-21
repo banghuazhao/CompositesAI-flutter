@@ -66,7 +66,7 @@ void initInjection() {
   sl.registerFactory<LoginViewModel>(() => LoginViewModel(
       authUseCase: sl(), appleSignInService: sl(), googleSignInService: sl()));
   sl.registerFactory<SignupViewModel>(() => SignupViewModel(authUseCase: sl()));
-  sl.registerFactory<SettingsViewModel>(() => SettingsViewModel(
+  sl.registerLazySingleton<SettingsViewModel>(() => SettingsViewModel(
       authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
   sl.registerFactory<QASettingsViewModel>(() => QASettingsViewModel(
       featureFlagProvider: sl(), apiEnvironment: sl(), authUseCase: sl()));

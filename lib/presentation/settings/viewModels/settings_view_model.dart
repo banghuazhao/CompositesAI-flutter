@@ -1,6 +1,5 @@
 // lib/presentation/viewmodels/settings_view_model.dart
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -15,7 +14,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:http/http.dart' as http;
 
 class SettingsViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
@@ -28,6 +26,7 @@ class SettingsViewModel extends ChangeNotifier {
   String submission = '';
   bool isExpert = false;
   bool isAdmin = false;
+  bool isLoading = false;
 
   int _tapCount = 0;
   final int _maxTaps = 5;
@@ -241,10 +240,12 @@ class SettingsViewModel extends ChangeNotifier {
 
   // LinkedIn Credentials
   Future<void> handleAuthorizationCodeFromLinked(String? authorizationCode) async {
+    isLoading = true;
+    notifyListeners();
+
     if (authorizationCode == null) {
       throw Exception("Failed to get authorization code from LinkedIn.");
     }
-
     print("authorizationCode: " + authorizationCode);
 
     // **Step 3: Exchange Code for Access Token**
@@ -265,6 +266,7 @@ class SettingsViewModel extends ChangeNotifier {
 
     await syncUser(name, email, profile);
     await fetchAuthSessionNew();
+    isLoading = false;
     notifyListeners();
   }
 

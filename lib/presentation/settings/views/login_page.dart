@@ -23,6 +23,7 @@ class _LoginPageState extends State<LoginPage> {
   bool isButtonEnabled = false;
   bool isPasswordValid = false;
   bool isLoginFailed = false;
+  bool _isLoading = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -200,40 +201,16 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _linkedinSignIn(LoginViewModel viewModel, BuildContext context) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Prevent closing the dialog by tapping outside
-      builder: (BuildContext context) {
-        return Center(
-          child: CircularProgressIndicator(), // Display loading indicator
-        );
-      },
-    );
+    setState(() {
+      _isLoading = true; // ✅ Show loading indicator before sign-in
+    });
 
     try {
-      // Perform Google Sign-In
       await viewModel.signInWithLinkedin();
 
-      // Dismiss loading dialog before performing further actions
-      Navigator.of(context, rootNavigator: true).pop();
-
-      // Check the result of the sign-in
-      if (viewModel.isSigningIn) {
-        // Display success Snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Logged in with Linkedin"),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.black,
-          ),
-        );
-
-        // Navigate to the next screen
-        Navigator.pop(context, "Log in Success"); // Pop the current screen
-      }
+      // ✅ After sign-in, return to settings page with a success result
+      Navigator.pop(context, "Log in Success");
     } catch (e) {
-      // Handle any unexpected errors
-      Navigator.of(context, rootNavigator: true).pop(); // Dismiss loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("An error occurred: $e"),
@@ -241,8 +218,14 @@ class _LoginPageState extends State<LoginPage> {
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      setState(() {
+        _isLoading = false; // ✅ Hide loading indicator after sign-in
+      });
     }
   }
+
+
 
   @override
   void dispose() {

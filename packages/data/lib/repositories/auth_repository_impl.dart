@@ -314,6 +314,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   Future<Uri> getAuthUrl() async {
     final String clientId = dotenv.env['LINKEDIN_CLIENT_ID'] ?? '';
+    print("LinkedIn Client ID: " + clientId);
     const String redirectUrlWeb = 'https://compositesai.com/auth/linkedin/callback';
     const String redirectUrlMobile = 'https://compositesai.com/linkedin-auth';
     const String redirectUrlDevelopment = 'http://localhost:5000/auth/linkedin/callback';
@@ -325,16 +326,14 @@ class AuthRepositoryImpl implements AuthRepository {
     } else {
       redirectUrl = redirectUrlDevelopment;
     }
-    return Uri.https(
-      'www.linkedin.com',
-      '/oauth/v2/authorization',
-      {
-        'response_type': 'code',
-        'client_id': clientId,
-        'scope': 'openid profile email',
-        'redirect_uri': redirectUrl,
-      },
+    return Uri.parse(
+        'https://www.linkedin.com/oauth/v2/authorization'
+            '?response_type=code'
+            '&client_id=$clientId'
+            '&scope=openid%20profile%20email'
+            '&redirect_uri=$redirectUrl'
     );
+
   }
 
 }
