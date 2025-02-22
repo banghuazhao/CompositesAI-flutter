@@ -62,68 +62,91 @@ class _ChatMessageListState extends State<ChatMessageList> {
 
   Widget defaultQuestionView(ChatViewModel viewModel) {
     return SingleChildScrollView(
-      child: Column(
-        children: [
-          SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Icon(
-              Icons.chat_bubble_outline,
-              size: 80,
-              color: Colors.blueGrey,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 30), // More spacing from the top
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Logo with rounded corners
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'images/Icon-512.png',  // Path to your image
+                      width: 50,
+                      height: 50,
+                    ),
+                  ),
+                  const SizedBox(width: 10), // More spacing for a balanced look
+                  Flexible( // Prevents text from overflowing
+                    child: Text(
+                      "Hi, I am Composites AI",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.normal, // Make it stand out
+                        color: Colors.black87, // Slightly softer than pure black
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Text(
-            "What can I help with?",
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 20),
-          if (kIsWeb) inputBar(viewModel),
-          // Default questions displayed as cards or buttons
-          LayoutBuilder(
-            builder: (context, constraints) {
-              // Determine the number of columns based on the screen width
-              double width = constraints.maxWidth;
-              int crossAxisCount = 2;
-              if (width >= 1000) {
-                crossAxisCount = 5;
-              } else if (width >= 800) {
-                crossAxisCount = 4;
-              } else if (width >= 600) {
-                crossAxisCount = 3;
-              }
-              crossAxisCount = max(width ~/ 200, 2);
+            const SizedBox(height: 24),
+            Text(
+              "How can I help you today?",
+              style: TextStyle(
+                fontSize: 28, // Slightly larger for better readability
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 36),
 
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  // Number of items in a row
-                  childAspectRatio: 2,
-                  // Width to height ratio of each item
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                ),
-                itemCount: viewModel.defaultQuestions.length,
-                padding: EdgeInsets.all(12),
-                itemBuilder: (context, index) {
-                  return InkWell(
-                    onTap: () async {
-                      await viewModel.onDefaultQuestionsTapped(index);
-                    },
-                    child: _buildDefaultQuestionCard(
-                        viewModel.defaultQuestions[index]),
-                  );
-                },
-              );
-            },
-          ),
-          SizedBox(height: 20),
-        ],
-      ),
+            // Input Bar only on Web
+            if (kIsWeb) inputBar(viewModel),
+
+            LayoutBuilder(
+              builder: (context, constraints) {
+                double width = constraints.maxWidth;
+                int crossAxisCount = max(width ~/ 200, 2);
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 2,
+                    crossAxisSpacing: 12.0, // More spacing
+                    mainAxisSpacing: 12.0,
+                  ),
+                  itemCount: viewModel.defaultQuestions.length,
+                  padding: const EdgeInsets.all(16),
+                  itemBuilder: (context, index) {
+                    return InkWell(
+                      onTap: () async {
+                        await viewModel.onDefaultQuestionsTapped(index);
+                      },
+                      child: _buildDefaultQuestionCard(viewModel.defaultQuestions[index]),
+                    );
+                  },
+                );
+              },
+            ),
+
+            const SizedBox(height: 30),
+          ],
+        )
+
     );
   }
+
 
   List<Widget> chatList(BuildContext context, ChatViewModel viewModel) {
     List<Widget> messageWidgetsList = [];
@@ -320,7 +343,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
                   controller: textController,
                   focusNode: focusNode,
                   decoration: InputDecoration(
-                    hintText: 'Ask a question...',
+                    hintText: 'Ask anything about Composites...',
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,

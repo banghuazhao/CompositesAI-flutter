@@ -44,12 +44,10 @@ class ChatViewModel extends ChangeNotifier {
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
 
   List<String> defaultQuestions = [
-    "What is MSG?",
-    "What is the upper bound of Young's modulus for composites?",
+    "What is Composites AI?",
     "What are the challenges for modeling composites?",
     "Can you tell me the early history of composites?",
     "What are common misconceptions of rules of mixtures?",
-    "What is Composites AI?",
     // "Calculate laminate stress",
     // "Calculates the UDFRC properties by rules of mixture",
     // "Give me some math equations.",
