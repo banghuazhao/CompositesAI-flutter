@@ -79,8 +79,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
                     borderRadius: BorderRadius.circular(12),
                     child: Image.asset(
                       'images/Icon-512.png',  // Path to your image
-                      width: 50,
-                      height: 50,
+                      width: 40,
+                      height: 40,
                     ),
                   ),
                   const SizedBox(width: 10), // More spacing for a balanced look
@@ -88,7 +88,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
                     child: Text(
                       "Hi, I am Composites AI",
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.normal, // Make it stand out
                         color: Colors.black87, // Slightly softer than pure black
                       ),
