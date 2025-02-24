@@ -235,6 +235,10 @@ class ChatViewModel extends ChangeNotifier {
     return message.role == 'user';
   }
 
+  bool isAssistantMessage(Message message) {
+    return message.role == 'assistant';
+  }
+
   Future<void> onDefaultQuestionsTapped(int index) async {
     final question = defaultQuestions[index];
     await sendInputMessage(question);
@@ -280,6 +284,22 @@ class ChatViewModel extends ChangeNotifier {
 
   bool isMessageSelected(Message message) {
     return selectedMessages.contains(message);
+  }
+
+  bool? isMessageLiked(Message message) {
+    return message.isLiked;
+  }
+
+
+
+  void toggleMessageLike(Message message) {
+    message.isLiked = true;
+    notifyListeners();
+  }
+
+  void toggleMessageDislike(Message message) {
+    message.isDisliked = true;
+    notifyListeners();
   }
 }
 

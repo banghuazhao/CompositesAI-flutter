@@ -197,6 +197,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Copy Icon
         IconButton(
           icon: viewModel.isMessageCopying(message)
               ? const Icon(Icons.check, size: 15)
@@ -204,13 +205,15 @@ class _ChatMessageListState extends State<ChatMessageList> {
           onPressed: viewModel.isMessageCopying(message)
               ? null
               : () async {
-                  viewModel.copyMessage(message);
-                },
+            viewModel.copyMessage(message);
+          },
           style: ButtonStyle(
-            padding: WidgetStateProperty.all(EdgeInsets.all(6)),
+            padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
             minimumSize: WidgetStateProperty.all(Size.zero),
           ),
         ),
+
+        // Select Checkbox
         IconButton(
           icon: viewModel.isMessageSelected(message)
               ? const Icon(Icons.check_box, size: 15)
@@ -219,13 +222,48 @@ class _ChatMessageListState extends State<ChatMessageList> {
             viewModel.toggleMessageSelection(message);
           },
           style: ButtonStyle(
-            padding: WidgetStateProperty.all(EdgeInsets.all(6)),
+            padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
             minimumSize: WidgetStateProperty.all(Size.zero),
           ),
-        )
+        ),
+
+        // Like and Dislike Buttons (Only for Assistant Messages)default value (false) when isDisliked or isLiked is null.
+        if (viewModel.isAssistantMessage(message)) ...[
+          // Like Icon (Only Show if Not Disliked)
+          if (!(message.isDisliked ?? false))
+            IconButton(
+              icon: message.isLiked ?? false
+                  ? Icon(Icons.thumb_up, size: 15, color: Colors.grey[700])
+                  : const Icon(Icons.thumb_up_outlined, size: 15),
+              onPressed: () {
+                viewModel.toggleMessageLike(message);
+              },
+              style: ButtonStyle(
+                padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
+                minimumSize: WidgetStateProperty.all(Size.zero),
+              ),
+            ),
+
+          // Dislike Icon (Only Show if Not Liked) default value (false) when isDisliked or isLiked is null.
+          if (!(message.isLiked ?? false))
+            IconButton(
+              icon: message.isDisliked ?? false
+                  ? Icon(Icons.thumb_down, size: 15, color: Colors.grey[700])
+                  : const Icon(Icons.thumb_down_outlined, size: 15),
+              onPressed: () {
+                viewModel.toggleMessageDislike(message);
+              },
+              style: ButtonStyle(
+                padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
+                minimumSize: WidgetStateProperty.all(Size.zero),
+              ),
+            ),
+        ],
       ],
     );
   }
+
+
 
   Widget buildAssistantMessage(ChatViewModel viewModel, Message message) {
     return Column(
