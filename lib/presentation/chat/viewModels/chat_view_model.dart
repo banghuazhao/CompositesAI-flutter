@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:domain/domain.dart';
+import 'package:domain/entities/thread_function_tool.dart';
 import 'package:domain/entities/tool_creation_requests.dart';
 import 'package:domain/entities/thread.dart';
 import 'package:domain/entities/thread_response.dart';
@@ -7,6 +8,7 @@ import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/composites_tools_usecase.dart';
 import 'package:domain/usecases/function_tools_usecase.dart';
+import 'package:domain/usecases/functional_call_usecase.dart';
 import 'package:domain/usecases/messages_usecase.dart';
 import 'package:domain/usecases/thread_runs_usecase.dart';
 import 'package:domain/usecases/threads_usecase.dart';
@@ -19,10 +21,9 @@ class ChatViewModel extends ChangeNotifier {
   final ChatSessionUseCase _chatSessionUseCase;
   final AuthUseCase _authUseCase;
   final UserUseCase _userUserCase;
-  final MessagesUseCase _messagesUseCase;
   final ThreadRunsUseCase _threadRunsUseCase;
   final CompositesToolsUseCase _toolsUseCase;
-
+  final FunctionalCallUseCase _functionalCallUseCase;
 
   bool isLoggedIn = false;
   User? user;
@@ -63,12 +64,13 @@ class ChatViewModel extends ChangeNotifier {
     required ThreadsUseCase threadsUseCase,
     required ThreadRunsUseCase threadRunsUseCase,
     required CompositesToolsUseCase toolsUseCase,
+    required FunctionalCallUseCase functionalCallUseCase,
   })  : _chatSessionUseCase = chatSessionUseCase,
         _authUseCase = authUseCase,
         _userUserCase = userUserCase,
-        _messagesUseCase = messagesUseCase,
         _threadRunsUseCase = threadRunsUseCase,
-        _toolsUseCase = toolsUseCase;
+        _toolsUseCase = toolsUseCase,
+        _functionalCallUseCase = functionalCallUseCase;
 
   Future<void> fetchAuthSessionNew() async {
     try {
@@ -176,17 +178,16 @@ class ChatViewModel extends ChangeNotifier {
                 threadId, assistantId, message.content);
           };
 
-    await _sendMessageAndRun(message, streamBuilder);
-  }
-
-  Future<void> _sendMessageAndRun(
-    Message newMessage,
-    Stream<ThreadResponse> Function() streamBuilder,
-  ) async {
-    messages.add(newMessage);
+    messages.add(message);
     setLoading(true);
     scrollToBottom();
 
+    await _processResponseStream(streamBuilder);
+  }
+
+  Future<void> _processResponseStream(
+    Stream<ThreadResponse> Function() streamBuilder,
+  ) async {
     threadResponseController = StreamController<ThreadResponse>.broadcast();
     Message? finalMessage;
 
@@ -202,6 +203,14 @@ class ChatViewModel extends ChangeNotifier {
           scrollToBottom();
         } else if (response is Thread) {
           _selectedSession?.threadId = response.id;
+        } else if (response is ThreadFunctionTool) {
+          final threadToolOutput =
+              await _functionalCallUseCase.callFunctionTool(response);
+          streamBuilder() => _threadRunsUseCase.submitToolOutputsToRunStream(
+              _selectedSession!.threadId!, response.runId, [threadToolOutput]);
+          setLoading(true);
+          scrollToBottom();
+          await _processResponseStream(streamBuilder);
         }
       }
     } catch (error) {
@@ -210,6 +219,7 @@ class ChatViewModel extends ChangeNotifier {
     } finally {
       await threadResponseController.close();
       if (finalMessage != null) {
+        print(finalMessage.content);
         messages.add(finalMessage);
         saveSession();
       }
@@ -254,6 +264,7 @@ class ChatViewModel extends ChangeNotifier {
       notifyListeners();
     });
   }
+
   void toggleMessageSelection(Message message) {
     if (selectedMessages.contains(message)) {
       selectedMessages.remove(message);
@@ -271,7 +282,6 @@ class ChatViewModel extends ChangeNotifier {
     return selectedMessages.contains(message);
   }
 }
-
 
 // Extension on the Message class
 extension ChatContentExtension on Message {

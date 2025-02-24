@@ -1,5 +1,5 @@
 import '../entities/thread_response.dart';
-import '../repositories_abstract/messages_repository.dart';
+import '../entities/thread_tool_output.dart';
 import '../repositories_abstract/thread_runs_repository.dart';
 
 abstract class ThreadRunsUseCase {
@@ -10,6 +10,9 @@ abstract class ThreadRunsUseCase {
 
   Stream<ThreadResponse> createThreadAndRunStream(
       String assistantId, String message);
+
+  Stream<ThreadResponse> submitToolOutputsToRunStream(
+      String threadId, String runId, List<ThreadToolOutput> toolOutputs);
 }
 
 class ThreadRunsUseCaseImpl implements ThreadRunsUseCase {
@@ -34,5 +37,11 @@ class ThreadRunsUseCaseImpl implements ThreadRunsUseCase {
       String assistantId, String message) {
     return threadRunsRepository.createThreadAndRunStream(
         assistantId, message);
+  }
+
+  @override
+  Stream<ThreadResponse> submitToolOutputsToRunStream(
+      String threadId, String runId, List<ThreadToolOutput> toolOutputs) {
+    return threadRunsRepository.submitToolOutputsToRunStream(threadId, runId, toolOutputs);
   }
 }

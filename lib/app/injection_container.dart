@@ -1,3 +1,6 @@
+import 'package:data/repositories/functional_call_repository_impl.dart';
+import 'package:domain/repositories_abstract/functional_call_repository.dart';
+import 'package:domain/usecases/functional_call_usecase.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 
@@ -62,6 +65,7 @@ void initInjection() {
         threadsUseCase: sl(),
         threadRunsUseCase: sl(),
         toolsUseCase: sl(),
+        functionalCallUseCase: sl(),
       ));
   sl.registerFactory<LoginViewModel>(() => LoginViewModel(
       authUseCase: sl(), appleSignInService: sl(), googleSignInService: sl()));
@@ -95,6 +99,8 @@ void initInjection() {
       () => ThreadRunsUseCaseImpl(threadRunsRepository: sl()));
   sl.registerFactory<MessagesUseCase>(
       () => MessagesUseCaseImpl(repository: sl()));
+  sl.registerFactory<FunctionalCallUseCase>(
+      () => FunctionalCallUseCaseImpl(repository: sl()));
 
   // Repositories
   sl.registerLazySingleton<ChatRepository>(() =>
@@ -114,6 +120,8 @@ void initInjection() {
   sl.registerFactory<ThreadRunsRepository>(() => ThreadRunsRepositoryImpl());
   sl.registerFactory<MessagesRepository>(
       () => MessagesRepositoryImpl(client: sl()));
+  sl.registerFactory<FunctionalCallRepository>(
+      () => FunctionalCallRepositoryImpl());
 
   // Data Sources
   sl.registerLazySingleton<OpenAIDataSource>(
