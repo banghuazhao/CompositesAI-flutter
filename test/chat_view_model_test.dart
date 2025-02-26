@@ -7,9 +7,7 @@ import 'package:domain/mocks/user_usecase_mock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
-import 'package:domain/mocks/chat_usecase_mock.dart';
 import 'package:domain/mocks/chatsession_usecase_mock.dart';
-import 'package:domain/mocks/functiontool_usecase_mock.dart';
 import 'package:domain/mocks/tool_usecase_mock.dart';
 
 void main() {

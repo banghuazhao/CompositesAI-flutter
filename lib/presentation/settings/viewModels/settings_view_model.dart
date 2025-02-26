@@ -3,7 +3,7 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:domain/entities/linkedinuserprofile.dart';
+import 'package:domain/entities/linkedin_user_profile.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/user_usercase.dart';

@@ -1,6 +1,5 @@
 import 'package:infrastructure/token_provider.dart';
-
-import '../entities/application.dart';
+import '../entities/composite_expert_request.dart';
 import '../repositories_abstract/composite_expert_repository.dart';
 
 class CompositeExpertUseCase {

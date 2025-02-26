@@ -7,7 +7,6 @@ class ThreadToolOutput {
     required this.output,
   });
 
-  // Optional: Add a factory constructor for creating from JSON
   factory ThreadToolOutput.fromJson(Map<String, dynamic> json) {
     return ThreadToolOutput(
       callId: json['tool_call_id'],
@@ -15,7 +14,6 @@ class ThreadToolOutput {
     );
   }
 
-  // Optional: Add a method for converting to JSON
   Map<String, dynamic> toJson() => {
     'tool_call_id': callId,
     'output': output,

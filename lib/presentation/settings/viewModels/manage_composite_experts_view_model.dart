@@ -1,5 +1,5 @@
 
-import 'package:domain/entities/application.dart';
+import 'package:domain/entities/composite_expert_request.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/composite_expert_usecase.dart';
 import 'package:domain/usecases/user_usercase.dart';

@@ -7,7 +7,6 @@ import 'package:domain/entities/thread_response.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/composites_tools_usecase.dart';
-import 'package:domain/usecases/function_tools_usecase.dart';
 import 'package:domain/usecases/functional_call_usecase.dart';
 import 'package:domain/usecases/messages_usecase.dart';
 import 'package:domain/usecases/thread_runs_usecase.dart';
@@ -55,9 +54,7 @@ class ChatViewModel extends ChangeNotifier {
   ];
 
   ChatViewModel({
-    required ChatUseCase chatUseCase,
     required ChatSessionUseCase chatSessionUseCase,
-    required FunctionToolsUseCase functionToolsUseCase,
     required AuthUseCase authUseCase,
     required UserUseCase userUserCase,
     required MessagesUseCase messagesUseCase,
@@ -290,31 +287,8 @@ class ChatViewModel extends ChangeNotifier {
     return message.isLiked;
   }
 
-
-
   void toggleMessageLikeStatus(Message message, bool isLiked) {
     message.isLiked = isLiked;
     notifyListeners();
-  }
-
-}
-
-// Extension on the Message class
-extension ChatContentExtension on Message {
-  String get chatContent {
-    var contentText = content;
-    if (role == 'assistant') {
-      final function = toolCalls?.first.function;
-      if (function != null) {
-        final name = function.name;
-        final arguments = function.arguments;
-        contentText = contentText +
-            '\n\n' +
-            "Call function: $name" +
-            '\n\n' +
-            "Use parameters:\n\n $arguments";
-      }
-    }
-    return contentText;
   }
 }

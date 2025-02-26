@@ -4,13 +4,10 @@ import 'package:domain/usecases/functional_call_usecase.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:data/data_sources/function_tools_data_source.dart';
-import 'package:data/data_sources/open_ai_data_source.dart';
 
 import 'package:data/repositories/composites_tools_repository_impl.dart';
-import 'package:data/repositories/applications_repository_impl.dart';
+import 'package:data/repositories/composite_expert_repository_impl.dart';
 import 'package:data/repositories/auth_repository_impl.dart';
-import 'package:data/repositories/chat_repository_impl.dart';
 import 'package:data/repositories/chat_session_repository_imp.dart';
 import 'package:data/repositories/user_repository_impl.dart';
 import 'package:data/repositories/threads_repository_impl.dart';
@@ -29,7 +26,6 @@ import 'package:domain/repositories_abstract/messages_repository.dart';
 import 'package:domain/usecases/composites_tools_usecase.dart';
 import 'package:domain/usecases/auth_usecase.dart';
 import 'package:domain/usecases/composite_expert_usecase.dart';
-import 'package:domain/usecases/function_tools_usecase.dart';
 import 'package:domain/usecases/threads_usecase.dart';
 import 'package:domain/usecases/user_usercase.dart';
 import 'package:domain/usecases/messages_usecase.dart';
@@ -42,7 +38,6 @@ import 'package:infrastructure/feature_flag_provider.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:infrastructure/token_provider.dart';
 
-import 'package:swiftcomp/presentation/chat/viewModels/composites_tools_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/forget_password_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
@@ -56,9 +51,7 @@ final sl = GetIt.instance;
 void initInjection() {
   // ViewModels
   sl.registerFactory<ChatViewModel>(() => ChatViewModel(
-        chatUseCase: sl(),
         chatSessionUseCase: sl(),
-        functionToolsUseCase: sl(),
         authUseCase: sl(),
         userUserCase: sl(),
         messagesUseCase: sl(),
@@ -80,11 +73,8 @@ void initInjection() {
       () => UpdatePasswordViewModel(authUseCase: sl()));
 
   // Use Cases
-  sl.registerLazySingleton<ChatUseCase>(
-      () => ChatUseCaseImpl(chatRepository: sl()));
   sl.registerLazySingleton<ChatSessionUseCase>(
       () => ChatSessionUseCaseImpl(repository: sl()));
-  sl.registerLazySingleton<FunctionToolsUseCase>(() => FunctionToolsUseCase());
   sl.registerLazySingleton<AuthUseCase>(
       () => AuthUseCaseImpl(repository: sl(), tokenProvider: sl()));
   sl.registerLazySingleton<UserUseCase>(
@@ -103,8 +93,6 @@ void initInjection() {
       () => FunctionalCallUseCaseImpl(repository: sl()));
 
   // Repositories
-  sl.registerLazySingleton<ChatRepository>(() =>
-      ChatRepositoryImp(openAIDataSource: sl(), functionToolsDataSource: sl()));
   sl.registerLazySingleton<ChatSessionRepository>(
       () => ChatSessionRepositoryImpl());
   sl.registerLazySingleton<AuthRepository>(() =>
@@ -124,10 +112,6 @@ void initInjection() {
       () => FunctionalCallRepositoryImpl());
 
   // Data Sources
-  sl.registerLazySingleton<OpenAIDataSource>(
-      () => ChatRemoteDataSourceImpl(client: sl()));
-  sl.registerLazySingleton<FunctionToolsDataSource>(
-      () => FunctionToolsDataSourceImp());
 
   // Infrastructure
   sl.registerLazySingleton(() => http.Client());

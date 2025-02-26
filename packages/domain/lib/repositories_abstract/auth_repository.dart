@@ -1,6 +1,6 @@
 // lib/domain/repositories/signup_repository.dart
 
-import '../entities/linkedinuserprofile.dart';
+import '../entities/linkedin_user_profile.dart';
 import '../entities/user.dart';
 
 abstract class AuthRepository {

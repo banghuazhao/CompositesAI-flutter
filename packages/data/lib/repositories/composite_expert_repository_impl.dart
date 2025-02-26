@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:domain/entities/application.dart';
+import 'package:domain/entities/composite_expert_request.dart';
 import 'package:domain/repositories_abstract/composite_expert_repository.dart';
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';

@@ -8,19 +8,15 @@ class ToolCreationRequest {
   String? instructions;
   String fileUrl;
 
-
-
-
-  ToolCreationRequest({
-    required this.id,
-    required this.userId,
-    required this.title,
-    this.toolAvatar,
-    this.userName,
-    this.description,
-    this.instructions,
-    required this.fileUrl
-  });
+  ToolCreationRequest(
+      {required this.id,
+      required this.userId,
+      required this.title,
+      this.toolAvatar,
+      this.userName,
+      this.description,
+      this.instructions,
+      required this.fileUrl});
 
   // Factory constructor to create a ToolCreationRequest instance from JSON
   factory ToolCreationRequest.fromJson(Map<String, dynamic> json) {

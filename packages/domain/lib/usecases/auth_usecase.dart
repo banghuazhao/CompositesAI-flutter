@@ -3,7 +3,7 @@
 
 import 'package:infrastructure/token_provider.dart';
 
-import '../entities/linkedinuserprofile.dart';
+import '../entities/linkedin_user_profile.dart';
 import '../entities/user.dart';
 import '../repositories_abstract/auth_repository.dart';
 

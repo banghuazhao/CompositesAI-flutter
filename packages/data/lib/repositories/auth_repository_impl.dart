@@ -4,16 +4,14 @@ import 'dart:convert';
 
 import 'package:data/mappers/domain_exception_mapper.dart';
 import 'package:domain/entities/domain_exceptions.dart';
-import 'package:domain/entities/linkedinuserprofile.dart';
+import 'package:domain/entities/linkedin_user_profile.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
-import 'dart:html' as html;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final http.Client client;

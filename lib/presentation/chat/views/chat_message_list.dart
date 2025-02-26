@@ -319,19 +319,6 @@ class _ChatMessageListState extends State<ChatMessageList> {
       spacing: 10,
       children: responseLines,
     );
-
-    // return GptMarkdown(
-    //   cleanText,
-    //   style: const TextStyle(fontSize: 15, color: Colors.black),
-    //   linkBuilder: (context, label, path, style) {
-    //     return Text(
-    //       label,
-    //       style: style.copyWith(
-    //         color: Colors.blue,
-    //       ),
-    //     );
-    //   },
-    // );
   }
 
   StreamBuilder<ThreadResponse> messageStream(ChatViewModel viewModel) {
@@ -358,7 +345,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
     } else if (snapshot.data != null) {
       final threadResponse = snapshot.data!;
       if (threadResponse is Message) {
-        return gptResponseWidget("${threadResponse.chatContent} ●");
+        return gptResponseWidget("${threadResponse.content} ●");
       } else if (threadResponse is ThreadFunctionTool) {
         return BlinkingText(
           text: "Calling Tools...",
