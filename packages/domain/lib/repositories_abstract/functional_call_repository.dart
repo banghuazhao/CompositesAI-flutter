@@ -1,6 +1,7 @@
-import 'package:domain/entities/thread_function_tool.dart';
-import 'package:domain/entities/thread_tool_output.dart';
+import 'package:domain/entities/chat/function_tool_output.dart';
+
+import '../entities/chat/function_tool.dart';
 
 abstract class FunctionalCallRepository {
-  Future<ThreadToolOutput> callFunctionTool(ThreadFunctionTool tool);
+  Future<FunctionToolOutput> callFunctionTool(FunctionTool tool);
 }

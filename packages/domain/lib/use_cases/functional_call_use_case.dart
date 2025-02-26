@@ -1,9 +1,9 @@
-import '../entities/thread_function_tool.dart';
-import '../entities/thread_tool_output.dart';
+import '../entities/chat/function_tool.dart';
+import '../entities/chat/function_tool_output.dart';
 import '../repositories_abstract/functional_call_repository.dart';
 
 abstract class FunctionalCallUseCase {
-  Future<ThreadToolOutput> callFunctionTool(ThreadFunctionTool tool);
+  Future<FunctionToolOutput> callFunctionTool(FunctionTool tool);
 }
 
 class FunctionalCallUseCaseImpl implements FunctionalCallUseCase {
@@ -12,7 +12,7 @@ class FunctionalCallUseCaseImpl implements FunctionalCallUseCase {
   FunctionalCallUseCaseImpl({required this.repository});
 
   @override
-  Future<ThreadToolOutput> callFunctionTool(ThreadFunctionTool tool) async {
+  Future<FunctionToolOutput> callFunctionTool(FunctionTool tool) async {
     return await repository.callFunctionTool(tool);
   }
 }

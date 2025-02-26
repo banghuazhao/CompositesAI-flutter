@@ -2,7 +2,7 @@
 
 import 'package:mockito/mockito.dart';
 
-import '../entities/chat_session.dart';
+import '../entities/chat/chat_session.dart';
 import '../use_cases/chat_session_use_case.dart';
 
 class MockChatSessionUseCase extends Mock implements ChatSessionUseCase {

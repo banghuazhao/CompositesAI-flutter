@@ -1,7 +1,7 @@
-import 'package:domain/entities/thread_response.dart';
+import 'package:domain/entities/chat/chat_response.dart';
 import 'package:uuid/uuid.dart';
 
-class Message extends ThreadResponse {
+class Message extends ChatResponse {
   String id;
   final String role;
   bool? isLiked;

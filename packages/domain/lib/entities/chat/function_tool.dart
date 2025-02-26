@@ -1,13 +1,13 @@
-import 'package:domain/entities/thread_response.dart';
+import 'package:domain/entities/chat/chat_response.dart';
 
-class ThreadFunctionTool extends ThreadResponse {
+class FunctionTool extends ChatResponse {
   String callId;
   String runId;
   int index;
   String name;
   String arguments;
 
-  ThreadFunctionTool({
+  FunctionTool({
     required this.callId,
     required this.runId,
     required this.index,
@@ -16,8 +16,8 @@ class ThreadFunctionTool extends ThreadResponse {
   });
 
   // Optional: Add a factory constructor for creating from JSON
-  factory ThreadFunctionTool.fromJson(Map<String, dynamic> json) {
-    return ThreadFunctionTool(
+  factory FunctionTool.fromJson(Map<String, dynamic> json) {
+    return FunctionTool(
       callId: json['callId'],
       runId: json['runId'],
       index: json['index'],

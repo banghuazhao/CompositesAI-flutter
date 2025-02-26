@@ -1,4 +1,4 @@
-import '../entities/thread.dart';
+import '../entities/chat/thread.dart';
 
 abstract class ThreadsRepository {
   Future<Thread> createThread();

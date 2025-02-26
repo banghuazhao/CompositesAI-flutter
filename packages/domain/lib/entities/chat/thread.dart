@@ -1,6 +1,6 @@
-import 'package:domain/entities/thread_response.dart';
+import 'package:domain/entities/chat/chat_response.dart';
 
-class Thread extends ThreadResponse {
+class Thread extends ChatResponse {
   final String id;
   final String object;
   final int createdAt;

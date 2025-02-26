@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:domain/entities/thread_function_tool.dart';
-import 'package:domain/entities/thread_tool_output.dart';
+import 'package:domain/entities/chat/function_tool.dart';
+import 'package:domain/entities/chat/function_tool_output.dart';
 import 'package:domain/repositories_abstract/functional_call_repository.dart';
 import 'package:http/http.dart' as http;
 
@@ -10,7 +10,7 @@ import '../utils/api_constants.dart';
 
 class FunctionalCallRepositoryImpl implements FunctionalCallRepository {
   @override
-  Future<ThreadToolOutput> callFunctionTool(ThreadFunctionTool tool) async {
+  Future<FunctionToolOutput> callFunctionTool(FunctionTool tool) async {
     String functionToolEndPoint = tool.name.replaceAll("_", "-");
     print("tool.arguments: ${tool.arguments}");
     final request = http.Request(
@@ -26,7 +26,7 @@ class FunctionalCallRepositoryImpl implements FunctionalCallRepository {
     if (streamedResponse.statusCode == 200 ||
         streamedResponse.statusCode == 201) {
       print("responseBody: $responseBody");
-      return ThreadToolOutput(callId: tool.callId, output: responseBody);
+      return FunctionToolOutput(callId: tool.callId, output: responseBody);
     } else {
       throw HttpException(
         'Failed to call function tool $functionToolEndPoint.'

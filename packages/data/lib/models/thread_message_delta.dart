@@ -1,16 +1,16 @@
-class MessageDelta {
+class ThreadMessageDelta {
   final String id;
   final String object;
   final Delta delta;
 
-  MessageDelta({
+  ThreadMessageDelta({
     required this.id,
     required this.object,
     required this.delta,
   });
 
-  factory MessageDelta.fromJson(Map<String, dynamic> json) {
-    return MessageDelta(
+  factory ThreadMessageDelta.fromJson(Map<String, dynamic> json) {
+    return ThreadMessageDelta(
       id: json['id'],
       object: json['object'],
       delta: Delta.fromJson(json['delta']),

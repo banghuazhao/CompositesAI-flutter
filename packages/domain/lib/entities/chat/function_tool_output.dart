@@ -1,14 +1,14 @@
-class ThreadToolOutput {
+class FunctionToolOutput {
   final String callId;
   final String output;
 
-  ThreadToolOutput({
+  FunctionToolOutput({
     required this.callId,
     required this.output,
   });
 
-  factory ThreadToolOutput.fromJson(Map<String, dynamic> json) {
-    return ThreadToolOutput(
+  factory FunctionToolOutput.fromJson(Map<String, dynamic> json) {
+    return FunctionToolOutput(
       callId: json['tool_call_id'],
       output: json['output'],
     );

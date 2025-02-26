@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'package:domain/domain.dart';
-import 'package:domain/entities/thread_function_tool.dart';
+import 'package:domain/entities/chat/function_tool.dart';
 import 'package:domain/entities/tool_creation_requests.dart';
-import 'package:domain/entities/thread.dart';
-import 'package:domain/entities/thread_response.dart';
+import 'package:domain/entities/chat/thread.dart';
+import 'package:domain/entities/chat/chat_response.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/use_cases/auth_use_case.dart';
 import 'package:domain/use_cases/composites_tools_use_case.dart';
 import 'package:domain/use_cases/functional_call_use_case.dart';
-import 'package:domain/use_cases/messages_use_case.dart';
 import 'package:domain/use_cases/thread_runs_use_case.dart';
 import 'package:domain/use_cases/threads_use_case.dart';
 import 'package:domain/use_cases/user_use_case.dart';
@@ -35,7 +34,7 @@ class ChatViewModel extends ChangeNotifier {
   ChatSession? _selectedSession;
 
   List<Message> messages = [];
-  StreamController<ThreadResponse> threadResponseController =
+  StreamController<ChatResponse> threadResponseController =
       StreamController.broadcast();
 
   String? copyingMessageId;
@@ -57,7 +56,6 @@ class ChatViewModel extends ChangeNotifier {
     required ChatSessionUseCase chatSessionUseCase,
     required AuthUseCase authUseCase,
     required UserUseCase userUserCase,
-    required MessagesUseCase messagesUseCase,
     required ThreadsUseCase threadsUseCase,
     required ThreadRunsUseCase threadRunsUseCase,
     required CompositesToolsUseCase toolsUseCase,
@@ -166,7 +164,7 @@ class ChatViewModel extends ChangeNotifier {
     if (_selectedSession == null) return;
 
     // Choose the proper stream builder based on whether we are starting a new thread.
-    final Stream<ThreadResponse> Function() streamBuilder = messages.isEmpty
+    final Stream<ChatResponse> Function() streamBuilder = messages.isEmpty
         ? () => _threadRunsUseCase.createThreadAndRunStream(
             assistantId, message.content)
         : () {
@@ -183,9 +181,9 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> _processResponseStream(
-    Stream<ThreadResponse> Function() streamBuilder,
+    Stream<ChatResponse> Function() streamBuilder,
   ) async {
-    threadResponseController = StreamController<ThreadResponse>.broadcast();
+    threadResponseController = StreamController<ChatResponse>.broadcast();
     Message? finalMessage;
 
     try {
@@ -200,7 +198,7 @@ class ChatViewModel extends ChangeNotifier {
           scrollToBottom();
         } else if (response is Thread) {
           _selectedSession?.threadId = response.id;
-        } else if (response is ThreadFunctionTool) {
+        } else if (response is FunctionTool) {
           final threadToolOutput =
               await _functionalCallUseCase.callFunctionTool(response);
           streamBuilder() => _threadRunsUseCase.submitToolOutputsToRunStream(

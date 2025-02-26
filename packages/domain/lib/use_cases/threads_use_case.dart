@@ -1,4 +1,4 @@
-import '../entities/thread.dart';
+import '../entities/chat/thread.dart';
 import '../repositories_abstract/threads_repository.dart';
 
 abstract class ThreadsUseCase {

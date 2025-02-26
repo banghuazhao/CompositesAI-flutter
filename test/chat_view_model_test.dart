@@ -1,6 +1,5 @@
 import 'package:domain/entities/user.dart';
 import 'package:domain/mocks/auth_use_case_mock.dart';
-import 'package:domain/mocks/messages_use_case_mock.dart';
 import 'package:domain/mocks/thread_runs_use_case_mock.dart';
 import 'package:domain/mocks/threads_use_case_mock.dart';
 import 'package:domain/mocks/user_use_case_mock.dart';

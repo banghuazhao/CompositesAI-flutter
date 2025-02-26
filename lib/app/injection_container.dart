@@ -11,7 +11,6 @@ import 'package:data/repositories/auth_repository_impl.dart';
 import 'package:data/repositories/chat_session_repository_imp.dart';
 import 'package:data/repositories/user_repository_impl.dart';
 import 'package:data/repositories/threads_repository_impl.dart';
-import 'package:data/repositories/messages_repository_impl.dart';
 import 'package:data/repositories/thread_runs_repository_impl.dart';
 
 import 'package:domain/domain.dart';
@@ -21,14 +20,12 @@ import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:domain/repositories_abstract/user_repository.dart';
 import 'package:domain/repositories_abstract/thread_runs_repository.dart';
 import 'package:domain/repositories_abstract/threads_repository.dart';
-import 'package:domain/repositories_abstract/messages_repository.dart';
 
 import 'package:domain/use_cases/composites_tools_use_case.dart';
 import 'package:domain/use_cases/auth_use_case.dart';
 import 'package:domain/use_cases/composite_expert_use_case.dart';
 import 'package:domain/use_cases/threads_use_case.dart';
 import 'package:domain/use_cases/user_use_case.dart';
-import 'package:domain/use_cases/messages_use_case.dart';
 import 'package:domain/use_cases/thread_runs_use_case.dart';
 
 import 'package:infrastructure/api_environment.dart';
@@ -54,7 +51,6 @@ void initInjection() {
         chatSessionUseCase: sl(),
         authUseCase: sl(),
         userUserCase: sl(),
-        messagesUseCase: sl(),
         threadsUseCase: sl(),
         threadRunsUseCase: sl(),
         toolsUseCase: sl(),
@@ -87,8 +83,6 @@ void initInjection() {
       () => ThreadsUseCaseImpl(repository: sl()));
   sl.registerFactory<ThreadRunsUseCase>(
       () => ThreadRunsUseCaseImpl(threadRunsRepository: sl()));
-  sl.registerFactory<MessagesUseCase>(
-      () => MessagesUseCaseImpl(repository: sl()));
   sl.registerFactory<FunctionalCallUseCase>(
       () => FunctionalCallUseCaseImpl(repository: sl()));
 
@@ -106,8 +100,6 @@ void initInjection() {
   sl.registerFactory<ThreadsRepository>(
       () => ThreadsRepositoryImpl(client: sl()));
   sl.registerFactory<ThreadRunsRepository>(() => ThreadRunsRepositoryImpl());
-  sl.registerFactory<MessagesRepository>(
-      () => MessagesRepositoryImpl(client: sl()));
   sl.registerFactory<FunctionalCallRepository>(
       () => FunctionalCallRepositoryImpl());
 

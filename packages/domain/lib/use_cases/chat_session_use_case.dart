@@ -1,5 +1,5 @@
-import '../entities/chat_session.dart';
-import '../entities/message.dart';
+import '../entities/chat/chat_session.dart';
+import '../entities/chat/message.dart';
 import '../repositories_abstract/chat_session_repository.dart';
 
 abstract class ChatSessionUseCase {

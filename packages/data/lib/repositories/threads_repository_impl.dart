@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:domain/entities/thread.dart';
+import 'package:domain/entities/chat/thread.dart';
 import 'package:domain/repositories_abstract/threads_repository.dart';
 import 'package:http/http.dart' as http;
 

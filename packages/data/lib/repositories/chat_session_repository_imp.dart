@@ -1,4 +1,4 @@
-import 'package:domain/entities/chat_session.dart';
+import 'package:domain/entities/chat/chat_session.dart';
 import 'package:domain/repositories_abstract/chat_session_repository.dart';
 
 class ChatSessionRepositoryImpl implements ChatSessionRepository {

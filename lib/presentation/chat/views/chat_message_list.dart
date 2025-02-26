@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:domain/domain.dart';
-import 'package:domain/entities/thread_function_tool.dart';
-import 'package:domain/entities/thread_response.dart';
+import 'package:domain/entities/chat/chat_response.dart';
+import 'package:domain/entities/chat/function_tool.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -321,15 +321,15 @@ class _ChatMessageListState extends State<ChatMessageList> {
     );
   }
 
-  StreamBuilder<ThreadResponse> messageStream(ChatViewModel viewModel) {
-    return StreamBuilder<ThreadResponse>(
+  StreamBuilder<ChatResponse> messageStream(ChatViewModel viewModel) {
+    return StreamBuilder<ChatResponse>(
         stream: viewModel.threadResponseController.stream,
         builder: (context, snapshot) {
           return Align(alignment: Alignment.centerLeft, child: streamWidget(snapshot));
         });
   }
 
-  Widget streamWidget(AsyncSnapshot<ThreadResponse> snapshot) {
+  Widget streamWidget(AsyncSnapshot<ChatResponse> snapshot) {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return BeatingText(
         text: "●",
@@ -346,7 +346,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
       final threadResponse = snapshot.data!;
       if (threadResponse is Message) {
         return gptResponseWidget("${threadResponse.content} ●");
-      } else if (threadResponse is ThreadFunctionTool) {
+      } else if (threadResponse is FunctionTool) {
         return BlinkingText(
           text: "Calling Tools...",
           style: TextStyle(fontSize: 15.0), // Customize the style as needed

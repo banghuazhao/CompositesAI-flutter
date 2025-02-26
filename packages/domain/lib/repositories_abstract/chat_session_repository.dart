@@ -1,4 +1,4 @@
-import '../entities/chat_session.dart';
+import '../entities/chat/chat_session.dart';
 
 abstract class ChatSessionRepository {
   Future<List<ChatSession>> getAllSessions();  // Fetch sessions from a data source

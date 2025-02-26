@@ -3,7 +3,7 @@ import 'dart:html' as html;
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:domain/entities/message.dart';
+import 'package:domain/entities/chat/message.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
