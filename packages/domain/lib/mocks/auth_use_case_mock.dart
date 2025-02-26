@@ -1,7 +1,7 @@
 import 'package:mockito/mockito.dart';
 
 import '../entities/user.dart';
-import '../usecases/auth_usecase.dart';
+import '../use_cases/auth_use_case.dart';
 
 class MockAuthUseCase extends Mock implements AuthUseCase {
   @override

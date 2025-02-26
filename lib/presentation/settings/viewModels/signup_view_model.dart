@@ -2,7 +2,7 @@
 
 import 'package:domain/entities/user.dart';
 import 'package:flutter/material.dart';
-import 'package:domain/usecases/auth_usecase.dart';
+import 'package:domain/use_cases/auth_use_case.dart';
 
 class SignupViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;

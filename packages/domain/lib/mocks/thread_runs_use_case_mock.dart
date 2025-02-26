@@ -1,6 +1,6 @@
 import 'package:mockito/mockito.dart';
-import '../usecases/thread_runs_usecase.dart';
-import '../usecases/threads_usecase.dart';
+import '../use_cases/thread_runs_use_case.dart';
+import '../use_cases/threads_use_case.dart';
 
 class MockThreadRunsUseCase extends Mock implements ThreadRunsUseCase {
 

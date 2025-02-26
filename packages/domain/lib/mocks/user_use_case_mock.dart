@@ -1,7 +1,7 @@
 import 'package:mockito/mockito.dart';
 
 import '../entities/user.dart';
-import '../usecases/user_usercase.dart';
+import '../use_cases/user_use_case.dart';
 
 class MockUserUseCase extends Mock implements UserUseCase {
   @override

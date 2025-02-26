@@ -1,6 +1,6 @@
 import 'package:data/repositories/functional_call_repository_impl.dart';
 import 'package:domain/repositories_abstract/functional_call_repository.dart';
-import 'package:domain/usecases/functional_call_usecase.dart';
+import 'package:domain/use_cases/functional_call_use_case.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 
@@ -23,13 +23,13 @@ import 'package:domain/repositories_abstract/thread_runs_repository.dart';
 import 'package:domain/repositories_abstract/threads_repository.dart';
 import 'package:domain/repositories_abstract/messages_repository.dart';
 
-import 'package:domain/usecases/composites_tools_usecase.dart';
-import 'package:domain/usecases/auth_usecase.dart';
-import 'package:domain/usecases/composite_expert_usecase.dart';
-import 'package:domain/usecases/threads_usecase.dart';
-import 'package:domain/usecases/user_usercase.dart';
-import 'package:domain/usecases/messages_usecase.dart';
-import 'package:domain/usecases/thread_runs_usecase.dart';
+import 'package:domain/use_cases/composites_tools_use_case.dart';
+import 'package:domain/use_cases/auth_use_case.dart';
+import 'package:domain/use_cases/composite_expert_use_case.dart';
+import 'package:domain/use_cases/threads_use_case.dart';
+import 'package:domain/use_cases/user_use_case.dart';
+import 'package:domain/use_cases/messages_use_case.dart';
+import 'package:domain/use_cases/thread_runs_use_case.dart';
 
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/apple_sign_in_service.dart';

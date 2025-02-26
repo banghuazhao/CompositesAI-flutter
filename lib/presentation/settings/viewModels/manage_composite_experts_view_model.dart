@@ -1,8 +1,8 @@
 
 import 'package:domain/entities/composite_expert_request.dart';
 import 'package:domain/entities/user.dart';
-import 'package:domain/usecases/composite_expert_usecase.dart';
-import 'package:domain/usecases/user_usercase.dart';
+import 'package:domain/use_cases/composite_expert_use_case.dart';
+import 'package:domain/use_cases/user_use_case.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 

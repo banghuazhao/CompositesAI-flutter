@@ -1,4 +1,4 @@
-import 'package:domain/mocks/auth_usecase_mock.dart';
+import 'package:domain/mocks/auth_use_case_mock.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infrastructure/google_sign_in_service.dart';

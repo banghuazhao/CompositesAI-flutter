@@ -1,6 +1,6 @@
 // lib/presentation/viewmodels/feature_flag_view_model.dart
 
-import 'package:domain/usecases/auth_usecase.dart';
+import 'package:domain/use_cases/auth_use_case.dart';
 import 'package:flutter/material.dart';
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/feature_flag_provider.dart';

@@ -3,7 +3,7 @@
 import 'package:mockito/mockito.dart';
 
 import '../entities/chat_session.dart';
-import '../usecases/chat_session_usecase.dart';
+import '../use_cases/chat_session_use_case.dart';
 
 class MockChatSessionUseCase extends Mock implements ChatSessionUseCase {
   @override

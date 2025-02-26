@@ -1,4 +1,4 @@
-// lib/domain/usecases/signup_usecase.dart
+// lib/domain/use_cases/signup_use_case.dart
 
 
 import 'package:infrastructure/token_provider.dart';
