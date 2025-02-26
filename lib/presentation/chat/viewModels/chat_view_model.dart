@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:domain/domain.dart';
 import 'package:domain/entities/chat/function_tool.dart';
 import 'package:domain/entities/tool_creation_requests.dart';
@@ -288,5 +289,15 @@ class ChatViewModel extends ChangeNotifier {
   void toggleMessageLikeStatus(Message message, bool isLiked) {
     message.isLiked = isLiked;
     notifyListeners();
+  }
+
+  double getChatContentWidth(double screenWidth) {
+    final double width;
+    if (screenWidth > 800) {
+      width = screenWidth * 0.7;
+    } else {
+      width = min(560, max(screenWidth * 0.7, screenWidth - 40));
+    }
+    return width;
   }
 }

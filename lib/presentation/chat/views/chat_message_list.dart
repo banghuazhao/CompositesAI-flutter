@@ -40,24 +40,34 @@ class _ChatMessageListState extends State<ChatMessageList> {
 
     final messages = chatViewModel.messages;
 
-    return Column(
+    if (messages.isEmpty) {
+      return defaultQuestionView(chatViewModel);
+    }
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double width = chatViewModel.getChatContentWidth(screenWidth);
+    final horizontalPadding = screenWidth - width;
+
+    return Stack(
       children: [
-        Expanded(
-          child: messages.isEmpty
-              ? defaultQuestionView(chatViewModel)
-              : ListView.separated(
-                  controller: chatViewModel.scrollController,
-                  padding: EdgeInsets.fromLTRB(20, 10, 10, 15),
-                  itemCount: chatList(context, chatViewModel).length,
-                  itemBuilder: (context, index) {
-                    return chatList(context, chatViewModel)[index];
-                  },
-                  separatorBuilder: (context, index) {
-                    return SizedBox(height: 5);
-                  },
-                ),
+        ListView.separated(
+          controller: chatViewModel.scrollController,
+          padding: EdgeInsets.fromLTRB(
+              horizontalPadding / 2, 20, horizontalPadding / 2, 20 + 100),
+          itemCount: chatList(context, chatViewModel).length,
+          itemBuilder: (context, index) {
+            return chatList(context, chatViewModel)[index];
+          },
+          separatorBuilder: (context, index) {
+            return SizedBox(height: 5);
+          },
         ),
-        if (messages.isNotEmpty || !kIsWeb) inputBar(chatViewModel)
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: inputBar(chatViewModel),
+        ),
       ],
     );
   }
@@ -122,7 +132,9 @@ class _ChatMessageListState extends State<ChatMessageList> {
             // Center the grid
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: 800, // Adjust as needed to keep it centered
+                maxWidth: viewModel.getChatContentWidth(MediaQuery.of(context)
+                    .size
+                    .width), // Adjust as needed to keep it centered
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -138,13 +150,14 @@ class _ChatMessageListState extends State<ChatMessageList> {
                       mainAxisSpacing: 12.0,
                     ),
                     itemCount: viewModel.defaultQuestions.length,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     itemBuilder: (context, index) {
                       return InkWell(
                         onTap: () async {
                           await viewModel.onDefaultQuestionsTapped(index);
                         },
-                        child: _buildDefaultQuestionCard(viewModel.defaultQuestions[index]),
+                        child: _buildDefaultQuestionCard(
+                            viewModel.defaultQuestions[index]),
                       );
                     },
                   );
@@ -325,7 +338,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
     return StreamBuilder<ChatResponse>(
         stream: viewModel.threadResponseController.stream,
         builder: (context, snapshot) {
-          return Align(alignment: Alignment.centerLeft, child: streamWidget(snapshot));
+          return Align(
+              alignment: Alignment.centerLeft, child: streamWidget(snapshot));
         });
   }
 
@@ -363,10 +377,12 @@ class _ChatMessageListState extends State<ChatMessageList> {
   }
 
   Widget inputBar(ChatViewModel viewModel) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double inputBarWidth = viewModel.getChatContentWidth(screenWidth);
     return Column(
       children: [
         Container(
-          width: MediaQuery.of(context).size.width * 0.70,
+          width: inputBarWidth,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24.0),
@@ -386,8 +402,10 @@ class _ChatMessageListState extends State<ChatMessageList> {
                 child: KeyboardListener(
                   focusNode: FocusNode(),
                   onKeyEvent: (KeyEvent event) {
-                    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
-                      final isShiftPressed = HardwareKeyboard.instance.logicalKeysPressed
+                    if (event is KeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.enter) {
+                      final isShiftPressed = HardwareKeyboard
+                              .instance.logicalKeysPressed
                               .contains(LogicalKeyboardKey.shiftLeft) ||
                           HardwareKeyboard.instance.logicalKeysPressed
                               .contains(LogicalKeyboardKey.shiftRight);
@@ -475,7 +493,8 @@ Widget _buildDefaultQuestionCard(String question) {
           child: Text(
             question,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.black), // Smaller font size
+            style: TextStyle(fontSize: 14, color: Colors.black),
+            // Smaller font size
             maxLines: 3,
             overflow: TextOverflow.ellipsis, // Prevents overflow
           ),
