@@ -5,7 +5,6 @@ class Message extends ThreadResponse {
   String id;
   final String role;
   bool? isLiked;
-  bool? isDisliked;
   String content;
   List<ToolCalls>? toolCalls;
   String? tool_call_id;
@@ -14,7 +13,6 @@ class Message extends ThreadResponse {
       {this.id = '',
       required this.role,
       this.isLiked,
-      this.isDisliked,
       this.content = '',
       this.toolCalls,
       this.tool_call_id});
@@ -23,7 +21,6 @@ class Message extends ThreadResponse {
       : id = json['id'] ?? '',
         role = json['role'] ?? 'user',
         isLiked = json['isLiked'],
-        isDisliked = json['isDisliked'],
         content = json['content'] ?? '' {
     if (json['tool_calls'] != null) {
       toolCalls = <ToolCalls>[];

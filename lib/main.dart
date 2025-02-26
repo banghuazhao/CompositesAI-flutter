@@ -86,7 +86,7 @@ class _MyAppState extends State<MyApp> {
                 color: Color.fromRGBO(51, 66, 78, 1),
                 iconTheme: IconThemeData(color: Colors.white),
                 titleTextStyle: TextStyle(color: Colors.white, fontSize: 20)),
-            scaffoldBackgroundColor: const Color.fromRGBO(239, 239, 244, 1),
+            scaffoldBackgroundColor: Colors.grey.shade100,
             textTheme: const TextTheme(),
           ),
           home: const BottomNavigator(),

@@ -292,15 +292,11 @@ class ChatViewModel extends ChangeNotifier {
 
 
 
-  void toggleMessageLike(Message message) {
-    message.isLiked = true;
+  void toggleMessageLikeStatus(Message message, bool isLiked) {
+    message.isLiked = isLiked;
     notifyListeners();
   }
 
-  void toggleMessageDislike(Message message) {
-    message.isDisliked = true;
-    notifyListeners();
-  }
 }
 
 // Extension on the Message class
