@@ -12,6 +12,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:provider/provider.dart';
 import 'package:ui_components/beating_text.dart';
 import 'package:ui_components/blinking_text.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../viewModels/chat_view_model.dart';
 
@@ -279,19 +280,15 @@ class _ChatMessageListState extends State<ChatMessageList> {
   Widget gptResponseWidget(String originalResponse) {
     RegExp citationRegExp = RegExp(r'【.*?】');
     String cleanText = originalResponse.replaceAll(citationRegExp, '');
-    final lines = cleanText.split('\n\n');
+    String cleanTextWithImage = cleanText.replaceAll('![', '![280x280 ');
+    final lines = cleanTextWithImage.split('\n\n');
     final responseLines = lines
         .map((line) => SelectionArea(
                 child: GptMarkdown(
               line,
               style: const TextStyle(fontSize: 15, color: Colors.black),
-              linkBuilder: (context, label, path, style) {
-                return Text(
-                  label,
-                  style: style.copyWith(
-                    color: Colors.blue,
-                  ),
-                );
+              onLinkTab: (String url, String title) {
+                launchUrl(Uri.parse(url));
               },
             )))
         .toList();
