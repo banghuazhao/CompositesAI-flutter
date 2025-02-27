@@ -315,8 +315,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
   Widget gptResponseWidget(String originalResponse) {
     RegExp citationRegExp = RegExp(r'【.*?】');
     String cleanText = originalResponse.replaceAll(citationRegExp, '');
-    String cleanTextWithImage = cleanText.replaceAll('![', '![280x280 ');
-    final lines = cleanTextWithImage.split('\n\n');
+    // String cleanTextWithImage = cleanText.replaceAll('![', '![280x280 ');
+    final lines = cleanText.split('\n\n');
     final responseLines = lines
         .map((line) => SelectionArea(
                 child: GptMarkdown(
