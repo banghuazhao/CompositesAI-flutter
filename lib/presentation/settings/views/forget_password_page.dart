@@ -48,7 +48,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text("Reset Password"),
-          backgroundColor: Color(0xFF33424E),
+          backgroundColor: Color.fromRGBO(66, 66, 66, 1.0),
         ),
         body: Consumer<ForgetPasswordViewModel>(//widget listens to changes in the ForgetPasswordViewModel
           builder: (context, viewModel, child) {
@@ -256,8 +256,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           },
                           height: 45,
                           minWidth: double.infinity,
-                          color: isEmailValid ? Color(0xFF33424E) : Color(0xFF8C9699),
-                          disabledColor: Color(0xFF8C9699),
+                          color: isEmailValid ? Color.fromRGBO(66, 66, 66, 1.0) : Color.fromRGBO(180, 180, 180, 1),
+                          disabledColor: Color.fromRGBO(180, 180, 180, 1),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           ),

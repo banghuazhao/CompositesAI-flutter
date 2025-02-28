@@ -29,7 +29,7 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
         return Scaffold(
           appBar: AppBar(
             title: const Text("Composites Tools"),
-            backgroundColor: Color.fromRGBO(51, 66, 78, 1),
+            backgroundColor: Colors.grey.shade800,
             centerTitle: true,
             actions: [
               Padding(
@@ -41,10 +41,10 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
                     _handleCreate(viewModel);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Colors.white,
                     elevation: 4, // Default elevation
                   ).copyWith(
-                    overlayColor: MaterialStateProperty.all(Colors.teal.shade300), // Hover background color
+                    overlayColor: MaterialStateProperty.all(Colors.grey.shade300), // Hover background color
                     elevation: MaterialStateProperty.resolveWith<double>(
                           (states) {
                         if (states.contains(MaterialState.hovered)) {
@@ -58,8 +58,7 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
                     "Create",
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),
                   ),
                 ),

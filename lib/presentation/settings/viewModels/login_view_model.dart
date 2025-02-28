@@ -1,10 +1,10 @@
 // lib/presentation/viewmodels/login_view_model.dart
 
 import 'dart:async';
+import 'package:domain/use_cases/auth_use_case.dart';
 import 'package:web/web.dart' as web;
 
 import 'package:flutter/foundation.dart';
-import 'package:domain/use_cases/auth_use_case.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:infrastructure/apple_sign_in_service.dart';
 import 'package:infrastructure/google_sign_in_service.dart';

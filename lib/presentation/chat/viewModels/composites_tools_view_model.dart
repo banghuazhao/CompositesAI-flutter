@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:domain/entities/tool_creation_requests.dart';
 import 'package:domain/entities/user.dart';
+import 'package:domain/use_cases/composites_tools_use_case.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:domain/use_cases/composites_tools_use_case.dart';
 import 'dart:io';

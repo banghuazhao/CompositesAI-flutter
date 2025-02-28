@@ -61,7 +61,7 @@ class _BottomNavigatorState extends State<BottomNavigator> {
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
-              backgroundColor: Color.fromRGBO(51, 66, 78, 1),
+              backgroundColor: Colors.grey.shade800,
               showSelectedLabels: true,
               showUnselectedLabels: true,
               selectedItemColor: _activeColor,

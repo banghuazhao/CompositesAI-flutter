@@ -15,7 +15,7 @@ class ChatDrawer extends StatelessWidget {
         children: <Widget>[
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Color.fromRGBO(51, 66, 78, 1),
+              color: Colors.grey.shade800,
             ),
             child: Text(
               'Chat Sessions',

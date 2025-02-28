@@ -61,7 +61,7 @@ class _CompositesToolsState extends State<CompositesTools> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Composites Tools"),
-        backgroundColor: const Color.fromRGBO(51, 66, 78, 1),
+        backgroundColor: const Color.fromRGBO(66, 66, 66, 1.0),
         actions: [
           Consumer<ChatViewModel>(
             builder: (context, viewModel, _) {
@@ -108,12 +108,12 @@ class _CompositesToolsState extends State<CompositesTools> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: Colors.white,
                       elevation: 4,
                     ),
                     child: const Text(
                       '+ Contribute',
-                      style: TextStyle(fontSize: 14, color: Colors.white),
+                      style: TextStyle(fontSize: 14, color: Colors.black),
                     ),
                   ),
                   const SizedBox(width: 14),

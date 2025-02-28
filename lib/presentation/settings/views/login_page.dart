@@ -345,7 +345,7 @@ class _LoginPageState extends State<LoginPage> {
                               minWidth: double.infinity,
                               height: 45,
                               color: isButtonEnabled
-                                  ? const Color.fromRGBO(51, 66, 78, 1)
+                                  ? const Color.fromRGBO(66, 66, 66, 1.0)
                                   : const Color.fromRGBO(180, 180, 180, 1),
                               disabledColor: const Color.fromRGBO(140, 150, 153, 1),
                               shape: RoundedRectangleBorder(
@@ -491,7 +491,7 @@ class _LoginPageState extends State<LoginPage> {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
         decoration: BoxDecoration(
           color: Colors.white, // Button background color
-          borderRadius: BorderRadius.circular(6), // Rounded corners
+          borderRadius: BorderRadius.circular(10), // Rounded corners
           border: Border.all(color: Colors.grey.shade300, width: 1), // Border color and width
         ),
         child: Row(

@@ -20,7 +20,7 @@ class UserProfilePage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text("User Profile"),
-          backgroundColor: Color(0xFF33424E),
+          backgroundColor: Colors.grey.shade800,
           elevation: 4.0,
         ),
         body: Consumer<UserProfileViewModel>(//The page accesses the ViewModel through a Consumer
@@ -126,14 +126,16 @@ class UserProfilePage extends StatelessWidget {
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(MediaQuery.of(context).size.width * 0.5, 50),
-                      backgroundColor: Colors.blueGrey,
+                      backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 6, // Controls the shadow strength
+                      shadowColor: Colors.black.withOpacity(0.5),
                     ),
                     child: Text(
                       "Change Name",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      style: TextStyle(fontSize: 16, color: Colors.black,fontWeight: FontWeight.w500,),
                     ),
                   ),
                   SizedBox(height: 16),
@@ -152,14 +154,16 @@ class UserProfilePage extends StatelessWidget {
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(MediaQuery.of(context).size.width * 0.5, 50),
-                      backgroundColor: Colors.blueGrey,
+                      backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 6, // Controls the shadow strength
+                      shadowColor: Colors.black.withOpacity(0.5),
                     ),
                     child: Text(
                       "Update Password",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      style: TextStyle(fontSize: 16, color: Colors.black,fontWeight: FontWeight.w500,),
                     ),
                   ),
                   SizedBox(height: 16),
@@ -171,14 +175,16 @@ class UserProfilePage extends StatelessWidget {
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(MediaQuery.of(context).size.width * 0.5, 50),
-                      backgroundColor: Colors.orangeAccent,
+                      backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 6, // Controls the shadow strength
+                      shadowColor: Colors.black.withOpacity(0.5),
                     ),
                     child: Text(
                       "Logout",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      style: TextStyle(fontSize: 16, color: Colors.black,fontWeight: FontWeight.w500,),
                     ),
                   ),
                   SizedBox(height: 16),
@@ -186,14 +192,16 @@ class UserProfilePage extends StatelessWidget {
                     onPressed: () => _confirmDeleteUser(context, viewModel),
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(MediaQuery.of(context).size.width * 0.5, 50),
-                      backgroundColor: Colors.redAccent,
+                      backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 6, // Controls the shadow strength
+                      shadowColor: Colors.black.withOpacity(0.5),
                     ),
                     child: Text(
                       "Delete Account",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500,),
                     ),
                   ),
                 ],

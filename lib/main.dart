@@ -78,12 +78,12 @@ class _MyAppState extends State<MyApp> {
           title: 'Composites AI',
           theme: ThemeData(
             colorScheme: const ColorScheme.light(
-              primary: Color.fromRGBO(51, 66, 78, 1),
-              secondary: Color.fromRGBO(51, 66, 78, 1),
+              primary: Color.fromRGBO(66, 66, 66, 1.0),
+              secondary: Color.fromRGBO(66, 66, 66, 1.0),
               onSecondary: Colors.white,
             ),
             appBarTheme: AppBarTheme(
-                color: Color.fromRGBO(51, 66, 78, 1),
+                color: Colors.grey.shade800,
                 iconTheme: IconThemeData(color: Colors.white),
                 titleTextStyle: TextStyle(color: Colors.white, fontSize: 20)),
             scaffoldBackgroundColor: Colors.grey.shade100,

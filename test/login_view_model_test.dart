@@ -1,12 +1,10 @@
 import 'package:domain/mocks/auth_use_case_mock.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:infrastructure/mocks/apple_sign_in_service_mock.dart';
 import 'package:mockito/mockito.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:infrastructure/mocks/google_sign_in_service_mock.dart';
 
 void main() {

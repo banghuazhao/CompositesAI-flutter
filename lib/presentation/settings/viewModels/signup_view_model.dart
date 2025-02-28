@@ -1,8 +1,9 @@
 // lib/presentation/viewmodels/signup_view_model.dart
 
 import 'package:domain/entities/user.dart';
-import 'package:flutter/material.dart';
 import 'package:domain/use_cases/auth_use_case.dart';
+import 'package:flutter/material.dart';
+
 
 class SignupViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
