@@ -290,14 +290,4 @@ class ChatViewModel extends ChangeNotifier {
     message.isLiked = isLiked;
     notifyListeners();
   }
-
-  double getChatContentWidth(double screenWidth) {
-    final double width;
-    if (screenWidth > 800) {
-      width = screenWidth * 0.7;
-    } else {
-      width = min(560, max(screenWidth * 0.7, screenWidth - 40));
-    }
-    return width;
-  }
 }

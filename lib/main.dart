@@ -7,9 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:infrastructure/feature_flag_provider.dart';
-import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
+import 'package:swiftcomp/util/app_colors.dart';
 import 'package:swiftcomp/util/others.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
@@ -77,16 +77,16 @@ class _MyAppState extends State<MyApp> {
           },
           title: 'Composites AI',
           theme: ThemeData(
-            colorScheme: const ColorScheme.light(
-              primary: Color.fromRGBO(66, 66, 66, 1.0),
-              secondary: Color.fromRGBO(66, 66, 66, 1.0),
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              secondary: AppColors.secondary,
               onSecondary: Colors.white,
             ),
             appBarTheme: AppBarTheme(
-                color: Colors.grey.shade800,
+                color: AppColors.primary,
                 iconTheme: IconThemeData(color: Colors.white),
                 titleTextStyle: TextStyle(color: Colors.white, fontSize: 20)),
-            scaffoldBackgroundColor: Colors.grey.shade100,
+            scaffoldBackgroundColor: AppColors.background,
             textTheme: const TextTheme(),
           ),
           home: const BottomNavigator(),

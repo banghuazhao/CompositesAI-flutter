@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:provider/provider.dart';
+import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import 'package:ui_components/beating_text.dart';
 import 'package:ui_components/blinking_text.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -44,16 +45,15 @@ class _ChatMessageListState extends State<ChatMessageList> {
       return defaultQuestionView(chatViewModel);
     }
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final double width = chatViewModel.getChatContentWidth(screenWidth);
-    final horizontalPadding = screenWidth - width;
-
     return Stack(
       children: [
         ListView.separated(
           controller: chatViewModel.scrollController,
           padding: EdgeInsets.fromLTRB(
-              horizontalPadding / 2, 20, horizontalPadding / 2, 20 + 100),
+              context.horizontalSidePaddingForContentWidth,
+              20,
+              context.horizontalSidePaddingForContentWidth,
+              20 + 100),
           itemCount: chatList(context, chatViewModel).length,
           itemBuilder: (context, index) {
             return chatList(context, chatViewModel)[index];
@@ -132,9 +132,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
             // Center the grid
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: viewModel.getChatContentWidth(MediaQuery.of(context)
-                    .size
-                    .width), // Adjust as needed to keep it centered
+                maxWidth: context.contentWidth, // Adjust as needed to keep it centered
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -165,7 +163,6 @@ class _ChatMessageListState extends State<ChatMessageList> {
               ),
             ),
           ),
-
           const SizedBox(height: 30),
         ],
       ),
@@ -315,23 +312,15 @@ class _ChatMessageListState extends State<ChatMessageList> {
   Widget gptResponseWidget(String originalResponse) {
     RegExp citationRegExp = RegExp(r'【.*?】');
     String cleanText = originalResponse.replaceAll(citationRegExp, '');
-    // String cleanTextWithImage = cleanText.replaceAll('![', '![280x280 ');
-    final lines = cleanText.split('\n\n');
-    final responseLines = lines
-        .map((line) => SelectionArea(
-                child: GptMarkdown(
-              line,
-              style: const TextStyle(fontSize: 15, color: Colors.black),
-              onLinkTab: (String url, String title) {
-                launchUrl(Uri.parse(url));
-              },
-            )))
-        .toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 10,
-      children: responseLines,
-    );
+    String finalText = cleanText.replaceAll('\n\n', '\n');
+    return SelectionArea(
+        child: GptMarkdown(
+      finalText,
+      style: const TextStyle(fontSize: 15, color: Colors.black),
+      onLinkTab: (String url, String title) {
+        launchUrl(Uri.parse(url));
+      },
+    ));
   }
 
   StreamBuilder<ChatResponse> messageStream(ChatViewModel viewModel) {
@@ -377,12 +366,10 @@ class _ChatMessageListState extends State<ChatMessageList> {
   }
 
   Widget inputBar(ChatViewModel viewModel) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final double inputBarWidth = viewModel.getChatContentWidth(screenWidth);
     return Column(
       children: [
         Container(
-          width: inputBarWidth,
+          width: context.contentWidth,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24.0),

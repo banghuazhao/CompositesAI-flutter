@@ -5,6 +5,7 @@ import 'package:swiftcomp/presentation/tools/model/tool_model.dart';
 import 'package:swiftcomp/presentation/tools/page/UDFRC_rules_of_mixture_page.dart';
 import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_page.dart';
 import 'package:swiftcomp/presentation/tools/model/DescriptionModels.dart';
+import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import 'lamina_engineering_constants_page.dart';
 import 'laminate_3d_properties_page.dart';
@@ -89,12 +90,14 @@ class _ToolPageState extends State<ToolPage>
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-        appBar: AppBar(
-          title: const Text("Tools")
-        ),
+        appBar: AppBar(title: const Text("Tools")),
         body: SafeArea(
             child: StaggeredGridView.countBuilder(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                padding: EdgeInsets.fromLTRB(
+                    context.horizontalSidePaddingForContentWidth,
+                    20,
+                    context.horizontalSidePaddingForContentWidth,
+                    100),
                 crossAxisCount: 8,
                 itemCount: _tools.length,
                 staggeredTileBuilder: (int index) => StaggeredTile.fit(

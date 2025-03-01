@@ -6,6 +6,7 @@ import 'package:flutter_progress_hud/flutter_progress_hud.dart';
 import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
 import 'package:swiftcomp/presentation/settings/views/tool_creation_request.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
+import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import '../../../app/injection_container.dart';
 import '../../chat/viewModels/composites_tools_view_model.dart';
 import '../viewModels/manage_composite_experts_view_model.dart';
@@ -51,12 +52,14 @@ class _SettingsPageState extends State<SettingsPage> {
           body: ProgressHUD(
             child: Builder(
               builder: (context) => ListView(
+                padding: EdgeInsets.symmetric(horizontal: context.horizontalSidePaddingForContentWidth),
                 children: [
                   if (!viewModel.isLoggedIn)
                     viewModel.isLoading
                         ? Container(
                             margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                            child: Center(child: const CircularProgressIndicator()),
+                            child: Center(
+                                child: const CircularProgressIndicator()),
                           )
                         : MoreRow(
                             title: "Login",
@@ -84,10 +87,13 @@ class _SettingsPageState extends State<SettingsPage> {
                                 child: CachedNetworkImage(
                                   imageUrl: viewModel.user!.avatarUrl!,
                                   placeholder: (context, url) =>
-                                      const CircularProgressIndicator(strokeWidth: 2),
+                                      const CircularProgressIndicator(
+                                          strokeWidth: 2),
                                   errorWidget: (context, url, error) {
-                                    debugPrint('Error loading image: $url, Error: $error');
-                                    return const Icon(Icons.error, color: Colors.red);
+                                    debugPrint(
+                                        'Error loading image: $url, Error: $error');
+                                    return const Icon(Icons.error,
+                                        color: Colors.red);
                                   },
                                   fit: BoxFit.cover,
                                 ),
@@ -123,13 +129,16 @@ class _SettingsPageState extends State<SettingsPage> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => UserProfilePage(user: viewModel.user),
+                            builder: (context) =>
+                                UserProfilePage(user: viewModel.user),
                           ),
                         );
                         await _fetchAuthSession();
                       },
                     ),
-                  if (viewModel.isLoggedIn && viewModel.isAdmin && viewModel.user != null)
+                  if (viewModel.isLoggedIn &&
+                      viewModel.isAdmin &&
+                      viewModel.user != null)
                     MoreRow(
                       leadingIcon: Icons.construction_rounded,
                       title: "Manage Expert Application",
@@ -147,7 +156,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         );
                       },
                     ),
-                  if (viewModel.isLoggedIn && viewModel.isAdmin && viewModel.user != null)
+                  if (viewModel.isLoggedIn &&
+                      viewModel.isAdmin &&
+                      viewModel.user != null)
                     MoreRow(
                       leadingIcon: Icons.add_chart_outlined,
                       title: "Manage Tool Creation Request",
@@ -183,7 +194,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     leadingIcon: Icons.settings_rounded,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ToolSettingPage()),
+                      MaterialPageRoute(
+                          builder: (context) => ToolSettingPage()),
                     ),
                   ),
                   MoreRow(
@@ -209,13 +221,14 @@ class _SettingsPageState extends State<SettingsPage> {
                       () async {
                         await Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => QASettingsPage()),
+                          MaterialPageRoute(
+                              builder: (context) => QASettingsPage()),
                         );
                         viewModel.fetchAuthSessionNew();
                       },
                     ),
                     child: Container(
-                      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                       child: Text("Version ${viewModel.version}"),
                     ),
                   ),
@@ -235,7 +248,7 @@ class MoreRow extends StatelessWidget {
   final String title;
   final void Function() onTap;
 
-  MoreRow(
+  const MoreRow(
       {Key? key,
       this.trailingIcon = Icons.chevron_right_rounded,
       required this.leadingIcon,
@@ -246,7 +259,7 @@ class MoreRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      margin: const EdgeInsets.fromLTRB(0, 16, 0, 0),
       child: Ink(
         decoration: const BoxDecoration(
           color: Colors.white,
