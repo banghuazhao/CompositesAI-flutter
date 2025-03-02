@@ -5,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/feature_flag_provider.dart';
 
+import '../../../util/chat_limiter.dart';
+
 class QASettingsViewModel extends ChangeNotifier {
   final FeatureFlagProvider featureFlagProvider;
   final APIEnvironment apiEnvironment;
   final AuthUseCase authUseCase;
+  final ChatLimiter chatLimiter = ChatLimiter();
 
   String? currentEnvironment;
+  int dailyChatCount = 0;
   bool isLoading = false;
 
   QASettingsViewModel(
@@ -18,6 +22,7 @@ class QASettingsViewModel extends ChangeNotifier {
       required this.apiEnvironment,
       required this.authUseCase}) {
     _loadCurrentEnvironment();
+    _loadDailyChatCount();
   }
 
   Map<String, bool> get featureFlags => featureFlagProvider.allFeatureFlags();
@@ -49,5 +54,15 @@ class QASettingsViewModel extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> resetDailyChatCount() async {
+    await chatLimiter.resetDailyChatCount();
+    _loadDailyChatCount();
+  }
+
+  Future<void> _loadDailyChatCount() async {
+    dailyChatCount = await chatLimiter.getChatCount();
+    notifyListeners();
   }
 }

@@ -1,5 +1,6 @@
 // lib/presentation/pages/settings_page.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_progress_hud/flutter_progress_hud.dart';
@@ -52,7 +53,8 @@ class _SettingsPageState extends State<SettingsPage> {
           body: ProgressHUD(
             child: Builder(
               builder: (context) => ListView(
-                padding: EdgeInsets.symmetric(horizontal: context.horizontalSidePaddingForContentWidth),
+                padding: EdgeInsets.symmetric(
+                    horizontal: context.horizontalSidePaddingForContentWidth),
                 children: [
                   if (!viewModel.isLoggedIn)
                     viewModel.isLoading
@@ -203,18 +205,28 @@ class _SettingsPageState extends State<SettingsPage> {
                     leadingIcon: Icons.chat_rounded,
                     onTap: viewModel.openFeedback,
                   ),
+                  if (!kIsWeb)
+                    MoreRow(
+                      title: "Rate this App",
+                      leadingIcon: Icons.thumb_up_rounded,
+                      onTap: () {
+                        print("Rate App button tapped");
+                        viewModel.rateApp();
+                      },
+                    ),
                   MoreRow(
-                    title: "Rate this App",
-                    leadingIcon: Icons.thumb_up_rounded,
-                    onTap: () {
-                      print("Rate App button tapped");
-                      viewModel.rateApp();
-                    },
-                  ),
-                  MoreRow(
-                    title: "Share this App",
+                    title: kIsWeb ? "Share this Website" : "Share this App",
                     leadingIcon: Icons.share_rounded,
-                    onTap: () => viewModel.shareApp(context),
+                    onTap: () {
+                      viewModel.shareApp(context);
+                      if (kIsWeb) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(const SnackBar(
+                            content: Text(
+                                'https://compositesai.com copied to Clipboard')));
+                      }
+                    },
                   ),
                   GestureDetector(
                     onTap: () => viewModel.handleTap(

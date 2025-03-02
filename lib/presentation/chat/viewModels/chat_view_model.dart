@@ -14,7 +14,10 @@ import 'package:domain/use_cases/threads_use_case.dart';
 import 'package:domain/use_cases/user_use_case.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../../../util/chat_limiter.dart';
 
 class ChatViewModel extends ChangeNotifier {
   final ChatSessionUseCase _chatSessionUseCase;
@@ -40,6 +43,8 @@ class ChatViewModel extends ChangeNotifier {
 
   String? copyingMessageId;
   List<Message> selectedMessages = [];
+
+  final ChatLimiter _chatLimiter = ChatLimiter();
 
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
 
@@ -160,11 +165,14 @@ class ChatViewModel extends ChangeNotifier {
     scrollToBottom();
   }
 
+  Future<bool> reachChatLimit() async {
+    return _chatLimiter.reachChatLimit();
+  }
+
   Future<void> sendInputMessage(String text) async {
     final message = Message(role: 'user', content: text);
     if (_selectedSession == null) return;
 
-    // Choose the proper stream builder based on whether we are starting a new thread.
     final Stream<ChatResponse> Function() streamBuilder = messages.isEmpty
         ? () => _threadRunsUseCase.createThreadAndRunStream(
             assistantId, message.content)
@@ -215,7 +223,8 @@ class ChatViewModel extends ChangeNotifier {
     } finally {
       await threadResponseController.close();
       if (finalMessage != null) {
-        print(finalMessage.content);
+        // print(finalMessage.content);
+        await _chatLimiter.incrementChatCount();
         messages.add(finalMessage);
         saveSession();
       }
@@ -225,14 +234,6 @@ class ChatViewModel extends ChangeNotifier {
 
   void saveSession() {
     _selectedSession?.messages = [...messages];
-  }
-
-  bool isUserMessage(Message message) {
-    return message.role == 'user';
-  }
-
-  bool isAssistantMessage(Message message) {
-    return message.role == 'assistant';
   }
 
   Future<void> onDefaultQuestionsTapped(int index) async {
@@ -280,10 +281,6 @@ class ChatViewModel extends ChangeNotifier {
 
   bool isMessageSelected(Message message) {
     return selectedMessages.contains(message);
-  }
-
-  bool? isMessageLiked(Message message) {
-    return message.isLiked;
   }
 
   void toggleMessageLikeStatus(Message message, bool isLiked) {

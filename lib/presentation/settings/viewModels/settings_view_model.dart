@@ -9,6 +9,7 @@ import 'package:domain/use_cases/auth_use_case.dart';
 import 'package:domain/use_cases/user_use_case.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:infrastructure/feature_flag_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
@@ -34,7 +35,9 @@ class SettingsViewModel extends ChangeNotifier {
   DateTime _lastTapTime = DateTime.now();
 
   SettingsViewModel(
-      {required this.authUseCase, required this.userUserCase, required this.featureFlagProvider}) {
+      {required this.authUseCase,
+      required this.userUserCase,
+      required this.featureFlagProvider}) {
     initPackageInfo();
     fetchAuthSessionNew();
   }
@@ -114,6 +117,13 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> openFeedback() async {
+    if (kIsWeb) {
+      final url =
+      Uri.parse("https://github.com/banghuazhao/swiftcomp-flutter/issues");
+      launchUrl(url);
+      return;
+    }
+    
     final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
     String device;
     String systemVersion;
@@ -157,8 +167,8 @@ class SettingsViewModel extends ChangeNotifier {
       return;
     }
 
-    final Uri androidUrl =
-        Uri.parse('https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp');
+    final Uri androidUrl = Uri.parse(
+        'https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp');
     final Uri iOSUrl = Uri.parse('https://apps.apple.com/app/id1297825946');
 
     final Uri url = Platform.isAndroid ? androidUrl : iOSUrl;
@@ -181,10 +191,15 @@ class SettingsViewModel extends ChangeNotifier {
 
     if (Platform.isIOS) {
       Share.share("http://itunes.apple.com/app/id1297825946",
-          subject: appName, sharePositionOrigin: Rect.fromLTRB(0, 0, size.width, size.height / 2));
-    } else {
-      Share.share("https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp",
+          subject: appName,
+          sharePositionOrigin:
+              Rect.fromLTRB(0, 0, size.width, size.height / 2));
+    } else if (Platform.isAndroid) {
+      Share.share(
+          "https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp",
           subject: appName);
+    } else {
+      await Clipboard.setData(ClipboardData(text: "https://compositesai.com"));
     }
   }
 
@@ -223,13 +238,16 @@ class SettingsViewModel extends ChangeNotifier {
     try {
       submission = await userUserCase.submitApplication(reason, link);
       if (submission == 'success') {
-        result = 'Application successfully submitted. Please wait for approval.';
+        result =
+            'Application successfully submitted. Please wait for approval.';
         return result;
       } else if (submission == 'failed') {
-        result = 'This user has already submitted an expert application. Please wait for approval.';
+        result =
+            'This user has already submitted an expert application. Please wait for approval.';
         return result;
       } else {
-        result = 'Submission failed due to an internal error. Please try again later.';
+        result =
+            'Submission failed due to an internal error. Please try again later.';
         return result;
       }
     } catch (error) {
@@ -239,7 +257,8 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   // LinkedIn Credentials
-  Future<void> handleAuthorizationCodeFromLinked(String? authorizationCode) async {
+  Future<void> handleAuthorizationCodeFromLinked(
+      String? authorizationCode) async {
     isLoading = true;
     notifyListeners();
 
@@ -249,7 +268,8 @@ class SettingsViewModel extends ChangeNotifier {
     print("authorizationCode: " + authorizationCode);
 
     // **Step 3: Exchange Code for Access Token**
-    final accessToken = await authUseCase.handleAuthorizationCodeFromLinked(authorizationCode);
+    final accessToken =
+        await authUseCase.handleAuthorizationCodeFromLinked(authorizationCode);
 
     if (accessToken == null) {
       throw Exception("Failed to get access token.");
@@ -257,7 +277,8 @@ class SettingsViewModel extends ChangeNotifier {
     print("accessToken: " + accessToken);
 
     // **Step 4: Fetch LinkedIn User Info**
-    final LinkedinUserProfile userProfile = await authUseCase.fetchLinkedInUserProfile(accessToken);
+    final LinkedinUserProfile userProfile =
+        await authUseCase.fetchLinkedInUserProfile(accessToken);
 
     print('LinkedinUserProfile: ' + userProfile.toString());
     final email = userProfile.email;
@@ -270,7 +291,8 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> syncUser(String? displayName, String email, String? photoUrl) async {
+  Future<void> syncUser(
+      String? displayName, String email, String? photoUrl) async {
     await authUseCase.syncUser(displayName, email, photoUrl);
   }
 }

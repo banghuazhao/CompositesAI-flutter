@@ -15,12 +15,12 @@ class QASettingsPage extends StatelessWidget {
                 title: Text('QA Settings'),
               ),
               body: ListView(
-                children: _buildChild(viewModel),
+                children: _buildChild(viewModel, context),
               ));
         }));
   }
 
-  List<Widget> _buildChild(QASettingsViewModel viewModel) {
+  List<Widget> _buildChild(QASettingsViewModel viewModel, BuildContext context) {
     List<Widget> result = [];
     result.add(
       Padding(
@@ -79,6 +79,26 @@ class QASettingsPage extends StatelessWidget {
     } else {
       result.addAll(apiEnvironmentList);
     }
+
+    result.add(Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text('Daily Chat Count',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    ));
+    result.add(
+      ListTile(
+        title: Text('Current Count: ${viewModel.dailyChatCount}'),
+        trailing: ElevatedButton(
+          child: Text('Reset'),
+          onPressed: () async {
+            await viewModel.resetDailyChatCount();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Daily chat count reset")),
+            );
+          },
+        ),
+      ),
+    );
     return result;
   }
 }

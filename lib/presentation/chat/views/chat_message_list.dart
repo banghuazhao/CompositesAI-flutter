@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:provider/provider.dart';
+import 'package:swiftcomp/presentation/chat/model/message_extension.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import 'package:ui_components/beating_text.dart';
 import 'package:ui_components/blinking_text.dart';
@@ -18,6 +19,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../viewModels/chat_view_model.dart';
 
 class ChatMessageList extends StatefulWidget {
+  const ChatMessageList({Key? key}) : super(key: key);
+
   @override
   _ChatMessageListState createState() => _ChatMessageListState();
 }
@@ -90,7 +93,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.asset(
-                    'images/Icon-512.png', // Path to your image
+                    'images/Icon-512.png',
                     width: 40,
                     height: 40,
                   ),
@@ -132,7 +135,8 @@ class _ChatMessageListState extends State<ChatMessageList> {
             // Center the grid
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: context.contentWidth, // Adjust as needed to keep it centered
+                maxWidth: context
+                    .contentWidth, // Adjust as needed to keep it centered
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -201,7 +205,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
               borderRadius: BorderRadius.circular(20.0),
             ),
             child: SelectableText(
-              message.content ?? "",
+              message.content,
               style: const TextStyle(
                 fontSize: 15,
                 color: Colors.black,
@@ -248,7 +252,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
           ),
         ),
 
-        if (viewModel.isAssistantMessage(message)) ...[
+        if (message.isAssistantMessage) ...[
           if (message.isLiked == null)
             IconButton(
               icon: const Icon(Icons.thumb_up_outlined, size: 15),
@@ -388,7 +392,7 @@ class _ChatMessageListState extends State<ChatMessageList> {
               Expanded(
                 child: KeyboardListener(
                   focusNode: FocusNode(),
-                  onKeyEvent: (KeyEvent event) {
+                  onKeyEvent: (KeyEvent event) async {
                     if (event is KeyDownEvent &&
                         event.logicalKey == LogicalKeyboardKey.enter) {
                       final isShiftPressed = HardwareKeyboard
@@ -406,8 +410,16 @@ class _ChatMessageListState extends State<ChatMessageList> {
                       } else if (!viewModel.isLoading) {
                         final text = textController.text.trim();
                         if (text.isNotEmpty) {
+                          if (await viewModel.reachChatLimit()) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text(
+                                      'Daily chat limit reached (50/day)')),
+                            );
+                            return;
+                          }
                           textController.clear();
-                          viewModel.sendInputMessage(text);
+                          await viewModel.sendInputMessage(text);
                         }
                       }
                       WidgetsBinding.instance.addPostFrameCallback((_) {
