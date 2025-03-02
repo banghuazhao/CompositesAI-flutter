@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:linkedin_login/linkedin_login.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/sigup_page.dart';
+import 'package:swiftcomp/util/app_colors.dart';
 
 import '../../../app/injection_container.dart';
 import '../viewModels/login_view_model.dart';
@@ -23,7 +24,6 @@ class _LoginPageState extends State<LoginPage> {
   bool isButtonEnabled = false;
   bool isPasswordValid = false;
   bool isLoginFailed = false;
-  bool _isLoading = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -37,7 +37,8 @@ class _LoginPageState extends State<LoginPage> {
 
   void _checkFields() {
     setState(() {
-      final isEmailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(_emailController.text);
+      final isEmailValid =
+          RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(_emailController.text);
       isButtonEnabled = isEmailValid &&
           _passwordController.text.isNotEmpty &&
           _passwordController.text.length >= 6;
@@ -94,7 +95,8 @@ class _LoginPageState extends State<LoginPage> {
     // Show loading dialog
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent closing the dialog by tapping outside
+      barrierDismissible: false,
+      // Prevent closing the dialog by tapping outside
       builder: (BuildContext context) {
         return Center(
           child: CircularProgressIndicator(), // Display loading indicator
@@ -134,7 +136,8 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       // Handle any unexpected errors
-      Navigator.of(context, rootNavigator: true).pop(); // Dismiss loading dialog
+      Navigator.of(context, rootNavigator: true)
+          .pop(); // Dismiss loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("An error occurred: $e"),
@@ -149,7 +152,8 @@ class _LoginPageState extends State<LoginPage> {
     // Show loading dialog
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent closing the dialog by tapping outside
+      barrierDismissible: false,
+      // Prevent closing the dialog by tapping outside
       builder: (BuildContext context) {
         return Center(
           child: CircularProgressIndicator(), // Display loading indicator
@@ -189,7 +193,8 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       // Handle any unexpected errors
-      Navigator.of(context, rootNavigator: true).pop(); // Ensure dialog is dismissed
+      Navigator.of(context, rootNavigator: true)
+          .pop(); // Ensure dialog is dismissed
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("An error occurred: $e"),
@@ -202,7 +207,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _linkedinSignIn(LoginViewModel viewModel, BuildContext context) async {
     setState(() {
-      _isLoading = true; // ✅ Show loading indicator before sign-in
+// ✅ Show loading indicator before sign-in
     });
 
     try {
@@ -220,12 +225,10 @@ class _LoginPageState extends State<LoginPage> {
       );
     } finally {
       setState(() {
-        _isLoading = false; // ✅ Hide loading indicator after sign-in
+// ✅ Hide loading indicator after sign-in
       });
     }
   }
-
-
 
   @override
   void dispose() {
@@ -254,7 +257,8 @@ class _LoginPageState extends State<LoginPage> {
               alignment: Alignment.topCenter, // Align content at the top center
               child: Container(
                 width: screenWidth > 600 ? screenWidth * 0.4 : double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 // Reduce padding
                 child: Form(
                   key: _formKey,
@@ -265,7 +269,8 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       // App Icon
                       Padding(
-                        padding: const EdgeInsets.only(top: 10.0), // Adjust top padding
+                        padding: const EdgeInsets.only(top: 10.0),
+                        // Adjust top padding
                         child: Align(
                           alignment: Alignment.topCenter,
                           child: Image.asset(
@@ -315,7 +320,9 @@ class _LoginPageState extends State<LoginPage> {
                           labelText: 'Password',
                           suffixIcon: IconButton(
                             icon: Icon(
-                              viewModel.obscureText ? Icons.visibility_off : Icons.visibility,
+                              viewModel.obscureText
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                             onPressed: viewModel.togglePasswordVisibility,
                           ),
@@ -345,16 +352,19 @@ class _LoginPageState extends State<LoginPage> {
                               minWidth: double.infinity,
                               height: 45,
                               color: isButtonEnabled
-                                  ? const Color.fromRGBO(66, 66, 66, 1.0)
-                                  : const Color.fromRGBO(180, 180, 180, 1),
-                              disabledColor: const Color.fromRGBO(140, 150, 153, 1),
+                                  ? AppColors.primary
+                                  : AppColors.secondary,
+                              disabledColor: AppColors.secondary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              onPressed: isButtonEnabled ? () => _login(viewModel, context) : null,
+                              onPressed: isButtonEnabled
+                                  ? () => _login(viewModel, context)
+                                  : null,
                               child: const Text(
                                 'Login',
-                                style: TextStyle(color: Colors.white, fontSize: 16),
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 16),
                               ),
                             ),
                       const SizedBox(height: 20.0),
@@ -362,15 +372,18 @@ class _LoginPageState extends State<LoginPage> {
                       RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
-                          style: const TextStyle(fontSize: 15, color: Colors.black),
+                          style: const TextStyle(
+                              fontSize: 15, color: Colors.black),
                           // Default text style
                           children: [
-                            const TextSpan(text: 'Not a member yet? '), // Static part
+                            const TextSpan(text: 'Not a member yet? '),
+                            // Static part
                             TextSpan(
                               text: 'Sign up',
                               // Clickable part
-                              style:
-                                  const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.bold),
                               // Custom style for clickable text
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
@@ -393,10 +406,13 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0), // Space around "OR"
+                            padding: EdgeInsets.symmetric(horizontal: 8.0),
+                            // Space around "OR"
                             child: Text(
                               'OR',
-                              style: TextStyle(fontSize: 15, color: Colors.black), // Style for "OR"
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.black), // Style for "OR"
                             ),
                           ),
                           Expanded(
@@ -420,7 +436,8 @@ class _LoginPageState extends State<LoginPage> {
                           _buildSocialButton(
                             iconPath: 'images/linkedin_logo.png',
                             text: 'Continue with Linkedin',
-                            onPressed: () => _linkedinSignIn(viewModel, context),
+                            onPressed: () =>
+                                _linkedinSignIn(viewModel, context),
                           ),
                           const SizedBox(height: 10),
                           _buildSocialButton(
@@ -444,7 +461,8 @@ class _LoginPageState extends State<LoginPage> {
                               // Ensures the button has a smaller clickable area
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               // Shrinks the tap area
-                              alignment: Alignment.center, // Centers the text inside the button
+                              alignment: Alignment
+                                  .center, // Centers the text inside the button
                             ),
                             onPressed: () {
                               Navigator.push(
@@ -492,7 +510,8 @@ class _LoginPageState extends State<LoginPage> {
         decoration: BoxDecoration(
           color: Colors.white, // Button background color
           borderRadius: BorderRadius.circular(10), // Rounded corners
-          border: Border.all(color: Colors.grey.shade300, width: 1), // Border color and width
+          border: Border.all(
+              color: Colors.grey.shade300, width: 1), // Border color and width
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,

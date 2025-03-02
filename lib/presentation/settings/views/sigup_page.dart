@@ -1,8 +1,10 @@
 import 'package:domain/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import '../../../app/injection_container.dart';
+import '../../../util/app_colors.dart';
 import '../viewModels/signup_view_model.dart';
 
 class SignupPage extends StatelessWidget {
@@ -36,7 +38,8 @@ class _SignupFormState extends State<SignupForm> {
   String nickname = '';
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _verificationCodeController = TextEditingController();
+  final TextEditingController _verificationCodeController =
+      TextEditingController();
   bool isButtonEnabled = false;
   bool isPasswordValid = false;
   bool isEmailValid = false;
@@ -49,7 +52,7 @@ class _SignupFormState extends State<SignupForm> {
           password.length >= 6 &&
           confirmPassword == password &&
           _verificationCodeController.text.isNotEmpty &&
-              _verificationCodeController.text.length == 6;
+          _verificationCodeController.text.length == 6;
     });
   }
 
@@ -100,7 +103,8 @@ class _SignupFormState extends State<SignupForm> {
           // Sign-up succeeded, but login failed
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Sign-up successful but login failed. Please try logging in manually."),
+              content: Text(
+                  "Sign-up successful but login failed. Please try logging in manually."),
             ),
           );
         }
@@ -113,16 +117,16 @@ class _SignupFormState extends State<SignupForm> {
     }
   }
 
-
-
-
   @override
   Widget build(BuildContext context) {
-    final viewModel = Provider.of<SignupViewModel>(context); //access an already provided instance of SignupViewModel
+    final viewModel = Provider.of<SignupViewModel>(
+        context); //access an already provided instance of SignupViewModel
     return Scaffold(
       appBar: AppBar(title: Text('Signup')),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
+        padding: EdgeInsets.symmetric(
+            horizontal: context.horizontalSidePaddingForContentWidth,
+            vertical: 20),
         child: Form(
           key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -148,193 +152,209 @@ class _SignupFormState extends State<SignupForm> {
                 },
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Please enter your email';
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) return 'Enter a valid email';
+                  if (value == null || value.isEmpty)
+                    return 'Please enter your email';
+                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value))
+                    return 'Enter a valid email';
                   return null;
                 },
               ),
               SizedBox(height: 16.0),
 
               // Nickname Field (Optional)
-              if(viewModel.isSignUp)
-              TextFormField(
-                controller: _nicknameController,
-                decoration: InputDecoration(
-                  labelText: 'Nickname (optional)',
-                  hintText: 'Enter your nickname',
+              if (viewModel.isSignUp)
+                TextFormField(
+                  controller: _nicknameController,
+                  decoration: InputDecoration(
+                    labelText: 'Nickname (optional)',
+                    hintText: 'Enter your nickname',
+                  ),
+                  style: TextStyle(color: Colors.black),
+                  onChanged: (value) {
+                    nickname = value.trim();
+                  },
                 ),
-                style: TextStyle(color: Colors.black),
-                onChanged: (value) {
-                  nickname = value.trim();
-                },
-              ),
               SizedBox(height: 16.0),
 
               // Password Field
-              if(viewModel.isSignUp)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          viewModel.obscureTextNewPassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: viewModel.toggleNewPasswordVisibility,
-                      ),
-                    ),
-                    obscureText: viewModel.obscureTextNewPassword,
-                    onChanged: (text) {
-                      password = text;
-                      setState(() {
-                        isPasswordValid = password.length >= 6;
-                      });
-                      _checkFields();
-                    },
-                  ),
-                  SizedBox(height: 4.0),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 3.0),
-                      child: Text(
-                        isPasswordValid ? '' : 'Password must be at least 6 characters long',
-                        style: TextStyle(
-                          color: isPasswordValid ? Colors.transparent : Colors.black54,
-                          fontSize: 14.0,
+              if (viewModel.isSignUp)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            viewModel.obscureTextNewPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: viewModel.toggleNewPasswordVisibility,
                         ),
                       ),
+                      obscureText: viewModel.obscureTextNewPassword,
+                      onChanged: (text) {
+                        password = text;
+                        setState(() {
+                          isPasswordValid = password.length >= 6;
+                        });
+                        _checkFields();
+                      },
                     ),
-                  ),
-                ],
-              ),
+                    SizedBox(height: 4.0),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 3.0),
+                        child: Text(
+                          isPasswordValid
+                              ? ''
+                              : 'Password must be at least 6 characters long',
+                          style: TextStyle(
+                            color: isPasswordValid
+                                ? Colors.transparent
+                                : Colors.black54,
+                            fontSize: 14.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               SizedBox(height: 16.0),
 
               // Confirm Password Field
-              if(viewModel.isSignUp)
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  errorText: confirmPassword == password ? null : 'Passwords do not match',
-                  errorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                  ),
-                  focusedErrorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                  ),
-                  errorStyle: TextStyle(color: Color(0xFFB71C1C)),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      viewModel.obscureTextConfirmPassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+              if (viewModel.isSignUp)
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    errorText: confirmPassword == password
+                        ? null
+                        : 'Passwords do not match',
+                    errorBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFB71C1C)),
                     ),
-                    onPressed: viewModel.toggleConfirmPasswordVisibility,
+                    focusedErrorBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                    ),
+                    errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        viewModel.obscureTextConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: viewModel.toggleConfirmPasswordVisibility,
+                    ),
                   ),
+                  obscureText: viewModel.obscureTextConfirmPassword,
+                  onChanged: (value) {
+                    setState(() {
+                      confirmPassword = value.trim();
+                    });
+                    _checkFields();
+                  },
                 ),
-                obscureText: viewModel.obscureTextConfirmPassword,
-                onChanged: (value) {
-                  setState(() {
-                    confirmPassword = value.trim();
-                  });
-                  _checkFields();
-                },
-              ),
               SizedBox(height: 16.0),
 
-              if(viewModel.isSignUp)
-              TextFormField(
-                keyboardType: TextInputType.number,
-                controller: _verificationCodeController,
-                decoration: InputDecoration(
-                  labelText: "Verification Code",
-                  border: UnderlineInputBorder(),
-                  errorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
+              if (viewModel.isSignUp)
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  controller: _verificationCodeController,
+                  decoration: InputDecoration(
+                    labelText: "Verification Code",
+                    border: UnderlineInputBorder(),
+                    errorBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                    ),
+                    focusedErrorBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                    ),
+                    errorStyle: TextStyle(color: Color(0xFFB71C1C)),
                   ),
-                  focusedErrorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                  ),
-                  errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                  validator: (value) {
+                    if (value == null || value.length != 6) {
+                      return "Please enter a valid verification code to proceed";
+                    }
+                    return null;
+                  },
+                  onChanged: (value) {
+                    verificationCode = value;
+                    _checkFields();
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.length != 6) {
-                    return "Please enter a valid verification code to proceed";
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  verificationCode = value;
-                  _checkFields();
-                },
-              ),
               SizedBox(height: 20),
 
               // Signup Button
-              if(viewModel.isSignUp)
-              viewModel.isLoading || isLoading
-                  ? CircularProgressIndicator()
-                  : MaterialButton(
-                onPressed: isButtonEnabled ? () => _signup(viewModel) : null,
-                height: 45,
-                minWidth: double.infinity,
-                color: isButtonEnabled
-                    ? Color.fromRGBO(51, 66, 78, 1)
-                    : Color.fromRGBO(180, 180, 180, 1),
-                disabledColor: Color.fromRGBO(140, 150, 153, 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text('Signup', style: TextStyle(color: Colors.white, fontSize: 16)),
-              ),
+              if (viewModel.isSignUp)
+                viewModel.isLoading || isLoading
+                    ? CircularProgressIndicator()
+                    : MaterialButton(
+                        onPressed:
+                            isButtonEnabled ? () => _signup(viewModel) : null,
+                        height: 45,
+                        minWidth: double.infinity,
+                        color: isButtonEnabled
+                            ? Color.fromRGBO(51, 66, 78, 1)
+                            : Color.fromRGBO(180, 180, 180, 1),
+                        disabledColor: Color.fromRGBO(140, 150, 153, 1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('Signup',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 16)),
+                      ),
 
               if (!viewModel.isSignUp)
                 Padding(
-                  padding: const EdgeInsets.only(top: 1.0), // Adjust top padding here
+                  padding: const EdgeInsets.only(top: 1.0),
+                  // Adjust top padding here
                   child: MaterialButton(
                     onPressed: viewModel.isLoading
                         ? null
                         : () async {
-                      if (_formKey.currentState!.validate()) {
-                        await viewModel.signUpFor(email);
+                            if (_formKey.currentState!.validate()) {
+                              await viewModel.signUpFor(email);
 
-                        if (viewModel.errorMessage != null && viewModel.errorMessage!.isNotEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(viewModel.errorMessage!),
-                            ),
-                          );
-                        } else if (viewModel.isSignUp) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Verification code sent successfully.'),
-                            ),
-                          );
-                        }
-                      }
-                    },
+                              if (viewModel.errorMessage != null &&
+                                  viewModel.errorMessage!.isNotEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(viewModel.errorMessage!),
+                                  ),
+                                );
+                              } else if (viewModel.isSignUp) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Verification code sent successfully.'),
+                                  ),
+                                );
+                              }
+                            }
+                          },
                     height: 45,
                     minWidth: double.infinity,
-                    color: isEmailValid ? const Color(0xFF33424E) : const Color(0xFF8C9699),
-                    disabledColor: const Color(0xFF8C9699),
+                    color: isEmailValid
+                        ? AppColors.primary
+                        : AppColors.secondary,
+                    disabledColor: AppColors.secondary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: viewModel.isLoading
                         ? const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    )
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
                         : const Text(
-                      "Send Verification Code",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+                            "Send Verification Code",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                   ),
                 ),
-
             ],
           ),
         ),
