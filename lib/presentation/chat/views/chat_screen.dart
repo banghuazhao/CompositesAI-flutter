@@ -113,7 +113,7 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                         PopupMenuButton<String>(
                           icon: Row(
                             children: const [
-                              Icon(Icons.download, color: Colors.teal),
+                              Icon(Icons.download, color: Colors.white),
                               SizedBox(width: 5),
                               Text(
                                 "Export Chat",

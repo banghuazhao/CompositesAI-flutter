@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import '../../../app/injection_container.dart';
 import '../viewModels/composites_tools_view_model.dart';
@@ -34,40 +35,42 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
             actions: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: SizedBox(
-               width: 100,
-                child: ElevatedButton(
-                  onPressed: () {
-                    _handleCreate(viewModel);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    elevation: 4, // Default elevation
-                  ).copyWith(
-                    overlayColor: MaterialStateProperty.all(Colors.grey.shade300), // Hover background color
-                    elevation: MaterialStateProperty.resolveWith<double>(
-                          (states) {
-                        if (states.contains(MaterialState.hovered)) {
-                          return 8; // Increased elevation on hover
-                        }
-                        return 4; // Default elevation
-                      },
+                child: SizedBox(
+                  width: 100,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _handleCreate(viewModel);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      elevation: 4, // Default elevation
+                    ).copyWith(
+                      overlayColor: MaterialStateProperty.all(Colors.grey.shade300),
+                      // Hover background color
+                      elevation: MaterialStateProperty.resolveWith<double>(
+                        (states) {
+                          if (states.contains(MaterialState.hovered)) {
+                            return 8; // Increased elevation on hover
+                          }
+                          return 4; // Default elevation
+                        },
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    "Create",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black,
+                    child: const Text(
+                      "Create",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                 ),
-            ),
               ),
             ],
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.symmetric(
+                horizontal: context.horizontalSidePaddingForContentWidth, vertical: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -81,8 +84,9 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
                   label: "Tool Title",
                   child: TextField(
                     controller: _titleController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: "Enter tool title",
+                      hintStyle: TextStyle(color: Colors.grey.shade500),
                       border: InputBorder.none,
                     ),
                   ),
@@ -91,8 +95,9 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
                   label: "Description",
                   child: TextField(
                     controller: _descriptionController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: "Add a short description about what this tool does",
+                      hintStyle: TextStyle(color: Colors.grey.shade500),
                       border: InputBorder.none,
                     ),
                     maxLines: null,
@@ -103,8 +108,9 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
                   label: "Instructions",
                   child: TextField(
                     controller: _instructionsController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: "What does this tool do? How does it work?",
+                      hintStyle: TextStyle(color: Colors.grey.shade500),
                       border: InputBorder.none,
                     ),
                     maxLines: null,
@@ -114,23 +120,22 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
                 const SizedBox(height: 16),
                 TextButton.icon(
                   onPressed: _uploadFile,
-                  icon: const Icon(Icons.upload_file),
                   label: const Text("Upload File"),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Colors.grey.shade800,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ).copyWith(
-                    overlayColor: MaterialStateProperty.all(Colors.teal.shade300), // Hover background color
+                    overlayColor: MaterialStateProperty.all(Colors.grey.shade600),
                     elevation: MaterialStateProperty.resolveWith<double>(
-                          (states) {
+                      (states) {
                         if (states.contains(MaterialState.hovered)) {
-                          return 8; // Increased elevation on hover
+                          return 8;
                         }
-                        return 4; // Default elevation
+                        return 4;
                       },
                     ),
                   ),
@@ -145,7 +150,6 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
       },
     );
   }
-
 
   Widget buildCard({required String label, required Widget child}) {
     return Card(
@@ -163,7 +167,7 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.teal,
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 8),
@@ -278,8 +282,10 @@ class _CompositesToolCreationState extends State<CompositesToolCreation> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File selected: $fileDisplay'),
-            duration: Duration(seconds: 1),),
+          SnackBar(
+            content: Text('File selected: $fileDisplay'),
+            duration: Duration(seconds: 1),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

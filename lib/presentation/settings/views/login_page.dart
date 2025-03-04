@@ -269,15 +269,17 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       // App Icon
                       Padding(
-                        padding: const EdgeInsets.only(top: 10.0),
-                        // Adjust top padding
+                        padding: const EdgeInsets.only(top: 10.0), // Adjust top padding
                         child: Align(
                           alignment: Alignment.topCenter,
-                          child: Image.asset(
-                            'images/app_icon.png',
-                            height: 35,
-                            width: 35,
-                            fit: BoxFit.contain,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(
+                              'images/app_icon.png',
+                              height: 40,
+                              width: 40,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ),
@@ -508,10 +510,10 @@ class _LoginPageState extends State<LoginPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.white, // Button background color
-          borderRadius: BorderRadius.circular(10), // Rounded corners
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: Colors.grey.shade300, width: 1), // Border color and width
+              color: Colors.grey.shade300, width: 1),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
