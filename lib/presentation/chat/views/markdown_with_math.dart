@@ -13,27 +13,15 @@ class MarkdownWithMath extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb) {
-      return MarkdownBody(
-        data: markdownData,
-        selectable: true,
-        // For better user experience
-        builders: {'h5': NewlineMathBuilder()},
-        inlineSyntaxes: [MathNewlineSyntax()],
-        // Custom inline syntax for inline math
-        styleSheet: MarkdownStyleSheet(),
-      );
-    } else {
-      return MarkdownBody(
-        data: markdownData,
-        selectable: true,
-        // For better user experience
-        builders: {'h5': InlineMathBuilder(), 'h5': NewlineMathBuilder()},
-        inlineSyntaxes: [MathNewlineSyntax(), MathInlineSyntax()],
-        // Custom inline syntax for inline math
-        styleSheet: MarkdownStyleSheet(),
-      );
-    }
+    return MarkdownBody(
+      data: markdownData,
+      selectable: true,
+      // For better user experience
+      builders: {'h5': InlineMathBuilder(), 'h5': NewlineMathBuilder()},
+      inlineSyntaxes: [MathNewlineSyntax(), MathInlineSyntax()],
+      // Custom inline syntax for inline math
+      styleSheet: MarkdownStyleSheet(),
+    );
   }
 }
 

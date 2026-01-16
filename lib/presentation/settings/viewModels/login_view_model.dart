@@ -2,16 +2,13 @@
 
 import 'dart:async';
 import 'package:domain/use_cases/auth_use_case.dart';
-import 'package:web/web.dart' as web;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:infrastructure/apple_sign_in_service.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
 
 class LoginViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
@@ -48,7 +45,8 @@ class LoginViewModel extends ChangeNotifier {
 
   void updateButtonState(String email, String password) {
     final isEmailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
-    _isButtonEnabled = isEmailValid && password.isNotEmpty && password.length >= 6;
+    _isButtonEnabled =
+        isEmailValid && password.isNotEmpty && password.length >= 6;
     notifyListeners();
   }
 
@@ -69,7 +67,8 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
-  static String GOOGLE_SIGNIN_CLIENT_ID_WEB = dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_WEB'] ?? "";
+  static String GOOGLE_SIGNIN_CLIENT_ID_WEB =
+      dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_WEB'] ?? "";
 
   // Function to handle Google Sign-In
   Future<void> signInWithGoogle() async {
@@ -95,26 +94,22 @@ class LoginViewModel extends ChangeNotifier {
         throw Exception('Sign-in was canceled by the user.');
       }
 
-      // For web, sync the user immediately since ID token may not always be available
-      if (kIsWeb) {
-        await syncUser(user.displayName, user.email, user.photoUrl);
-      } else {
-        // For non-web platforms, retrieve authentication details
-        final idToken = user.idToken;
+      // For non-web platforms, retrieve authentication details
+      final idToken = user.idToken;
 
-        // Ensure ID token is present
-        if (idToken == null) {
-          throw Exception('Unable to retrieve ID token. Please try again.');
-        }
-
-        // Validate the ID token with your backend
-        final bool isValid = await authUseCase.validateGoogleToken(idToken);
-        if (!isValid) {
-          throw Exception('Google token validation failed.');
-        }
-        // Sync the user data
-        await syncUser(user.displayName, user.email, user.photoUrl);
+      // Ensure ID token is present
+      if (idToken == null) {
+        throw Exception('Unable to retrieve ID token. Please try again.');
       }
+
+      // Validate the ID token with your backend
+      final bool isValid = await authUseCase.validateGoogleToken(idToken);
+      if (!isValid) {
+        throw Exception('Google token validation failed.');
+      }
+      // Sync the user data
+      await syncUser(user.displayName, user.email, user.photoUrl);
+
       // Mark signing-in as successful
       _isSigningIn = true;
     } catch (error) {
@@ -129,8 +124,10 @@ class LoginViewModel extends ChangeNotifier {
 
   // Function to handle Google Sign-Out
 
-  Future<void> syncUser(String? displayName, String email, String? photoUrl) async {
-    final accessToken = await authUseCase.syncUser(displayName, email, photoUrl);
+  Future<void> syncUser(
+      String? displayName, String email, String? photoUrl) async {
+    final accessToken =
+        await authUseCase.syncUser(displayName, email, photoUrl);
   }
 
   Future<void> signInWithApple() async {
@@ -144,12 +141,14 @@ class LoginViewModel extends ChangeNotifier {
           AppleIDAuthorizationScopes.fullName,
         ],
         webAuthenticationOptions: WebAuthenticationOptions(
-          clientId: kIsWeb ? 'com.example.swiftcompsignin' : 'com.cdmHUB.SwiftComp',
-          redirectUri: kIsWeb //This is where Apple sends the user back after they sign in.
-              ? Uri.parse('https://compositesai.com')
-              : Uri.parse(
-                  'https://flutter-sign-in-with-apple-example.glitch.me/callbacks/sign_in_with_apple',
-                ),
+          clientId:
+              kIsWeb ? 'com.example.swiftcompsignin' : 'com.cdmHUB.SwiftComp',
+          redirectUri:
+              kIsWeb //This is where Apple sends the user back after they sign in.
+                  ? Uri.parse('https://compositesai.com')
+                  : Uri.parse(
+                      'https://flutter-sign-in-with-apple-example.glitch.me/callbacks/sign_in_with_apple',
+                    ),
         ),
       );
 
@@ -181,18 +180,13 @@ class LoginViewModel extends ChangeNotifier {
     _errorMessage = null;
     try {
       final Uri authUri = await authUseCase.getAuthUrl();
-      if (kIsWeb) {
-        web.window.location.href = authUri.toString();
+      if (await canLaunchUrl(authUri)) {
+        await launchUrl(authUri, mode: LaunchMode.inAppWebView);
       } else {
-        if (await canLaunchUrl(authUri)) {
-          await launchUrl(authUri, mode: LaunchMode.inAppWebView);
-        } else {
-          throw Exception("Could not launch LinkedIn login page");
-        }
+        throw Exception("Could not launch LinkedIn login page");
       }
     } catch (error) {
       throw Exception("LinkedIn Sign-In Failed: $error");
     }
   }
-
 }

@@ -125,12 +125,6 @@ class _ChatMessageListState extends State<ChatMessageList> {
           ),
           const SizedBox(height: 36),
 
-          // Input Bar only on Web
-          if (kIsWeb) ...[
-            inputBar(viewModel),
-            const SizedBox(height: 10),
-          ],
-
           Center(
             // Center the grid
             child: ConstrainedBox(

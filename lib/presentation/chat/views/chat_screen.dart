@@ -1,14 +1,11 @@
 import 'dart:convert';
-import 'dart:html' as html;
 import 'dart:io';
 import 'dart:ui';
 
 import 'package:domain/entities/chat/message.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../app/injection_container.dart';
 import '../../settings/views/login_page.dart';
 import '../../settings/views/user_profile_page.dart';
 import '../viewModels/chat_view_model.dart';
@@ -326,45 +323,26 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
       // Create a JSON string
       final String jsonString = jsonEncode({"messages": messageData});
 
-      if (kIsWeb) {
-        // Web: Use browser's download functionality.
-        final blob = html.Blob([jsonString], 'application/json');
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..target = 'blank'
-          ..download = "chat_export.json"; // Suggest "Downloads" behavior
-        anchor.click();
-        html.Url.revokeObjectUrl(url);
-
-        // Notify the user about the export
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Chat exported as chat_export.json in browser"),
-            duration: Duration(seconds: 5),
-          ),
-        );
-      } else {
-        // Mobile/Desktop: Save to the Downloads directory
-        final Directory? downloadsDirectory = await getDownloadsDirectory();
-        if (downloadsDirectory == null) {
-          throw Exception("Downloads directory is not available");
-        }
-
-        final File file = File('${downloadsDirectory.path}/chat_export.json');
-
-        // Write the JSON string to the file
-        await file.writeAsString(jsonString);
-
-        // Notify the user about the export
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Chat exported to Downloads as chat_export.json"),
-            duration: const Duration(seconds: 5),
-          ),
-        );
-
-        print("Chat exported successfully to Downloads: ${file.path}");
+      // Mobile/Desktop: Save to the Downloads directory
+      final Directory? downloadsDirectory = await getDownloadsDirectory();
+      if (downloadsDirectory == null) {
+        throw Exception("Downloads directory is not available");
       }
+
+      final File file = File('${downloadsDirectory.path}/chat_export.json');
+
+      // Write the JSON string to the file
+      await file.writeAsString(jsonString);
+
+      // Notify the user about the export
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Chat exported to Downloads as chat_export.json"),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+
+      print("Chat exported successfully to Downloads: ${file.path}");
     } catch (e) {
       // Handle errors
       print("Error exporting chat: $e");
