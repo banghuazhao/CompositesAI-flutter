@@ -2,7 +2,7 @@ import 'package:domain/entities/user.dart';
 import 'package:domain/mocks/auth_use_case_mock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:swiftcomp/presentation/settings/viewModels/signup_view_model.dart';
+import 'package:swiftcomp/presentation/auth/signup_view_model.dart';
 
 void main() {
   group('SignupViewModel Tests', () {
@@ -237,7 +237,8 @@ void main() {
 
       const email = 'test@example.com';
       const password = 'password123';
-      when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => 'accessToken');
+      final user = User(email: email);
+      when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => user);
 
       final future = signupViewModel.login(email, password);
 
@@ -252,11 +253,11 @@ void main() {
 
       const email = 'test@example.com';
       const password = 'password123';
-      const accessToken = 'accessToken';
-      when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => accessToken);
+      final user = User(email: email);
+      when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => user);
 
       final result = await signupViewModel.login(email, password);
-      expect(result, accessToken);
+      expect(result, user);
       expect(signupViewModel.errorMessage, null);
     });
 

@@ -1,6 +1,7 @@
 // lib/presentation/viewmodels/login_view_model.dart
 
 import 'dart:async';
+import 'package:domain/entities/user.dart';
 import 'package:domain/use_cases/auth_use_case.dart';
 
 import 'package:flutter/foundation.dart';
@@ -50,14 +51,14 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> login(String email, String password) async {
+  Future<User?> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final accessToken = await authUseCase.login(email, password);
-      return accessToken; // Successful login returns the access token
+      final user = await authUseCase.login(email, password);
+      return user; // Successful login returns the access token
     } catch (e) {
       _errorMessage = 'Login failed: ${e.toString()}';
       return null;

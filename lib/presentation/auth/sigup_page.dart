@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
-import '../../../app/injection_container.dart';
-import '../../../util/app_colors.dart';
-import '../viewModels/signup_view_model.dart';
+import '../../app/injection_container.dart';
+import '../../util/app_colors.dart';
+import 'signup_view_model.dart';
 
 class SignupPage extends StatelessWidget {
   const SignupPage({Key? key}) : super(key: key);
@@ -87,8 +87,8 @@ class _SignupFormState extends State<SignupForm> {
 
       if (user != null) {
         // Attempt to login after successful sign-up
-        String? token = await viewModel.login(email, password);
-        if (token != null) {
+        User? user = await viewModel.login(email, password);
+        if (user != null) {
           // Successful login
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -98,7 +98,7 @@ class _SignupFormState extends State<SignupForm> {
           );
 
           // Navigate to the previous screen
-          Navigator.pop(context, "sign up success");
+          Navigator.pop(context, user);
         } else {
           // Sign-up succeeded, but login failed
           ScaffoldMessenger.of(context).showSnackBar(

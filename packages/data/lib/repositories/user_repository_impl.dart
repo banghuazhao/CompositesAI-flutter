@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:domain/entities/user.dart';
 import 'package:domain/repositories_abstract/user_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 
@@ -18,7 +19,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<User> fetchMe() async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/users/me');
+    final url = Uri.parse('$baseURL/auths/');
     //convert plain url(string) to Uri object
     // No need to add Authorization header; AuthenticatedHttpClient handles it
     final response = await authClient.get(url, headers: {
@@ -27,15 +28,16 @@ class UserRepositoryImpl implements UserRepository {
 
     // Check the response status and handle accordingly
     if (response.statusCode == 200) {
-      final data = jsonDecode(response
-          .body); //jsonDecode convert a JSON string into a Dart object(which is Dart Map->Map<String, dynamic>)
-      print(User.fromJson(data));
-      return User.fromJson(data);
+      final data = jsonDecode(response.body);
+      final user = User.fromJson(data);
+      if (kDebugMode) {
+        print(user);
+      }
+      return user;
     } else {
       throw mapServerErrorToDomainException(response);
     }
   }
-
 
   @override
   Future<void> updateMe(String newName) async {
@@ -50,7 +52,8 @@ class UserRepositoryImpl implements UserRepository {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to update name. Status code: ${response.statusCode}');
+      throw Exception(
+          'Failed to update name. Status code: ${response.statusCode}');
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -63,7 +66,8 @@ class UserRepositoryImpl implements UserRepository {
     final response = await authClient.delete(url);
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete account. Status code: ${response.statusCode}');
+      throw Exception(
+          'Failed to delete account. Status code: ${response.statusCode}');
     }
     return;
   }
@@ -110,7 +114,8 @@ class UserRepositoryImpl implements UserRepository {
     } else if (response.statusCode == 404) {
       throw Exception("User not found"); // Handle 'User not found' error
     } else {
-      throw mapServerErrorToDomainException(response); // Handle other server errors
+      throw mapServerErrorToDomainException(
+          response); // Handle other server errors
     }
   }
 
@@ -135,6 +140,4 @@ class UserRepositoryImpl implements UserRepository {
       throw Exception("An error occurred while adding the expert.");
     }
   }
-
-
 }

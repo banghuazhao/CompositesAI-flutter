@@ -9,7 +9,7 @@ import '../repositories_abstract/auth_repository.dart';
 
 abstract class AuthUseCase {
   Future<User> signup(String email, String password, String verificationCode,{String? name});
-  Future<String> login(String email, String password);
+  Future<User> login(String email, String password);
   Future<void> logout();
   Future<void> forgetPassword(String email);
   Future<String> resetPassword(String email, String newPassword, String confirmationCode);
@@ -35,10 +35,9 @@ class AuthUseCaseImpl implements AuthUseCase {
     return await repository.signup(email, password, verificationCode, name: name);
   }
 
-  Future<String> login(String email, String password) async {
-    String accessToken = await repository.login(email, password);
-    await tokenProvider.saveToken(accessToken);
-    return accessToken;
+  Future<User> login(String email, String password) async {
+    User user = await repository.login(email, password);
+    return user;
   }
 
   Future<void> logout() async {

@@ -6,7 +6,7 @@ import 'package:domain/entities/chat/message.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../settings/views/login_page.dart';
+import '../../auth/login_page.dart';
 import '../../settings/views/user_profile_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_message_list.dart';

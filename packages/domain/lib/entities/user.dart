@@ -5,7 +5,7 @@ class User {
   final String? description;
   final String? avatarUrl;
   final bool isAdmin; // Value from the database
-   bool isCompositeExpert;
+  bool isCompositeExpert;
 
   User({
     this.username,
@@ -23,16 +23,15 @@ class User {
         username: json['username'] ?? '',
         email: json['email'] ?? '',
         name: json['name'],
-        description: json['description'],
-        avatarUrl: json['avatarUrl'],
-        isAdmin: json['isAdmin'],
-        isCompositeExpert: json['isCompositeExpert']);
+        description: json['description'] ?? '',
+        avatarUrl: json['profile_image_url'],
+        isAdmin: json['role'] == "admin",
+        isCompositeExpert: json['is_expert']);
   }
 
   @override
   String toString() {
     return 'User(username: $username, email: $email, name: $name, '
-        'description: $description, avatarUrl: $avatarUrl, '
         'isAdmin: $isAdmin, isCompositeExpert: $isCompositeExpert)';
   }
 }

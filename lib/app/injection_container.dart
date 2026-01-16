@@ -4,7 +4,6 @@ import 'package:domain/use_cases/functional_call_use_case.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 
-
 import 'package:data/repositories/composites_tools_repository_impl.dart';
 import 'package:data/repositories/composite_expert_repository_impl.dart';
 import 'package:data/repositories/auth_repository_impl.dart';
@@ -35,11 +34,11 @@ import 'package:infrastructure/feature_flag_provider.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:infrastructure/token_provider.dart';
 
-import 'package:swiftcomp/presentation/settings/viewModels/forget_password_view_model.dart';
-import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
+import 'package:swiftcomp/presentation/auth/forget_password_view_model.dart';
+import 'package:swiftcomp/presentation/auth/login_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
-import 'package:swiftcomp/presentation/settings/viewModels/signup_view_model.dart';
-import 'package:swiftcomp/presentation/settings/viewModels/update_password_view_model.dart';
+import 'package:swiftcomp/presentation/auth/signup_view_model.dart';
+import 'package:swiftcomp/presentation/auth/update_password_view_model.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/qa_settings_view_model.dart';
 
@@ -89,8 +88,11 @@ void initInjection() {
   // Repositories
   sl.registerLazySingleton<ChatSessionRepository>(
       () => ChatSessionRepositoryImpl());
-  sl.registerLazySingleton<AuthRepository>(() =>
-      AuthRepositoryImpl(client: sl(), authClient: sl(), apiEnvironment: sl()));
+  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(
+      client: sl(),
+      authClient: sl(),
+      apiEnvironment: sl(),
+      tokenProvider: sl()));
   sl.registerLazySingleton<UserRepository>(
       () => UserRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
   sl.registerLazySingleton<CompositeExpertRepository>(() =>

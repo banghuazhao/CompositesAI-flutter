@@ -2,11 +2,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:linkedin_login/linkedin_login.dart';
 import 'package:provider/provider.dart';
-import 'package:swiftcomp/presentation/settings/views/sigup_page.dart';
+import 'package:swiftcomp/presentation/auth/sigup_page.dart';
 import 'package:swiftcomp/util/app_colors.dart';
 
-import '../../../app/injection_container.dart';
-import '../viewModels/login_view_model.dart';
+import '../../app/injection_container.dart';
+import 'login_view_model.dart';
 import 'forget_password_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -50,12 +50,12 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       // Call login from viewModel and pass the credentials
-      final accessToken = await viewModel.login(
+      final user = await viewModel.login(
         _emailController.text,
         _passwordController.text,
       );
 
-      if (accessToken != null) {
+      if (user != null) {
         // Login successful
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -65,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
 
-        Navigator.pop(context, "Log in Success");
+        Navigator.pop(context, user);
       } else {
         // Login failed - error handled within viewModel and errorMessage will be populated
         if (viewModel.errorMessage != null) {

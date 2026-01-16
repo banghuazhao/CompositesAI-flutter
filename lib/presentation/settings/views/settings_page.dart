@@ -1,5 +1,6 @@
 // lib/presentation/pages/settings_page.dart
 
+import 'package:domain/entities/user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +14,7 @@ import '../../chat/viewModels/composites_tools_view_model.dart';
 import '../viewModels/manage_composite_experts_view_model.dart';
 import '../viewModels/settings_view_model.dart';
 import 'apply_expert_page.dart';
-import 'login_page.dart';
+import '../../auth/login_page.dart';
 import 'manage_composite_experts_page.dart';
 import 'tool_setting_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -67,14 +68,14 @@ class _SettingsPageState extends State<SettingsPage> {
                             title: "Login",
                             leadingIcon: Icons.person_rounded,
                             onTap: () async {
-                              String? result = await Navigator.push(
+                              User? user = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const LoginPage(),
                                 ),
                               );
-                              if (result == "Log in Success") {
-                                await viewModel.fetchAuthSessionNew();
+                              if (user != null) {
+                                viewModel.updateUser(user);
                               }
                             },
                           ),

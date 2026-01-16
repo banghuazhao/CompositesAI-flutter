@@ -5,10 +5,10 @@ import '../use_cases/auth_use_case.dart';
 
 class MockAuthUseCase extends Mock implements AuthUseCase {
   @override
-  Future<String> login(String email, String password) =>
+  Future<User> login(String email, String password) =>
       super.noSuchMethod(Invocation.method(#login, [email, password]),
-          returnValue: Future.value(''),
-          returnValueForMissingStub: Future.value(''));
+          returnValue: Future.value(User(email: '')),
+          returnValueForMissingStub: Future.value(User(email: '')));
 
   @override
   Future<bool> validateGoogleToken(String idToken) =>

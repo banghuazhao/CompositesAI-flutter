@@ -42,6 +42,14 @@ class SettingsViewModel extends ChangeNotifier {
     fetchAuthSessionNew();
   }
 
+  void updateUser(User user) {
+    this.user = user;
+    isLoggedIn = true;
+    isExpert = user.isCompositeExpert;
+    isAdmin = user.isAdmin; // Ensure isLoggedIn is updated correctly
+    notifyListeners();
+  }
+
   Future<void> fetchAuthSessionNew() async {
     try {
       isLoggedIn = await authUseCase.isLoggedIn();

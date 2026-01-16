@@ -53,7 +53,6 @@ flutter pub get
 3. **Set Up Environment Variables** Create a `.env` file in the root directory and add the necessary environment variables. For example:
 ```
 OPENAI_API_KEY=your_openai_api_key
-AMPLIFY_CONFIG=your_amplify_config_json
 ```
 
 4. **Run the Application** 

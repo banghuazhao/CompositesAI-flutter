@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:swiftcomp/presentation/settings/viewModels/update_password_view_model.dart';
+import 'package:swiftcomp/presentation/auth/update_password_view_model.dart';
 
-import '../../../app/injection_container.dart';
-import '../viewModels/user_profile_view_model.dart';
+import '../../app/injection_container.dart';
+import '../settings/viewModels/user_profile_view_model.dart';
 
 class UpdatePasswordPage extends StatefulWidget {
   @override

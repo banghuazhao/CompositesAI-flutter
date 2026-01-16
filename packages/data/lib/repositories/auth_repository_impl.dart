@@ -12,14 +12,19 @@ import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:infrastructure/token_provider.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final http.Client client;
   final AuthenticatedHttpClient authClient;
   final APIEnvironment apiEnvironment;
+  final TokenProvider tokenProvider;
 
   AuthRepositoryImpl(
-      {required this.client, required this.authClient, required this.apiEnvironment});
+      {required this.client,
+      required this.authClient,
+      required this.apiEnvironment,
+      required this.tokenProvider});
 
   @override
   Future<User> signup(String email, String password, String verificationCode,
@@ -51,9 +56,9 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<String> login(String email, String password) async {
+  Future<User> login(String email, String password) async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/auth/login');
+    final url = Uri.parse('$baseURL/auths/signin');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -65,7 +70,13 @@ class AuthRepositoryImpl implements AuthRepository {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['accessToken']; // Return access token on success
+      final accessToken = data['token']; // Return access token on success
+      await tokenProvider.saveToken(accessToken);
+      final user = User.fromJson(data);
+      if (kDebugMode) {
+        print(user);
+      }
+      return user;
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -108,14 +119,18 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  Future<String> resetPassword(String email, String newPassword, String confirmationCode) async {
+  Future<String> resetPassword(
+      String email, String newPassword, String confirmationCode) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/reset-password');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(
-          {"email": email, 'password': newPassword, "confirmationCode": confirmationCode}),
+      body: jsonEncode({
+        "email": email,
+        'password': newPassword,
+        "confirmationCode": confirmationCode
+      }),
     );
 
     if (response.statusCode == 200) {
@@ -165,7 +180,8 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  Future<String> syncUser(String? displayName, String email, String? photoUrl) async {
+  Future<String> syncUser(
+      String? displayName, String email, String? photoUrl) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/sync-user');
     final response = await client.post(
@@ -222,7 +238,8 @@ class AuthRepositoryImpl implements AuthRepository {
     final responseJson = jsonDecode(response.body);
 
     // Extract email from the payload
-    final String? email = responseJson["payload"]?["email"]; // Safely access payload
+    final String? email =
+        responseJson["payload"]?["email"]; // Safely access payload
 
     if (email == null || email.isEmpty) {
       throw Exception('Validation failed: email not retrieved from token');
@@ -260,7 +277,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<String> handleAuthorizationCodeFromLinked(String? authorizationCode) async {
+  Future<String> handleAuthorizationCodeFromLinked(
+      String? authorizationCode) async {
     //Sends the authorizationCode to your backend API. then backend process it and Sends the access token back to the frontend.
     if (authorizationCode == null) {
       throw Exception("Failed to get authorization code from LinkedIn.");
@@ -284,7 +302,8 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  Future<LinkedinUserProfile> fetchLinkedInUserProfile(String? accessToken) async {
+  Future<LinkedinUserProfile> fetchLinkedInUserProfile(
+      String? accessToken) async {
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("Access token is required to fetch LinkedIn profile.");
     }
@@ -313,9 +332,11 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Uri> getAuthUrl() async {
     final String clientId = dotenv.env['LINKEDIN_CLIENT_ID'] ?? '';
     print("LinkedIn Client ID: " + clientId);
-    const String redirectUrlWeb = 'https://compositesai.com/auth/linkedin/callback';
+    const String redirectUrlWeb =
+        'https://compositesai.com/auth/linkedin/callback';
     const String redirectUrlMobile = 'https://compositesai.com/linkedin-auth';
-    const String redirectUrlDevelopment = 'http://localhost:5000/auth/linkedin/callback';
+    const String redirectUrlDevelopment =
+        'http://localhost:5000/auth/linkedin/callback';
 
     final String currentEnv = await apiEnvironment.getCurrentEnvironment();
     final String redirectUrl;
@@ -324,14 +345,10 @@ class AuthRepositoryImpl implements AuthRepository {
     } else {
       redirectUrl = redirectUrlDevelopment;
     }
-    return Uri.parse(
-        'https://www.linkedin.com/oauth/v2/authorization'
-            '?response_type=code'
-            '&client_id=$clientId'
-            '&scope=openid%20profile%20email'
-            '&redirect_uri=$redirectUrl'
-    );
-
+    return Uri.parse('https://www.linkedin.com/oauth/v2/authorization'
+        '?response_type=code'
+        '&client_id=$clientId'
+        '&scope=openid%20profile%20email'
+        '&redirect_uri=$redirectUrl');
   }
-
 }

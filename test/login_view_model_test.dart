@@ -1,10 +1,11 @@
+import 'package:domain/entities/user.dart';
 import 'package:domain/mocks/auth_use_case_mock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:infrastructure/mocks/apple_sign_in_service_mock.dart';
 import 'package:mockito/mockito.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:swiftcomp/presentation/settings/viewModels/login_view_model.dart';
+import 'package:swiftcomp/presentation/auth/login_view_model.dart';
 import 'package:infrastructure/mocks/google_sign_in_service_mock.dart';
 
 void main() {
@@ -74,7 +75,8 @@ void main() {
       test('should set isLoading to true during login process', () async {
         const email = 'test@example.com';
         const password = 'password123';
-        when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => 'accessToken');
+        final user = User(email: email);
+        when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => user);
 
         final future = loginViewModel.login(email, password);
 
@@ -86,11 +88,11 @@ void main() {
       test('should return access token on successful login', () async {
         const email = 'test@example.com';
         const password = 'password123';
-        const accessToken = 'accessToken';
-        when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => accessToken);
+        final user = User(email: email);
+        when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => user);
 
         final result = await loginViewModel.login(email, password);
-        expect(result, accessToken);
+        expect(result, user);
         expect(loginViewModel.errorMessage, null);
       });
 

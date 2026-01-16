@@ -21,7 +21,7 @@ class APIEnvironment {
     final prefs = await SharedPreferences.getInstance();
     final String currentEnvironment = prefs.getString(_environmentKey) ?? "production";
     if (currentEnvironment == "production") {
-      return "https://composites-ai-backend-b303708f8d96.herokuapp.com/api";
+      return "https://compositesai.com/api/v1";
     } else {
       return "http://localhost:8080/api";
     }
