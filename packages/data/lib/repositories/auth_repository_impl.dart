@@ -99,6 +99,13 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<bool> isLoggedIn() async {
+    final token = await tokenProvider.getToken();
+    return token != null;
+  }
+
+  @override
   Future<void> forgetPassword(String email) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/forget-password');
@@ -119,6 +126,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
   Future<String> resetPassword(
       String email, String newPassword, String confirmationCode) async {
     final baseURL = await apiEnvironment.getBaseUrl();
@@ -141,6 +149,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
   Future<void> sendSignupVerificationCode(String email) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/send-verification');
@@ -163,6 +172,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
   Future<String> updatePassword(String newPassword) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/update-password');
@@ -180,7 +190,8 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  Future<String> syncUser(
+  @override
+  Future<void> syncUser(
       String? displayName, String email, String? photoUrl) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/sync-user');
@@ -200,7 +211,8 @@ class AuthRepositoryImpl implements AuthRepository {
       // User already exists, backend returns an access token
       final accessToken = data['accessToken'];
       if (accessToken != null) {
-        return accessToken; // Return the access token
+        await tokenProvider.saveToken(accessToken);
+        return;
       } else {
         throw Exception('Access token missing in response');
       }
@@ -302,6 +314,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
   Future<LinkedinUserProfile> fetchLinkedInUserProfile(
       String? accessToken) async {
     if (accessToken == null || accessToken.isEmpty) {
@@ -329,6 +342,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
   Future<Uri> getAuthUrl() async {
     final String clientId = dotenv.env['LINKEDIN_CLIENT_ID'] ?? '';
     print("LinkedIn Client ID: " + clientId);

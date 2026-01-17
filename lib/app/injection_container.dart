@@ -71,7 +71,7 @@ void initInjection() {
   sl.registerLazySingleton<ChatSessionUseCase>(
       () => ChatSessionUseCaseImpl(repository: sl()));
   sl.registerLazySingleton<AuthUseCase>(
-      () => AuthUseCaseImpl(repository: sl(), tokenProvider: sl()));
+      () => AuthUseCaseImpl(repository: sl()));
   sl.registerLazySingleton<UserUseCase>(
       () => UserUseCase(repository: sl(), tokenProvider: sl()));
   sl.registerLazySingleton<CompositeExpertUseCase>(
