@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/update_name_page.dart';
 import 'package:swiftcomp/presentation/auth/update_password.dart';
 import '../../../app/injection_container.dart';
+import '../../conponents/base64-image.dart';
 import '../viewModels/user_profile_view_model.dart';
 
 class UserProfilePage extends StatelessWidget {
@@ -51,15 +52,7 @@ class UserProfilePage extends StatelessWidget {
                                 radius: 27.5, // Adjust the radius to match the icon size
                                 backgroundColor: Colors.transparent,
                                 child: ClipOval(
-                                  child: CachedNetworkImage(
-                                    imageUrl: viewModel.user!.avatarUrl!,
-                                    placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
-                                    errorWidget: (context, url, error) {
-                                      debugPrint('Error loading image: $url, Error: $error');
-                                      return const Icon(Icons.error, color: Colors.red);
-                                    },
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: Base64Image(viewModel.user!.avatarUrl!)
                                 ),
                               )
                                   : const Icon(

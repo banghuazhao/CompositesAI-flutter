@@ -11,6 +11,7 @@ import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import '../../../app/injection_container.dart';
 import '../../chat/viewModels/composites_tools_view_model.dart';
+import '../../conponents/base64-image.dart';
 import '../viewModels/manage_composite_experts_view_model.dart';
 import '../viewModels/settings_view_model.dart';
 import 'apply_expert_page.dart';
@@ -87,19 +88,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               radius: 22.5,
                               backgroundColor: Colors.transparent,
                               child: ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: viewModel.user!.avatarUrl!,
-                                  placeholder: (context, url) =>
-                                      const CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                  errorWidget: (context, url, error) {
-                                    debugPrint(
-                                        'Error loading image: $url, Error: $error');
-                                    return const Icon(Icons.error,
-                                        color: Colors.red);
-                                  },
-                                  fit: BoxFit.cover,
-                                ),
+                                child: Base64Image(viewModel.user!.avatarUrl!)
                               ),
                             )
                           : const Icon(

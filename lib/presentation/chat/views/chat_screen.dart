@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/login_page.dart';
+import '../../conponents/base64-image.dart';
 import '../../settings/views/user_profile_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_message_list.dart';
@@ -18,7 +19,8 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMixin, RouteAware {
+class _ChatScreenState extends State<ChatScreen>
+    with AutomaticKeepAliveClientMixin, RouteAware {
   @override
   bool get wantKeepAlive => true;
 
@@ -63,7 +65,8 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                       onPressed: () async {
                         String? result = await Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                          MaterialPageRoute(
+                              builder: (context) => const LoginPage()),
                         );
                         if (result == "Log in Success") {
                           await viewModel.checkAuthStatus();
@@ -81,7 +84,8 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                             icon: const Icon(Icons.clear),
                             tooltip: "Clear Selection",
                             onPressed: () {
-                              viewModel.selectedMessages.clear(); // Remove all selections
+                              viewModel.selectedMessages
+                                  .clear(); // Remove all selections
                               viewModel.notifyListeners(); // Update UI
                             },
                           ),
@@ -97,11 +101,13 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                               style: TextStyle(fontSize: 14), // Smaller text
                             ),
                             style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 6, horizontal: 10),
                               // Smaller padding
                               minimumSize: const Size(88, 35),
                               // Smaller size
-                              visualDensity: VisualDensity.compact, // Makes it more compact
+                              visualDensity: VisualDensity
+                                  .compact, // Makes it more compact
                             ),
                           ),
 
@@ -114,21 +120,25 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                               SizedBox(width: 5),
                               Text(
                                 "Export Chat",
-                                style: TextStyle(fontSize: 14, color: Colors.white),
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.white),
                               ),
                             ],
                           ),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0)),
                           onSelected: (String value) async {
-                            final chatViewModel =
-                                Provider.of<ChatViewModel>(context, listen: false);
+                            final chatViewModel = Provider.of<ChatViewModel>(
+                                context,
+                                listen: false);
                             if (value == 'export jsonl') {
-                              await exportChatMessages(
-                                  chatViewModel, context, false); // Call export JSON function
+                              await exportChatMessages(chatViewModel, context,
+                                  false); // Call export JSON function
                             } else if (value == 'export xlsx') {
                               // Implement your Export XLSX logic here
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Export XLSX selected")),
+                                const SnackBar(
+                                    content: Text("Export XLSX selected")),
                               );
                             }
                           },
@@ -137,7 +147,8 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                               value: 'export jsonl',
                               child: Row(
                                 children: [
-                                  Icon(Icons.file_download, color: Colors.black),
+                                  Icon(Icons.file_download,
+                                      color: Colors.black),
                                   SizedBox(width: 10),
                                   Text("export jsonl"),
                                 ],
@@ -181,13 +192,17 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                             children: [
                               // Avatar or default icon
                               viewModel.user?.avatarUrl != null
-                                  ? CircleAvatar(
-                                      backgroundImage: NetworkImage(viewModel.user!.avatarUrl!),
-                                      radius: 20, // Slightly bigger radius for better visuals
+                                  ? ClipOval(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: Base64Image(
+                                            viewModel.user!.avatarUrl!),
+                                      ),
                                     )
                                   : const Icon(
                                       Icons.account_circle,
-                                      size: 48, // Adjusted size for consistency
+                                      size: 20, // Adjusted size for consistency
                                       color: Colors.white,
                                     ),
 
@@ -204,7 +219,8 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       // White background for contrast
-                                      shape: BoxShape.circle, // Ensure a perfect circle
+                                      shape: BoxShape
+                                          .circle, // Ensure a perfect circle
                                     ),
                                     alignment: Alignment.center,
                                     // Center the icon
@@ -239,7 +255,8 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   // Adjust blur intensity
                   child: Container(
-                    color: Colors.black.withOpacity(0.2), // Semi-transparent overlay
+                    color: Colors.black
+                        .withOpacity(0.2), // Semi-transparent overlay
                   ),
                 ),
 
@@ -288,7 +305,8 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
                           style: TextStyle(fontSize: 16),
                         ),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -304,12 +322,13 @@ class _ChatScreenState extends State<ChatScreen> with AutomaticKeepAliveClientMi
     );
   }
 
-  Future<void> exportChatMessages(
-      ChatViewModel chatViewModel, BuildContext context, bool shouldDownloadSelected) async {
+  Future<void> exportChatMessages(ChatViewModel chatViewModel,
+      BuildContext context, bool shouldDownloadSelected) async {
     try {
       // Get the list of messages from ChatViewModel
-      final List<Message> messages =
-          shouldDownloadSelected ? chatViewModel.selectedMessages : chatViewModel.messages;
+      final List<Message> messages = shouldDownloadSelected
+          ? chatViewModel.selectedMessages
+          : chatViewModel.messages;
 
       // Convert messages to JSON format
       //.map() function goes through each message in the messages list one by one.
