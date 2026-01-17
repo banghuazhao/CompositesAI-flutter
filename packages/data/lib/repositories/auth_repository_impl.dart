@@ -85,15 +85,15 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> logout() async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/auth/logout');
+    final url = Uri.parse('$baseURL/auths/signout');
 
-    final response = await authClient.post(
+    final response = await authClient.get(
       url,
       headers: {'Content-Type': 'application/json'},
     );
 
     if (response.statusCode == 200) {
-      return;
+      await tokenProvider.deleteToken();
     } else {
       throw mapServerErrorToDomainException(response);
     }

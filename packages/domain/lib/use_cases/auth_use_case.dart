@@ -41,17 +41,7 @@ class AuthUseCaseImpl implements AuthUseCase {
   }
 
   Future<void> logout() async {
-    final accessToken = await tokenProvider.getToken();
-    if (accessToken == null || accessToken == "") {
-      return;
-    }
-    try {
-      await repository.logout();
-    } catch (e) {
-      rethrow;
-    } finally {
-      await tokenProvider.deleteToken();
-    }
+    await repository.logout();
   }
 
   Future<bool> isLoggedIn() async {
