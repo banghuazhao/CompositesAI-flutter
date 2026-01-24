@@ -1,4 +1,7 @@
+import 'package:data/chat/chat_repository_imp.dart';
 import 'package:data/repositories/functional_call_repository_impl.dart';
+import 'package:domain/chat/chat_repository.dart';
+import 'package:domain/chat/chat_use_case.dart';
 import 'package:domain/repositories_abstract/functional_call_repository.dart';
 import 'package:domain/use_cases/functional_call_use_case.dart';
 import 'package:get_it/get_it.dart';
@@ -7,7 +10,6 @@ import 'package:http/http.dart' as http;
 import 'package:data/repositories/composites_tools_repository_impl.dart';
 import 'package:data/repositories/composite_expert_repository_impl.dart';
 import 'package:data/repositories/auth_repository_impl.dart';
-import 'package:data/repositories/chat_session_repository_imp.dart';
 import 'package:data/repositories/user_repository_impl.dart';
 import 'package:data/repositories/threads_repository_impl.dart';
 import 'package:data/repositories/thread_runs_repository_impl.dart';
@@ -47,7 +49,7 @@ final sl = GetIt.instance;
 void initInjection() {
   // ViewModels
   sl.registerFactory<ChatViewModel>(() => ChatViewModel(
-        chatSessionUseCase: sl(),
+        chatUseCase: sl(),
         authUseCase: sl(),
         userUserCase: sl(),
         threadsUseCase: sl(),
@@ -68,8 +70,8 @@ void initInjection() {
       () => UpdatePasswordViewModel(authUseCase: sl()));
 
   // Use Cases
-  sl.registerLazySingleton<ChatSessionUseCase>(
-      () => ChatSessionUseCaseImpl(repository: sl()));
+  sl.registerLazySingleton<ChatUseCase>(
+      () => ChatUseCaseImpl(repository: sl()));
   sl.registerLazySingleton<AuthUseCase>(
       () => AuthUseCaseImpl(repository: sl()));
   sl.registerLazySingleton<UserUseCase>(
@@ -86,8 +88,8 @@ void initInjection() {
       () => FunctionalCallUseCaseImpl(repository: sl()));
 
   // Repositories
-  sl.registerLazySingleton<ChatSessionRepository>(
-      () => ChatSessionRepositoryImpl());
+  sl.registerLazySingleton<ChatRepository>(
+      () => ChatRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(
       client: sl(),
       authClient: sl(),

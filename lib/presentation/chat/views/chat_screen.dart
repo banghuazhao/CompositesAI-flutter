@@ -11,7 +11,7 @@ import '../../conponents/base64-image.dart';
 import '../../settings/views/user_profile_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_message_list.dart';
-import 'chat_session_drawer.dart';
+import 'chat_list.dart';
 import 'package:path_provider/path_provider.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -30,7 +30,7 @@ class _ChatScreenState extends State<ChatScreen>
   void initState() {
     super.initState();
     viewModel = Provider.of<ChatViewModel>(context, listen: false);
-    _initializeChatSessions();
+    _fetchChats();
     _fetchAuthSession();
   }
 
@@ -39,8 +39,8 @@ class _ChatScreenState extends State<ChatScreen>
     setState(() {});
   }
 
-  Future<void> _initializeChatSessions() async {
-    await viewModel.initializeChatSessions();
+  Future<void> _fetchChats() async {
+    await viewModel.fetchChats();
     setState(() {});
   }
 
@@ -243,7 +243,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ],
           ),
-          drawer: viewModel.isLoggedIn ? ChatDrawer() : null,
+          drawer: viewModel.isLoggedIn ? ChatList() : null,
           body: Stack(
             children: [
               // Main content (ChatMessageList or Login prompt)

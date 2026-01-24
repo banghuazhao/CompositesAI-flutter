@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../viewModels/chat_view_model.dart';
 
-class ChatDrawer extends StatelessWidget {
+class ChatList extends StatelessWidget {
+  const ChatList({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     final chatViewModel = Provider.of<ChatViewModel>(context);
@@ -17,37 +18,34 @@ class ChatDrawer extends StatelessWidget {
               color: Colors.grey.shade800,
             ),
             child: Text(
-              'Chat Sessions',
+              'Chats',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 24,
               ),
             ),
           ),
-          // New Session comes first
           ListTile(
             leading: Icon(Icons.add),
-            title: Text('New Session'),
+            title: Text('New Chat'),
             onTap: () {
-              chatViewModel.addNewSession();
-              Navigator.pop(context); // Close the drawer after creating a new session
+              chatViewModel.onTapNewChat();
+              Navigator.pop(context);
             },
           ),
-          // Chat sessions are listed last
-          ...chatViewModel.sessions.map((session) {
+          ...chatViewModel.chats.map((chat) {
             return ListTile(
-              leading: Icon(Icons.chat),
               title: Text(
-                session.title,
+                chat.title,
                 overflow: TextOverflow.ellipsis, // Truncate with ...
                 maxLines: 1, // Limit to one line
               ),
               onTap: () {
-                chatViewModel.selectSession(session);
-                Navigator.pop(context); // Close the drawer after selecting a session
+                chatViewModel.selectChat(chat);
+                Navigator.pop(context);
               },
             );
-          }).toList(),
+          }),
         ],
       ),
     );

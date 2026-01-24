@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math';
+import 'package:domain/chat/chat.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/entities/chat/function_tool.dart';
 import 'package:domain/entities/tool_creation_requests.dart';
@@ -20,7 +20,7 @@ import 'package:flutter/services.dart';
 import '../../../util/chat_limiter.dart';
 
 class ChatViewModel extends ChangeNotifier {
-  final ChatSessionUseCase _chatSessionUseCase;
+  final ChatUseCase _chatUseCase;
   final AuthUseCase _authUseCase;
   final UserUseCase _userUserCase;
   final ThreadRunsUseCase _threadRunsUseCase;
@@ -34,8 +34,8 @@ class ChatViewModel extends ChangeNotifier {
   final ScrollController scrollController = ScrollController();
   bool isLoading = false;
 
-  List<ChatSession> sessions = [];
-  ChatSession? _selectedSession;
+  List<Chat> chats = [];
+  Chat? _selectedChat;
 
   List<Message> messages = [];
   StreamController<ChatResponse> threadResponseController =
@@ -59,14 +59,14 @@ class ChatViewModel extends ChangeNotifier {
   ];
 
   ChatViewModel({
-    required ChatSessionUseCase chatSessionUseCase,
+    required ChatUseCase chatUseCase,
     required AuthUseCase authUseCase,
     required UserUseCase userUserCase,
     required ThreadsUseCase threadsUseCase,
     required ThreadRunsUseCase threadRunsUseCase,
     required CompositesToolsUseCase toolsUseCase,
     required FunctionalCallUseCase functionalCallUseCase,
-  })  : _chatSessionUseCase = chatSessionUseCase,
+  })  : _chatUseCase = chatUseCase,
         _authUseCase = authUseCase,
         _userUserCase = userUserCase,
         _threadRunsUseCase = threadRunsUseCase,
@@ -117,15 +117,16 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Initialize session if no sessions exist
-  Future<void> initializeChatSessions() async {
-    sessions = await _chatSessionUseCase.getAllSessions();
-    if (sessions.isEmpty) {
-      addNewSession();
-    } else {
-      _selectedSession = sessions.first;
-      notifyListeners();
-    }
+  // Initialize session if no chat list exists
+  Future<void> fetchChats() async {
+    chats = await _chatUseCase.getChatList();
+    _selectedChat = chats.first;
+    notifyListeners();
+  }
+
+  void onTapNewChat() {
+    _selectedChat = null;
+    notifyListeners();
   }
 
   Future<void> checkAuthStatus() async {
@@ -152,15 +153,9 @@ class ChatViewModel extends ChangeNotifier {
     });
   }
 
-  void addNewSession() {
-    final newSession = _chatSessionUseCase.createNewSession();
-    sessions.add(newSession);
-    selectSession(newSession);
-  }
 
-  void selectSession(ChatSession session) {
-    _selectedSession = session;
-    messages = [..._selectedSession!.messages];
+  void selectChat(Chat chat) {
+    _selectedChat = chat;
     notifyListeners();
     scrollToBottom();
   }
@@ -171,13 +166,13 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> sendInputMessage(String text) async {
     final message = Message(role: 'user', content: text);
-    if (_selectedSession == null) return;
+    if (_selectedChat == null) return;
 
     final Stream<ChatResponse> Function() streamBuilder = messages.isEmpty
         ? () => _threadRunsUseCase.createThreadAndRunStream(
             assistantId, message.content)
         : () {
-            final threadId = _selectedSession!.threadId!;
+            final threadId = _selectedChat!.id!;
             return _threadRunsUseCase.createMessageAndRunStream(
                 threadId, assistantId, message.content);
           };
@@ -203,15 +198,15 @@ class ChatViewModel extends ChangeNotifier {
 
         if (response is Message) {
           finalMessage = response;
-          _selectedSession?.title = response.content;
+          _selectedChat?.title = response.content;
           scrollToBottom();
         } else if (response is Thread) {
-          _selectedSession?.threadId = response.id;
+          // _selectedChat?.id = response.id;
         } else if (response is FunctionTool) {
           final threadToolOutput =
               await _functionalCallUseCase.callFunctionTool(response);
           streamBuilder() => _threadRunsUseCase.submitToolOutputsToRunStream(
-              _selectedSession!.threadId!, response.runId, [threadToolOutput]);
+              _selectedChat!.id!, response.runId, [threadToolOutput]);
           setLoading(true);
           scrollToBottom();
           await _processResponseStream(streamBuilder);
@@ -226,14 +221,9 @@ class ChatViewModel extends ChangeNotifier {
         // print(finalMessage.content);
         await _chatLimiter.incrementChatCount();
         messages.add(finalMessage);
-        saveSession();
       }
       setLoading(false);
     }
-  }
-
-  void saveSession() {
-    _selectedSession?.messages = [...messages];
   }
 
   Future<void> onDefaultQuestionsTapped(int index) async {
