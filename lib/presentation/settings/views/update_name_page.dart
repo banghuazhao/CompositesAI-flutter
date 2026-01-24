@@ -67,13 +67,14 @@ class _UpdateNamePageState extends State<UpdateNamePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Enter your new nickname:",
+              "Enter your new username:",
               style: TextStyle(fontSize: 16.0),
             ),
             TextFormField(
               controller: _nameController,
               decoration: InputDecoration(
-                hintText: "New name",
+                hintText: widget.currentName,
+                hintStyle: const TextStyle(color: Colors.black54),
               ),
             ),
             SizedBox(height: 20.0),

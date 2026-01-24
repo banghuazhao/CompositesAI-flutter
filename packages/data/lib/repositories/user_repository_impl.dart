@@ -43,20 +43,25 @@ class UserRepositoryImpl implements UserRepository {
   Future<void> updateMe(String newName) async {
     final baseURL = await apiEnvironment.getBaseUrl();
 
-    final response = await authClient.patch(
-      Uri.parse('$baseURL/users/me'), // Adjust URL as necessary
+    // Backend endpoint `/auths/update/profile` requires `profile_image_url`.
+    // We can reuse the current user profile image returned by `fetchMe()`.
+    final currentUser = await fetchMe();
+    final profileImageUrl = currentUser.avatarUrl ?? '';
+    if (profileImageUrl.isEmpty) {
+      throw Exception('Missing profile_image_url for current user');
+    }
+
+    final response = await authClient.post(
+      Uri.parse('$baseURL/auths/update/profile'), // Adjust URL as necessary
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'name': newName,
+        'profile_image_url': profileImageUrl,
       }),
     );
 
-    if (response.statusCode != 200) {
-      throw Exception(
-          'Failed to update name. Status code: ${response.statusCode}');
-    } else {
-      throw mapServerErrorToDomainException(response);
-    }
+    if (response.statusCode == 200) return;
+    throw mapServerErrorToDomainException(response);
   }
 
   @override
