@@ -7,9 +7,15 @@ class UpdatePasswordViewModel extends ChangeNotifier {
   bool isLoading = false;
   String errorMessage = '';
 
+
+  bool obscureCurrentPassword = true;
   bool obscureTextNewPassword = true;
   bool obscureTextConfirmPassword = true;
 
+  void toggleCurrentPasswordVisibility() {
+    obscureCurrentPassword = !obscureCurrentPassword;
+    notifyListeners();
+  }
   void toggleNewPasswordVisibility() {
     obscureTextNewPassword = !obscureTextNewPassword;
     notifyListeners(); // Notify the UI about the change
@@ -22,16 +28,14 @@ class UpdatePasswordViewModel extends ChangeNotifier {
 
   UpdatePasswordViewModel({required this.authUseCase});
 
-  Future<String> updatePassword(String newPassword) async {
+
+  Future<void> updatePassword(String currentPassword, String newPassword) async {
     _setLoadingState(true);
     errorMessage = '';
     try {
-      // Call the auth use case to update the password
-      final message = await authUseCase.updatePassword(newPassword);
-      return message;
+      await authUseCase.updatePassword(currentPassword, newPassword);
     } catch (error) {
       errorMessage = 'Failed to update password.';
-      return errorMessage;
     } finally {
       _setLoadingState(false);
     }

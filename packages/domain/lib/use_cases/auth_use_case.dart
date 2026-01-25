@@ -25,7 +25,7 @@ abstract class AuthUseCase {
 
   Future<void> sendSignupVerificationCode(String email);
 
-  Future<String> updatePassword(String newPassword);
+  Future<void> updatePassword(String currentPassword, String newPassword);
 
   Future<void> syncUser(String? displayName, String email, String? photoUrl);
 
@@ -88,9 +88,8 @@ class AuthUseCaseImpl implements AuthUseCase {
   }
 
   @override
-  Future<String> updatePassword(String newPassword) async {
-    String message = await repository.updatePassword(newPassword);
-    return message;
+  Future<void> updatePassword(String currentPassword, String newPassword) async {
+    await repository.updatePassword(currentPassword, newPassword);
   }
 
   @override

@@ -56,9 +56,9 @@ class MockAuthUseCase extends Mock implements AuthUseCase {
           returnValueForMissingStub: Future.value(''));
 
   @override
-  Future<String> updatePassword(String newPassword) =>
+  Future<String> updatePassword(String currentPassword, String newPassword) =>
       super.noSuchMethod(
-        Invocation.method(#updatePassword, [newPassword]),
+        Invocation.method(#updatePassword, [currentPassword, newPassword]),
           returnValue: Future.value(''),
           returnValueForMissingStub: Future.value(''));
 

@@ -12,15 +12,19 @@ class UpdatePasswordPage extends StatefulWidget {
 
 class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _currentPassWordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   bool isNewPasswordValid = false;
+  bool isCurrentPasswordValid = false;
+  String? currentPassword;
   String? newPassword;
   String? confirmCode;
   bool confirmEnable = false;
 
   @override
   void dispose() {
+    _currentPassWordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -28,7 +32,7 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
 
   void checkConfirmInput() {
     setState(() {
-      confirmEnable = (_newPasswordController.text.isNotEmpty) &&
+      confirmEnable = (_currentPassWordController.text.isNotEmpty) &&
           (_newPasswordController.text.length >= 6) &&
           _confirmPasswordController.text == _newPasswordController.text;
     });
@@ -50,10 +54,37 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
                 child: Column(
                   children: [
                     TextFormField(
+                      controller: _currentPassWordController,
+                      decoration: InputDecoration(
+                        labelText: 'Current Password',
+                        hintText: "Enter Current Password",
+                        hintStyle: const TextStyle(color: Colors.black54),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            viewModel.obscureCurrentPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: viewModel.toggleCurrentPasswordVisibility,
+                        ),
+                      ),
+                      obscureText: viewModel.obscureCurrentPassword,
+                      onChanged: (text) {
+                        currentPassword = text;
+                        setState(() {
+                          isCurrentPasswordValid = currentPassword!.isNotEmpty;
+                        });
+                        checkConfirmInput();
+                      },
+                    ),
+
+                    SizedBox(height: 16.0),
+                    TextFormField(
                       controller: _newPasswordController,
                       decoration: InputDecoration(
                         labelText: 'New Password',
                         hintText: "Enter new password",
+                        hintStyle: const TextStyle(color: Colors.black54),
                         suffixIcon: IconButton(
                           icon: Icon(
                             viewModel.obscureTextNewPassword
@@ -95,6 +126,7 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
                       decoration: InputDecoration(
                         labelText: 'Confirm New Password',
                           hintText: "Re-enter your password",
+                          hintStyle: const TextStyle(color: Colors.black54),
                           border: UnderlineInputBorder(),
                           errorBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: Color(0xFFB71C1C)),
@@ -157,14 +189,14 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
     }
 
       // Access the view model and update the user's password
-    await viewModel.updatePassword(_newPasswordController.text);
+    await viewModel.updatePassword(_currentPassWordController.text, _newPasswordController.text);
     if (viewModel.errorMessage.isNotEmpty) {
       // Show error message if update fails and return error string
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(viewModel.errorMessage)),
       );
     } else {
-      Navigator.pop(context, 'refresh');
+      Navigator.pop(context, 'password_updated');
     }
   }
 }

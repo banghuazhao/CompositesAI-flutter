@@ -173,18 +173,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<String> updatePassword(String newPassword) async {
+  Future<void> updatePassword(String currentPassword, String newPassword) async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/auth/update-password');
+    final url = Uri.parse('$baseURL/auths/update/password');
     final response = await authClient.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'password': newPassword}),
+      body: jsonEncode({
+        'password': currentPassword,
+        'new_password': newPassword}),
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['message'];
+      return;
     } else {
       throw mapServerErrorToDomainException(response);
     }

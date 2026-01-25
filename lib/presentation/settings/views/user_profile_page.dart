@@ -141,9 +141,14 @@ class UserProfilePage extends StatelessWidget {
                           builder: (context) => UpdatePasswordPage(),
                         ),
                       );
-                      if (result == 'refresh') {
+                      if (result == 'password_updated') {
                         await viewModel.fetchUser();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Password updated successfully')),
+                        );
                       }
+
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(MediaQuery.of(context).size.width * 0.5, 50),

@@ -47,13 +47,13 @@ void main() {
       test('should set isLoading to true and back to false during the process', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final UpdatePasswordViewModel forgetPasswordViewModel = UpdatePasswordViewModel(authUseCase: mockAuthUseCase);
-
+        const currentPassword = "123456";
         const newPassword = 'newSecurePassword123';
         const successMessage = 'Password updated successfully';
 
-        when(mockAuthUseCase.updatePassword(newPassword)).thenAnswer((_) async => successMessage);
+        when(mockAuthUseCase.updatePassword(currentPassword, newPassword)).thenAnswer((_) async => successMessage);
 
-        final future = forgetPasswordViewModel.updatePassword(newPassword);
+        final future = forgetPasswordViewModel.updatePassword(currentPassword, newPassword);
 
         // Verify isLoading is true during the process
         expect(forgetPasswordViewModel.isLoading, true);
@@ -67,15 +67,15 @@ void main() {
       test('should call updatePassword with the correct new password', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final UpdatePasswordViewModel forgetPasswordViewModel = UpdatePasswordViewModel(authUseCase: mockAuthUseCase);
-
+        const currentPassword = "123456";
         const newPassword = 'newSecurePassword123';
         const successMessage = 'Password updated successfully';
 
-        when(mockAuthUseCase.updatePassword(newPassword)).thenAnswer((_) async => successMessage);
+        when(mockAuthUseCase.updatePassword(currentPassword, newPassword)).thenAnswer((_) async => successMessage);
 
-        await forgetPasswordViewModel.updatePassword(newPassword);
+        await forgetPasswordViewModel.updatePassword(currentPassword, newPassword);
 
-        verify(mockAuthUseCase.updatePassword(newPassword)).called(1);
+        verify(mockAuthUseCase.updatePassword(currentPassword, newPassword)).called(1);
       });
 
       test('should return success message on successful process', () async {
@@ -84,38 +84,36 @@ void main() {
 
         const newPassword = 'newSecurePassword123';
         const successMessage = 'Password updated successfully';
+        const currentPassword = "123456";
+        when(mockAuthUseCase.updatePassword(currentPassword, newPassword)).thenAnswer((_) async => successMessage);
 
-        when(mockAuthUseCase.updatePassword(newPassword)).thenAnswer((_) async => successMessage);
-
-        final result = await forgetPasswordViewModel.updatePassword(newPassword);
-
-        expect(result, successMessage);
+        final result = await forgetPasswordViewModel.updatePassword(currentPassword, newPassword);
+        
         expect(forgetPasswordViewModel.errorMessage, '');
       });
 
       test('should set and return errorMessage on failure', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final UpdatePasswordViewModel forgetPasswordViewModel = UpdatePasswordViewModel(authUseCase: mockAuthUseCase);
-
+        const currentPassword = "123456";
         const newPassword = 'newSecurePassword123';
 
-        when(mockAuthUseCase.updatePassword(newPassword)).thenThrow(Exception('Error'));
+        when(mockAuthUseCase.updatePassword(currentPassword, newPassword)).thenThrow(Exception('Error'));
 
-        final result = await forgetPasswordViewModel.updatePassword(newPassword);
+        await forgetPasswordViewModel.updatePassword(currentPassword, newPassword);
 
-        expect(result, 'Failed to update password.');
         expect(forgetPasswordViewModel.errorMessage, 'Failed to update password.');
       });
 
       test('should reset isLoading after failure', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final UpdatePasswordViewModel forgetPasswordViewModel = UpdatePasswordViewModel(authUseCase: mockAuthUseCase);
-
+        const currentPassword = "123456";
         const newPassword = 'newSecurePassword123';
 
-        when(mockAuthUseCase.updatePassword(newPassword)).thenThrow(Exception('Error'));
+        when(mockAuthUseCase.updatePassword(currentPassword, newPassword)).thenThrow(Exception('Error'));
 
-        await forgetPasswordViewModel.updatePassword(newPassword);
+        await forgetPasswordViewModel.updatePassword(currentPassword, newPassword);
 
         expect(forgetPasswordViewModel.isLoading, false);
       });
