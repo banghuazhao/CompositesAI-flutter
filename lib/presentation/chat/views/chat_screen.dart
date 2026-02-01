@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:domain/entities/chat/message.dart';
+import 'package:domain/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -63,12 +64,12 @@ class _ChatScreenState extends State<ChatScreen>
                       color: Colors.white,
                       tooltip: "Sign In",
                       onPressed: () async {
-                        String? result = await Navigator.push(
+                        User? user = await Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => const LoginPage()),
                         );
-                        if (result == "Log in Success") {
+                        if (user != null) {
                           await viewModel.checkAuthStatus();
                           setState(() {}); // Trigger UI rebuild
                         }
@@ -250,7 +251,7 @@ class _ChatScreenState extends State<ChatScreen>
               ChatMessageList(),
 
               // Blur effect applied when the user is not logged in and there are more than 6 messages
-              if (!viewModel.isLoggedIn && viewModel.messages.length > 6)
+              if (!viewModel.isLoggedIn)
                 BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   // Adjust blur intensity
@@ -261,7 +262,7 @@ class _ChatScreenState extends State<ChatScreen>
                 ),
 
               // Foreground content (Text & Button) remains fully visible
-              if (!viewModel.isLoggedIn && viewModel.messages.length > 6)
+              if (!viewModel.isLoggedIn)
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -288,13 +289,13 @@ class _ChatScreenState extends State<ChatScreen>
                       const SizedBox(height: 30),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          String? result = await Navigator.push(
+                          User? user = await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => const LoginPage(),
                             ),
                           );
-                          if (result == "Log in Success") {
+                          if (user != null) {
                             await viewModel.checkAuthStatus();
                             setState(() {}); // Trigger UI rebuild
                           }
