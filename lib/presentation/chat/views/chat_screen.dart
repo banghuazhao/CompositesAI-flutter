@@ -1,17 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:domain/entities/chat/message.dart';
 import 'package:domain/entities/user.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import '../../auth/login_page.dart';
 import '../../conponents/base64-image.dart';
 import '../../settings/views/user_profile_page.dart';
 import '../viewModels/chat_view_model.dart';
-import 'chat_message_list.dart';
+import 'message_list.dart';
 import 'chat_list.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -24,8 +27,18 @@ class _ChatScreenState extends State<ChatScreen>
     with AutomaticKeepAliveClientMixin, RouteAware {
   @override
   bool get wantKeepAlive => true;
+  final TextEditingController textController =
+  TextEditingController();
+  final FocusNode focusNode = FocusNode();
 
   late ChatViewModel viewModel;
+
+  @override
+  void dispose() {
+    focusNode.dispose();
+    textController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -247,79 +260,308 @@ class _ChatScreenState extends State<ChatScreen>
           drawer: viewModel.isLoggedIn ? ChatList() : null,
           body: Stack(
             children: [
-              // Main content (ChatMessageList or Login prompt)
-              ChatMessageList(),
-
-              // Blur effect applied when the user is not logged in and there are more than 6 messages
-              if (!viewModel.isLoggedIn)
-                BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  // Adjust blur intensity
-                  child: Container(
-                    color: Colors.black
-                        .withOpacity(0.2), // Semi-transparent overlay
-                  ),
+              if (viewModel.isLoggedIn) ...[
+                Positioned.fill(
+                  child: viewModel.selectedChat != null
+                      ? MessageList()
+                      : defaultQuestionView(),
                 ),
-
-              // Foreground content (Text & Button) remains fully visible
-              if (!viewModel.isLoggedIn)
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          'images/Icon-512.png',
-                          width: 60,
-                          height: 60,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        "Please sign in to access the chat and continue your learning experience.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black, // Keep text fully visible
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          User? user = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
-                            ),
-                          );
-                          if (user != null) {
-                            await viewModel.checkAuthStatus();
-                            setState(() {}); // Trigger UI rebuild
-                          }
-                        },
-                        icon: const Icon(Icons.manage_accounts, size: 22),
-                        label: const Text(
-                          "Login to Chat",
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: inputBar(),
+                )
+              ] else
+                noLoginView()
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget defaultQuestionView() {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 30), // More spacing from the top
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Logo with rounded corners
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'images/Icon-512.png',
+                    width: 40,
+                    height: 40,
+                  ),
+                ),
+                const SizedBox(width: 10), // More spacing for a balanced look
+                Flexible(
+                  child: Text(
+                    "Hi, I am Composites AI",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.normal,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "How can I help you today?",
+            style: TextStyle(
+              fontSize: 28, // Slightly larger for better readability
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 36),
+
+          Center(
+            // Center the grid
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: context
+                    .contentWidth, // Adjust as needed to keep it centered
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  double width = constraints.maxWidth;
+                  int crossAxisCount = max(width ~/ 200, 2);
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 2,
+                      crossAxisSpacing: 12.0,
+                      mainAxisSpacing: 12.0,
+                    ),
+                    itemCount: viewModel.defaultQuestions.length,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    itemBuilder: (context, index) {
+                      return InkWell(
+                        onTap: () async {
+                          await viewModel.onDefaultQuestionsTapped(index);
+                        },
+                        child: _buildDefaultQuestionCard(
+                            viewModel.defaultQuestions[index]),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  // A helper function to create default question cards
+  Widget _buildDefaultQuestionCard(String question) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Colors.grey.shade200, width: 1.0),
+      ),
+      elevation: 2, // Lower elevation for a more compact look
+      child: SizedBox(
+        width: 80, // Reduce the width
+        height: 30, // Reduce the height
+        child: Padding(
+          padding: const EdgeInsets.all(4.0), // Reduce padding
+          child: Center(
+            child: Text(
+              question,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.black),
+              // Smaller font size
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis, // Prevents overflow
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget inputBar() {
+    return Column(
+      children: [
+        Container(
+          width: context.contentWidth,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24.0),
+            border: Border.all(color: Colors.grey.shade300),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 15,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: KeyboardListener(
+                  focusNode: FocusNode(),
+                  onKeyEvent: (KeyEvent event) async {
+                    if (event is KeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.enter) {
+                      final isShiftPressed = HardwareKeyboard
+                          .instance.logicalKeysPressed
+                          .contains(LogicalKeyboardKey.shiftLeft) ||
+                          HardwareKeyboard.instance.logicalKeysPressed
+                              .contains(LogicalKeyboardKey.shiftRight);
+                      if (isShiftPressed) {
+                        // Insert newline
+                        final text = textController.text;
+                        textController.text = "$text\n";
+                        textController.selection = TextSelection.fromPosition(
+                          TextPosition(offset: textController.text.length),
+                        );
+                      } else if (!viewModel.isLoading) {
+                        final text = textController.text.trim();
+                        if (text.isNotEmpty) {
+                          if (await viewModel.reachChatLimit()) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text(
+                                      'Daily chat limit reached (50/day)')),
+                            );
+                            return;
+                          }
+                          textController.clear();
+                          await viewModel.sendInputMessage(text);
+                        }
+                      }
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        focusNode.requestFocus();
+                      });
+                    }
+                  },
+                  child: TextField(
+                    controller: textController,
+                    focusNode: focusNode,
+                    decoration: InputDecoration(
+                      hintText: 'Ask anything about Composites...',
+                      hintStyle: TextStyle(color: Colors.grey.shade500),
+                      border: InputBorder.none,
+                    ),
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.done,
+                    minLines: 2,
+                    maxLines: 8,
+                    onChanged: (text) {
+                      setState(() {}); // Update UI for button state
+                    },
+                  ),
+                ),
+              ),
+              viewModel.isLoading
+                  ? Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+                  : IconButton(
+                icon: Icon(Icons.send),
+                onPressed: textController.text.isEmpty
+                    ? null
+                    : () {
+                  final text = textController.text.trim();
+                  if (text.isNotEmpty) {
+                    textController.clear();
+                    viewModel.sendInputMessage(text);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
+  Widget noLoginView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              'images/Icon-512.png',
+              width: 60,
+              height: 60,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: const Text(
+              "Please sign in to access the chat and continue your learning experience.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black, // Keep text fully visible
+              ),
+            ),
+          ),
+          const SizedBox(height: 30),
+          ElevatedButton.icon(
+            onPressed: () async {
+              User? user = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LoginPage(),
+                ),
+              );
+              if (user != null) {
+                await viewModel.checkAuthStatus();
+                setState(() {}); // Trigger UI rebuild
+              }
+            },
+            icon: const Icon(Icons.manage_accounts, size: 22),
+            label: const Text(
+              "Login to Chat",
+              style: TextStyle(fontSize: 16),
+            ),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:domain/chat/chat.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/entities/chat/function_tool.dart';
-import 'package:domain/entities/tool_creation_requests.dart';
 import 'package:domain/entities/chat/thread.dart';
 import 'package:domain/entities/chat/chat_response.dart';
 import 'package:domain/entities/user.dart';
@@ -24,18 +23,16 @@ class ChatViewModel extends ChangeNotifier {
   final AuthUseCase _authUseCase;
   final UserUseCase _userUserCase;
   final ThreadRunsUseCase _threadRunsUseCase;
-  final CompositesToolsUseCase _toolsUseCase;
   final FunctionalCallUseCase _functionalCallUseCase;
 
   bool isLoggedIn = false;
   User? user;
-  List<ToolCreationRequest> tools = [];
 
   final ScrollController scrollController = ScrollController();
   bool isLoading = false;
 
   List<Chat> chats = [];
-  Chat? _selectedChat;
+  Chat? selectedChat;
 
   List<Message> messages = [];
   StreamController<ChatResponse> threadResponseController =
@@ -70,7 +67,6 @@ class ChatViewModel extends ChangeNotifier {
         _authUseCase = authUseCase,
         _userUserCase = userUserCase,
         _threadRunsUseCase = threadRunsUseCase,
-        _toolsUseCase = toolsUseCase,
         _functionalCallUseCase = functionalCallUseCase;
 
   Future<void> fetchAuthSessionNew() async {
@@ -120,12 +116,11 @@ class ChatViewModel extends ChangeNotifier {
   // Initialize session if no chat list exists
   Future<void> fetchChats() async {
     chats = await _chatUseCase.getChatList();
-    _selectedChat = chats.first;
     notifyListeners();
   }
 
   void onTapNewChat() {
-    _selectedChat = null;
+    selectedChat = null;
     notifyListeners();
   }
 
@@ -153,9 +148,8 @@ class ChatViewModel extends ChangeNotifier {
     });
   }
 
-
   void selectChat(Chat chat) {
-    _selectedChat = chat;
+    selectedChat = chat;
     notifyListeners();
     scrollToBottom();
   }
@@ -166,13 +160,13 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> sendInputMessage(String text) async {
     final message = Message(role: 'user', content: text);
-    if (_selectedChat == null) return;
+    if (selectedChat == null) return;
 
     final Stream<ChatResponse> Function() streamBuilder = messages.isEmpty
         ? () => _threadRunsUseCase.createThreadAndRunStream(
             assistantId, message.content)
         : () {
-            final threadId = _selectedChat!.id!;
+            final threadId = selectedChat!.id!;
             return _threadRunsUseCase.createMessageAndRunStream(
                 threadId, assistantId, message.content);
           };
@@ -198,15 +192,15 @@ class ChatViewModel extends ChangeNotifier {
 
         if (response is Message) {
           finalMessage = response;
-          _selectedChat?.title = response.content;
+          selectedChat?.title = response.content;
           scrollToBottom();
         } else if (response is Thread) {
-          // _selectedChat?.id = response.id;
+          // selectedChat?.id = response.id;
         } else if (response is FunctionTool) {
           final threadToolOutput =
               await _functionalCallUseCase.callFunctionTool(response);
           streamBuilder() => _threadRunsUseCase.submitToolOutputsToRunStream(
-              _selectedChat!.id!, response.runId, [threadToolOutput]);
+              selectedChat!.id!, response.runId, [threadToolOutput]);
           setLoading(true);
           scrollToBottom();
           await _processResponseStream(streamBuilder);
@@ -229,21 +223,6 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> onDefaultQuestionsTapped(int index) async {
     final question = defaultQuestions[index];
     await sendInputMessage(question);
-  }
-
-  Future<List<ToolCreationRequest>> getAllTools() async {
-    _setLoading(true);
-    try {
-      // First step: Make user an expert
-      tools = await _toolsUseCase.getAllTools();
-      return tools;
-    } catch (e) {
-      tools = [];
-      return tools;
-    } finally {
-      // Ensure the loading state is updated regardless of success or error
-      _setLoading(false);
-    }
   }
 
   void copyMessage(Message message) async {
