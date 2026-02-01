@@ -6,14 +6,16 @@ class Message extends ChatResponse {
   final String role;
   bool? isLiked;
   String content;
+  int timestamp;
 
-  Message({this.id = '', required this.role, this.isLiked, this.content = ''});
+  Message({this.id = '', required this.role, this.isLiked, this.content = '', this.timestamp = 0});
 
   Message.fromJson(Map<String, dynamic> json)
       : id = json['id'] ?? '',
         role = json['role'] ?? 'user',
         isLiked = json['isLiked'],
-        content = json['content'] ?? '';
+        content = json['content'] ?? '',
+        timestamp = json['timestamp'] ?? 0;
 
   // Method for converting a Message instance to JSON format
   Map<String, dynamic> toJson() {
@@ -22,6 +24,7 @@ class Message extends ChatResponse {
     data['role'] = role;
     data['content'] = content;
     data['isLiked'] = isLiked;
+    data['timestamp'] = timestamp;
     return data;
   }
 }

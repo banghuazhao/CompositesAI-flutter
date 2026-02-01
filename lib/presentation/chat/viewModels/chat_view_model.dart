@@ -29,7 +29,8 @@ class ChatViewModel extends ChangeNotifier {
   User? user;
 
   final ScrollController scrollController = ScrollController();
-  bool isLoading = false;
+  bool isSendingMessage = false;
+  bool isLoadingMessages = false;
 
   List<Chat> chats = [];
   Chat? selectedChat;
@@ -108,14 +109,9 @@ class ChatViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  void _setLoading(bool value) {
-    isLoading = value;
-    notifyListeners();
-  }
-
   // Initialize session if no chat list exists
   Future<void> fetchChats() async {
-    chats = await _chatUseCase.getChatList();
+    chats = await _chatUseCase.fetchChats();
     notifyListeners();
   }
 
@@ -135,8 +131,8 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setLoading(bool value) {
-    isLoading = value;
+  void setSendingMessage(bool value) {
+    isSendingMessage = value;
     notifyListeners();
   }
 
@@ -148,8 +144,12 @@ class ChatViewModel extends ChangeNotifier {
     });
   }
 
-  void selectChat(Chat chat) {
+  void selectChat(Chat chat) async {
     selectedChat = chat;
+    isLoadingMessages = true;
+    notifyListeners();
+    messages = await _chatUseCase.fetchMessages(chat);
+    isLoadingMessages = false;
     notifyListeners();
     scrollToBottom();
   }
@@ -172,7 +172,7 @@ class ChatViewModel extends ChangeNotifier {
           };
 
     messages.add(message);
-    setLoading(true);
+    setSendingMessage(true);
     scrollToBottom();
 
     await _processResponseStream(streamBuilder);
@@ -201,7 +201,7 @@ class ChatViewModel extends ChangeNotifier {
               await _functionalCallUseCase.callFunctionTool(response);
           streamBuilder() => _threadRunsUseCase.submitToolOutputsToRunStream(
               selectedChat!.id!, response.runId, [threadToolOutput]);
-          setLoading(true);
+          setSendingMessage(true);
           scrollToBottom();
           await _processResponseStream(streamBuilder);
         }
@@ -216,7 +216,7 @@ class ChatViewModel extends ChangeNotifier {
         await _chatLimiter.incrementChatCount();
         messages.add(finalMessage);
       }
-      setLoading(false);
+      setSendingMessage(false);
     }
   }
 

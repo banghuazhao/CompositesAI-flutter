@@ -27,8 +27,7 @@ class _ChatScreenState extends State<ChatScreen>
     with AutomaticKeepAliveClientMixin, RouteAware {
   @override
   bool get wantKeepAlive => true;
-  final TextEditingController textController =
-  TextEditingController();
+  final TextEditingController textController = TextEditingController();
   final FocusNode focusNode = FocusNode();
 
   late ChatViewModel viewModel;
@@ -98,8 +97,7 @@ class _ChatScreenState extends State<ChatScreen>
                             icon: const Icon(Icons.clear),
                             tooltip: "Clear Selection",
                             onPressed: () {
-                              viewModel.selectedMessages
-                                  .clear(); // Remove all selections
+                              viewModel.selectedMessages.clear();
                               viewModel.notifyListeners(); // Update UI
                             },
                           ),
@@ -263,7 +261,11 @@ class _ChatScreenState extends State<ChatScreen>
               if (viewModel.isLoggedIn) ...[
                 Positioned.fill(
                   child: viewModel.selectedChat != null
-                      ? MessageList()
+                      ? (viewModel.isLoadingMessages
+                          ? const Center(
+                              child: CircularProgressIndicator(),
+                            )
+                          : MessageList())
                       : defaultQuestionView(),
                 ),
                 Positioned(
@@ -428,8 +430,8 @@ class _ChatScreenState extends State<ChatScreen>
                     if (event is KeyDownEvent &&
                         event.logicalKey == LogicalKeyboardKey.enter) {
                       final isShiftPressed = HardwareKeyboard
-                          .instance.logicalKeysPressed
-                          .contains(LogicalKeyboardKey.shiftLeft) ||
+                              .instance.logicalKeysPressed
+                              .contains(LogicalKeyboardKey.shiftLeft) ||
                           HardwareKeyboard.instance.logicalKeysPressed
                               .contains(LogicalKeyboardKey.shiftRight);
                       if (isShiftPressed) {
@@ -439,7 +441,7 @@ class _ChatScreenState extends State<ChatScreen>
                         textController.selection = TextSelection.fromPosition(
                           TextPosition(offset: textController.text.length),
                         );
-                      } else if (!viewModel.isLoading) {
+                      } else if (!viewModel.isSendingMessage) {
                         final text = textController.text.trim();
                         if (text.isNotEmpty) {
                           if (await viewModel.reachChatLimit()) {
@@ -477,27 +479,27 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                 ),
               ),
-              viewModel.isLoading
+              viewModel.isSendingMessage
                   ? Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
                   : IconButton(
-                icon: Icon(Icons.send),
-                onPressed: textController.text.isEmpty
-                    ? null
-                    : () {
-                  final text = textController.text.trim();
-                  if (text.isNotEmpty) {
-                    textController.clear();
-                    viewModel.sendInputMessage(text);
-                  }
-                },
-              ),
+                      icon: Icon(Icons.send),
+                      onPressed: textController.text.isEmpty
+                          ? null
+                          : () {
+                              final text = textController.text.trim();
+                              if (text.isNotEmpty) {
+                                textController.clear();
+                                viewModel.sendInputMessage(text);
+                              }
+                            },
+                    ),
             ],
           ),
         ),
@@ -553,8 +555,7 @@ class _ChatScreenState extends State<ChatScreen>
               style: TextStyle(fontSize: 16),
             ),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),

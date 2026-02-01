@@ -215,15 +215,7 @@ class _MessageListState extends State<MessageList> {
 
   Widget streamWidget(AsyncSnapshot<ChatResponse> snapshot) {
     if (snapshot.connectionState == ConnectionState.waiting) {
-      return BeatingText(
-        text: "●",
-        style: TextStyle(fontSize: 15.0),
-        // Customize your text style as needed
-        period: Duration(milliseconds: 1000),
-        // Adjust the period for speed of beat
-        minScale: 0.8,
-        maxScale: 1.2,
-      );
+      return Container();
     } else if (snapshot.hasError) {
       return Text('Error: ${snapshot.error}');
     } else if (snapshot.data != null) {
