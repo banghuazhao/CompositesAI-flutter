@@ -1,4 +1,5 @@
 class User {
+  final String? id;
   final String? username;
   final String email;
   String? name;
@@ -8,6 +9,7 @@ class User {
   bool isCompositeExpert;
 
   User({
+    this.id,
     this.username,
     required this.email,
     this.name,
@@ -19,7 +21,9 @@ class User {
 
   // Factory constructor to create a User instance from JSON
   factory User.fromJson(Map<String, dynamic> json) {
+    final dynamic rawId = json['id'] ?? json['user_id'] ?? json['userId'];
     return User(
+        id: rawId?.toString(),
         username: json['username'] ?? '',
         email: json['email'] ?? '',
         name: json['name'],
@@ -31,7 +35,7 @@ class User {
 
   @override
   String toString() {
-    return 'User(username: $username, email: $email, name: $name, '
+    return 'User(id: $id, username: $username, email: $email, name: $name, '
         'isAdmin: $isAdmin, isCompositeExpert: $isCompositeExpert)';
   }
 }

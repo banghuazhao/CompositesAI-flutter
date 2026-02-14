@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:data/mappers/domain_exception_mapper.dart';
 import 'package:domain/entities/domain_exceptions.dart';
 import 'package:domain/entities/linkedin_user_profile.dart';
+import 'package:domain/entities/auth_session.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/repositories_abstract/auth_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -261,9 +262,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<bool> validateGoogleToken(String idToken) async {
+  Future<AuthSession> validateGoogleToken(String idToken) async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/auth/sign_in_with_google');
+    // Backend expects: POST /api/v1/auths/oauth/google with { idToken }
+    final url = Uri.parse('$baseURL/auths/oauth/google');
 
     try {
       final response = await client.post(
@@ -276,13 +278,20 @@ class AuthRepositoryImpl implements AuthRepository {
         }),
       );
 
-      if (response.statusCode == 200) {
-        print('Token validated successfully');
-        return true; // Validation succeeded
-      } else {
+      if (response.statusCode != 200 && response.statusCode != 201) {
         print('Token validation failed: ${response.body}');
-        return false; // Validation failed
+        throw Exception('Google token validation failed');
       }
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final session = AuthSession.fromJson(data);
+      if (session.token.isEmpty) {
+        throw Exception('Access token missing in response');
+      }
+
+      await tokenProvider.saveToken(session.token);
+      print('Google OAuth login succeeded');
+      return session;
     } catch (e) {
       print('Error during token validation: $e');
       throw Exception('Failed to validate token');

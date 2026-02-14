@@ -1,5 +1,6 @@
 import 'package:mockito/mockito.dart';
 
+import '../entities/auth_session.dart';
 import '../entities/user.dart';
 import '../use_cases/auth_use_case.dart';
 
@@ -11,10 +12,10 @@ class MockAuthUseCase extends Mock implements AuthUseCase {
           returnValueForMissingStub: Future.value(User(email: '')));
 
   @override
-  Future<bool> validateGoogleToken(String idToken) =>
+  Future<AuthSession> validateGoogleToken(String idToken) =>
       super.noSuchMethod(Invocation.method(#validateGoogleToken, [idToken]),
-          returnValue: Future.value(true),
-          returnValueForMissingStub: Future.value(true));
+          returnValue: Future.value(const AuthSession(token: 'token')),
+          returnValueForMissingStub: Future.value(const AuthSession(token: 'token')));
 
   @override
   Future<void> syncUser(String? displayName, String email, String? photoUrl) =>

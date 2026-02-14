@@ -1,4 +1,5 @@
 import 'package:domain/entities/user.dart';
+import 'package:domain/entities/auth_session.dart';
 import 'package:domain/mocks/auth_use_case_mock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
@@ -108,25 +109,15 @@ void main() {
     });
 
     group('validateGoogleToken', () {
-      test('should return true when token validation is successful', () async {
+      test('should return an AuthSession when validation is successful', () async {
         const idToken = "1234567";
 
-        when(mockAuthUseCase.validateGoogleToken(idToken)).thenAnswer((_) async => true);
+        when(mockAuthUseCase.validateGoogleToken(idToken))
+            .thenAnswer((_) async => const AuthSession(token: 'token'));
 
         final result = await mockAuthUseCase.validateGoogleToken(idToken);
 
-        expect(result, true);
-        verify(mockAuthUseCase.validateGoogleToken(idToken)).called(1);
-      });
-
-      test('should return false when token validation fails', () async {
-        const idToken = "1234567";
-
-        when(mockAuthUseCase.validateGoogleToken(idToken)).thenAnswer((_) async => false);
-
-        final result = await mockAuthUseCase.validateGoogleToken(idToken);
-
-        expect(result, false);
+        expect(result.token, 'token');
         verify(mockAuthUseCase.validateGoogleToken(idToken)).called(1);
       });
 
@@ -301,7 +292,7 @@ void main() {
     });
 
     group('signInWithGoogle', () {
-      test('should sign in successfully and sync user on web', () async {
+      test('should sign in successfully on web', () async {
         // Arrange
         when(mockGoogleSignInService.signIn(
                 scopes: ['email', 'openid', 'profile'],
@@ -313,6 +304,8 @@ void main() {
                 displayName: "Test User",
                 photoUrl: "https://example.com/photo.jpg",
                 idToken: "idToken"));
+        when(mockAuthUseCase.validateGoogleToken('idToken'))
+            .thenAnswer((_) async => const AuthSession(token: 'token'));
 
         // Act
         await loginViewModel.signInWithGoogle();
@@ -325,9 +318,7 @@ void main() {
                 hostedDomain: anyNamed('hostedDomain'),
                 serverClientId: anyNamed('serverClientId')))
             .called(1);
-        verify(mockAuthUseCase.syncUser(
-                'Test User', 'test.user@example.com', 'https://example.com/photo.jpg'))
-            .called(1);
+        verify(mockAuthUseCase.validateGoogleToken('idToken')).called(1);
       });
 
       test('should throw an exception when ID token is missing on non-web platforms', () async {

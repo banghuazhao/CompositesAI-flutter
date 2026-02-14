@@ -68,8 +68,25 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
-  static String GOOGLE_SIGNIN_CLIENT_ID_WEB =
-      dotenv.env['GOOGLE_SIGNIN_CLIENT_ID_WEB'] ?? "";
+  static String? _env(String key) {
+    // flutter_dotenv throws NotInitializedError if dotenv.load() wasn't called.
+    try {
+      return dotenv.env[key];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Web client id (used on web sign-in, and commonly reused as serverClientId on Android).
+  static String get GOOGLE_SIGNIN_CLIENT_ID_WEB =>
+      _env('GOOGLE_SIGNIN_CLIENT_ID_WEB') ?? "";
+
+  // On Android, providing serverClientId is commonly required to receive a non-null idToken.
+  // Using the Web client ID here is the typical setup when backend verifies Google ID tokens.
+  static String get GOOGLE_SIGNIN_SERVER_CLIENT_ID =>
+      _env('GOOGLE_SIGNIN_SERVER_CLIENT_ID') ??
+      _env('GOOGLE_SIGNIN_CLIENT_ID_WEB') ??
+      "";
 
   // Function to handle Google Sign-In
   Future<void> signInWithGoogle() async {
@@ -85,6 +102,9 @@ class LoginViewModel extends ChangeNotifier {
               scopes: <String>['email', 'openid', 'profile'],
             )
           : await googleSignInService.signIn(
+              serverClientId: GOOGLE_SIGNIN_SERVER_CLIENT_ID.isEmpty
+                  ? null
+                  : GOOGLE_SIGNIN_SERVER_CLIENT_ID,
               scopes: <String>['email', 'openid', 'profile'],
             );
 
@@ -99,17 +119,12 @@ class LoginViewModel extends ChangeNotifier {
       final idToken = user.idToken;
 
       // Ensure ID token is present
-      if (idToken == null) {
+      if (idToken == null || idToken.isEmpty) {
         throw Exception('Unable to retrieve ID token. Please try again.');
       }
 
       // Validate the ID token with your backend
-      final bool isValid = await authUseCase.validateGoogleToken(idToken);
-      if (!isValid) {
-        throw Exception('Google token validation failed.');
-      }
-      // Sync the user data
-      await syncUser(user.displayName, user.email, user.photoUrl);
+      await authUseCase.validateGoogleToken(idToken);
 
       // Mark signing-in as successful
       _isSigningIn = true;

@@ -67,14 +67,27 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<void> deleteAccount() async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/users/me');
-    final response = await authClient.delete(url);
+    final me = await fetchMe();
+    final userId = (me.id ?? me.username)?.trim();
+    if (userId == null || userId.isEmpty) {
+      throw Exception('Missing user id for deleteAccount');
+    }
+
+    final url = Uri.parse('$baseURL/users/account/$userId');
+    final response = await authClient.delete(url, headers: {
+      'Content-Type': 'application/json',
+    });
 
     if (response.statusCode != 200) {
-      throw Exception(
-          'Failed to delete account. Status code: ${response.statusCode}');
+      throw mapServerErrorToDomainException(response);
     }
-    return;
+
+    // Backend returns a JSON boolean: true / false
+    final body = response.body.trim();
+    if (body.isEmpty) return;
+    final decoded = jsonDecode(body);
+    if (decoded is bool && decoded == true) return;
+    throw Exception('Failed to delete account');
   }
 
   @override

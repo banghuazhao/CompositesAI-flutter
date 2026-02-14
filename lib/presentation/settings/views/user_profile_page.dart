@@ -248,7 +248,16 @@ class UserProfilePage extends StatelessWidget {
                     ),
                   );
                 } else {
-                  // Navigate back with "refresh" if no error
+                  // Show success snackbar, then navigate back with "refresh"
+                  final controller = ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Account deleted successfully."),
+                      duration: Duration(seconds: 2),
+                      backgroundColor: Colors.black,
+                    ),
+                  );
+                  await controller.closed;
+                  if (!context.mounted) return;
                   Navigator.of(context).pop("refresh");
                 }
               },

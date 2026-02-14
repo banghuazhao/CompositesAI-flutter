@@ -2,6 +2,7 @@
 
 import '../entities/linkedin_user_profile.dart';
 import '../entities/user.dart';
+import '../entities/auth_session.dart';
 
 abstract class AuthRepository {
   Future<User> signup(String email, String password, String verificationCode,{String? name});
@@ -14,7 +15,7 @@ abstract class AuthRepository {
   Future<void> updatePassword(String currentPassword, String newPassword);
   Future<void> syncUser(String? displayName, String email, String? photoUrl);
   Future<String> validateAppleToken(String identityToken);
-  Future<bool> validateGoogleToken(String idToken);
+  Future<AuthSession> validateGoogleToken(String idToken);
   Future<String> handleAuthorizationCodeFromLinked(String? authorizationCode);
   Future<LinkedinUserProfile> fetchLinkedInUserProfile(String? accessToken);
   Future<Uri> getAuthUrl();
