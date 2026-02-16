@@ -1,11 +1,14 @@
 // lib/presentation/viewmodels/login_view_model.dart
 
 import 'dart:async';
+import 'dart:convert';
+import 'package:domain/entities/auth_session.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/use_cases/auth_use_case.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:infrastructure/apple_sign_in_service.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -39,6 +42,20 @@ class LoginViewModel extends ChangeNotifier {
 
   bool get isSigningIn => _isSigningIn;
 
+  User? _signedInUser;
+  User? get signedInUser => _signedInUser;
+
+  String? _githubUserCode;
+  String? get githubUserCode => _githubUserCode;
+
+  String? _githubVerificationUri;
+  String? get githubVerificationUri => _githubVerificationUri;
+
+  bool _cancelGithubSignIn = false;
+  void cancelGithubSignIn() {
+    _cancelGithubSignIn = true;
+  }
+
   void togglePasswordVisibility() {
     obscureText = !obscureText;
     notifyListeners();
@@ -54,10 +71,12 @@ class LoginViewModel extends ChangeNotifier {
   Future<User?> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
+    _signedInUser = null;
     notifyListeners();
 
     try {
       final user = await authUseCase.login(email, password);
+      _signedInUser = user;
       return user; // Successful login returns the access token
     } catch (e) {
       _errorMessage = 'Login failed: ${e.toString()}';
@@ -88,10 +107,20 @@ class LoginViewModel extends ChangeNotifier {
       _env('GOOGLE_SIGNIN_CLIENT_ID_WEB') ??
       "";
 
+  static String get GITHUB_CLIENT_ID => _env('GITHUB_CLIENT_ID') ?? "";
+  static String get GITHUB_SCOPE =>
+      _env('GITHUB_CLIENT_SCOPE') ?? 'read:user user:email';
+  static const String _githubDeviceCodeUrl = 'https://github.com/login/device/code';
+  static const String _githubAccessTokenUrl =
+      'https://github.com/login/oauth/access_token';
+  static const String _githubDeviceGrantType =
+      'urn:ietf:params:oauth:grant-type:device_code';
+
   // Function to handle Google Sign-In
   Future<void> signInWithGoogle() async {
     // Initialize as not signing in
     _isSigningIn = false;
+    _signedInUser = null;
     notifyListeners();
 
     try {
@@ -124,7 +153,12 @@ class LoginViewModel extends ChangeNotifier {
       }
 
       // Validate the ID token with your backend
-      await authUseCase.validateGoogleToken(idToken);
+      final AuthSession session = await authUseCase.validateGoogleToken(idToken);
+      _signedInUser = session.user ??
+          User(
+            email: user.email,
+            name: user.displayName,
+          );
 
       // Mark signing-in as successful
       _isSigningIn = true;
@@ -136,6 +170,162 @@ class LoginViewModel extends ChangeNotifier {
       // Notify listeners regardless of success or failure
       notifyListeners();
     }
+  }
+
+  Future<void> signInWithGithub() async {
+    _isSigningIn = false;
+    _errorMessage = null;
+    _signedInUser = null;
+    _githubUserCode = null;
+    _githubVerificationUri = null;
+    _cancelGithubSignIn = false;
+    notifyListeners();
+
+    if (GITHUB_CLIENT_ID.isEmpty) {
+      _errorMessage = 'Missing GITHUB_CLIENT_ID in .env';
+      notifyListeners();
+      return;
+    }
+
+    try {
+      // Device Flow:
+      // 1) Request device_code + user_code
+      final deviceResp = await _githubRequestDeviceCode();
+      final verificationUri = (deviceResp['verification_uri_complete'] ??
+              deviceResp['verification_uri'])
+          ?.toString();
+      final userCode = deviceResp['user_code']?.toString();
+      final deviceCode = deviceResp['device_code']?.toString();
+      final int expiresIn =
+          (deviceResp['expires_in'] is int) ? deviceResp['expires_in'] as int : 900;
+      int interval =
+          (deviceResp['interval'] is int) ? deviceResp['interval'] as int : 5;
+
+      if (verificationUri == null ||
+          userCode == null ||
+          deviceCode == null ||
+          verificationUri.isEmpty ||
+          userCode.isEmpty ||
+          deviceCode.isEmpty) {
+        throw Exception('Invalid GitHub device flow response');
+      }
+
+      _githubUserCode = userCode;
+      _githubVerificationUri = verificationUri;
+      notifyListeners();
+
+      // Open verification page in external browser; user enters userCode (or URL may be prefilled).
+      await launchUrl(
+        Uri.parse(verificationUri),
+        mode: LaunchMode.externalApplication,
+      );
+
+      // 2) Poll until we get access_token or errors.
+      final accessToken = await _githubPollAccessToken(
+        deviceCode: deviceCode,
+        expiresInSeconds: expiresIn,
+        intervalSeconds: interval,
+      );
+
+      // 3) Exchange access token with backend to get our session token.
+      final AuthSession session =
+          await authUseCase.validateGithubAccessToken(accessToken);
+      _signedInUser = session.user;
+
+      _isSigningIn = true;
+    } catch (error) {
+      print('Error during GitHub OAuth: $error');
+      _errorMessage = error.toString();
+    } finally {
+      _githubUserCode = null;
+      _githubVerificationUri = null;
+      notifyListeners();
+    }
+  }
+
+  Future<Map<String, dynamic>> _githubRequestDeviceCode() async {
+    // GitHub expects application/x-www-form-urlencoded and Accept: application/json.
+    final uri = Uri.parse(_githubDeviceCodeUrl);
+    final response = await httpPostForm(uri, {
+      'client_id': GITHUB_CLIENT_ID,
+      'scope': GITHUB_SCOPE,
+    });
+    return response;
+  }
+
+  Future<String> _githubPollAccessToken({
+    required String deviceCode,
+    required int expiresInSeconds,
+    required int intervalSeconds,
+  }) async {
+    final deadline =
+        DateTime.now().add(Duration(seconds: expiresInSeconds));
+    var interval = intervalSeconds;
+
+    while (DateTime.now().isBefore(deadline)) {
+      if (_cancelGithubSignIn) {
+        throw Exception('GitHub sign-in cancelled');
+      }
+      final uri = Uri.parse(_githubAccessTokenUrl);
+      final resp = await httpPostForm(uri, {
+        'client_id': GITHUB_CLIENT_ID,
+        'device_code': deviceCode,
+        'grant_type': _githubDeviceGrantType,
+      });
+
+      final error = resp['error']?.toString();
+      if (error == null || error.isEmpty) {
+        final token = resp['access_token']?.toString();
+        if (token != null && token.isNotEmpty) return token;
+        throw Exception('Missing access_token from GitHub');
+      }
+
+      switch (error) {
+        case 'authorization_pending':
+          break;
+        case 'slow_down':
+          interval += 5;
+          break;
+        case 'access_denied':
+          throw Exception('GitHub authorization denied');
+        case 'expired_token':
+          throw Exception('GitHub device code expired');
+        case 'device_flow_disabled':
+          throw Exception('GitHub device flow is disabled for this OAuth app');
+        default:
+          throw Exception('GitHub device flow error: $error');
+      }
+
+      await Future.delayed(Duration(seconds: interval));
+    }
+
+    throw Exception('GitHub device flow timed out');
+  }
+
+  // Minimal helper to avoid adding a new dependency in app layer.
+  // Uses url_launcher import already present; actual HTTP client lives in data layer,
+  // but for GitHub device flow we perform direct calls here.
+  Future<Map<String, dynamic>> httpPostForm(
+    Uri uri,
+    Map<String, String> body,
+  ) async {
+    final response = await http.post(
+      uri,
+      headers: const {
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+          'GitHub request failed: ${response.statusCode} ${response.body}');
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) return decoded;
+    throw Exception('Unexpected GitHub response: ${response.body}');
   }
 
   // Function to handle Google Sign-Out
@@ -150,6 +340,7 @@ class LoginViewModel extends ChangeNotifier {
     try {
       _isSigningIn = false;
       _errorMessage = null;
+      _signedInUser = null;
       // Request credentials from Apple
       final credential = await appleSignInService.getAppleIDCredential(
         scopes: [
@@ -180,6 +371,7 @@ class LoginViewModel extends ChangeNotifier {
       final email = await authUseCase.validateAppleToken(identityToken);
 
       await syncUser(name, email, null);
+      _signedInUser = User(email: email, name: name);
 
       _isSigningIn = true;
       // Notify listeners for UI update

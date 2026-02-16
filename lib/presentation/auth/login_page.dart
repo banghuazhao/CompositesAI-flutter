@@ -1,9 +1,12 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:linkedin_login/linkedin_login.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/auth/sigup_page.dart';
 import 'package:swiftcomp/util/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/injection_container.dart';
 import 'login_view_model.dart';
@@ -123,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         // Navigate to the next screen
-        Navigator.pop(context, "Log in Success"); // Pop the current screen
+        Navigator.pop(context, viewModel.signedInUser); // Pop with User?
       } else {
         // Display failure Snackbar
         ScaffoldMessenger.of(context).showSnackBar(
@@ -180,7 +183,7 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         // Navigate to the next screen
-        Navigator.pop(context, "Log in Success"); // Pass result back
+        Navigator.pop(context, viewModel.signedInUser); // Pass result back
       } else {
         // Display failure Snackbar
         ScaffoldMessenger.of(context).showSnackBar(
@@ -214,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
       await viewModel.signInWithLinkedin();
 
       // ✅ After sign-in, return to settings page with a success result
-      Navigator.pop(context, "Log in Success");
+      Navigator.pop(context, viewModel.signedInUser);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -227,6 +230,139 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
 // ✅ Hide loading indicator after sign-in
       });
+    }
+  }
+
+  void _githubSignIn(LoginViewModel viewModel, BuildContext context) async {
+    try {
+      bool started = false;
+      bool dialogClosed = false;
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          // Rebuild dialog whenever the view model notifies.
+          return AnimatedBuilder(
+            animation: viewModel,
+            builder: (context, _) {
+              void safeCloseDialog() {
+                if (dialogClosed) return;
+                dialogClosed = true;
+                // Avoid Navigator lock assertions by popping next frame.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (Navigator.of(dialogContext).canPop()) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                });
+              }
+
+              if (!started) {
+                started = true;
+                // Start device flow in background.
+                viewModel.signInWithGithub().whenComplete(() {
+                  safeCloseDialog();
+                });
+              }
+
+              final code = viewModel.githubUserCode;
+              final uri = viewModel.githubVerificationUri;
+
+              return AlertDialog(
+                title: const Text('GitHub Sign-In'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (code == null || uri == null) ...[
+                      const Text('Preparing GitHub authorization…'),
+                      const SizedBox(height: 12),
+                      const Center(child: CircularProgressIndicator()),
+                    ] else ...[
+                      const Text('Open GitHub and enter this code:'),
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        code,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                          'If the browser didn’t open automatically, open:'),
+                      const SizedBox(height: 6),
+                      SelectableText(uri),
+                      const SizedBox(height: 12),
+                      const Text('Waiting for authorization…'),
+                    ],
+                  ],
+                ),
+                actions: [
+                  if (code != null)
+                    TextButton(
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: code));
+                      },
+                      child: const Text('Copy code'),
+                    ),
+                  if (uri != null)
+                    TextButton(
+                      onPressed: () async {
+                        await launchUrl(Uri.parse(uri),
+                            mode: LaunchMode.externalApplication);
+                      },
+                      child: const Text('Open GitHub'),
+                    ),
+                  TextButton(
+                    onPressed: () {
+                      viewModel.cancelGithubSignIn();
+                      safeCloseDialog();
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (viewModel.isSigningIn) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Logged in with GitHub"),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.black,
+          ),
+        );
+        // Pop next frame to avoid Navigator lock assertions.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          Navigator.pop(context, viewModel.signedInUser);
+        });
+        return;
+      }
+
+      // If cancelled, keep silent; otherwise show error.
+      if (viewModel.errorMessage != null &&
+          viewModel.errorMessage != 'Exception: GitHub sign-in cancelled') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(viewModel.errorMessage ?? "GitHub Sign-In failed"),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("An error occurred: $e"),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -435,6 +571,12 @@ class _LoginPageState extends State<LoginPage> {
                             onPressed: () => _googleSignIn(viewModel, context),
                           ),
                           const SizedBox(height: 10),
+                          _buildSocialButtonIcon(
+                            icon: FontAwesomeIcons.github,
+                            text: 'Continue with GitHub',
+                            onPressed: () => _githubSignIn(viewModel, context),
+                          ),
+                          const SizedBox(height: 10),
                           _buildSocialButton(
                             iconPath: 'images/linkedin_logo.png',
                             text: 'Continue with Linkedin',
@@ -508,7 +650,8 @@ class _LoginPageState extends State<LoginPage> {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -516,21 +659,55 @@ class _LoginPageState extends State<LoginPage> {
               color: Colors.grey.shade300, width: 1),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               iconPath,
-              height: 24, // Logo height
-              width: 24, // Logo width
+              height: 20, // Logo height
+              width: 20, // Logo width
               fit: BoxFit.contain,
             ),
             const SizedBox(width: 12), // Space between logo and text
             Text(
               text,
               style: const TextStyle(
-                color: Colors.black87, // Text color
+                color: Colors.black, // Text color
                 fontSize: 16, // Text size
-                fontWeight: FontWeight.w500, // Text weight
+                fontWeight: FontWeight.w600, // Text weight
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialButtonIcon({
+    required IconData icon,
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FaIcon(icon, color: Colors.black, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              text,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -546,7 +723,7 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     if (result == "sign up success") {
-      Navigator.pop(context, "Log in Success");
+      Navigator.pop(context, null);
     }
   }
 }

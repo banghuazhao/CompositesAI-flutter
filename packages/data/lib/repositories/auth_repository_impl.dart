@@ -299,6 +299,43 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AuthSession> validateGithubAccessToken(String accessToken) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/auths/oauth/github');
+
+    try {
+      final response = await client.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'accessToken': accessToken,
+          'access_token': accessToken,
+        }),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print('GitHub OAuth login failed: ${response.body}');
+        throw Exception('GitHub OAuth login failed');
+      }
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final session = AuthSession.fromJson(data);
+      if (session.token.isEmpty) {
+        throw Exception('Access token missing in response');
+      }
+
+      await tokenProvider.saveToken(session.token);
+      print('GitHub OAuth login succeeded');
+      return session;
+    } catch (e) {
+      print('Error during GitHub OAuth login: $e');
+      throw Exception('Failed to login with GitHub');
+    }
+  }
+
+  @override
   Future<String> handleAuthorizationCodeFromLinked(
       String? authorizationCode) async {
     //Sends the authorizationCode to your backend API. then backend process it and Sends the access token back to the frontend.

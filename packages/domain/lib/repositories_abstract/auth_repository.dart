@@ -16,6 +16,7 @@ abstract class AuthRepository {
   Future<void> syncUser(String? displayName, String email, String? photoUrl);
   Future<String> validateAppleToken(String identityToken);
   Future<AuthSession> validateGoogleToken(String idToken);
+  Future<AuthSession> validateGithubAccessToken(String accessToken);
   Future<String> handleAuthorizationCodeFromLinked(String? authorizationCode);
   Future<LinkedinUserProfile> fetchLinkedInUserProfile(String? accessToken);
   Future<Uri> getAuthUrl();
