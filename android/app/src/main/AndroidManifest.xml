@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:icon="@mipmap/launcher_icon"
         android:label="SwiftComp">
@@ -37,6 +40,19 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Required for MSAL browser-delegated authentication -->
+        <activity android:name="com.microsoft.identity.client.BrowserTabActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="msauth"
+                    android:host="com.banghuazhao.swiftcomp"
+                    android:path="/dA9fci2wzppcQYLy4VOxftNW8Hk=" />
+            </intent-filter>
+        </activity>
 
     </application>
 </manifest>

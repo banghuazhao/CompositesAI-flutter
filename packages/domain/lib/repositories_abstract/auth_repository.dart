@@ -17,6 +17,7 @@ abstract class AuthRepository {
   Future<String> validateAppleToken(String identityToken);
   Future<AuthSession> validateGoogleToken(String idToken);
   Future<AuthSession> validateGithubAccessToken(String accessToken);
+  Future<AuthSession> validateMicrosoftAccessToken(String accessToken);
   Future<String> handleAuthorizationCodeFromLinked(String? authorizationCode);
   Future<LinkedinUserProfile> fetchLinkedInUserProfile(String? accessToken);
   Future<Uri> getAuthUrl();

@@ -58,6 +58,7 @@ dependencies:
   gpt_markdown: ^1.0.8
   http: ^1.6.0
   font_awesome_flutter: ^10.9.1
+  msal_auth: ^3.3.0
 
 
 dev_dependencies:
@@ -95,6 +96,7 @@ flutter:
   assets:
     - images/
     - .env
+    - msal_config.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

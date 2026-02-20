@@ -706,6 +706,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.4.4"
+  msal_auth:
+    dependency: "direct main"
+    description:
+      name: msal_auth
+      sha256: "3e563ef107e9d87a9645b7e21e23b8af50786786762d9f37324057c36c44f5c0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.3.0"
   nested:
     dependency: transitive
     description:

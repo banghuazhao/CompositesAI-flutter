@@ -1,5 +1,6 @@
 import UIKit
 import Flutter
+import MSAL
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -9,5 +10,17 @@ import Flutter
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+  ) -> Bool {
+    let handled = MSALPublicClientApplication.handleMSALResponse(
+      url,
+      sourceApplication: options[UIApplication.OpenURLOptionsKey.sourceApplication] as? String
+    )
+    return handled || super.application(app, open: url, options: options)
   }
 }

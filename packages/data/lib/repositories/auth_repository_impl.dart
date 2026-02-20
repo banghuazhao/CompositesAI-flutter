@@ -336,6 +336,43 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AuthSession> validateMicrosoftAccessToken(String accessToken) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/auths/oauth/microsoft');
+
+    try {
+      final response = await client.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'accessToken': accessToken,
+          'access_token': accessToken,
+        }),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print('Microsoft OAuth login failed: ${response.body}');
+        throw Exception('Microsoft OAuth login failed');
+      }
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final session = AuthSession.fromJson(data);
+      if (session.token.isEmpty) {
+        throw Exception('Access token missing in response');
+      }
+
+      await tokenProvider.saveToken(session.token);
+      print('Microsoft OAuth login succeeded');
+      return session;
+    } catch (e) {
+      print('Error during Microsoft OAuth login: $e');
+      throw Exception('Failed to login with Microsoft');
+    }
+  }
+
+  @override
   Future<String> handleAuthorizationCodeFromLinked(
       String? authorizationCode) async {
     //Sends the authorizationCode to your backend API. then backend process it and Sends the access token back to the frontend.

@@ -1,0 +1,18 @@
+{
+  "authorization_user_agent": "BROWSER",
+  "account_mode": "SINGLE",
+  "authorities": [
+    {
+      "type": "AAD",
+      "audience": {
+        "type": "AzureADMultipleOrgs",
+        "tenant_id": "organizations"
+      }
+    }
+  ],
+  "logging": {
+    "pii_enabled": false,
+    "log_level": "INFO"
+  }
+}
+

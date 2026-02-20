@@ -36,6 +36,8 @@ abstract class AuthUseCase {
 
   Future<AuthSession> validateGithubAccessToken(String accessToken);
 
+  Future<AuthSession> validateMicrosoftAccessToken(String accessToken);
+
   Future<String> handleAuthorizationCodeFromLinked(String? authorizationCode);
 
   Future<LinkedinUserProfile> fetchLinkedInUserProfile(String? accessToken);
@@ -116,6 +118,12 @@ class AuthUseCaseImpl implements AuthUseCase {
   @override
   Future<AuthSession> validateGithubAccessToken(String accessToken) async {
     final session = await repository.validateGithubAccessToken(accessToken);
+    return session;
+  }
+
+  @override
+  Future<AuthSession> validateMicrosoftAccessToken(String accessToken) async {
+    final session = await repository.validateMicrosoftAccessToken(accessToken);
     return session;
   }
 

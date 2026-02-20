@@ -11,6 +11,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/apple_sign_in_service.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
+import 'package:msal_auth/msal_auth.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -115,6 +116,20 @@ class LoginViewModel extends ChangeNotifier {
       'https://github.com/login/oauth/access_token';
   static const String _githubDeviceGrantType =
       'urn:ietf:params:oauth:grant-type:device_code';
+
+  static String get MICROSOFT_CLIENT_ID => _env('MICROSOFT_CLIENT_ID') ?? "";
+  static String get MICROSOFT_SCOPES => _env('MICROSOFT_SCOPES') ?? 'User.Read';
+  static List<String> get MICROSOFT_SCOPE_LIST => MICROSOFT_SCOPES
+      .split(RegExp(r'[ ,]+'))
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+  static String get MICROSOFT_ANDROID_REDIRECT_URI =>
+      _env('MICROSOFT_ANDROID_REDIRECT_URI') ??
+      'msauth://com.banghuazhao.swiftcomp/dA9fci2wzppcQYLy4VOxftNW8Hk=';
+  static String get MICROSOFT_MSAL_CONFIG_PATH =>
+      _env('MICROSOFT_MSAL_CONFIG_PATH') ?? 'msal_config.json';
+  static String get MICROSOFT_AUTHORITY => _env('MICROSOFT_AUTHORITY') ?? "";
 
   // Function to handle Google Sign-In
   Future<void> signInWithGoogle() async {
@@ -239,6 +254,59 @@ class LoginViewModel extends ChangeNotifier {
     } finally {
       _githubUserCode = null;
       _githubVerificationUri = null;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signInWithMicrosoft() async {
+    _isSigningIn = false;
+    _errorMessage = null;
+    _signedInUser = null;
+    notifyListeners();
+
+    if (MICROSOFT_CLIENT_ID.isEmpty) {
+      _errorMessage = 'Missing MICROSOFT_CLIENT_ID in .env';
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final pca = await SingleAccountPca.create(
+        clientId: MICROSOFT_CLIENT_ID,
+        androidConfig: AndroidConfig(
+          configFilePath: MICROSOFT_MSAL_CONFIG_PATH,
+          redirectUri: MICROSOFT_ANDROID_REDIRECT_URI,
+        ),
+        appleConfig: AppleConfig(
+          authorityType: AuthorityType.aad,
+          broker: Broker.msAuthenticator,
+        ),
+      );
+
+      final result = await pca.acquireToken(
+        scopes: MICROSOFT_SCOPE_LIST.isEmpty
+            ? <String>['User.Read']
+            : MICROSOFT_SCOPE_LIST,
+        prompt: Prompt.whenRequired,
+        authority: MICROSOFT_AUTHORITY.isEmpty ? null : MICROSOFT_AUTHORITY,
+      );
+
+      final accessToken = result.accessToken;
+      if (accessToken.isEmpty) {
+        throw Exception('Microsoft login did not return an access token');
+      }
+
+      final AuthSession session =
+          await authUseCase.validateMicrosoftAccessToken(accessToken);
+      _signedInUser = session.user;
+      _isSigningIn = true;
+    } on MsalException catch (e) {
+      print('MSAL error during Microsoft Sign-In: $e');
+      _errorMessage = e.toString();
+    } catch (e) {
+      print('Error during Microsoft Sign-In: $e');
+      _errorMessage = e.toString();
+    } finally {
       notifyListeners();
     }
   }

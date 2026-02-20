@@ -26,6 +26,14 @@ class MockAuthUseCase extends Mock implements AuthUseCase {
       );
 
   @override
+  Future<AuthSession> validateMicrosoftAccessToken(String accessToken) =>
+      super.noSuchMethod(
+        Invocation.method(#validateMicrosoftAccessToken, [accessToken]),
+        returnValue: Future.value(const AuthSession(token: 'token')),
+        returnValueForMissingStub: Future.value(const AuthSession(token: 'token')),
+      );
+
+  @override
   Future<void> syncUser(String? displayName, String email, String? photoUrl) =>
       super.noSuchMethod(Invocation.method(#syncUser, [displayName, email, photoUrl]),
           returnValue: Future.value(''),

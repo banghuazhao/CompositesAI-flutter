@@ -151,6 +151,51 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _microsoftSignIn(LoginViewModel viewModel, BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+
+    try {
+      await viewModel.signInWithMicrosoft();
+
+      Navigator.of(context, rootNavigator: true).pop();
+
+      if (viewModel.isSigningIn) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Logged in with Microsoft"),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.black,
+          ),
+        );
+        Navigator.pop(context, viewModel.signedInUser);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text(viewModel.errorMessage ?? "Microsoft Sign-In failed"),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("An error occurred: $e"),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _appleSignIn(LoginViewModel viewModel, BuildContext context) async {
     // Show loading dialog
     showDialog(
@@ -577,6 +622,13 @@ class _LoginPageState extends State<LoginPage> {
                             onPressed: () => _githubSignIn(viewModel, context),
                           ),
                           const SizedBox(height: 10),
+                          _buildSocialButtonIcon(
+                            iconWidget: _microsoftLogo(size: 20),
+                            text: 'Continue with Microsoft',
+                            onPressed: () =>
+                                _microsoftSignIn(viewModel, context),
+                          ),
+                          const SizedBox(height: 10),
                           _buildSocialButton(
                             iconPath: 'images/linkedin_logo.png',
                             text: 'Continue with Linkedin',
@@ -641,78 +693,113 @@ class _LoginPageState extends State<LoginPage> {
   }
 
 // Helper Method for Social Buttons
+  static Widget _microsoftLogo({required double size}) {
+    final gap = size * 0.08;
+    final tile = (size - gap) / 2;
+
+    Widget square(Color color) => Container(
+          width: tile,
+          height: tile,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        );
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              square(const Color(0xFFF25022)),
+              SizedBox(width: gap),
+              square(const Color(0xFF7FBA00)),
+            ],
+          ),
+          SizedBox(height: gap),
+          Row(
+            children: [
+              square(const Color(0xFF00A4EF)),
+              SizedBox(width: gap),
+              square(const Color(0xFFFFB900)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialButtonBase({
+    required Widget leading,
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+        ),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Center(child: leading),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSocialButton({
     //a function that returns a widget (Widget type)
     required String iconPath,
     required String text,
     required VoidCallback onPressed,
   }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: Colors.grey.shade300, width: 1),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              iconPath,
-              height: 20, // Logo height
-              width: 20, // Logo width
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(width: 12), // Space between logo and text
-            Text(
-              text,
-              style: const TextStyle(
-                color: Colors.black, // Text color
-                fontSize: 16, // Text size
-                fontWeight: FontWeight.w600, // Text weight
-              ),
-            ),
-          ],
-        ),
+    return _buildSocialButtonBase(
+      leading: Image.asset(
+        iconPath,
+        height: 22,
+        width: 22,
+        fit: BoxFit.contain,
       ),
+      text: text,
+      onPressed: onPressed,
     );
   }
 
   Widget _buildSocialButtonIcon({
-    required IconData icon,
+    IconData? icon,
+    Widget? iconWidget,
     required String text,
     required VoidCallback onPressed,
   }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FaIcon(icon, color: Colors.black, size: 20),
-            const SizedBox(width: 10),
-            Text(
-              text,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
+    assert(icon != null || iconWidget != null);
+    return _buildSocialButtonBase(
+      leading: iconWidget ?? FaIcon(icon!, color: Colors.black, size: 22),
+      text: text,
+      onPressed: onPressed,
     );
   }
 
