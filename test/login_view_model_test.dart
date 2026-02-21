@@ -135,19 +135,19 @@ void main() {
     });
 
     group('validateAppleToken', () {
-      test('should return email when validation is successful', () async {
+      test('should return an AuthSession when validation is successful', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
 
         const identityToken = 'validIdentityToken';
-        const expectedEmail = 'test@example.com';
+        const expectedSession = AuthSession(token: 'token');
 
         // Mocking the repository behavior and don't need to specify the function call
         when(mockAuthUseCase.validateAppleToken(identityToken))
-            .thenAnswer((_) async => expectedEmail);
+            .thenAnswer((_) async => expectedSession);
 
         final result = await mockAuthUseCase.validateAppleToken(identityToken);
 
-        expect(result, expectedEmail);
+        expect(result.token, expectedSession.token);
         verify(mockAuthUseCase.validateAppleToken(identityToken)).called(1);
       });
 
@@ -186,11 +186,12 @@ void main() {
           webAuthenticationOptions: anyNamed('webAuthenticationOptions'),
         )).thenAnswer((_) async => mockCredential);
 
-        when(mockAuthUseCase.validateAppleToken('mock-identity-token'))
-            .thenAnswer((_) async => 'mockuser@example.com');
-
-        when(mockAuthUseCase.syncUser('Mock', 'mockuser@example.com', null))
-            .thenAnswer((_) async => {});
+        when(mockAuthUseCase.validateAppleToken('mock-identity-token',
+                email: anyNamed('email'), displayName: anyNamed('displayName')))
+            .thenAnswer((_) async => AuthSession(
+                  token: 'token',
+                  user: User(email: 'mockuser@example.com', name: 'Mock User'),
+                ));
 
         // Act.Verify the Behavior
         await loginViewModel.signInWithApple();
@@ -202,8 +203,11 @@ void main() {
           scopes: scopes,
           webAuthenticationOptions: anyNamed('webAuthenticationOptions'),
         )).called(1);
-        verify(mockAuthUseCase.validateAppleToken('mock-identity-token')).called(1);
-        verify(mockAuthUseCase.syncUser('Mock', 'mockuser@example.com', null)).called(1);
+        verify(mockAuthUseCase.validateAppleToken(
+          'mock-identity-token',
+          email: anyNamed('email'),
+          displayName: anyNamed('displayName'),
+        )).called(1);
       });
 
       test('should set errorMessage if identity token is null', () async {
@@ -271,7 +275,11 @@ void main() {
         )).thenAnswer((_) async => mockCredential);
 
         // Simulate an error in validateAppleToken
-        when(mockAuthUseCase.validateAppleToken('mock-identity-token'))
+        when(mockAuthUseCase.validateAppleToken(
+          'mock-identity-token',
+          email: anyNamed('email'),
+          displayName: anyNamed('displayName'),
+        ))
             .thenThrow(Exception('Auth use case error'));
 
         // Act
@@ -287,7 +295,11 @@ void main() {
           scopes: scopes,
           webAuthenticationOptions: anyNamed('webAuthenticationOptions'),
         )).called(1);
-        verify(mockAuthUseCase.validateAppleToken('mock-identity-token')).called(1);
+        verify(mockAuthUseCase.validateAppleToken(
+          'mock-identity-token',
+          email: anyNamed('email'),
+          displayName: anyNamed('displayName'),
+        )).called(1);
       });
     });
 

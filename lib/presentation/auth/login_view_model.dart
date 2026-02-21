@@ -405,49 +405,65 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   Future<void> signInWithApple() async {
+    _isSigningIn = false;
+    _errorMessage = null;
+    _signedInUser = null;
+    notifyListeners();
+
     try {
-      _isSigningIn = false;
-      _errorMessage = null;
-      _signedInUser = null;
-      // Request credentials from Apple
       final credential = await appleSignInService.getAppleIDCredential(
-        scopes: [
+        scopes: const [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
+        // Web options are required on web; safe to provide here for parity.
         webAuthenticationOptions: WebAuthenticationOptions(
-          clientId:
-              kIsWeb ? 'com.example.swiftcompsignin' : 'com.cdmHUB.SwiftComp',
-          redirectUri:
-              kIsWeb //This is where Apple sends the user back after they sign in.
-                  ? Uri.parse('https://compositesai.com')
-                  : Uri.parse(
-                      'https://flutter-sign-in-with-apple-example.glitch.me/callbacks/sign_in_with_apple',
-                    ),
+          clientId: kIsWeb ? 'com.example.swiftcompsignin' : 'com.cdmHUB.SwiftComp',
+          redirectUri: kIsWeb
+              ? Uri.parse('https://compositesai.com')
+              : Uri.parse(
+                  'https://flutter-sign-in-with-apple-example.glitch.me/callbacks/sign_in_with_apple',
+                ),
         ),
       );
 
       print('Apple credential: $credential');
-      // Get the identity token
-      final identityToken = credential.identityToken;
-      final String? name = credential.givenName;
 
-      if (identityToken == null) {
+      final identityToken = credential.identityToken;
+      if (identityToken == null || identityToken.isEmpty) {
         throw Exception('Identity token not available in Apple credentials');
       }
-      // Validate the token with backend and retrieve email if valid
-      final email = await authUseCase.validateAppleToken(identityToken);
 
-      await syncUser(name, email, null);
-      _signedInUser = User(email: email, name: name);
+      final email = credential.email;
+      final displayName = [
+        credential.givenName,
+        credential.familyName,
+      ].where((s) => s != null && s!.trim().isNotEmpty).map((s) => s!.trim()).join(' ');
 
+      final AuthSession session = await authUseCase.validateAppleToken(
+        identityToken,
+        email: email,
+        displayName: displayName.isEmpty ? null : displayName,
+      );
+
+      _signedInUser = session.user ??
+          User(
+            email: email ?? '',
+            name: displayName.isEmpty ? null : displayName,
+          );
       _isSigningIn = true;
-      // Notify listeners for UI update
-      notifyListeners();
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        _errorMessage = 'Sign-in was canceled by the user.';
+      } else {
+        _errorMessage = 'Sign in with Apple failed: $e';
+      }
+      _isSigningIn = false;
     } catch (e) {
       _errorMessage = 'Sign in with Apple failed: $e';
-      _isSigningIn = false; // Reset signing in state
-      notifyListeners(); // Optionally rethrow for higher-level error handling
+      _isSigningIn = false;
+    } finally {
+      notifyListeners();
     }
   }
 

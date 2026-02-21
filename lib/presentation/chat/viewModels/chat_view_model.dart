@@ -111,7 +111,15 @@ class ChatViewModel extends ChangeNotifier {
 
   // Initialize session if no chat list exists
   Future<void> fetchChats() async {
-    chats = await _chatUseCase.fetchChats();
+    try {
+      chats = await _chatUseCase.fetchChats();
+    } catch (e) {
+      if (kDebugMode) {
+        print(e);
+      }
+      // Avoid crashing UI on 401/403 before login is established.
+      chats = [];
+    }
     notifyListeners();
   }
 

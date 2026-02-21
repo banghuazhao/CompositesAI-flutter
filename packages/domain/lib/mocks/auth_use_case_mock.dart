@@ -40,10 +40,19 @@ class MockAuthUseCase extends Mock implements AuthUseCase {
           returnValueForMissingStub: Future.value(''));
 
   @override
-  Future<String> validateAppleToken(String identityToken) =>
-      super.noSuchMethod(Invocation.method(#validateAppleToken, [identityToken]),
-         returnValue: Future.value(''),
-          returnValueForMissingStub: Future.value(''));
+  Future<AuthSession> validateAppleToken(
+    String identityToken, {
+    String? email,
+    String? displayName,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(#validateAppleToken, [identityToken], {
+          #email: email,
+          #displayName: displayName,
+        }),
+        returnValue: Future.value(const AuthSession(token: 'token')),
+        returnValueForMissingStub: Future.value(const AuthSession(token: 'token')),
+      );
 
   @override
   Future<User> signup(String email, String password, String verificationCode, {String? name}) =>

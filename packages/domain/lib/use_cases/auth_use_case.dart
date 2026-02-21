@@ -30,7 +30,11 @@ abstract class AuthUseCase {
 
   Future<void> syncUser(String? displayName, String email, String? photoUrl);
 
-  Future<String> validateAppleToken(String identityToken);
+  Future<AuthSession> validateAppleToken(
+    String identityToken, {
+    String? email,
+    String? displayName,
+  });
 
   Future<AuthSession> validateGoogleToken(String idToken);
 
@@ -104,9 +108,17 @@ class AuthUseCaseImpl implements AuthUseCase {
   }
 
   @override
-  Future<String> validateAppleToken(String identityToken) async {
-    String email = await repository.validateAppleToken(identityToken);
-    return email;
+  Future<AuthSession> validateAppleToken(
+    String identityToken, {
+    String? email,
+    String? displayName,
+  }) async {
+    final session = await repository.validateAppleToken(
+      identityToken,
+      email: email,
+      displayName: displayName,
+    );
+    return session;
   }
 
   @override

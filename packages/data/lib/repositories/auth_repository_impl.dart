@@ -232,33 +232,45 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<String> validateAppleToken(String identityToken) async {
+  Future<AuthSession> validateAppleToken(
+    String identityToken, {
+    String? email,
+    String? displayName,
+  }) async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/auth/sign_in_with_apple');
-    final response = await client.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'identityToken': identityToken,
-        'platform': kIsWeb ? 'web' : 'other',
-      }),
-    );
-    if (response.statusCode != 200) {
-      print('Token validation failed: ${response.body}');
-      throw Exception('Failed to validate token with backend');
-    }
-    final responseJson = jsonDecode(response.body);
+    final url = Uri.parse('$baseURL/auths/oauth/apple');
 
-    // Extract email from the payload
-    final String? email =
-        responseJson["payload"]?["email"]; // Safely access payload
+    try {
+      final response = await client.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'identityToken': identityToken,
+          if (email != null) 'email': email,
+          if (displayName != null) 'displayName': displayName,
+        }),
+      );
 
-    if (email == null || email.isEmpty) {
-      throw Exception('Validation failed: email not retrieved from token');
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print('Apple OAuth login failed: ${response.body}');
+        throw Exception('Apple OAuth login failed');
+      }
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final session = AuthSession.fromJson(data);
+      if (session.token.isEmpty) {
+        throw Exception('Access token missing in response');
+      }
+
+      await tokenProvider.saveToken(session.token);
+      print('Apple OAuth login succeeded');
+      return session;
+    } catch (e) {
+      print('Error during Apple OAuth login: $e');
+      throw Exception('Failed to login with Apple');
     }
-    return email;
   }
 
   @override

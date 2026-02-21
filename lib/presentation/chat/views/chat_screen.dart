@@ -43,18 +43,12 @@ class _ChatScreenState extends State<ChatScreen>
   void initState() {
     super.initState();
     viewModel = Provider.of<ChatViewModel>(context, listen: false);
-    _fetchChats();
-    _fetchAuthSession();
-  }
-
-  Future<void> _fetchAuthSession() async {
-    await viewModel.fetchAuthSessionNew();
-    setState(() {});
-  }
-
-  Future<void> _fetchChats() async {
-    await viewModel.fetchChats();
-    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await viewModel.fetchAuthSessionNew();
+      if (viewModel.isLoggedIn) {
+        await viewModel.fetchChats();
+      }
+    });
   }
 
   @override
@@ -83,7 +77,9 @@ class _ChatScreenState extends State<ChatScreen>
                         );
                         if (user != null) {
                           await viewModel.checkAuthStatus();
-                          setState(() {}); // Trigger UI rebuild
+                          if (viewModel.isLoggedIn) {
+                            await viewModel.fetchChats();
+                          }
                         }
                       },
                     );
