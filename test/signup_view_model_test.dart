@@ -1,3 +1,5 @@
+import 'package:domain/entities/auth_session.dart';
+import 'package:domain/entities/domain_exceptions.dart';
 import 'package:domain/entities/user.dart';
 import 'package:domain/mocks/auth_use_case_mock.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,271 +9,83 @@ import 'package:swiftcomp/presentation/auth/signup_view_model.dart';
 void main() {
   group('SignupViewModel Tests', () {
     group('toggleNewPasswordVisibility', () {
-      test('should toggle obscureTextNewPassword and notify listeners', () {
+      test('should toggle obscureTextNewPassword', () {
+        final mockAuthUseCase = MockAuthUseCase();
+        final viewModel = SignupViewModel(authUseCase: mockAuthUseCase);
 
-        final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-        final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-        // Initially true
-        expect(signupViewModel.obscureTextNewPassword, true);
-
-        // Toggle
-        signupViewModel.toggleNewPasswordVisibility();
-        expect(signupViewModel.obscureTextNewPassword, false);
-
-        // Toggle back
-        signupViewModel.toggleNewPasswordVisibility();
-        expect(signupViewModel.obscureTextNewPassword, true);
+        expect(viewModel.obscureTextNewPassword, true);
+        viewModel.toggleNewPasswordVisibility();
+        expect(viewModel.obscureTextNewPassword, false);
       });
     });
 
     group('toggleConfirmPasswordVisibility', () {
-      test('should toggle obscureTextConfirmPassword and notify listeners', () {
-        final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-        final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
+      test('should toggle obscureTextConfirmPassword', () {
+        final mockAuthUseCase = MockAuthUseCase();
+        final viewModel = SignupViewModel(authUseCase: mockAuthUseCase);
 
-        expect(signupViewModel.obscureTextConfirmPassword, true);
-
-        // Toggle
-        signupViewModel.toggleConfirmPasswordVisibility();
-        expect(signupViewModel.obscureTextConfirmPassword, false);
-
-        // Toggle back
-        signupViewModel.toggleConfirmPasswordVisibility();
-        expect(signupViewModel.obscureTextConfirmPassword, true);
+        expect(viewModel.obscureTextConfirmPassword, true);
+        viewModel.toggleConfirmPasswordVisibility();
+        expect(viewModel.obscureTextConfirmPassword, false);
       });
     });
 
-    group('sendSignupVerificationCode', () {
-      test('should call repository to send signup verification code with the correct email', () async {
-        final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
+    group('signUp', () {
+      test('should set loading and return user on success', () async {
+        final mockAuthUseCase = MockAuthUseCase();
+        final viewModel = SignupViewModel(authUseCase: mockAuthUseCase);
 
+        const name = 'Test User';
         const email = 'test@example.com';
+        const password = 'password123';
 
-        when(mockAuthUseCase.sendSignupVerificationCode(email))
-            .thenAnswer((_) async {});
-
-        await mockAuthUseCase.sendSignupVerificationCode(email);
-
-        verify(mockAuthUseCase.sendSignupVerificationCode(email)).called(1);
-      });
-
-      test('should propagate errors thrown by repository', () async {
-        final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-
-        const email = 'test@example.com';
-        const errorMessage = 'Failed to send verification code';
-
-        when(mockAuthUseCase.sendSignupVerificationCode(email))
-            .thenThrow(Exception(errorMessage));
-
-        expect(
-              () async => await mockAuthUseCase.sendSignupVerificationCode(email),
-          throwsA(isA<Exception>()),
+        when(
+          mockAuthUseCase.signUp(
+            name,
+            email,
+            password,
+            profileImageUrl: anyNamed('profileImageUrl'),
+          ),
+        ).thenAnswer(
+          (_) async => AuthSession(
+            token: 'token',
+            user: User(email: email, name: name),
+          ),
         );
 
-        verify(mockAuthUseCase.sendSignupVerificationCode(email)).called(1);
+        final future = viewModel.signUp(name, email, password);
+        expect(viewModel.isLoading, true);
+
+        final user = await future;
+        expect(viewModel.isLoading, false);
+
+        expect(user?.email, email);
+        expect(viewModel.isSignedUp, true);
+        expect(viewModel.signedInUser?.email, email);
       });
-    });
 
-  group('signup', () {
-    test('should set isLoading to true during the signup process', () async {
-      final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
+      test('should map EMAIL_TAKEN to friendly message', () async {
+        final mockAuthUseCase = MockAuthUseCase();
+        final viewModel = SignupViewModel(authUseCase: mockAuthUseCase);
 
-      const email = 'test@example.com';
-      const password = 'password123';
-      const verificationCode = '123456';
-      const name = 'Test User';
+        const name = 'Test User';
+        const email = 'test@example.com';
+        const password = 'password123';
 
-      when(mockAuthUseCase.signup(email, password, verificationCode, name: name))
-          .thenAnswer((_) async => User(name: name, email: email));
+        when(
+          mockAuthUseCase.signUp(
+            name,
+            email,
+            password,
+            profileImageUrl: anyNamed('profileImageUrl'),
+          ),
+        ).thenThrow(BadRequestException('EMAIL_TAKEN'));
 
-      final future = signupViewModel.signup(email, password, verificationCode, name: name);
-
-      expect(signupViewModel.isLoading, true);
-      await future;
-      expect(signupViewModel.isLoading, false);
-    });
-
-    test('should return User on successful signup', () async {
-      final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-      const password = 'password123';
-      const verificationCode = '123456';
-      const name = 'Test User';
-
-      final user = User(name: name, email: email);
-
-      when(mockAuthUseCase.signup(email, password, verificationCode, name: name))
-          .thenAnswer((_) async => user);
-
-      final result = await signupViewModel.signup(email, password, verificationCode, name: name);
-
-      expect(result, user);
-      expect(signupViewModel.errorMessage, isNull);
-    });
-
-    test('should set errorMessage on signup failure', () async {
-      final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-      const password = 'password123';
-      const verificationCode = '123456';
-
-      when(mockAuthUseCase.signup(email, password, verificationCode))
-          .thenThrow(Exception('Signup error'));
-
-      final result = await signupViewModel.signup(email, password, verificationCode);
-
-      expect(result, isNull);
-      expect(signupViewModel.errorMessage, 'Signup failed: Exception: Signup error');
-    });
-
-    test('should reset isLoading and notifyListeners on failure', () async {
-      final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-      const password = 'password123';
-      const verificationCode = '123456';
-
-      when(mockAuthUseCase.signup(email, password, verificationCode))
-          .thenThrow(Exception('Signup error'));
-
-      await signupViewModel.signup(email, password, verificationCode);
-
-      expect(signupViewModel.isLoading, false);
-    });
-  });
-  });
-
-  group('signUpFor', () {
-    test('should set isLoading to true and back to false during the process', () async {
-      final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-
-      when(mockAuthUseCase.sendSignupVerificationCode(email))
-          .thenAnswer((_) async {});
-
-      final future = signupViewModel.signUpFor(email);
-
-      // Verify isLoading is true during the process
-      expect(signupViewModel.isLoading, true);
-
-      await future;
-
-      // Verify isLoading is false after the process
-      expect(signupViewModel.isLoading, false);
-    });
-
-    test('should call sendSignupVerificationCode with the correct email', () async {
-      final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-
-      when(mockAuthUseCase.sendSignupVerificationCode(email))
-          .thenAnswer((_) async {});
-
-      await signupViewModel.signUpFor(email);
-
-      verify(mockAuthUseCase.sendSignupVerificationCode(email)).called(1);
-    });
-
-    test('should set isSignUp to true on successful signup', () async {
-      final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-
-      when(mockAuthUseCase.sendSignupVerificationCode(email))
-          .thenAnswer((_) async {});
-
-      await signupViewModel.signUpFor(email);
-
-      expect(signupViewModel.isSignUp, true);
-      expect(signupViewModel.errorMessage, '');
-    });
-
-    test('should set errorMessage on failure and not set isSignUp', () async {
-      final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-      const errorMessage = 'Failed to send verification code';
-
-      when(mockAuthUseCase.sendSignupVerificationCode(email))
-          .thenThrow(Exception(errorMessage));
-
-      await signupViewModel.signUpFor(email);
-
-      expect(signupViewModel.isSignUp, false);
-      expect(signupViewModel.errorMessage, contains(errorMessage));
-    });
-
-    test('should reset isLoading after failure', () async {
-      final MockAuthUseCase mockAuthUseCase  = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-
-      when(mockAuthUseCase.sendSignupVerificationCode(email))
-          .thenThrow(Exception('Some error'));
-
-      await signupViewModel.signUpFor(email);
-
-      expect(signupViewModel.isLoading, false);
-    });
-  });
-
-  group('login', () {
-    test('should set isLoading to true during login process', () async {
-      final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-      const password = 'password123';
-      final user = User(email: email);
-      when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => user);
-
-      final future = signupViewModel.login(email, password);
-
-      expect(signupViewModel.isLoading, true);
-      await future;
-      expect(signupViewModel.isLoading, false);
-    });
-
-    test('should return access token on successful login', () async {
-      final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-      const password = 'password123';
-      final user = User(email: email);
-      when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => user);
-
-      final result = await signupViewModel.login(email, password);
-      expect(result, user);
-      expect(signupViewModel.errorMessage, null);
-    });
-
-    test('should set error message on login failure', () async {
-      final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
-      final SignupViewModel signupViewModel = SignupViewModel(authUseCase: mockAuthUseCase);
-
-      const email = 'test@example.com';
-      const password = 'password123';
-      when(mockAuthUseCase.login(email, password)).thenThrow(Exception('Login error'));
-
-      final result = await signupViewModel.login(email, password);
-      expect(result, null);
-      expect(signupViewModel.loginErrorMessage, 'Login failed: Exception: Login error');
+        final user = await viewModel.signUp(name, email, password);
+        expect(user, isNull);
+        expect(viewModel.errorMessage, '邮箱已被注册');
+      });
     });
   });
 }
+

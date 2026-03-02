@@ -280,6 +280,12 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget defaultQuestionView() {
+    final name = (viewModel.user?.name ?? '').trim();
+    final email = (viewModel.user?.email ?? '').trim();
+    final greetingTarget = name.isNotEmpty ? name : email;
+    final greeting =
+        greetingTarget.isNotEmpty ? 'Hi, $greetingTarget' : 'Hi, I am Composites AI';
+
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -305,7 +311,7 @@ class _ChatScreenState extends State<ChatScreen>
                 const SizedBox(width: 10), // More spacing for a balanced look
                 Flexible(
                   child: Text(
-                    "Hi, I am Composites AI",
+                    greeting,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.normal,

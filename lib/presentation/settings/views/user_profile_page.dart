@@ -52,7 +52,10 @@ class UserProfilePage extends StatelessWidget {
                                 radius: 27.5, // Adjust the radius to match the icon size
                                 backgroundColor: Colors.transparent,
                                 child: ClipOval(
-                                  child: Base64Image(viewModel.user!.avatarUrl!)
+                                  child: SizedBox.square(
+                                    dimension: 55,
+                                    child: Base64Image(viewModel.user!.avatarUrl!),
+                                  ),
                                 ),
                               )
                                   : const Icon(

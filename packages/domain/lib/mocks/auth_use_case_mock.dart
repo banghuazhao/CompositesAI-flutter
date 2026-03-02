@@ -55,11 +55,19 @@ class MockAuthUseCase extends Mock implements AuthUseCase {
       );
 
   @override
-  Future<User> signup(String email, String password, String verificationCode, {String? name}) =>
+  Future<AuthSession> signUp(
+    String name,
+    String email,
+    String password, {
+    String? profileImageUrl,
+  }) =>
       super.noSuchMethod(
-          Invocation.method(#signup, [email, password, verificationCode, name]),
-          returnValue: Future.value(User(name: name, email: email)),
-          returnValueForMissingStub: Future.value(User(name: 'default', email: email)));
+        Invocation.method(#signUp, [name, email, password], {
+          #profileImageUrl: profileImageUrl,
+        }),
+        returnValue: Future.value(const AuthSession(token: 'token')),
+        returnValueForMissingStub: Future.value(const AuthSession(token: 'token')),
+      );
 
   @override
   Future<void> sendSignupVerificationCode(String email) =>

@@ -5,7 +5,12 @@ import '../entities/user.dart';
 import '../entities/auth_session.dart';
 
 abstract class AuthRepository {
-  Future<User> signup(String email, String password, String verificationCode,{String? name});
+  Future<AuthSession> signUp(
+    String name,
+    String email,
+    String password, {
+    String? profileImageUrl,
+  });
   Future<User> login(String email, String password);
   Future<void> logout();
   Future<bool> isLoggedIn();

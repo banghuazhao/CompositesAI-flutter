@@ -2,8 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:linkedin_login/linkedin_login.dart';
 import 'package:provider/provider.dart';
+import 'package:domain/entities/user.dart';
 import 'package:swiftcomp/presentation/auth/sigup_page.dart';
 import 'package:swiftcomp/util/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -250,31 +250,6 @@ class _LoginPageState extends State<LoginPage> {
           backgroundColor: Colors.red,
         ),
       );
-    }
-  }
-
-  void _linkedinSignIn(LoginViewModel viewModel, BuildContext context) async {
-    setState(() {
-// ✅ Show loading indicator before sign-in
-    });
-
-    try {
-      await viewModel.signInWithLinkedin();
-
-      // ✅ After sign-in, return to settings page with a success result
-      Navigator.pop(context, viewModel.signedInUser);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("An error occurred: $e"),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() {
-// ✅ Hide loading indicator after sign-in
-      });
     }
   }
 
@@ -630,13 +605,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 10),
                           _buildSocialButton(
-                            iconPath: 'images/linkedin_logo.png',
-                            text: 'Continue with Linkedin',
-                            onPressed: () =>
-                                _linkedinSignIn(viewModel, context),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildSocialButton(
                             iconPath: 'images/apple_logo.png',
                             text: 'Continue with Apple',
                             onPressed: () => _appleSignIn(viewModel, context),
@@ -809,8 +777,9 @@ class _LoginPageState extends State<LoginPage> {
       MaterialPageRoute(builder: (context) => SignupPage()),
     );
 
-    if (result == "sign up success") {
-      Navigator.pop(context, null);
+    if (!mounted) return;
+    if (result is User) {
+      Navigator.pop(context, result);
     }
   }
 }

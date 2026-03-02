@@ -28,31 +28,59 @@ class AuthRepositoryImpl implements AuthRepository {
       required this.tokenProvider});
 
   @override
-  Future<User> signup(String email, String password, String verificationCode,
-      {String? name}) async {
+  Future<AuthSession> signUp(
+    String name,
+    String email,
+    String password, {
+    String? profileImageUrl,
+  }) async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/users/');
-    final response = await client.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(
-        {
+    final url = Uri.parse('$baseURL/auths/signup');
+
+    try {
+      final response = await client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
           'email': email,
           'password': password,
-          'verificationCode': verificationCode,
-          if (name != null) 'name': name,
-        },
-      ),
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final responseData = jsonDecode(response.body);
-      return User(
-        email: responseData['user']['email'],
-        name: responseData['user']['name'],
+          'profile_image_url': profileImageUrl ?? '/user.png',
+        }),
       );
-    } else {
-      throw Exception('Failed to sign up. Status code: ${response.statusCode}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        // Try to preserve backend error codes/messages for UI mapping.
+        try {
+          final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+          final code = decoded is Map<String, dynamic>
+              ? (decoded['code'] ??
+                      decoded['error_code'] ??
+                      decoded['error'] ??
+                      decoded['message'])
+                  ?.toString()
+              : null;
+          if (response.statusCode == 400) {
+            throw BadRequestException(code ?? 'Bad Request');
+          }
+        } catch (_) {
+          // ignore and fall through to generic mapping below
+        }
+        throw mapServerErrorToDomainException(response);
+      }
+
+      final decoded = utf8.decode(response.bodyBytes);
+      final Map<String, dynamic> data = jsonDecode(decoded);
+      final session = AuthSession.fromJson(data);
+      if (session.token.isEmpty) {
+        throw Exception('Access token missing in response');
+      }
+      await tokenProvider.saveToken(session.token);
+      return session;
+    } catch (e) {
+      // Re-throw domain exceptions as-is; wrap unknowns.
+      if (e is DomainException) rethrow;
+      throw Exception('Failed to sign up: $e');
     }
   }
 

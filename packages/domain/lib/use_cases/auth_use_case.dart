@@ -10,8 +10,12 @@ import '../entities/user.dart';
 import '../repositories_abstract/auth_repository.dart';
 
 abstract class AuthUseCase {
-  Future<User> signup(String email, String password, String verificationCode,
-      {String? name});
+  Future<AuthSession> signUp(
+    String name,
+    String email,
+    String password, {
+    String? profileImageUrl,
+  });
 
   Future<User> login(String email, String password);
 
@@ -55,10 +59,18 @@ class AuthUseCaseImpl implements AuthUseCase {
   AuthUseCaseImpl({required this.repository});
 
   @override
-  Future<User> signup(String email, String password, String verificationCode,
-      {String? name}) async {
-    return await repository.signup(email, password, verificationCode,
-        name: name);
+  Future<AuthSession> signUp(
+    String name,
+    String email,
+    String password, {
+    String? profileImageUrl,
+  }) async {
+    return await repository.signUp(
+      name,
+      email,
+      password,
+      profileImageUrl: profileImageUrl,
+    );
   }
 
   @override

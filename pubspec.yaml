@@ -59,6 +59,7 @@ dependencies:
   http: ^1.6.0
   font_awesome_flutter: ^10.9.1
   msal_auth: ^3.3.0
+  image_picker: ^1.2.1
 
 
 dev_dependencies:

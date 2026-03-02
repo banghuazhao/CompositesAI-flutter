@@ -86,7 +86,10 @@ class _SettingsPageState extends State<SettingsPage> {
                               radius: 22.5,
                               backgroundColor: Colors.transparent,
                               child: ClipOval(
-                                child: Base64Image(viewModel.user!.avatarUrl!)
+                                child: SizedBox.square(
+                                  dimension: 45,
+                                  child: Base64Image(viewModel.user!.avatarUrl!),
+                                ),
                               ),
                             )
                           : const Icon(
