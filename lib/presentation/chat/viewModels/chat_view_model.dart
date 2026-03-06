@@ -34,6 +34,7 @@ class ChatViewModel extends ChangeNotifier {
 
   List<Chat> chats = [];
   Chat? selectedChat;
+  String? errorMessage;
 
   List<Message> messages = [];
   StreamController<ChatResponse> threadResponseController =
@@ -126,6 +127,17 @@ class ChatViewModel extends ChangeNotifier {
   void onTapNewChat() {
     selectedChat = null;
     notifyListeners();
+  }
+  Future<void> deleteChat(Chat chat) async{
+    try {
+      await _chatUseCase.deleteChat(chat);
+      chats.removeWhere((c) => c.id == chat.id);
+      notifyListeners();
+    } catch(e) {
+      print('Delete error: $e');
+      errorMessage = 'Failed to delete chat. Please try again.';
+      notifyListeners();
+    }
   }
 
   Future<void> checkAuthStatus() async {

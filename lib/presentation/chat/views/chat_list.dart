@@ -8,6 +8,14 @@ class ChatList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chatViewModel = Provider.of<ChatViewModel>(context);
+    if (chatViewModel.errorMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(chatViewModel.errorMessage!))
+        );
+        chatViewModel.errorMessage = null;
+      });
+    }
 
     return Drawer(
       child: ListView(
@@ -35,6 +43,21 @@ class ChatList extends StatelessWidget {
           ),
           ...chatViewModel.chats.map((chat) {
             return ListTile(
+              contentPadding: EdgeInsets.only(left: 16, right: 8),
+              trailing: PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                onSelected: (value) {
+                  switch (value) {
+                    case 'delete': chatViewModel.deleteChat(chat);
+                    break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'pin', child: Text('Pin')),
+                  PopupMenuItem(value: 'rename', child: Text('Rename')),
+                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                ],
+              ),
               title: Text(
                 chat.title,
                 overflow: TextOverflow.ellipsis, // Truncate with ...

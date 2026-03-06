@@ -17,7 +17,7 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<List<Chat>> fetchChats() async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/chats/');
+    final url = Uri.parse('$baseURL/chats/all');
     final response = await authClient.get(
       url,
       headers: {'Content-Type': 'application/json'}
@@ -25,8 +25,11 @@ class ChatRepositoryImpl implements ChatRepository {
 
     if (response.statusCode == 200) {
       final decoded = utf8.decode(response.bodyBytes);
-      final List<dynamic> data = jsonDecode(decoded);
-      final chats = data.map((json) => Chat.fromJson(json)).toList();
+      final data = jsonDecode(decoded);
+      if (data is! List) {
+        throw mapServerErrorToDomainException(response);
+      }
+      final chats = (data).map((json) => Chat.fromJson(json)).toList();
       return chats;
     } else {
       throw mapServerErrorToDomainException(response);
@@ -48,6 +51,21 @@ class ChatRepositoryImpl implements ChatRepository {
       final List<dynamic> messagesJson = data["chat"]["messages"];
       final messages = messagesJson.map((json) => Message.fromJson(json)).toList();
       return messages;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<void> deleteChat(Chat chat) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/${chat.id}');
+    final response = await authClient.delete(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
     } else {
       throw mapServerErrorToDomainException(response);
     }

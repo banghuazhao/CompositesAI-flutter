@@ -5,6 +5,8 @@ import 'chat_repository.dart';
 abstract class ChatUseCase {
   Future<List<Chat>> fetchChats();
   Future<List<Message>> fetchMessages(Chat chat);
+
+  Future<void> deleteChat(Chat chat);
 }
 
 
@@ -21,5 +23,8 @@ class ChatUseCaseImpl implements ChatUseCase {
   @override
   Future<List<Message>> fetchMessages(Chat chat) async {
     return repository.fetchMessages(chat);
+  }
+  Future<void> deleteChat(Chat chat) async {
+    return repository.deleteChat(chat);
   }
 }

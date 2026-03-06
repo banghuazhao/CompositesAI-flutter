@@ -6,8 +6,15 @@ import 'package:http/http.dart';
 /// Helper function to map server errors to domain-specific exceptions
 DomainException mapServerErrorToDomainException(Response response) {
   final statusCode = response.statusCode;
-  final responseData = jsonDecode(response.body);
-  final message = responseData['message'];
+  String? message;
+  try {
+    final responseData = jsonDecode(response.body);
+    message = responseData['message'];
+  } catch (e) {
+    // 不是JSON，用原始body或null
+    message = null;
+  }
+
 
   switch (statusCode) {
     case 400:

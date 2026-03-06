@@ -13,8 +13,8 @@ class Chat {
 
   factory Chat.fromJson(Map<String, dynamic> json) {
     return Chat(
-      id: json['id'],
-      title: json['title']
+      id: json['id'] as String,
+      title: json['title'] as String
     );
   }
 
