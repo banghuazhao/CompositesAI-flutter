@@ -70,4 +70,22 @@ class ChatRepositoryImpl implements ChatRepository {
       throw mapServerErrorToDomainException(response);
     }
   }
+
+  @override
+  Future<Chat> updateChatTitle(Chat chat, String newTitle) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/${chat.id}');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'chat': {'title': newTitle}}),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded) as Map<String, dynamic>;
+      return Chat.fromJson(data);
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
 }

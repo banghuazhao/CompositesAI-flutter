@@ -2,6 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewModels/chat_view_model.dart';
 
+/// Returns the new title if user confirms, null if cancelled.
+Future<String?> showRenameDialog(BuildContext context, String currentTitle) async {
+  final controller = TextEditingController(text: currentTitle);
+  return showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Rename chat'),
+      content: TextField(
+        controller: controller,
+        decoration: const InputDecoration(
+          labelText: 'Title',
+          border: OutlineInputBorder(),
+        ),
+        autofocus: true,
+        onSubmitted: (_) => Navigator.of(context).pop(controller.text.trim()),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+}
+
 class ChatList extends StatelessWidget {
   const ChatList({Key? key}) : super(key: key);
 
@@ -46,16 +76,50 @@ class ChatList extends StatelessWidget {
               contentPadding: EdgeInsets.only(left: 16, right: 8),
               trailing: PopupMenuButton<String>(
                 padding: EdgeInsets.zero,
-                onSelected: (value) {
+                onSelected: (value) async {
                   switch (value) {
-                    case 'delete': chatViewModel.deleteChat(chat);
-                    break;
+                    case 'delete':
+                      chatViewModel.deleteChat(chat);
+                      break;
+                    case 'rename':
+                      final newTitle = await showRenameDialog(context, chat.title);
+                      if (newTitle != null && newTitle.isNotEmpty) {
+                        await chatViewModel.updateChatTitle(chat, newTitle);
+                      }
+                      break;
                   }
                 },
                 itemBuilder: (context) => [
-                  PopupMenuItem(value: 'pin', child: Text('Pin')),
-                  PopupMenuItem(value: 'rename', child: Text('Rename')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  PopupMenuItem(
+                    value: 'pin',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.push_pin, size: 20),
+                        SizedBox(width: 8),
+                        Text('Pin'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'rename',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.edit, size: 20),
+                        SizedBox(width: 8),
+                        Text('Rename'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.delete, size: 20),
+                        SizedBox(width: 8),
+                        Text('Delete'),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               title: Text(

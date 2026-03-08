@@ -140,6 +140,21 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> updateChatTitle(Chat chat, String newTitle) async {
+    try {
+      final updated = await _chatUseCase.updateChatTitle(chat, newTitle);
+      final index = chats.indexWhere((c) => c.id == chat.id);
+      if (index >= 0) {
+        chats[index].title = updated.title;
+      }
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) print('Update error: $e');
+      errorMessage = 'Failed to rename chat. Please try again.';
+      notifyListeners();
+    }
+  }
+
   Future<void> checkAuthStatus() async {
     isLoggedIn = await _authUseCase.isLoggedIn();
     print("isLoggedIn: $isLoggedIn");
