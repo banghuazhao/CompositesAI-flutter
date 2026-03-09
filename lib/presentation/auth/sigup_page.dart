@@ -1,10 +1,9 @@
-import 'package:domain/entities/user.dart';
+import 'package:domain/auth/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import '../../app/injection_container.dart';
-import '../../util/app_colors.dart';
 import 'signup_view_model.dart';
 
 class SignupPage extends StatelessWidget {

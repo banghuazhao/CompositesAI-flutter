@@ -2,9 +2,9 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'package:domain/entities/auth_session.dart';
-import 'package:domain/entities/user.dart';
-import 'package:domain/use_cases/auth_use_case.dart';
+import 'package:domain/auth/entities/auth_session.dart';
+import 'package:domain/auth/entities/user.dart';
+import 'package:domain/auth/use_cases/auth_use_case.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

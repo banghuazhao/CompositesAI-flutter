@@ -1,4 +1,4 @@
-import 'package:domain/chat/chat.dart';
+import 'package:domain/chat/entities/chat.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewModels/chat_view_model.dart';
@@ -75,10 +75,18 @@ class ChatList extends StatelessWidget {
               Navigator.pop(context);
             },
           ),
-          ...(() {
-            final sorted = List<Chat>.from(chatViewModel.chats)
-              ..sort((a, b) => (b.pinned ? 1 : 0).compareTo(a.pinned ? 1 : 0));
-            return sorted.map((chat) => ListTile(
+          if (chatViewModel.isLoadingChats)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else
+            ...(() {
+              final sorted = List<Chat>.from(chatViewModel.chats)
+                ..sort((a, b) => (b.pinned ? 1 : 0).compareTo(a.pinned ? 1 : 0));
+              return sorted.map((chat) => ListTile(
               contentPadding: EdgeInsets.only(left: 16, right: 8),
               trailing: PopupMenuButton<String>(
                 padding: EdgeInsets.zero,

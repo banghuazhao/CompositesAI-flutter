@@ -1,9 +1,5 @@
 // lib/domain/use_cases/signup_use_case.dart
 
-import 'dart:ffi';
-
-import 'package:infrastructure/token_provider.dart';
-
 import '../entities/linkedin_user_profile.dart';
 import '../entities/auth_session.dart';
 import '../entities/user.dart';

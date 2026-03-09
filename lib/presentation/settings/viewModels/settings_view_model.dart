@@ -3,10 +3,10 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:domain/entities/linkedin_user_profile.dart';
-import 'package:domain/entities/user.dart';
-import 'package:domain/use_cases/auth_use_case.dart';
-import 'package:domain/use_cases/user_use_case.dart';
+import 'package:domain/auth/entities/linkedin_user_profile.dart';
+import 'package:domain/auth/entities/user.dart';
+import 'package:domain/auth/use_cases/auth_use_case.dart';
+import 'package:domain/auth/use_cases/user_use_case.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

@@ -1,6 +1,6 @@
-import 'package:domain/entities/user.dart';
-import 'package:domain/entities/auth_session.dart';
-import 'package:domain/mocks/auth_use_case_mock.dart';
+import 'package:domain/auth/entities/user.dart';
+import 'package:domain/auth/entities/auth_session.dart';
+import 'package:domain/auth/mocks/auth_use_case_mock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:infrastructure/mocks/apple_sign_in_service_mock.dart';

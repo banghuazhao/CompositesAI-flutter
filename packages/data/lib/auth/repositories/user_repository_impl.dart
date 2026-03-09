@@ -2,13 +2,13 @@
 
 import 'dart:convert';
 
-import 'package:domain/entities/user.dart';
-import 'package:domain/repositories_abstract/user_repository.dart';
+import 'package:domain/auth/entities/user.dart';
+import 'package:domain/auth/repositories_abstract/user_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 
-import '../mappers/domain_exception_mapper.dart';
+import '../../mappers/domain_exception_mapper.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final AuthenticatedHttpClient authClient;

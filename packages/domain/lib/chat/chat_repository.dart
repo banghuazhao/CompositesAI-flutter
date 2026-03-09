@@ -1,5 +1,5 @@
-import '../entities/chat/message.dart';
-import 'chat.dart';
+import 'entities/message.dart';
+import 'entities/chat.dart';
 
 abstract class ChatRepository {
   Future<List<Chat>> fetchChats();  // Fetch sessions from a data source
@@ -7,4 +7,5 @@ abstract class ChatRepository {
   Future<void> deleteChat(Chat chat);
   Future<Chat> updateChatTitle(Chat chat, String newTitle);
   Future<Chat> togglePin(Chat chat);
+  Stream<String> sendMessages(List<Message> messages, Chat chat);
 }

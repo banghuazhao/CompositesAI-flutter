@@ -1,15 +1,11 @@
 import 'dart:math';
 
 import 'package:domain/domain.dart';
-import 'package:domain/entities/chat/chat_response.dart';
-import 'package:domain/entities/chat/function_tool.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/chat/model/message_extension.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
-import 'package:ui_components/beating_text.dart';
 import 'package:ui_components/blinking_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -107,8 +103,8 @@ class _MessageListState extends State<MessageList> {
           onPressed: viewModel.isMessageCopying(message)
               ? null
               : () async {
-            viewModel.copyMessage(message);
-          },
+                  viewModel.copyMessage(message);
+                },
           style: ButtonStyle(
             padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
             minimumSize: WidgetStateProperty.all(Size.zero),
@@ -180,14 +176,20 @@ class _MessageListState extends State<MessageList> {
   }
 
   Widget buildAssistantMessage(ChatViewModel viewModel, Message message) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 2,
-      children: [
-        gptResponseWidget(message.content),
-        buildMessageActions(viewModel, message),
-      ],
-    );
+    final isLast =
+        viewModel.messages.isNotEmpty && viewModel.messages.last == message;
+    final isStreaming = isLast && viewModel.isSendingMessage;
+
+    return message.content.isNotEmpty
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 2,
+            children: [
+              gptResponseWidget(message.content),
+              if (!isStreaming) buildMessageActions(viewModel, message),
+            ],
+          )
+        : Container();
   }
 
   Widget gptResponseWidget(String originalResponse) {
@@ -196,45 +198,37 @@ class _MessageListState extends State<MessageList> {
     String finalText = cleanText.replaceAll('\n\n', '\n');
     return SelectionArea(
         child: GptMarkdown(
-          finalText,
-          style: const TextStyle(fontSize: 15, color: Colors.black),
-          onLinkTab: (String url, String title) {
-            launchUrl(Uri.parse(url));
-          },
-        ));
+      finalText,
+      style: const TextStyle(fontSize: 15, color: Colors.black),
+      onLinkTab: (String url, String title) {
+        launchUrl(Uri.parse(url));
+      },
+    ));
   }
 
-  StreamBuilder<ChatResponse> messageStream(ChatViewModel viewModel) {
-    return StreamBuilder<ChatResponse>(
+  StreamBuilder<Message> messageStream(ChatViewModel viewModel) {
+    return StreamBuilder<Message>(
         stream: viewModel.threadResponseController.stream,
         builder: (context, snapshot) {
           return Align(
-              alignment: Alignment.centerLeft, child: streamWidget(snapshot));
+              alignment: Alignment.centerLeft,
+              child: streamWidget(snapshot, viewModel));
         });
   }
 
-  Widget streamWidget(AsyncSnapshot<ChatResponse> snapshot) {
+  Widget streamWidget(
+      AsyncSnapshot<Message> snapshot, ChatViewModel viewModel) {
     if (snapshot.connectionState == ConnectionState.waiting) {
+      if (viewModel.isSendingMessage) {
+        return BlinkingText(
+          text: "Thinking...",
+          style: TextStyle(fontSize: 15.0),
+        );
+      }
       return Container();
     } else if (snapshot.hasError) {
       return Text('Error: ${snapshot.error}');
-    } else if (snapshot.data != null) {
-      final threadResponse = snapshot.data!;
-      if (threadResponse is Message) {
-        return gptResponseWidget("${threadResponse.content} ●");
-      } else if (threadResponse is FunctionTool) {
-        return BlinkingText(
-          text: "Calling Tools...",
-          style: TextStyle(fontSize: 15.0), // Customize the style as needed
-        );
-      } else {
-        return BlinkingText(
-          text: "Thinking...",
-          style: TextStyle(fontSize: 15.0), // Customize the style as needed
-        );
-      }
-    } else {
-      return Container();
     }
+    return Container();
   }
 }

@@ -3,8 +3,8 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:domain/entities/chat/message.dart';
-import 'package:domain/entities/user.dart';
+import 'package:domain/chat/entities/message.dart';
+import 'package:domain/auth/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';

@@ -1,8 +1,8 @@
-import 'package:domain/entities/user.dart';
-import 'package:domain/use_cases/user_use_case.dart';
+import 'package:domain/auth/entities/user.dart';
+import 'package:domain/auth/use_cases/auth_use_case.dart';
+import 'package:domain/auth/use_cases/user_use_case.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:domain/use_cases/auth_use_case.dart';
 // Assuming your use cases are here
 
 class UserProfileViewModel extends ChangeNotifier {

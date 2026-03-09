@@ -1,5 +1,4 @@
-
-import 'package:domain/use_cases/auth_use_case.dart';
+import 'package:domain/auth/use_cases/auth_use_case.dart';
 import 'package:flutter/cupertino.dart';
 
 class UpdatePasswordViewModel extends ChangeNotifier {

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:domain/entities/domain_exceptions.dart';
+import 'package:domain/common//domain_exceptions.dart';
 import 'package:http/http.dart';
 
 /// Helper function to map server errors to domain-specific exceptions

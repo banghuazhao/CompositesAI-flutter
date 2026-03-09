@@ -1,16 +1,9 @@
 import 'dart:async';
-import 'package:domain/chat/chat.dart';
+import 'package:domain/chat/entities/chat.dart';
 import 'package:domain/domain.dart';
-import 'package:domain/entities/chat/function_tool.dart';
-import 'package:domain/entities/chat/thread.dart';
-import 'package:domain/entities/chat/chat_response.dart';
-import 'package:domain/entities/user.dart';
-import 'package:domain/use_cases/auth_use_case.dart';
-import 'package:domain/use_cases/composites_tools_use_case.dart';
-import 'package:domain/use_cases/functional_call_use_case.dart';
-import 'package:domain/use_cases/thread_runs_use_case.dart';
-import 'package:domain/use_cases/threads_use_case.dart';
-import 'package:domain/use_cases/user_use_case.dart';
+import 'package:domain/auth/entities/user.dart';
+import 'package:domain/auth/use_cases/auth_use_case.dart';
+import 'package:domain/auth/use_cases/user_use_case.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -22,8 +15,6 @@ class ChatViewModel extends ChangeNotifier {
   final ChatUseCase _chatUseCase;
   final AuthUseCase _authUseCase;
   final UserUseCase _userUserCase;
-  final ThreadRunsUseCase _threadRunsUseCase;
-  final FunctionalCallUseCase _functionalCallUseCase;
 
   bool isLoggedIn = false;
   User? user;
@@ -31,13 +22,14 @@ class ChatViewModel extends ChangeNotifier {
   final ScrollController scrollController = ScrollController();
   bool isSendingMessage = false;
   bool isLoadingMessages = false;
+  bool isLoadingChats = false;
 
   List<Chat> chats = [];
   Chat? selectedChat;
   String? errorMessage;
 
   List<Message> messages = [];
-  StreamController<ChatResponse> threadResponseController =
+  StreamController<Message> threadResponseController =
       StreamController.broadcast();
 
   String? copyingMessageId;
@@ -61,15 +53,9 @@ class ChatViewModel extends ChangeNotifier {
     required ChatUseCase chatUseCase,
     required AuthUseCase authUseCase,
     required UserUseCase userUserCase,
-    required ThreadsUseCase threadsUseCase,
-    required ThreadRunsUseCase threadRunsUseCase,
-    required CompositesToolsUseCase toolsUseCase,
-    required FunctionalCallUseCase functionalCallUseCase,
   })  : _chatUseCase = chatUseCase,
         _authUseCase = authUseCase,
-        _userUserCase = userUserCase,
-        _threadRunsUseCase = threadRunsUseCase,
-        _functionalCallUseCase = functionalCallUseCase;
+        _userUserCase = userUserCase;
 
   Future<void> fetchAuthSessionNew() async {
     try {
@@ -112,6 +98,8 @@ class ChatViewModel extends ChangeNotifier {
 
   // Initialize session if no chat list exists
   Future<void> fetchChats() async {
+    isLoadingChats = true;
+    notifyListeners();
     try {
       final list = await _chatUseCase.fetchChats();
       if (kDebugMode) {
@@ -124,20 +112,23 @@ class ChatViewModel extends ChangeNotifier {
       }
       // Avoid crashing UI on 401/403 before login is established.
       chats = [];
+    } finally {
+      isLoadingChats = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   void onTapNewChat() {
     selectedChat = null;
     notifyListeners();
   }
-  Future<void> deleteChat(Chat chat) async{
+
+  Future<void> deleteChat(Chat chat) async {
     try {
       await _chatUseCase.deleteChat(chat);
       chats.removeWhere((c) => c.id == chat.id);
       notifyListeners();
-    } catch(e) {
+    } catch (e) {
       print('Delete error: $e');
       errorMessage = 'Failed to delete chat. Please try again.';
       notifyListeners();
@@ -219,30 +210,25 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> sendInputMessage(String text) async {
-    final message = Message(role: 'user', content: text);
     if (selectedChat == null) return;
-
-    final Stream<ChatResponse> Function() streamBuilder = messages.isEmpty
-        ? () => _threadRunsUseCase.createThreadAndRunStream(
-            assistantId, message.content)
-        : () {
-            final threadId = selectedChat!.id!;
-            return _threadRunsUseCase.createMessageAndRunStream(
-                threadId, assistantId, message.content);
-          };
-
-    messages.add(message);
+    final userMessage = Message(role: 'user', content: text);
+    messages.add(userMessage);
     setSendingMessage(true);
     scrollToBottom();
+
+    final Stream<Message> Function() streamBuilder = () => _chatUseCase
+        .sendMessages(messages, selectedChat!)
+        .map((content) => Message(role: 'assistant', content: content));
 
     await _processResponseStream(streamBuilder);
   }
 
   Future<void> _processResponseStream(
-    Stream<ChatResponse> Function() streamBuilder,
+    Stream<Message> Function() streamBuilder,
   ) async {
-    threadResponseController = StreamController<ChatResponse>.broadcast();
-    Message? finalMessage;
+    threadResponseController = StreamController<Message>.broadcast();
+    Message assistantMessage = Message(role: 'assistant', content: '');
+    messages.add(assistantMessage);
 
     try {
       final stream = streamBuilder();
@@ -251,31 +237,17 @@ class ChatViewModel extends ChangeNotifier {
         threadResponseController.add(response);
 
         if (response is Message) {
-          finalMessage = response;
-          selectedChat?.title = response.content;
+          assistantMessage.content += response.content;
+          notifyListeners();
           scrollToBottom();
-        } else if (response is Thread) {
-          // selectedChat?.id = response.id;
-        } else if (response is FunctionTool) {
-          final threadToolOutput =
-              await _functionalCallUseCase.callFunctionTool(response);
-          streamBuilder() => _threadRunsUseCase.submitToolOutputsToRunStream(
-              selectedChat!.id!, response.runId, [threadToolOutput]);
-          setSendingMessage(true);
-          scrollToBottom();
-          await _processResponseStream(streamBuilder);
         }
       }
+      await _chatLimiter.incrementChatCount();
     } catch (error) {
       threadResponseController.addError(error);
-      print('Error receiving messages: $error');
+      if (kDebugMode) print('Error receiving messages: $error');
     } finally {
       await threadResponseController.close();
-      if (finalMessage != null) {
-        // print(finalMessage.content);
-        await _chatLimiter.incrementChatCount();
-        messages.add(finalMessage);
-      }
       setSendingMessage(false);
     }
   }

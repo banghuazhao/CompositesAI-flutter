@@ -1,7 +1,7 @@
-import 'package:domain/entities/auth_session.dart';
-import 'package:domain/entities/domain_exceptions.dart';
-import 'package:domain/entities/user.dart';
-import 'package:domain/mocks/auth_use_case_mock.dart';
+import 'package:domain/auth/entities/auth_session.dart';
+import 'package:domain/common/domain_exceptions.dart';
+import 'package:domain/auth/entities/user.dart';
+import 'package:domain/auth/mocks/auth_use_case_mock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:swiftcomp/presentation/auth/signup_view_model.dart';

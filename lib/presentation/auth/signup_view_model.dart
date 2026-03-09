@@ -1,14 +1,12 @@
 // lib/presentation/viewmodels/signup_view_model.dart
 
 import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:domain/entities/domain_exceptions.dart';
-import 'package:domain/entities/user.dart';
-import 'package:domain/use_cases/auth_use_case.dart';
+import 'package:domain/common//domain_exceptions.dart';
+import 'package:domain/auth/entities/user.dart';
+import 'package:domain/auth/use_cases/auth_use_case.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 

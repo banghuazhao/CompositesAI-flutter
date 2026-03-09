@@ -1,4 +1,4 @@
-import '../entities/chat/message.dart';
+import 'message.dart';
 import 'package:uuid/uuid.dart';
 
 class Chat {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:domain/entities/user.dart';
+import 'package:domain/auth/entities/user.dart';
 import 'package:swiftcomp/presentation/auth/sigup_page.dart';
 import 'package:swiftcomp/util/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';

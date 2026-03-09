@@ -1,7 +1,4 @@
-import 'package:domain/entities/chat/chat_response.dart';
-import 'package:uuid/uuid.dart';
-
-class Message extends ChatResponse {
+class Message {
   String id;
   final String role;
   bool? isLiked;

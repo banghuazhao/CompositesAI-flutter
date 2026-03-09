@@ -1,5 +1,5 @@
 
-import 'package:domain/mocks/auth_use_case_mock.dart';
+import 'package:domain/auth/mocks/auth_use_case_mock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:swiftcomp/presentation/auth/forget_password_view_model.dart';

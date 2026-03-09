@@ -1,6 +1,6 @@
 // lib/presentation/pages/settings_page.dart
 
-import 'package:domain/entities/user.dart';
+import 'package:domain/auth/entities/user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,11 +10,9 @@ import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import '../../../app/injection_container.dart';
 import '../../conponents/base64-image.dart';
-import '../viewModels/manage_composite_experts_view_model.dart';
 import '../viewModels/settings_view_model.dart';
 import 'apply_expert_page.dart';
 import '../../auth/login_page.dart';
-import 'manage_composite_experts_page.dart';
 import 'tool_setting_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -127,26 +125,6 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                         );
                         await _fetchAuthSession();
-                      },
-                    ),
-                  if (viewModel.isLoggedIn &&
-                      viewModel.isAdmin &&
-                      viewModel.user != null)
-                    MoreRow(
-                      leadingIcon: Icons.construction_rounded,
-                      title: "Manage Expert Application",
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChangeNotifierProvider(
-                                create: (_) => ManageCompositeExpertsViewModel(
-                                    userUseCase: sl(),
-                                    compositeExpertUseCase: sl(),
-                                    user: viewModel.user!),
-                                child: ManageCompositeExpertsPage()),
-                          ),
-                        );
                       },
                     ),
                   if (viewModel.isLoggedIn && !viewModel.isExpert)

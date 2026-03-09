@@ -50,12 +50,7 @@ cd swiftcomp-flutter
 flutter pub get
 ```
 
-3. **Set Up Environment Variables** Create a `.env` file in the root directory and add the necessary environment variables. For example:
-```
-OPENAI_API_KEY=your_openai_api_key
-```
-
-4. **Run the Application** 
+3**Run the Application** 
 ```bash
 flutter run
 ```
