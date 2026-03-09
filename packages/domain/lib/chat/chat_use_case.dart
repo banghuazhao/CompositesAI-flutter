@@ -9,6 +9,7 @@ abstract class ChatUseCase {
   Future<void> deleteChat(Chat chat);
 
   Future<Chat> updateChatTitle(Chat chat, String newTitle);
+  Future<Chat> togglePin(Chat chat);
 }
 
 
@@ -31,5 +32,8 @@ class ChatUseCaseImpl implements ChatUseCase {
   }
   Future<Chat> updateChatTitle(Chat chat, String newTitle) async {
     return repository.updateChatTitle(chat, newTitle);
+  }
+  Future<Chat> togglePin(Chat chat) async {
+    return repository.togglePin(chat);
   }
 }

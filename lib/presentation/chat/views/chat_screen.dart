@@ -24,7 +24,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen>
-    with AutomaticKeepAliveClientMixin, RouteAware {
+    with AutomaticKeepAliveClientMixin, RouteAware, WidgetsBindingObserver {
   @override
   bool get wantKeepAlive => true;
   final TextEditingController textController = TextEditingController();
@@ -33,15 +33,9 @@ class _ChatScreenState extends State<ChatScreen>
   late ChatViewModel viewModel;
 
   @override
-  void dispose() {
-    focusNode.dispose();
-    textController.dispose();
-    super.dispose();
-  }
-
-  @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     viewModel = Provider.of<ChatViewModel>(context, listen: false);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await viewModel.fetchAuthSessionNew();
@@ -49,6 +43,21 @@ class _ChatScreenState extends State<ChatScreen>
         await viewModel.fetchChats();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    focusNode.dispose();
+    textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && viewModel.isLoggedIn) {
+      viewModel.fetchChats();
+    }
   }
 
   @override

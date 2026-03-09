@@ -113,10 +113,14 @@ class ChatViewModel extends ChangeNotifier {
   // Initialize session if no chat list exists
   Future<void> fetchChats() async {
     try {
-      chats = await _chatUseCase.fetchChats();
+      final list = await _chatUseCase.fetchChats();
+      if (kDebugMode) {
+        print('fetchChats: API returned ${list.length} chats');
+      }
+      chats = list;
     } catch (e) {
       if (kDebugMode) {
-        print(e);
+        print('fetchChats error: $e');
       }
       // Avoid crashing UI on 401/403 before login is established.
       chats = [];
@@ -151,6 +155,27 @@ class ChatViewModel extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) print('Update error: $e');
       errorMessage = 'Failed to rename chat. Please try again.';
+      notifyListeners();
+    }
+  }
+
+  Future<void> togglePin(Chat chat) async {
+    try {
+      final updated = await _chatUseCase.togglePin(chat);
+      final index = chats.indexWhere((c) => c.id == chat.id);
+      if (index >= 0) {
+        chats[index].pinned = updated.pinned;
+        final item = chats.removeAt(index);
+        if (updated.pinned) {
+          chats.insert(0, item);
+        } else {
+          chats.add(item);
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) print('Pin/Unpin error: $e');
+      errorMessage = 'Failed to operate. Please try again.';
       notifyListeners();
     }
   }

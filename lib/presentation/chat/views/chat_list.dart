@@ -1,3 +1,4 @@
+import 'package:domain/chat/chat.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewModels/chat_view_model.dart';
@@ -48,9 +49,12 @@ class ChatList extends StatelessWidget {
     }
 
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: <Widget>[
+      child: RefreshIndicator(
+        onRefresh: () => chatViewModel.fetchChats(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          children: <Widget>[
           DrawerHeader(
             decoration: BoxDecoration(
               color: Colors.grey.shade800,
@@ -71,8 +75,10 @@ class ChatList extends StatelessWidget {
               Navigator.pop(context);
             },
           ),
-          ...chatViewModel.chats.map((chat) {
-            return ListTile(
+          ...(() {
+            final sorted = List<Chat>.from(chatViewModel.chats)
+              ..sort((a, b) => (b.pinned ? 1 : 0).compareTo(a.pinned ? 1 : 0));
+            return sorted.map((chat) => ListTile(
               contentPadding: EdgeInsets.only(left: 16, right: 8),
               trailing: PopupMenuButton<String>(
                 padding: EdgeInsets.zero,
@@ -87,16 +93,19 @@ class ChatList extends StatelessWidget {
                         await chatViewModel.updateChatTitle(chat, newTitle);
                       }
                       break;
+                    case 'pin':
+                      chatViewModel.togglePin(chat);
+                      break;
                   }
                 },
                 itemBuilder: (context) => [
                   PopupMenuItem(
                     value: 'pin',
                     child: Row(
-                      children: const [
-                        Icon(Icons.push_pin, size: 20),
-                        SizedBox(width: 8),
-                        Text('Pin'),
+                      children: [
+                        const Icon(Icons.push_pin, size: 20),
+                        const SizedBox(width: 8),
+                        Text(chat.pinned ? 'Unpin' : 'Pin'),
                       ],
                     ),
                   ),
@@ -131,9 +140,10 @@ class ChatList extends StatelessWidget {
                 chatViewModel.selectChat(chat);
                 Navigator.pop(context);
               },
-            );
-          }),
-        ],
+            ));
+          }()),
+          ],
+        ),
       ),
     );
   }
