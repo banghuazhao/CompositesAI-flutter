@@ -128,9 +128,10 @@ class ChatRepositoryImpl implements ChatRepository {
         'Authorization': 'Bearer $accessToken'
       })
       ..body = jsonEncode({
-        "model": "gpt-4.1",
+        "model": "composites-ai-2026-02-23",
         "stream": true,
         "chat_id": chat.id,
+        "tool_ids": ["laminate_analysis", "ann_based_woven_analysis", "cylindrical_bending_api", "a2", "a1", "dev_composites_knowledge_retrieval", "cs_analysis_assistant_dev"],
         'messages': messages.map((message) {
           return {
             'role': message.role,
