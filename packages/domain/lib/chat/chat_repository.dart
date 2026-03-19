@@ -8,4 +8,5 @@ abstract class ChatRepository {
   Future<Chat> updateChatTitle(Chat chat, String newTitle);
   Future<Chat> togglePin(Chat chat);
   Stream<String> sendMessages(List<Message> messages, Chat chat);
+  Future<String> shareChat(Chat chat);
 }

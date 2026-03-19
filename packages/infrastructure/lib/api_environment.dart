@@ -26,4 +26,15 @@ class APIEnvironment {
       return "http://localhost:8080/api";
     }
   }
+
+  /// Web frontend root URL for share links (no /api/v1). Example: https://compositesai.com/s/{shareId}
+  Future<String> getWebBaseUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String currentEnvironment = prefs.getString(_environmentKey) ?? "production";
+    if (currentEnvironment == "production") {
+      return "https://compositesai.com";
+    } else {
+      return "http://localhost:8080";
+    }
+  }
 }

@@ -119,6 +119,26 @@ class ChatRepositoryImpl implements ChatRepository {
     }
   }
 
+  @override
+  Future<String> shareChat(Chat chat) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/${chat.id}/share');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded) as Map<String, dynamic>;
+      final item = Chat.fromJson(data);
+      final webBaseUrl = await apiEnvironment.getWebBaseUrl();
+      final shareLink = '$webBaseUrl/s/${item.id}';
+      return shareLink;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
   Stream<String> sendMessages(List<Message> messages, Chat chat) async* {
     final accessToken = await tokenProvider.getToken();
     final url = Uri.parse('https://compositesai.com/api/chat/completions');

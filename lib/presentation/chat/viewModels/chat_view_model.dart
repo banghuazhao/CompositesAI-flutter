@@ -171,6 +171,21 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  /// Calls share API, copies link to clipboard. Returns true if success. No need to store the link.
+  Future<bool> copyShareLink(Chat chat) async {
+    try {
+      final link = await _chatUseCase.shareChat(chat);
+      await Clipboard.setData(ClipboardData(text: link));
+      notifyListeners();
+      return true;
+    } catch (e) {
+      if (kDebugMode) print('Share error: $e');
+      errorMessage = 'Failed to create share link. Please try again.';
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> checkAuthStatus() async {
     isLoggedIn = await _authUseCase.isLoggedIn();
     print("isLoggedIn: $isLoggedIn");

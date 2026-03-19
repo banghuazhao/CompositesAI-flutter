@@ -3,6 +3,48 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewModels/chat_view_model.dart';
 
+/// Shows Share Chat dialog. Copy Link button calls [viewModel].copyShareLink([chat]).
+Future<void> showShareChatDialog(
+  BuildContext context,
+  ChatViewModel viewModel,
+  Chat chat,
+) async {
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Share Chat'),
+      content: const Text(
+        'Messages you send after creating your link won\'t be shared. '
+        'Users with the URL will be able to view the shared chat.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey.shade200,
+            foregroundColor: Colors.grey.shade800,
+          ),
+          icon: const Icon(Icons.link, size: 20),
+          label: const Text('Copy Link'),
+          onPressed: () async {
+            final success = await viewModel.copyShareLink(chat);
+            if (!dialogContext.mounted) return;
+            Navigator.of(dialogContext).pop();
+            if (success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Link copied to clipboard')),
+              );
+            }
+          },
+        ),
+      ],
+    ),
+  );
+}
+
 /// Returns the new title if user confirms, null if cancelled.
 Future<String?> showRenameDialog(BuildContext context, String currentTitle) async {
   final controller = TextEditingController(text: currentTitle);
@@ -104,6 +146,9 @@ class ChatList extends StatelessWidget {
                     case 'pin':
                       chatViewModel.togglePin(chat);
                       break;
+                    case 'share':
+                      await showShareChatDialog(context, chatViewModel, chat);
+                      break;
                   }
                 },
                 itemBuilder: (context) => [
@@ -134,6 +179,16 @@ class ChatList extends StatelessWidget {
                         Icon(Icons.delete, size: 20),
                         SizedBox(width: 8),
                         Text('Delete'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'share',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.share, size: 20),
+                        SizedBox(width: 8),
+                        Text('Share'),
                       ],
                     ),
                   ),
