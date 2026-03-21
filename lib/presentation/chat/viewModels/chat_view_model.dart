@@ -33,7 +33,6 @@ class ChatViewModel extends ChangeNotifier {
       StreamController.broadcast();
 
   String? copyingMessageId;
-  List<Message> selectedMessages = [];
 
   final ChatLimiter _chatLimiter = ChatLimiter();
 
@@ -282,21 +281,8 @@ class ChatViewModel extends ChangeNotifier {
     });
   }
 
-  void toggleMessageSelection(Message message) {
-    if (selectedMessages.contains(message)) {
-      selectedMessages.remove(message);
-    } else {
-      selectedMessages.add(message);
-    }
-    notifyListeners();
-  }
-
   bool isMessageCopying(Message message) {
     return copyingMessageId == message.id;
-  }
-
-  bool isMessageSelected(Message message) {
-    return selectedMessages.contains(message);
   }
 
   void toggleMessageLikeStatus(Message message, bool isLiked) {

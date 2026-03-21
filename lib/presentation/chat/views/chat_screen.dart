@@ -1,9 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:domain/chat/entities/message.dart';
 import 'package:domain/auth/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,7 +13,6 @@ import '../../settings/views/user_profile_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'message_list.dart';
 import 'chat_list.dart';
-import 'package:path_provider/path_provider.dart';
 
 class ChatScreen extends StatefulWidget {
   @override
@@ -97,95 +93,6 @@ class _ChatScreenState extends State<ChatScreen>
                     return Row(
                       mainAxisSize: MainAxisSize.min, // Keep it compact
                       children: [
-                        if (viewModel.selectedMessages.isNotEmpty)
-                          IconButton(
-                            icon: const Icon(Icons.clear),
-                            tooltip: "Clear Selection",
-                            onPressed: () {
-                              viewModel.selectedMessages.clear();
-                              viewModel.notifyListeners(); // Update UI
-                            },
-                          ),
-                        if (viewModel.selectedMessages.isNotEmpty)
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              exportChatMessages(viewModel, context, true);
-                            },
-                            icon: const Icon(Icons.download, size: 18),
-                            // Smaller icon
-                            label: const Text(
-                              "Download",
-                              style: TextStyle(fontSize: 14), // Smaller text
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 6, horizontal: 10),
-                              // Smaller padding
-                              minimumSize: const Size(88, 35),
-                              // Smaller size
-                              visualDensity: VisualDensity
-                                  .compact, // Makes it more compact
-                            ),
-                          ),
-
-                        const SizedBox(width: 8),
-                        // Export Chat Dropdown Button
-                        PopupMenuButton<String>(
-                          icon: Row(
-                            children: const [
-                              Icon(Icons.download, color: Colors.white),
-                              SizedBox(width: 5),
-                              Text(
-                                "Export Chat",
-                                style: TextStyle(
-                                    fontSize: 14, color: Colors.white),
-                              ),
-                            ],
-                          ),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0)),
-                          onSelected: (String value) async {
-                            final chatViewModel = Provider.of<ChatViewModel>(
-                                context,
-                                listen: false);
-                            if (value == 'export jsonl') {
-                              await exportChatMessages(chatViewModel, context,
-                                  false); // Call export JSON function
-                            } else if (value == 'export xlsx') {
-                              // Implement your Export XLSX logic here
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text("Export XLSX selected")),
-                              );
-                            }
-                          },
-                          itemBuilder: (BuildContext context) => [
-                            const PopupMenuItem<String>(
-                              value: 'export jsonl',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.file_download,
-                                      color: Colors.black),
-                                  SizedBox(width: 10),
-                                  Text("export jsonl"),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'export xlsx',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.table_chart, color: Colors.black),
-                                  SizedBox(width: 10),
-                                  Text("export xlsx"),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 8),
-                        // Spacing between the button and the avatar
-
                         // Avatar or Profile Button
                         GestureDetector(
                           onTap: () async {
@@ -312,7 +219,7 @@ class _ChatScreenState extends State<ChatScreen>
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.asset(
-                    'images/Icon-512.png',
+                    'images/app_icon.png',
                     width: 40,
                     height: 40,
                   ),
@@ -528,7 +435,7 @@ class _ChatScreenState extends State<ChatScreen>
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.asset(
-              'images/Icon-512.png',
+              'images/app_icon.png',
               width: 60,
               height: 60,
             ),
@@ -575,54 +482,5 @@ class _ChatScreenState extends State<ChatScreen>
         ],
       ),
     );
-  }
-
-  Future<void> exportChatMessages(ChatViewModel chatViewModel,
-      BuildContext context, bool shouldDownloadSelected) async {
-    try {
-      // Get the list of messages from ChatViewModel
-      final List<Message> messages = shouldDownloadSelected
-          ? chatViewModel.selectedMessages
-          : chatViewModel.messages;
-
-      // Convert messages to JSON format
-      //.map() function goes through each message in the messages list one by one.
-      final List<Map<String, dynamic>> messageData = messages.map((message) {
-        return {
-          "role": message.role, // e.g., "user" or "assistant"
-          "content": message.content, // message text
-        };
-      }).toList();
-      //.toList() Collects the Results:After processing all messages, .toList() takes all the resulting dictionaries from .map() and combines them into a new list.
-      // Create a JSON string
-      final String jsonString = jsonEncode({"messages": messageData});
-
-      // Mobile/Desktop: Save to the Downloads directory
-      final Directory? downloadsDirectory = await getDownloadsDirectory();
-      if (downloadsDirectory == null) {
-        throw Exception("Downloads directory is not available");
-      }
-
-      final File file = File('${downloadsDirectory.path}/chat_export.json');
-
-      // Write the JSON string to the file
-      await file.writeAsString(jsonString);
-
-      // Notify the user about the export
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Chat exported to Downloads as chat_export.json"),
-          duration: const Duration(seconds: 5),
-        ),
-      );
-
-      print("Chat exported successfully to Downloads: ${file.path}");
-    } catch (e) {
-      // Handle errors
-      print("Error exporting chat: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to export chat: $e")),
-      );
-    }
   }
 }

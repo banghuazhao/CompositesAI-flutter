@@ -1,3 +1,11 @@
 flutter_native_splash:
   color: "#ffffff"
-  image: images/app_icon.png
+  # 1024×1024 canvas with a smaller centered logo (see tool/generate_splash_logo.py). Re-run script after changing app icon or LOGO_SCALE.
+  image: images/splash_logo.png
+  android: true
+  ios: true
+  web: false
+  # Android 12+ splash (avoids default icon flash)
+  android_12:
+    image: images/splash_logo.png
+    icon_background_color: "#ffffff"

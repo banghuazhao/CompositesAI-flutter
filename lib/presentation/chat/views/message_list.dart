@@ -111,20 +111,6 @@ class _MessageListState extends State<MessageList> {
           ),
         ),
 
-        // Select Checkbox
-        IconButton(
-          icon: viewModel.isMessageSelected(message)
-              ? const Icon(Icons.check_box, size: 15)
-              : const Icon(Icons.check_box_outline_blank, size: 15),
-          onPressed: () {
-            viewModel.toggleMessageSelection(message);
-          },
-          style: ButtonStyle(
-            padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-            minimumSize: WidgetStateProperty.all(Size.zero),
-          ),
-        ),
-
         if (message.isAssistantMessage) ...[
           if (message.isLiked == null)
             IconButton(

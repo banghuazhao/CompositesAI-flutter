@@ -60,27 +60,20 @@ dependencies:
   font_awesome_flutter: ^10.9.1
   msal_auth: ^3.3.0
   image_picker: ^1.2.1
-
+  flutter_native_splash: ^2.4.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   mockito: ^5.0.17
   flutter_lints: ^3.0.0
-#  flutter_native_splash: ^2.3.11
-#  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.13.1
 
-flutter_icons:
+flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
+  remove_alpha_ios: true
   image_path: "images/app_icon.png"
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-  flutter_lints: ^1.0.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

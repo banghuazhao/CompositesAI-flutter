@@ -12,12 +12,14 @@ import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/app_colors.dart';
 import 'package:swiftcomp/util/others.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import 'app/bottom_navigator.dart';
 import 'app/injection_container.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   await dotenv.load();
 
@@ -42,6 +44,14 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FlutterNativeSplash.remove();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -75,7 +85,7 @@ class _MyAppState extends State<MyApp> {
             }
             return Locale('en', '');
           },
-          title: 'Composites AI',
+          title: 'CompositesAI',
           theme: ThemeData(
             colorScheme: ColorScheme.light(
               primary: AppColors.primary,
