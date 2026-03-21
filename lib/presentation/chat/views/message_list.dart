@@ -110,53 +110,6 @@ class _MessageListState extends State<MessageList> {
             minimumSize: WidgetStateProperty.all(Size.zero),
           ),
         ),
-
-        if (message.isAssistantMessage) ...[
-          if (message.isLiked == null)
-            IconButton(
-              icon: const Icon(Icons.thumb_up_outlined, size: 15),
-              onPressed: () {
-                viewModel.toggleMessageLikeStatus(message, true);
-              },
-              style: ButtonStyle(
-                padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-                minimumSize: WidgetStateProperty.all(Size.zero),
-              ),
-            ),
-          if (message.isLiked == null)
-            IconButton(
-              icon: const Icon(Icons.thumb_down_outlined, size: 15),
-              onPressed: () {
-                viewModel.toggleMessageLikeStatus(message, false);
-              },
-              style: ButtonStyle(
-                padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-                minimumSize: WidgetStateProperty.all(Size.zero),
-              ),
-            ),
-          if (message.isLiked != null && message.isLiked!)
-            IconButton(
-              icon: Icon(Icons.thumb_up, size: 15, color: Colors.grey[700]),
-              onPressed: () {
-                viewModel.toggleMessageLikeStatus(message, message.isLiked!);
-              },
-              style: ButtonStyle(
-                padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-                minimumSize: WidgetStateProperty.all(Size.zero),
-              ),
-            ),
-          if (message.isLiked != null && !message.isLiked!)
-            IconButton(
-              icon: Icon(Icons.thumb_down, size: 15, color: Colors.grey[700]),
-              onPressed: () {
-                viewModel.toggleMessageLikeStatus(message, message.isLiked!);
-              },
-              style: ButtonStyle(
-                padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-                minimumSize: WidgetStateProperty.all(Size.zero),
-              ),
-            ),
-        ],
       ],
     );
   }

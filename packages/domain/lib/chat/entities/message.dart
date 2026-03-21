@@ -1,18 +1,26 @@
 class Message {
   String id;
   final String role;
-  bool? isLiked;
   String content;
   int timestamp;
+  List<String> childrenIds = [];
+  List<String> models = [];
 
-  Message({this.id = '', required this.role, this.isLiked, this.content = '', this.timestamp = 0});
+  Message(
+      {this.id = '',
+      required this.role,
+      this.content = '',
+      this.childrenIds = const []})
+      : timestamp = DateTime.now().microsecondsSinceEpoch ~/ 1000,
+        models = ["composites-ai-2026-02-23"];
 
   Message.fromJson(Map<String, dynamic> json)
       : id = json['id'] ?? '',
         role = json['role'] ?? 'user',
-        isLiked = json['isLiked'],
         content = json['content'] ?? '',
-        timestamp = json['timestamp'] ?? 0;
+        timestamp = json['timestamp'] ?? 0,
+        childrenIds = List<String>.from(json['childrenIds'] ?? []),
+        models = List<String>.from(json['models'] ?? []);
 
   // Method for converting a Message instance to JSON format
   Map<String, dynamic> toJson() {
@@ -20,8 +28,15 @@ class Message {
     data['id'] = id;
     data['role'] = role;
     data['content'] = content;
-    data['isLiked'] = isLiked;
     data['timestamp'] = timestamp;
+    data['childrenIds'] = childrenIds;
+    data['models'] = models;
+    return data;
+  }
+
+  Map<String, dynamic> toHistoryJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data[id] = toJson();
     return data;
   }
 }

@@ -7,6 +7,8 @@ abstract class ChatUseCase {
 
   Future<List<Message>> fetchMessages(Chat chat);
 
+  Future<Chat> createChat(Message message);
+
   Future<void> deleteChat(Chat chat);
 
   Future<Chat> updateChatTitle(Chat chat, String newTitle);
@@ -30,6 +32,11 @@ class ChatUseCaseImpl implements ChatUseCase {
   @override
   Future<List<Message>> fetchMessages(Chat chat) async {
     return repository.fetchMessages(chat);
+  }
+
+  @override
+  Future<Chat> createChat(Message message) {
+    return repository.createChat(message);
   }
 
   @override

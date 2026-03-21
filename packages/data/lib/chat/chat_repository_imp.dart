@@ -68,6 +68,37 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<Chat> createChat(Message message) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/new');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'chat': {
+          'id': "",
+          'title': message.content,
+          'models': ["composites-ai-2026-02-23"],
+          'history': {
+            'messages': message.toHistoryJson()
+          },
+          'messages': [
+            message.toJson()
+          ]
+        }
+      }),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded) as Map<String, dynamic>;
+      final chat = Chat.fromJson(data);
+      return chat;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
   Future<void> deleteChat(Chat chat) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/chats/${chat.id}');
@@ -139,6 +170,7 @@ class ChatRepositoryImpl implements ChatRepository {
     }
   }
 
+  @override
   Stream<String> sendMessages(List<Message> messages, Chat chat) async* {
     final accessToken = await tokenProvider.getToken();
     final url = Uri.parse('https://compositesai.com/api/chat/completions');

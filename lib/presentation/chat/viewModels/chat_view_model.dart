@@ -117,8 +117,14 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> updateNewChat(Chat newChat) async {
+    await fetchChats();
+    selectedChat = chats.firstWhere((chat) => chat.id == newChat.id);
+  }
+
   void onTapNewChat() {
     selectedChat = null;
+    messages = [];
     notifyListeners();
   }
 
@@ -224,17 +230,32 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> sendInputMessage(String text) async {
-    if (selectedChat == null) return;
     final userMessage = Message(role: 'user', content: text);
+
     messages.add(userMessage);
     setSendingMessage(true);
     scrollToBottom();
 
-    final Stream<Message> Function() streamBuilder = () => _chatUseCase
-        .sendMessages(messages, selectedChat!)
-        .map((content) => Message(role: 'assistant', content: content));
+    try {
+      if (selectedChat == null) {
+        final newChat = await _chatUseCase.createChat(userMessage);
+        selectedChat = newChat;
+        updateNewChat(newChat);
+      }
 
-    await _processResponseStream(streamBuilder);
+      final messagesForRequest = List<Message>.from(messages);
+
+      streamBuilder() => _chatUseCase
+          .sendMessages(messagesForRequest, selectedChat!)
+          .map((content) => Message(role: 'assistant', content: content));
+
+      await _processResponseStream(streamBuilder);
+    } catch (e) {
+      if (kDebugMode) print('sendInputMessage error: $e');
+      setSendingMessage(false);
+      errorMessage = 'Failed to send message. Please try again.';
+      notifyListeners();
+    }
   }
 
   Future<void> _processResponseStream(
@@ -250,11 +271,9 @@ class ChatViewModel extends ChangeNotifier {
       await for (final response in stream) {
         threadResponseController.add(response);
 
-        if (response is Message) {
-          assistantMessage.content += response.content;
-          notifyListeners();
-          scrollToBottom();
-        }
+        assistantMessage.content += response.content;
+        notifyListeners();
+        scrollToBottom();
       }
       await _chatLimiter.incrementChatCount();
     } catch (error) {
@@ -283,10 +302,5 @@ class ChatViewModel extends ChangeNotifier {
 
   bool isMessageCopying(Message message) {
     return copyingMessageId == message.id;
-  }
-
-  void toggleMessageLikeStatus(Message message, bool isLiked) {
-    message.isLiked = isLiked;
-    notifyListeners();
   }
 }

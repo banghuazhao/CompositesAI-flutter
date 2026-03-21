@@ -19,7 +19,7 @@ class Chat {
     return Chat(
       id: map['id']?.toString() ?? '',
       title: map['title']?.toString() ?? '',
-      pinned: map['pinned'] as bool? ?? false,
+      pinned: map['pinned'] as bool? ?? false
     );
   }
 
@@ -27,7 +27,7 @@ class Chat {
     return {
       'id': id,
       'title': title,
-      'pinned': pinned,
+      'pinned': pinned
     };
   }
 }

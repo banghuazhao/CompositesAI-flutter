@@ -4,6 +4,7 @@ import 'entities/chat.dart';
 abstract class ChatRepository {
   Future<List<Chat>> fetchChats();  // Fetch sessions from a data source
   Future<List<Message>> fetchMessages(Chat chat);
+  Future<Chat> createChat(Message message);  // Fetch sessions from a data source
   Future<void> deleteChat(Chat chat);
   Future<Chat> updateChatTitle(Chat chat, String newTitle);
   Future<Chat> togglePin(Chat chat);
