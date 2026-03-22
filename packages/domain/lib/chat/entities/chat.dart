@@ -4,12 +4,14 @@ import 'package:uuid/uuid.dart';
 class Chat {
   final String id;
   String title;
-  bool pinned;
+  int updatedAt;
+  int createdAt;
 
   Chat({
     required this.id,
     required this.title,
-    this.pinned = false,
+    this.updatedAt = 0,
+    this.createdAt = 0,
   });
 
   /// GET /chats/all: id, title, pinned at top level. Other endpoints may nest under "chat".
@@ -19,7 +21,8 @@ class Chat {
     return Chat(
       id: map['id']?.toString() ?? '',
       title: map['title']?.toString() ?? '',
-      pinned: map['pinned'] as bool? ?? false
+      updatedAt: map['updated_at'] as int? ?? 0,
+      createdAt: map['created_at'] as int? ?? 0
     );
   }
 
@@ -27,7 +30,8 @@ class Chat {
     return {
       'id': id,
       'title': title,
-      'pinned': pinned
+      'updatedAt': updatedAt,
+      'createdAt': createdAt
     };
   }
 }

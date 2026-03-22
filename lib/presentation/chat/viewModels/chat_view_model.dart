@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../util/chat_limiter.dart';
 
@@ -158,17 +159,18 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> togglePin(Chat chat) async {
     try {
       final updated = await _chatUseCase.togglePin(chat);
-      final index = chats.indexWhere((c) => c.id == chat.id);
-      if (index >= 0) {
-        chats[index].pinned = updated.pinned;
-        final item = chats.removeAt(index);
-        if (updated.pinned) {
-          chats.insert(0, item);
-        } else {
-          chats.add(item);
-        }
-      }
-      notifyListeners();
+      // TODO: pinned is not a property of a chat
+      // final index = chats.indexWhere((c) => c.id == chat.id);
+      // if (index >= 0) {
+      //   chats[index].pinned = updated.pinned;
+      //   final item = chats.removeAt(index);
+      //   if (updated.pinned) {
+      //     chats.insert(0, item);
+      //   } else {
+      //     chats.add(item);
+      //   }
+      // }
+      // notifyListeners();
     } catch (e) {
       if (kDebugMode) print('Pin/Unpin error: $e');
       errorMessage = 'Failed to operate. Please try again.';
@@ -232,6 +234,10 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> sendInputMessage(String text) async {
     final userMessage = Message(role: 'user', content: text);
 
+    if (selectedChat != null) {
+      userMessage.parentId = messages.last.id;
+      messages.last.childrenIds = [userMessage.id];
+    }
     messages.add(userMessage);
     setSendingMessage(true);
     scrollToBottom();
@@ -244,12 +250,14 @@ class ChatViewModel extends ChangeNotifier {
       }
 
       final messagesForRequest = List<Message>.from(messages);
+      final sendId = Uuid().v4();
 
       streamBuilder() => _chatUseCase
-          .sendMessages(messagesForRequest, selectedChat!)
-          .map((content) => Message(role: 'assistant', content: content));
+          .sendMessages(messagesForRequest, selectedChat!, sendId)
+          .map((content) => Message(
+              role: 'assistant', content: content, parentId: userMessage.id));
 
-      await _processResponseStream(streamBuilder);
+      await _processResponseStream(streamBuilder, sendId);
     } catch (e) {
       if (kDebugMode) print('sendInputMessage error: $e');
       setSendingMessage(false);
@@ -259,11 +267,17 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> _processResponseStream(
-    Stream<Message> Function() streamBuilder,
-  ) async {
+      Stream<Message> Function() streamBuilder, String sendId) async {
     threadResponseController = StreamController<Message>.broadcast();
     Message assistantMessage = Message(role: 'assistant', content: '');
+    assistantMessage.parentId = messages.last.id;
+    messages.last.childrenIds = [assistantMessage.id];
     messages.add(assistantMessage);
+
+    // New chat
+    if (messages.length == 2) {
+      await _chatUseCase.persistMessages(messages, selectedChat!);
+    }
 
     try {
       final stream = streamBuilder();
@@ -276,6 +290,9 @@ class ChatViewModel extends ChangeNotifier {
         scrollToBottom();
       }
       await _chatLimiter.incrementChatCount();
+      selectedChat?.updatedAt = DateTime.now().microsecondsSinceEpoch ~/ 1000;
+      await _chatUseCase.persistMessages(messages, selectedChat!);
+      await _chatUseCase.persistMessages(messages, selectedChat!);
     } catch (error) {
       threadResponseController.addError(error);
       if (kDebugMode) print('Error receiving messages: $error');

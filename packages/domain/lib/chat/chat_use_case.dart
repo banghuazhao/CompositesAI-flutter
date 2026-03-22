@@ -15,8 +15,14 @@ abstract class ChatUseCase {
 
   Future<Chat> togglePin(Chat chat);
 
-  Stream<String> sendMessages(List<Message> messages, Chat chat);
+  Stream<String> sendMessages(List<Message> messages, Chat chat, String id);
+
   Future<String> shareChat(Chat chat);
+
+  Future<void> completeSendMessages(
+      List<Message> messages, Chat chat, String id);
+
+  Future<void> persistMessages(List<Message> messages, Chat chat);
 }
 
 class ChatUseCaseImpl implements ChatUseCase {
@@ -55,12 +61,24 @@ class ChatUseCaseImpl implements ChatUseCase {
   }
 
   @override
-  Stream<String> sendMessages(List<Message> messages, Chat chat) {
-    return repository.sendMessages(messages, chat);
+  Stream<String> sendMessages(List<Message> messages, Chat chat, String id) {
+    return repository.sendMessages(messages, chat, id);
   }
 
   @override
   Future<String> shareChat(Chat chat) async {
     return repository.shareChat(chat);
+  }
+
+  @override
+  Future<void> completeSendMessages(
+      List<Message> messages, Chat chat, String id) async {
+    return repository.completeSendMessages(messages, chat, id);
+  }
+
+  @override
+  Future<void> persistMessages(
+      List<Message> messages, Chat chat) async {
+    return repository.persistMessages(messages, chat);
   }
 }

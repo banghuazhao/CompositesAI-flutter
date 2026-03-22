@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 import 'package:infrastructure/token_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../mappers/domain_exception_mapper.dart';
 import '../utils/sse_stream.dart';
@@ -79,12 +80,8 @@ class ChatRepositoryImpl implements ChatRepository {
           'id': "",
           'title': message.content,
           'models': ["composites-ai-2026-02-23"],
-          'history': {
-            'messages': message.toHistoryJson()
-          },
-          'messages': [
-            message.toJson()
-          ]
+          'history': {'messages': message.toHistoryJson()},
+          'messages': [message.toJson()]
         }
       }),
     );
@@ -171,7 +168,8 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Stream<String> sendMessages(List<Message> messages, Chat chat) async* {
+  Stream<String> sendMessages(
+      List<Message> messages, Chat chat, String id) async* {
     final accessToken = await tokenProvider.getToken();
     final url = Uri.parse('https://compositesai.com/api/chat/completions');
     final request = http.Request('POST', url)
@@ -183,7 +181,16 @@ class ChatRepositoryImpl implements ChatRepository {
         "model": "composites-ai-2026-02-23",
         "stream": true,
         "chat_id": chat.id,
-        "tool_ids": ["laminate_analysis", "ann_based_woven_analysis", "cylindrical_bending_api", "a2", "a1", "dev_composites_knowledge_retrieval", "cs_analysis_assistant_dev"],
+        "id": id,
+        "tool_ids": [
+          "laminate_analysis",
+          "ann_based_woven_analysis",
+          "cylindrical_bending_api",
+          "a2",
+          "a1",
+          "dev_composites_knowledge_retrieval",
+          "cs_analysis_assistant_dev"
+        ],
         'messages': messages.map((message) {
           return {
             'role': message.role,
@@ -210,6 +217,64 @@ class ChatRepositoryImpl implements ChatRepository {
       if (content != null) {
         yield content;
       }
+    }
+  }
+
+  @override
+  Future<void> completeSendMessages(
+      List<Message> messages, Chat chat, String id) async {
+    final url = Uri.parse('https://compositesai.com/api/chat/completed');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'chat_id': chat.id,
+        'id': id,
+        'model': "composites-ai-2026-02-23",
+        'messages': messages.map((m) => m.toCompletedJson()).toList(),
+        'model_item': {
+          'id': "composites-ai-2026-02-23",
+          'object': "model",
+          'created': 1744316542,
+          'owned_by': "openai",
+          'name': "CompositesAI",
+          'tags': []
+        }
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<void> persistMessages(List<Message> messages, Chat chat) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/${chat.id}');
+    final response = await authClient.post(url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'chat': {
+            'models': ["composites-ai-2026-02-23"],
+            'files': [],
+            'params': {},
+            'history': {
+              'currentId': messages.last.id,
+              'messages': {for (var m in messages) m.id: m.toJson()}
+            },
+            'messages': messages.map(
+                    (m) => m.toJson()
+            ).toList(),
+          }
+        }));
+
+    if (response.statusCode == 200) {
+      return;
+    } else {
+      throw mapServerErrorToDomainException(response);
     }
   }
 }

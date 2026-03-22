@@ -61,6 +61,7 @@ dependencies:
   msal_auth: ^3.3.0
   image_picker: ^1.2.1
   flutter_native_splash: ^2.4.0
+  uuid: ^4.5.1
 
 dev_dependencies:
   flutter_test:

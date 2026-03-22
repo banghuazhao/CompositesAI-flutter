@@ -126,9 +126,7 @@ class ChatList extends StatelessWidget {
             )
           else
             ...(() {
-              final sorted = List<Chat>.from(chatViewModel.chats)
-                ..sort((a, b) => (b.pinned ? 1 : 0).compareTo(a.pinned ? 1 : 0));
-              return sorted.map((chat) => ListTile(
+              return List<Chat>.from(chatViewModel.chats).map((chat) => ListTile(
               contentPadding: EdgeInsets.only(left: 16, right: 8),
               trailing: PopupMenuButton<String>(
                 padding: EdgeInsets.zero,
@@ -158,7 +156,8 @@ class ChatList extends StatelessWidget {
                       children: [
                         const Icon(Icons.push_pin, size: 20),
                         const SizedBox(width: 8),
-                        Text(chat.pinned ? 'Unpin' : 'Pin'),
+                        // TODO: Need to update: pinned is not a property of chat
+                        Text('Pin'),
                       ],
                     ),
                   ),
