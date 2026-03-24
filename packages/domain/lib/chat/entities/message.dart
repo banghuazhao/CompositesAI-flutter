@@ -8,7 +8,10 @@ class Message {
   List<String> childrenIds = [];
   String? parentId;
   List<String> models = [];
+  String model;
   String modelName;
+  int thinkingElapsed = 0;
+  bool isDone = false;
 
   Message(
       {required this.role,
@@ -18,6 +21,7 @@ class Message {
       : id = const Uuid().v4(),
         timestamp = DateTime.now().microsecondsSinceEpoch ~/ 1000,
         models = ["composites-ai-2026-02-23"],
+        model = "composites-ai-2026-02-23",
         modelName = role == 'assistant' ? 'CompositeAI' : '';
 
   Message.fromJson(Map<String, dynamic> json)
@@ -28,7 +32,10 @@ class Message {
         childrenIds = List<String>.from(json['childrenIds'] ?? []),
         parentId = json['parentId'],
         modelName = json['modelName'] ?? '',
-        models = List<String>.from(json['models'] ?? []);
+        models = List<String>.from(json['models'] ?? []),
+        model = json['model'] ?? '',
+        thinkingElapsed = json['thinking_elapsed'] ?? 0,
+        isDone = json['done'] ?? false;
 
   // Method for converting a Message instance to JSON format
   Map<String, dynamic> toJson() {
@@ -39,13 +46,18 @@ class Message {
     data['timestamp'] = timestamp;
     data['childrenIds'] = childrenIds;
     data['parentId'] = parentId;
-    data['models'] = models;
+
     if (role == 'assistant') {
+      data['model'] = model;
       data['modelName'] = modelName;
       data['userContext'] = null;
       data['modelIdx'] = 0;
-      data['done'] = true;
-      data['thinking_elapsed'] = 5;
+      if (isDone) {
+        data['done'] = true;
+      }
+      data['thinking_elapsed'] = thinkingElapsed;
+    } else {
+      data['models'] = models;
     }
     return data;
   }

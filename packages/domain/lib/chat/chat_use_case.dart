@@ -23,6 +23,8 @@ abstract class ChatUseCase {
       List<Message> messages, Chat chat, String id);
 
   Future<void> persistMessages(List<Message> messages, Chat chat);
+
+  Future<void> updateChatMessage(Message message, Chat chat);
 }
 
 class ChatUseCaseImpl implements ChatUseCase {
@@ -80,5 +82,10 @@ class ChatUseCaseImpl implements ChatUseCase {
   Future<void> persistMessages(
       List<Message> messages, Chat chat) async {
     return repository.persistMessages(messages, chat);
+  }
+
+  @override
+  Future<void> updateChatMessage(Message message, Chat chat) async {
+    return repository.updateChatMessage(message, chat);
   }
 }

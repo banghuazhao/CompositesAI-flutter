@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:domain/chat/entities/chat.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/auth/entities/user.dart';
@@ -274,10 +275,8 @@ class ChatViewModel extends ChangeNotifier {
     messages.last.childrenIds = [assistantMessage.id];
     messages.add(assistantMessage);
 
-    // New chat
-    if (messages.length == 2) {
-      await _chatUseCase.persistMessages(messages, selectedChat!);
-    }
+    selectedChat?.updatedAt = DateTime.now().microsecondsSinceEpoch ~/ 1000;
+    await _chatUseCase.persistMessages(messages, selectedChat!);
 
     try {
       final stream = streamBuilder();
@@ -290,8 +289,13 @@ class ChatViewModel extends ChangeNotifier {
         scrollToBottom();
       }
       await _chatLimiter.incrementChatCount();
+      assistantMessage.thinkingElapsed = math.max(
+          0,
+          (DateTime.now().millisecondsSinceEpoch - assistantMessage.timestamp) ~/
+              1000);
+      assistantMessage.isDone = true;
       selectedChat?.updatedAt = DateTime.now().microsecondsSinceEpoch ~/ 1000;
-      await _chatUseCase.persistMessages(messages, selectedChat!);
+      await _chatUseCase.updateChatMessage(assistantMessage, selectedChat!);
       await _chatUseCase.persistMessages(messages, selectedChat!);
     } catch (error) {
       threadResponseController.addError(error);

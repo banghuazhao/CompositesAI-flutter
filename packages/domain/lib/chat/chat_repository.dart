@@ -20,4 +20,6 @@ abstract class ChatRepository {
       List<Message> messages, Chat chat, String id);
 
   Future<void> persistMessages(List<Message> messages, Chat chat);
+
+  Future<void> updateChatMessage(Message message, Chat chat);
 }

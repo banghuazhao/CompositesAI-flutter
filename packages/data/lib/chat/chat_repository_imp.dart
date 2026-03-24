@@ -183,14 +183,19 @@ class ChatRepositoryImpl implements ChatRepository {
         "chat_id": chat.id,
         "id": id,
         "tool_ids": [
-          "laminate_analysis",
-          "ann_based_woven_analysis",
-          "cylindrical_bending_api",
-          "a2",
-          "a1",
-          "dev_composites_knowledge_retrieval",
-          "cs_analysis_assistant_dev"
+          // "laminate_analysis",
+          // "ann_based_woven_analysis",
+          // "cylindrical_bending_api",
+          // "a2",
+          // "a1",
+          // "dev_composites_knowledge_retrieval",
+          // "cs_analysis_assistant_dev"
         ],
+        'features': {
+          'image_generation': false,
+          'code_interpreter': false,
+          'web_search': false
+        },
         'messages': messages.map((message) {
           return {
             'role': message.role,
@@ -258,6 +263,8 @@ class ChatRepositoryImpl implements ChatRepository {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'chat': {
+            'id': chat.id,
+            'title': chat.title,
             'models': ["composites-ai-2026-02-23"],
             'files': [],
             'params': {},
@@ -265,10 +272,29 @@ class ChatRepositoryImpl implements ChatRepository {
               'currentId': messages.last.id,
               'messages': {for (var m in messages) m.id: m.toJson()}
             },
-            'messages': messages.map(
-                    (m) => m.toJson()
-            ).toList(),
-          }
+            'messages': messages.map((m) => m.toJson()).toList(),
+            'timestamp': DateTime.now().microsecondsSinceEpoch
+          },
+          'created_at': chat.createdAt,
+          'updated_at': chat.updatedAt,
+          'dismissed_at': null
+        }));
+
+    if (response.statusCode == 200) {
+      return;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<void> updateChatMessage(Message message, Chat chat) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/${chat.id}/messages/${message.id}');
+    final response = await authClient.post(url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'content': message.content
         }));
 
     if (response.statusCode == 200) {
