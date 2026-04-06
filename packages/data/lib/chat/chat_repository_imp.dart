@@ -9,10 +9,19 @@ import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 import 'package:infrastructure/token_provider.dart';
-import 'package:uuid/uuid.dart';
 
 import '../mappers/domain_exception_mapper.dart';
 import '../utils/sse_stream.dart';
+
+/// Main chat list: `GET {base}/chats/` (trailing slash matters on some servers).
+String _unpinnedChatsListUri(String baseURL, {int? page}) {
+  final base = baseURL.endsWith('/')
+      ? baseURL.substring(0, baseURL.length - 1)
+      : baseURL;
+  final root = Uri.parse('$base/chats/');
+  if (page == null) return root.toString();
+  return root.replace(queryParameters: {'page': '$page'}).toString();
+}
 
 class ChatRepositoryImpl implements ChatRepository {
   final AuthenticatedHttpClient authClient;
@@ -25,9 +34,68 @@ class ChatRepositoryImpl implements ChatRepository {
       required this.tokenProvider});
 
   @override
-  Future<List<Chat>> fetchChats() async {
+  Future<List<Chat>> fetchChats({int? page}) async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/chats/all');
+    final url = Uri.parse(_unpinnedChatsListUri(baseURL, page: page));
+    final response = await authClient.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = utf8.decode(response.bodyBytes).trimLeft();
+      if (decoded.startsWith('<') || decoded.startsWith('<!')) {
+        throw FormatException(
+          'GET /chats/ returned HTML, not JSON. '
+          'Check base URL and path (use /chats/ with trailing slash).',
+        );
+      }
+      final data = jsonDecode(decoded);
+      if (data is! List) {
+        throw mapServerErrorToDomainException(response);
+      }
+      final chats = (data).map((json) => Chat.fromJson(json)).toList();
+      return chats;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<bool> fetchChatPinned(String chatId) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/$chatId/pinned');
+    final response = await authClient.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is bool) {
+        return data;
+      }
+      if (data is Map<String, dynamic>) {
+        final v = data['pinned'] ?? data['is_pinned'];
+        if (v is bool) return v;
+        if (v == true || v == 1) return true;
+        if (v == false || v == 0) return false;
+      }
+      throw FormatException('Unexpected /chats/.../pinned response shape');
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<List<Chat>> fetchPinnedChats() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/pinned');
     final response = await authClient.get(
       url,
       headers: {
@@ -43,8 +111,7 @@ class ChatRepositoryImpl implements ChatRepository {
       if (data is! List) {
         throw mapServerErrorToDomainException(response);
       }
-      final chats = (data).map((json) => Chat.fromJson(json)).toList();
-      return chats;
+      return (data).map((json) => Chat.fromJson(json)).toList();
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -135,14 +202,21 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<Chat> togglePin(Chat chat) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/chats/${chat.id}/pin');
+    // Toggle: no body; server updates pinned state.
     final response = await authClient.post(
       url,
       headers: {'Content-Type': 'application/json'},
     );
     if (response.statusCode == 200 || response.statusCode == 204) {
+      if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
+        return chat;
+      }
       final decoded = utf8.decode(response.bodyBytes);
-      final data = jsonDecode(decoded) as Map<String, dynamic>;
-      return Chat.fromJson(data);
+      final data = jsonDecode(decoded);
+      if (data is Map<String, dynamic>) {
+        return Chat.fromJson(data);
+      }
+      return chat;
     } else {
       throw mapServerErrorToDomainException(response);
     }

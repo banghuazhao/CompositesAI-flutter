@@ -3,7 +3,13 @@ import 'entities/chat.dart';
 import 'chat_repository.dart';
 
 abstract class ChatUseCase {
-  Future<List<Chat>> fetchChats();
+  /// GET /api/v1/chats (?page= optional).
+  Future<List<Chat>> fetchChats({int? page});
+
+  /// GET /api/v1/chats/{chatId}/pinned — server truth for pinned flag.
+  Future<bool> fetchChatPinned(String chatId);
+
+  Future<List<Chat>> fetchPinnedChats();
 
   Future<List<Message>> fetchMessages(Chat chat);
 
@@ -45,8 +51,18 @@ class ChatUseCaseImpl implements ChatUseCase {
   ChatUseCaseImpl({required this.repository});
 
   @override
-  Future<List<Chat>> fetchChats() async {
-    return repository.fetchChats();
+  Future<List<Chat>> fetchChats({int? page}) async {
+    return repository.fetchChats(page: page);
+  }
+
+  @override
+  Future<bool> fetchChatPinned(String chatId) async {
+    return repository.fetchChatPinned(chatId);
+  }
+
+  @override
+  Future<List<Chat>> fetchPinnedChats() async {
+    return repository.fetchPinnedChats();
   }
 
   @override

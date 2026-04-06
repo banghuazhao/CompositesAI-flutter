@@ -15,6 +15,9 @@ import '../../../util/chat_limiter.dart';
 import '../../../util/feedback_id_cache.dart';
 
 class ChatViewModel extends ChangeNotifier {
+  /// Matches backend: skip = (page - 1) * 60, limit 60 when page is set.
+  static const int chatListPageSize = 60;
+
   final ChatUseCase _chatUseCase;
   final AuthUseCase _authUseCase;
   final UserUseCase _userUserCase;
@@ -23,13 +26,23 @@ class ChatViewModel extends ChangeNotifier {
   User? user;
 
   final ScrollController scrollController = ScrollController();
+  /// Sidebar chat history list (separate from message [scrollController]).
+  final ScrollController chatListScrollController = ScrollController();
+
   bool isSendingMessage = false;
   bool isLoadingMessages = false;
   bool isLoadingChats = false;
+  /// Appending next page for GET /chats/?page=n (infinite scroll).
+  bool isLoadingMoreChats = false;
+  /// After first page: false if last page had [chatListPageSize] items (may have more).
+  bool allChatsLoaded = true;
+  int _nextChatListPage = 2;
+
   bool isSubmittingFeedback = false;
   final Set<String> _submittingFeedbackMessageIds = <String>{};
 
   List<Chat> chats = [];
+  List<Chat> pinnedChats = [];
   Chat? selectedChat;
   String? errorMessage;
 
@@ -59,7 +72,16 @@ class ChatViewModel extends ChangeNotifier {
     required UserUseCase userUserCase,
   })  : _chatUseCase = chatUseCase,
         _authUseCase = authUseCase,
-        _userUserCase = userUserCase;
+        _userUserCase = userUserCase {
+    chatListScrollController.addListener(_onChatListScroll);
+  }
+
+  void _onChatListScroll() {
+    if (!chatListScrollController.hasClients) return;
+    final pos = chatListScrollController.position;
+    if (pos.pixels < pos.maxScrollExtent - 120) return;
+    loadMoreChats();
+  }
 
   Future<void> fetchAuthSessionNew() async {
     try {
@@ -95,29 +117,103 @@ class ChatViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    chatListScrollController.removeListener(_onChatListScroll);
+    chatListScrollController.dispose();
     scrollController.dispose();
     threadResponseController.close();
     super.dispose();
   }
 
-  // Initialize session if no chat list exists
+  /// Pull-to-refresh / init: GET /chats/?page=1 (replace list) + GET /chats/pinned.
   Future<void> fetchChats() async {
-    isLoadingChats = true;
+    await _loadChatLists(showLoading: true);
+  }
+
+  /// GET /chats/{chatId}/pinned — use when you need server truth for Pin vs Unpin.
+  Future<bool> fetchChatPinned(String chatId) {
+    return _chatUseCase.fetchChatPinned(chatId);
+  }
+
+  /// Next page for GET /chats/?page=n; append to [chats]. Stops when empty or short page (see [chatListPageSize]).
+  Future<void> loadMoreChats() async {
+    if (!isLoggedIn) return;
+    if (allChatsLoaded || isLoadingMoreChats || isLoadingChats) return;
+
+    isLoadingMoreChats = true;
     notifyListeners();
     try {
-      final list = await _chatUseCase.fetchChats();
+      final list = await _chatUseCase.fetchChats(page: _nextChatListPage);
       if (kDebugMode) {
-        print('fetchChats: API returned ${list.length} chats');
+        print(
+            'loadMoreChats: page $_nextChatListPage returned ${list.length} chats');
+      }
+      if (list.isEmpty) {
+        allChatsLoaded = true;
+      } else {
+        final existingIds = chats.map((c) => c.id).toSet();
+        for (final c in list) {
+          if (!existingIds.contains(c.id)) {
+            chats.add(c);
+            existingIds.add(c.id);
+          }
+        }
+        if (list.length < chatListPageSize) {
+          allChatsLoaded = true;
+        } else {
+          _nextChatListPage++;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('loadMoreChats error: $e');
+      }
+      errorMessage = 'Failed to load more chats.';
+    } finally {
+      isLoadingMoreChats = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadChatLists({required bool showLoading}) async {
+    isLoadingMoreChats = false;
+    if (showLoading) {
+      isLoadingChats = true;
+      notifyListeners();
+    }
+    allChatsLoaded = true;
+    try {
+      final list = await _chatUseCase.fetchChats(page: 1);
+      if (kDebugMode) {
+        print('fetchChats page=1: API returned ${list.length} chats');
       }
       chats = list;
+      if (list.isEmpty || list.length < chatListPageSize) {
+        allChatsLoaded = true;
+      } else {
+        allChatsLoaded = false;
+        _nextChatListPage = 2;
+      }
     } catch (e) {
       if (kDebugMode) {
         print('fetchChats error: $e');
       }
-      // Avoid crashing UI on 401/403 before login is established.
       chats = [];
+      allChatsLoaded = true;
+    }
+    try {
+      pinnedChats = await _chatUseCase.fetchPinnedChats();
+      if (kDebugMode) {
+        print('fetchPinnedChats: API returned ${pinnedChats.length} pinned');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('fetchPinnedChats error: $e');
+      }
+      pinnedChats = [];
     } finally {
-      isLoadingChats = false;
+      if (showLoading) {
+        isLoadingChats = false;
+      }
       notifyListeners();
     }
   }
@@ -137,6 +233,7 @@ class ChatViewModel extends ChangeNotifier {
     try {
       await _chatUseCase.deleteChat(chat);
       chats.removeWhere((c) => c.id == chat.id);
+      pinnedChats.removeWhere((c) => c.id == chat.id);
       notifyListeners();
     } catch (e) {
       print('Delete error: $e');
@@ -152,6 +249,10 @@ class ChatViewModel extends ChangeNotifier {
       if (index >= 0) {
         chats[index].title = updated.title;
       }
+      final pinIndex = pinnedChats.indexWhere((c) => c.id == chat.id);
+      if (pinIndex >= 0) {
+        pinnedChats[pinIndex].title = updated.title;
+      }
       notifyListeners();
     } catch (e) {
       if (kDebugMode) print('Update error: $e');
@@ -160,21 +261,12 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  /// POST /api/v1/chats/{id}/pin (no body, server toggles). On success, reloads
+  /// [chats] and [pinnedChats] from GET /chats and GET /chats/pinned.
   Future<void> togglePin(Chat chat) async {
     try {
-      final updated = await _chatUseCase.togglePin(chat);
-      // TODO: pinned is not a property of a chat
-      // final index = chats.indexWhere((c) => c.id == chat.id);
-      // if (index >= 0) {
-      //   chats[index].pinned = updated.pinned;
-      //   final item = chats.removeAt(index);
-      //   if (updated.pinned) {
-      //     chats.insert(0, item);
-      //   } else {
-      //     chats.add(item);
-      //   }
-      // }
-      // notifyListeners();
+      await _chatUseCase.togglePin(chat);
+      await _loadChatLists(showLoading: false);
     } catch (e) {
       if (kDebugMode) print('Pin/Unpin error: $e');
       errorMessage = 'Failed to operate. Please try again.';

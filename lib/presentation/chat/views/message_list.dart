@@ -487,7 +487,7 @@ class _MessageListState extends State<MessageList> {
             ),
           );
         },
-        onLinkTab: (String url, String title) {
+        onLinkTap: (String url, String title) {
           launchUrl(Uri.parse(url));
         },
       ),

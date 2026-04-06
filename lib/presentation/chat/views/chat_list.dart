@@ -75,6 +75,118 @@ Future<String?> showRenameDialog(BuildContext context, String currentTitle) asyn
   );
 }
 
+Widget _chatListTile(
+  BuildContext context,
+  ChatViewModel chatViewModel,
+  Chat chat, {
+  required bool pinMenuAsUnpin,
+}) {
+  return ListTile(
+    contentPadding: const EdgeInsets.only(left: 16, right: 8),
+    trailing: PopupMenuButton<String>(
+      padding: EdgeInsets.zero,
+      onSelected: (value) async {
+        switch (value) {
+          case 'delete':
+            chatViewModel.deleteChat(chat);
+            break;
+          case 'rename':
+            final newTitle = await showRenameDialog(context, chat.title);
+            if (newTitle != null && newTitle.isNotEmpty) {
+              await chatViewModel.updateChatTitle(chat, newTitle);
+            }
+            break;
+          case 'pin':
+            chatViewModel.togglePin(chat);
+            break;
+          case 'share':
+            await showShareChatDialog(context, chatViewModel, chat);
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'pin',
+          child: Row(
+            children: [
+              const Icon(Icons.push_pin, size: 20),
+              const SizedBox(width: 8),
+              Text(pinMenuAsUnpin ? 'Unpin' : 'Pin'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'rename',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 20),
+              SizedBox(width: 8),
+              Text('Rename'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 20),
+              SizedBox(width: 8),
+              Text('Delete'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'share',
+          child: Row(
+            children: [
+              Icon(Icons.share, size: 20),
+              SizedBox(width: 8),
+              Text('Share'),
+            ],
+          ),
+        ),
+      ],
+    ),
+    title: Text(
+      chat.title,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+    ),
+    onTap: () {
+      chatViewModel.selectChat(chat);
+      Navigator.pop(context);
+    },
+  );
+}
+
+/// Collapsible section (chevron + grey title), matching Pinned / Previous chats.
+Widget _chatSectionExpansionTile({
+  required BuildContext context,
+  required String title,
+  required List<Widget> children,
+  bool initiallyExpanded = false,
+}) {
+  return Theme(
+    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+    child: ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding: EdgeInsets.zero,
+      collapsedIconColor: Colors.grey.shade500,
+      iconColor: Colors.grey.shade500,
+      title: Text(
+        title,
+        style: TextStyle(
+          color: Colors.grey.shade700,
+          fontWeight: FontWeight.w500,
+          fontSize: 15,
+        ),
+      ),
+      initiallyExpanded: initiallyExpanded,
+      children: children,
+    ),
+  );
+}
+
 class ChatList extends StatelessWidget {
   const ChatList({Key? key}) : super(key: key);
 
@@ -92,8 +204,9 @@ class ChatList extends StatelessWidget {
 
     return Drawer(
       child: RefreshIndicator(
-        onRefresh: () => chatViewModel.fetchChats(),
+        onRefresh: chatViewModel.fetchChats,
         child: ListView(
+          controller: chatViewModel.chatListScrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.zero,
           children: <Widget>[
@@ -117,93 +230,96 @@ class ChatList extends StatelessWidget {
               Navigator.pop(context);
             },
           ),
+          if (!chatViewModel.isLoadingChats)
+            Builder(
+              builder: (context) {
+                // Pinned titles only appear under Pinned; exclude those ids from Previous.
+                final pinnedIds =
+                    chatViewModel.pinnedChats.map((c) => c.id).toSet();
+                final previousChats = chatViewModel.chats
+                    .where((c) => !pinnedIds.contains(c.id))
+                    .toList();
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _chatSectionExpansionTile(
+                      context: context,
+                      title: 'Pinned',
+                      initiallyExpanded: false,
+                      children: [
+                        if (chatViewModel.pinnedChats.isEmpty)
+                          ListTile(
+                            dense: true,
+                            title: Text(
+                              'No pinned chats',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 13,
+                              ),
+                            ),
+                          )
+                        else
+                          ...chatViewModel.pinnedChats.map(
+                            (chat) => _chatListTile(
+                              context,
+                              chatViewModel,
+                              chat,
+                              pinMenuAsUnpin: true,
+                            ),
+                          ),
+                      ],
+                    ),
+                    _chatSectionExpansionTile(
+                      context: context,
+                      title: 'Previous chats',
+                      initiallyExpanded: true,
+                      children: [
+                        if (previousChats.isEmpty)
+                          ListTile(
+                            dense: true,
+                            title: Text(
+                              'No previous chats',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 13,
+                              ),
+                            ),
+                          )
+                        else
+                          ...previousChats.map(
+                            (chat) => _chatListTile(
+                              context,
+                              chatViewModel,
+                              chat,
+                              pinMenuAsUnpin: false,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
           if (chatViewModel.isLoadingChats)
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
                 child: CircularProgressIndicator(),
               ),
-            )
-          else
-            ...(() {
-              return List<Chat>.from(chatViewModel.chats).map((chat) => ListTile(
-              contentPadding: EdgeInsets.only(left: 16, right: 8),
-              trailing: PopupMenuButton<String>(
-                padding: EdgeInsets.zero,
-                onSelected: (value) async {
-                  switch (value) {
-                    case 'delete':
-                      chatViewModel.deleteChat(chat);
-                      break;
-                    case 'rename':
-                      final newTitle = await showRenameDialog(context, chat.title);
-                      if (newTitle != null && newTitle.isNotEmpty) {
-                        await chatViewModel.updateChatTitle(chat, newTitle);
-                      }
-                      break;
-                    case 'pin':
-                      chatViewModel.togglePin(chat);
-                      break;
-                    case 'share':
-                      await showShareChatDialog(context, chatViewModel, chat);
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'pin',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.push_pin, size: 20),
-                        const SizedBox(width: 8),
-                        // TODO: Need to update: pinned is not a property of chat
-                        Text('Pin'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'rename',
-                    child: Row(
-                      children: const [
-                        Icon(Icons.edit, size: 20),
-                        SizedBox(width: 8),
-                        Text('Rename'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: const [
-                        Icon(Icons.delete, size: 20),
-                        SizedBox(width: 8),
-                        Text('Delete'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'share',
-                    child: Row(
-                      children: const [
-                        Icon(Icons.share, size: 20),
-                        SizedBox(width: 8),
-                        Text('Share'),
-                      ],
-                    ),
-                  ),
-                ],
+            ),
+          if (chatViewModel.isLoadingMoreChats)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.0),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               ),
-              title: Text(
-                chat.title,
-                overflow: TextOverflow.ellipsis, // Truncate with ...
-                maxLines: 1, // Limit to one line
-              ),
-              onTap: () {
-                chatViewModel.selectChat(chat);
-                Navigator.pop(context);
-              },
-            ));
-          }()),
+            ),
           ],
         ),
       ),
