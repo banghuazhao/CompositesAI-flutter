@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:data/chat/message_delta_dto.dart';
 import 'package:domain/chat/entities/chat.dart';
 import 'package:domain/chat/chat_repository.dart';
+import 'package:domain/chat/entities/feedback_response.dart';
 import 'package:domain/chat/entities/message.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
@@ -299,6 +300,83 @@ class ChatRepositoryImpl implements ChatRepository {
 
     if (response.statusCode == 200) {
       return;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> fetchChatSnapshot(String chatId) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/$chatId');
+    final response = await authClient.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      throw FormatException('Unexpected chat snapshot format');
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<FeedbackResponse> createFeedback(
+      Map<String, dynamic> feedbackForm) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/evaluations/feedback');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(feedbackForm),
+    );
+
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      if (response.bodyBytes.isEmpty) {
+        throw Exception('Feedback create returned empty body.');
+      }
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is Map<String, dynamic>) {
+        return FeedbackResponse.fromJson(data);
+      }
+      throw FormatException('Unexpected feedback format');
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<FeedbackResponse> updateFeedback(
+      String feedbackId, Map<String, dynamic> feedbackForm) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/evaluations/feedback/$feedbackId');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(feedbackForm),
+    );
+
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      if (response.bodyBytes.isEmpty) {
+        throw Exception('Feedback update returned empty body.');
+      }
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is Map<String, dynamic>) {
+        return FeedbackResponse.fromJson(data);
+      }
+      throw FormatException('Unexpected feedback format');
     } else {
       throw mapServerErrorToDomainException(response);
     }

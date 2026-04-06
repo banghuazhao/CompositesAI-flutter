@@ -11,6 +11,13 @@ enum DescriptionType {
 }
 
 class DescriptionModels {
+  static Widget _scrollableMath(Widget child) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: child,
+    );
+  }
+
   static Widget getDescription(DescriptionType type, BuildContext context) {
     if (type == DescriptionType.lamina_stress_strain) {
       return Column(
@@ -24,7 +31,7 @@ Compute the stress/strain of an orthotropic lamina. The plane stress-strain rela
             height: 12,
           ),
           Center(
-            child: Math.tex(
+            child: _scrollableMath(Math.tex(
               r'''\begin{Bmatrix}
   \varepsilon_{11} \\
   \varepsilon_{22} \\
@@ -40,7 +47,7 @@ Compute the stress/strain of an orthotropic lamina. The plane stress-strain rela
 \end{Bmatrix}''',
               mathStyle: MathStyle.script,
               textStyle: Theme.of(context).textTheme.bodySmall,
-            ),
+            )),
           ),
         ],
       );
@@ -58,7 +65,7 @@ Calculate the engineering constant of an orthotropic lamina for different angles
             height: 12,
           ),
           Center(
-            child: Math.tex(
+            child: _scrollableMath(Math.tex(
               r'''\begin{Bmatrix}
   \varepsilon_{11} \\
   \varepsilon_{22} \\
@@ -74,7 +81,7 @@ Calculate the engineering constant of an orthotropic lamina for different angles
 \end{Bmatrix}''',
               mathStyle: MathStyle.display,
               textStyle: Theme.of(context).textTheme.titleMedium,
-            ),
+            )),
           ),
         ],
       );
@@ -92,7 +99,7 @@ Calculate 3D properties of a laminate including effective 3D stiffness matrix, c
             height: 12,
           ),
           Center(
-            child: Math.tex(
+            child: _scrollableMath(Math.tex(
               r'''\begin{Bmatrix}
   \sigma_{11} \\
   \sigma_{22} \\
@@ -119,7 +126,7 @@ Calculate 3D properties of a laminate including effective 3D stiffness matrix, c
 \end{Bmatrix}''',
               mathStyle: MathStyle.script,
               textStyle: TextStyle(fontSize: 13),
-            ),
+            )),
           ),
         ],
       );
@@ -137,7 +144,7 @@ Calculate the plate properties of a laminate. The constitutive relations accordi
             height: 12,
           ),
           Center(
-            child: Math.tex(
+            child: _scrollableMath(Math.tex(
               r'''\begin{Bmatrix}
   N_{11} \\
   N_{22} \\
@@ -164,7 +171,7 @@ Calculate the plate properties of a laminate. The constitutive relations accordi
 \end{Bmatrix}''',
               mathStyle: MathStyle.script,
               textStyle: TextStyle(fontSize: 13),
-            ),
+            )),
           ),
         ],
       );
@@ -182,7 +189,7 @@ Calculate the plate strains/curvatures in terms of stress resultants, or vice ve
             height: 12,
           ),
           Center(
-            child: Math.tex(
+            child: _scrollableMath(Math.tex(
               r'''\begin{Bmatrix}
   N_{11} \\
   N_{22} \\
@@ -209,7 +216,7 @@ Calculate the plate strains/curvatures in terms of stress resultants, or vice ve
 \end{Bmatrix}''',
               mathStyle: MathStyle.script,
               textStyle: TextStyle(fontSize: 13),
-            ),
+            )),
           ),
         ],
       );

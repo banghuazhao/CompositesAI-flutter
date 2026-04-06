@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../util/chat_limiter.dart';
+import '../../../util/feedback_id_cache.dart';
 
 class ChatViewModel extends ChangeNotifier {
   final ChatUseCase _chatUseCase;
@@ -25,6 +26,8 @@ class ChatViewModel extends ChangeNotifier {
   bool isSendingMessage = false;
   bool isLoadingMessages = false;
   bool isLoadingChats = false;
+  bool isSubmittingFeedback = false;
+  final Set<String> _submittingFeedbackMessageIds = <String>{};
 
   List<Chat> chats = [];
   Chat? selectedChat;
@@ -223,6 +226,14 @@ class ChatViewModel extends ChangeNotifier {
     isLoadingMessages = true;
     notifyListeners();
     messages = await _chatUseCase.fetchMessages(chat);
+    // Restore feedbackId from local cache so update calls are reliable
+    // even after page rebuild / app restart.
+    for (final m in messages) {
+      final cached = FeedbackIdCache.getFeedbackId(chat.id, m.id);
+      if (cached != null) {
+        m.feedbackId = cached;
+      }
+    }
     isLoadingMessages = false;
     notifyListeners();
     scrollToBottom();
@@ -324,4 +335,50 @@ class ChatViewModel extends ChangeNotifier {
   bool isMessageCopying(Message message) {
     return copyingMessageId == message.id;
   }
+
+  Future<bool> submitMessageFeedback({
+    required Message message,
+    required int goodBadRating, // 1 for Good, -1 for Bad
+    required int detailsRating, // 1..10 from dialog
+    required List<String> reasons,
+    String? comment,
+    required int messageIndex,
+  }) async {
+    if (selectedChat == null) return false;
+    if (_submittingFeedbackMessageIds.contains(message.id)) return false;
+
+    _submittingFeedbackMessageIds.add(message.id);
+
+    isSubmittingFeedback = true;
+    notifyListeners();
+    try {
+      final feedbackId = await _chatUseCase.submitMessageFeedback(
+        chat: selectedChat!,
+        message: message,
+        goodBadRating: goodBadRating,
+        detailsRating: detailsRating,
+        reasons: reasons,
+        comment: comment,
+        messageIndex: messageIndex,
+      );
+      message.feedbackId = feedbackId;
+      await FeedbackIdCache.setFeedbackId(
+        selectedChat!.id,
+        message.id,
+        feedbackId,
+      );
+      notifyListeners();
+      return true;
+    } catch (e) {
+      if (kDebugMode) print('submitMessageFeedback error: $e');
+      errorMessage = 'Failed to submit feedback. Please try again.';
+      notifyListeners();
+      return false;
+    } finally {
+      _submittingFeedbackMessageIds.remove(message.id);
+      isSubmittingFeedback = _submittingFeedbackMessageIds.isEmpty;
+      notifyListeners();
+    }
+  }
+
 }

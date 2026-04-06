@@ -25,6 +25,18 @@ abstract class ChatUseCase {
   Future<void> persistMessages(List<Message> messages, Chat chat);
 
   Future<void> updateChatMessage(Message message, Chat chat);
+
+  /// Create or update rating feedback for an assistant message.
+  /// Returns feedback id (stored into message.feedbackId).
+  Future<String> submitMessageFeedback({
+    required Chat chat,
+    required Message message,
+    required int goodBadRating, // 1 for Good, -1 for Bad
+    required int detailsRating, // 1..10 from UI
+    required List<String> reasons, // selected chips
+    String? comment, // optional
+    required int messageIndex, // backend meta.message_index (1-based)
+  });
 }
 
 class ChatUseCaseImpl implements ChatUseCase {
@@ -87,5 +99,72 @@ class ChatUseCaseImpl implements ChatUseCase {
   @override
   Future<void> updateChatMessage(Message message, Chat chat) async {
     return repository.updateChatMessage(message, chat);
+  }
+
+  @override
+  Future<String> submitMessageFeedback({
+    required Chat chat,
+    required Message message,
+    required int goodBadRating,
+    required int detailsRating,
+    required List<String> reasons,
+    String? comment,
+    required int messageIndex,
+  }) async {
+    final Map<String, dynamic> commonForm = {
+      'type': 'rating',
+      'data': {
+        'rating': goodBadRating,
+        'model_id': message.model,
+        'sibling_model_ids': message.models,
+        'tags': reasons,
+        'reason': reasons.isEmpty ? 'Other' : reasons.join(', '),
+        'comment': comment ?? '',
+        'details': {
+          'rating': detailsRating,
+        },
+      },
+      'meta': {
+        'arena': false,
+        'chat_id': chat.id,
+        'message_id': message.id,
+        'message_index': messageIndex, // 1-based
+        'tags': reasons,
+        'model_id': message.model,
+        // Backend allows extra meta fields; best-effort.
+        'base_models': {for (final m in message.models) m: null},
+      },
+    };
+
+    if (message.feedbackId == null) {
+      // Create: must include snapshot.chat (ChatResponse verbatim).
+      final snapshotChat = await repository.fetchChatSnapshot(chat.id);
+      final Map<String, dynamic> createForm = {
+        ...commonForm,
+        'snapshot': {
+          'chat': snapshotChat,
+        },
+      };
+
+      final created = await repository.createFeedback(createForm);
+      final feedbackId = created.id.trim();
+      if (feedbackId.isEmpty) {
+        throw Exception('Feedback created but id missing.');
+      }
+      return feedbackId;
+    }
+
+    // Update: omit snapshot to keep old snapshot on backend.
+    final Map<String, dynamic> updateForm = commonForm;
+
+    final updated = await repository.updateFeedback(
+      message.feedbackId!,
+      updateForm,
+    );
+    final feedbackId = updated.id.trim();
+    if (feedbackId.isEmpty) {
+      throw Exception('Feedback updated but id missing in response.');
+    }
+    return feedbackId;
   }
 }

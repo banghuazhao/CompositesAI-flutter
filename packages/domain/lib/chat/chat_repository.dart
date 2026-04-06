@@ -1,5 +1,6 @@
 import 'entities/message.dart';
 import 'entities/chat.dart';
+import 'entities/feedback_response.dart';
 
 abstract class ChatRepository {
   Future<List<Chat>> fetchChats(); // Fetch sessions from a data source
@@ -22,4 +23,15 @@ abstract class ChatRepository {
   Future<void> persistMessages(List<Message> messages, Chat chat);
 
   Future<void> updateChatMessage(Message message, Chat chat);
+
+  /// GET /api/v1/chats/{chatId}
+  Future<Map<String, dynamic>> fetchChatSnapshot(String chatId);
+
+  /// POST /api/v1/evaluations/feedback
+  Future<FeedbackResponse> createFeedback(
+      Map<String, dynamic> feedbackForm);
+
+  /// POST /api/v1/evaluations/feedback/{feedbackId}
+  Future<FeedbackResponse> updateFeedback(
+      String feedbackId, Map<String, dynamic> feedbackForm);
 }

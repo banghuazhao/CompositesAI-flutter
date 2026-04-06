@@ -12,6 +12,9 @@ class Message {
   String modelName;
   int thinkingElapsed = 0;
   bool isDone = false;
+  // Client-side cache for evaluation update.
+  // Filled after first POST /evaluations/feedback returns FeedbackModel.id.
+  String? feedbackId;
 
   Message(
       {required this.role,
@@ -35,7 +38,8 @@ class Message {
         models = List<String>.from(json['models'] ?? []),
         model = json['model'] ?? '',
         thinkingElapsed = json['thinking_elapsed'] ?? 0,
-        isDone = json['done'] ?? false;
+        isDone = json['done'] ?? false,
+        feedbackId = json['feedbackId'] ?? json['feedback_id'];
 
   // Method for converting a Message instance to JSON format
   Map<String, dynamic> toJson() {
