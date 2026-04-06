@@ -379,8 +379,6 @@ class ChatViewModel extends ChangeNotifier {
     messages.add(assistantMessage);
 
     selectedChat?.updatedAt = DateTime.now().microsecondsSinceEpoch ~/ 1000;
-    await _chatUseCase.persistMessages(messages, selectedChat!);
-
     try {
       final stream = streamBuilder();
 
