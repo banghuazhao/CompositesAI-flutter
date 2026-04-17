@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/update_name_page.dart';
 import 'package:swiftcomp/presentation/auth/update_password.dart';
 import '../../../app/injection_container.dart';
+import '../../chat/viewModels/chat_view_model.dart';
 import '../../conponents/base64-image.dart';
+import '../viewModels/settings_view_model.dart';
 import '../viewModels/user_profile_view_model.dart';
 
 class UserProfilePage extends StatelessWidget {
@@ -229,13 +231,15 @@ class UserProfilePage extends StatelessWidget {
             ),
             TextButton(
               onPressed: () async {
+                final settingsViewModel = context.read<SettingsViewModel>();
+                final chatViewModel = context.read<ChatViewModel>();
                 Navigator.of(dialogContext).pop(); // Close the dialog first
 
-                await viewModel.deleteUser();
+                final deleted = await viewModel.deleteUser();
 
                 if (!context.mounted) return; // Exit if widget is unmounted
 
-                if (viewModel.errorMessage != null) {
+                if (!deleted || viewModel.errorMessage != null) {
                   // Show error dialog if an error occurred
                   showDialog(
                     context: context,
@@ -251,15 +255,19 @@ class UserProfilePage extends StatelessWidget {
                     ),
                   );
                 } else {
-                  // Show success snackbar, then navigate back with "refresh"
-                  final controller = ScaffoldMessenger.of(context).showSnackBar(
+                  // Account is deleted and token is removed. Refresh global auth state
+                  // immediately so Chat/Settings switch to logged-out UI.
+                  await settingsViewModel.fetchAuthSessionNew();
+                  await chatViewModel.fetchAuthSessionNew();
+
+                  // Show a short success hint, but do not block navigation.
+                  ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text("Account deleted successfully."),
-                      duration: Duration(seconds: 2),
+                      duration: Duration(milliseconds: 800),
                       backgroundColor: Colors.black,
                     ),
                   );
-                  await controller.closed;
                   if (!context.mounted) return;
                   Navigator.of(context).pop("refresh");
                 }

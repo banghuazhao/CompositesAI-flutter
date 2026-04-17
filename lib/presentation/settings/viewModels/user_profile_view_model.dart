@@ -60,15 +60,19 @@ class UserProfileViewModel extends ChangeNotifier {
   }
 
 
-  Future<void> deleteUser() async {
+  Future<bool> deleteUser() async {
     setLoading(true);
     _errorMessage = null;
     try {
       await userUseCase.deleteAccount();
+      user = null;
+      isSignedIn = false;
+      notifyListeners();
       print("Account deleted successfully");
+      return true;
     } catch (e) {
       _errorMessage = 'Delete failed: ${e.toString()}';
-
+      return false;
     } finally {
       setLoading(false);
     }
@@ -100,3 +104,4 @@ class UserProfileViewModel extends ChangeNotifier {
     notifyListeners();
   }
 }
+ 
