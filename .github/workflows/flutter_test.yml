@@ -8,30 +8,38 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   test:
-    name: Run Flutter Tests
+    name: Run Flutter tests
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Set up Flutter with a specified version
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.0'  # Specify Flutter version >= 3.19.0
+          channel: stable
+          # Keep in sync with local / team Flutter (Dart 3.11.x SDK).
+          flutter-version: '3.41.7'
+          cache: true
 
-      # Run flutter pub get to fetch dependencies
-      - name: Install Dependencies
+      - name: Install dependencies
         run: flutter pub get
 
-      # Create dummy .env file to satisfy pubspec.yaml asset requirement
-      - name: Create .env file
+      - name: Create .env placeholder
         run: touch .env
 
-      # Run flutter tests
-      - name: Run Tests
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
         run: flutter test

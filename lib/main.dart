@@ -93,7 +93,7 @@ class _MyAppState extends State<MyApp> {
               onSecondary: Colors.white,
             ),
             appBarTheme: AppBarTheme(
-                color: AppColors.primary,
+                backgroundColor: AppColors.primary,
                 iconTheme: IconThemeData(color: Colors.white),
                 titleTextStyle: TextStyle(color: Colors.white, fontSize: 20)),
             scaffoldBackgroundColor: AppColors.background,

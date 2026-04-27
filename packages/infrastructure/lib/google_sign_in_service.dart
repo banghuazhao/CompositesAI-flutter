@@ -24,6 +24,9 @@ class GoogleSignInUser {
 
 // Implementation of the service
 class GoogleSignInServiceImpl implements GoogleSignInService {
+  static bool _initialized = false;
+
+  @override
   Future<GoogleSignInUser?> signIn({
     List<String> scopes = const <String>[],
     String? hostedDomain,
@@ -31,23 +34,35 @@ class GoogleSignInServiceImpl implements GoogleSignInService {
     String? serverClientId,
     bool forceCodeForRefreshToken = false,
   }) async {
-    final GoogleSignIn googleSignIn = GoogleSignIn(
-      scopes: scopes,
-      hostedDomain: hostedDomain,
-      clientId: clientId,
-      serverClientId: serverClientId,
-      forceCodeForRefreshToken: forceCodeForRefreshToken,
-    );
-    GoogleSignInAccount? user = await googleSignIn.signIn();
-    final GoogleSignInAuthentication? auth = await user?.authentication;
-    if (user != null) {
+    if (!_initialized) {
+      await GoogleSignIn.instance.initialize(
+        clientId: clientId,
+        serverClientId: serverClientId,
+        hostedDomain: hostedDomain,
+      );
+      _initialized = true;
+    }
+
+    try {
+      final GoogleSignInAccount account = await GoogleSignIn.instance
+          .authenticate(scopeHint: scopes);
+      final GoogleSignInAuthentication auth = account.authentication;
       return GoogleSignInUser(
-          email: user.email,
-          displayName: user.displayName,
-          photoUrl: user.photoUrl,
-          idToken: auth?.idToken ?? '');
-    } else {
-      return null;
+        email: account.email,
+        displayName: account.displayName,
+        photoUrl: account.photoUrl,
+        idToken: auth.idToken ?? '',
+      );
+    } on GoogleSignInException catch (e) {
+      switch (e.code) {
+        case GoogleSignInExceptionCode.canceled:
+        case GoogleSignInExceptionCode.interrupted:
+        case GoogleSignInExceptionCode.uiUnavailable:
+          return null;
+        // ignore: no_default_cases
+        default:
+          rethrow;
+      }
     }
   }
 }

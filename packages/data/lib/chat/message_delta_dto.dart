@@ -10,11 +10,32 @@ class MessageDeltaDTO {
   });
 
   factory MessageDeltaDTO.fromJson(Map<String, dynamic> json) {
-    final choices = json['choices'] as List;
+    final choicesRaw = json['choices'];
+    if (choicesRaw is! List || choicesRaw.isEmpty) {
+      return MessageDeltaDTO(
+        id: json['id'] as String? ?? '',
+        object: json['object'] as String? ?? '',
+        choice: ChoiceDTO(
+          delta: DeltaDTO(content: null),
+          finishReason: null,
+        ),
+      );
+    }
+    final first = choicesRaw.first;
+    if (first is! Map<String, dynamic>) {
+      return MessageDeltaDTO(
+        id: json['id'] as String? ?? '',
+        object: json['object'] as String? ?? '',
+        choice: ChoiceDTO(
+          delta: DeltaDTO(content: null),
+          finishReason: null,
+        ),
+      );
+    }
     return MessageDeltaDTO(
-      id: json['id'] as String,
-      object: json['object'] as String,
-      choice: ChoiceDTO.fromJson(choices.first as Map<String, dynamic>),
+      id: json['id'] as String? ?? '',
+      object: json['object'] as String? ?? '',
+      choice: ChoiceDTO.fromJson(first),
     );
   }
 
@@ -35,8 +56,12 @@ class ChoiceDTO {
   });
 
   factory ChoiceDTO.fromJson(Map<String, dynamic> json) {
+    final deltaRaw = json['delta'];
+    final DeltaDTO delta = deltaRaw is Map<String, dynamic>
+        ? DeltaDTO.fromJson(deltaRaw)
+        : DeltaDTO(content: null);
     return ChoiceDTO(
-      delta: DeltaDTO.fromJson(json['delta'] as Map<String, dynamic>),
+      delta: delta,
       finishReason: json['finish_reason'] as String?,
     );
   }

@@ -127,9 +127,16 @@ class ChatRepositoryImpl implements ChatRepository {
     if (response.statusCode == 200) {
       final decoded = utf8.decode(response.bodyBytes);
       final Map<String, dynamic> data = jsonDecode(decoded);
-      final List<dynamic> messagesJson = data["chat"]["messages"];
+      final chat = data['chat'];
+      if (chat is! Map<String, dynamic>) {
+        throw FormatException('GET /chats/:id: missing or invalid "chat"');
+      }
+      final messagesRaw = chat['messages'];
+      if (messagesRaw is! List) {
+        return <Message>[];
+      }
       final messages =
-          messagesJson.map((json) => Message.fromJson(json)).toList();
+          messagesRaw.map((json) => Message.fromJson(json as Map<String, dynamic>)).toList();
       return messages;
     } else {
       throw mapServerErrorToDomainException(response);
