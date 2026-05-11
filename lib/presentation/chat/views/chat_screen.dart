@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'dart:ui';
 
 import 'package:domain/auth/entities/user.dart';
@@ -21,6 +20,9 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen>
     with AutomaticKeepAliveClientMixin, RouteAware, WidgetsBindingObserver {
+  /// Empty-state suggestion chips: matches Card shape + InkWell ripple.
+  static const double _kSuggestionChipRadius = 18;
+
   @override
   bool get wantKeepAlive => true;
   final TextEditingController textController = TextEditingController();
@@ -207,7 +209,7 @@ class _ChatScreenState extends State<ChatScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const SizedBox(height: 30), // More spacing from the top
+          const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Row(
@@ -239,49 +241,57 @@ class _ChatScreenState extends State<ChatScreen>
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            "How can I help you today?",
-            style: TextStyle(
-              fontSize: 28, // Slightly larger for better readability
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              children: [
+                Text(
+                  "How can I help you today?",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Choose a topic or ask your own question",
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.35,
+                    color: Colors.black54,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 36),
+          const SizedBox(height: 20),
 
           Center(
-            // Center the grid
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: context
-                    .contentWidth, // Adjust as needed to keep it centered
+                maxWidth: context.contentWidth,
               ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  double width = constraints.maxWidth;
-                  int crossAxisCount = max(width ~/ 200, 2);
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: 2,
-                      crossAxisSpacing: 12.0,
-                      mainAxisSpacing: 12.0,
-                    ),
-                    itemCount: viewModel.defaultQuestions.length,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    itemBuilder: (context, index) {
-                      return InkWell(
-                        onTap: () async {
-                          await viewModel.onDefaultQuestionsTapped(index);
-                        },
-                        child: _buildDefaultQuestionCard(
-                            viewModel.defaultQuestions[index]),
-                      );
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                itemCount: viewModel.defaultQuestions.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(_kSuggestionChipRadius),
+                    onTap: () async {
+                      await viewModel.onDefaultQuestionsTapped(index);
                     },
+                    child: _buildDefaultQuestionCard(
+                      context,
+                      viewModel.defaultQuestions[index],
+                      index,
+                    ),
                   );
                 },
               ),
@@ -293,29 +303,66 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  // A helper function to create default question cards
-  Widget _buildDefaultQuestionCard(String question) {
+  /// Leading icons for the empty-state suggestion chips (aligned with topic tone).
+  IconData _leadingIconForDefaultQuestion(int index) {
+    switch (index) {
+      case 2:
+        return Icons.history_rounded; // early history — clock / timeline
+      case 3:
+        return Icons.help_outline; // misconceptions — questionmark.circle
+      default:
+        return Icons.auto_awesome_outlined; // first & second prompts
+    }
+  }
+
+  Widget _buildDefaultQuestionCard(
+    BuildContext context,
+    String question,
+    int index,
+  ) {
+    final theme = Theme.of(context);
+    final borderColor = Colors.grey.shade200;
+    final fillColor =
+        theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.65);
+    final iconColor = theme.colorScheme.onSurface.withValues(alpha: 0.55);
+    final textColor = theme.colorScheme.onSurface.withValues(alpha: 0.92);
+
     return Card(
+      margin: EdgeInsets.zero,
+      color: fillColor,
+      surfaceTintColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.07),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade200, width: 1.0),
+        borderRadius: BorderRadius.circular(_kSuggestionChipRadius),
+        side: BorderSide(color: borderColor, width: 1),
       ),
-      elevation: 2, // Lower elevation for a more compact look
-      child: SizedBox(
-        width: 80, // Reduce the width
-        height: 30, // Reduce the height
-        child: Padding(
-          padding: const EdgeInsets.all(4.0), // Reduce padding
-          child: Center(
-            child: Text(
-              question,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.black),
-              // Smaller font size
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis, // Prevents overflow
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              _leadingIconForDefaultQuestion(index),
+              size: 20,
+              color: iconColor,
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                question,
+                textAlign: TextAlign.start,
+                style: (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
+                  fontSize: 15,
+                  height: 1.35,
+                  color: textColor,
+                ),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -464,6 +511,9 @@ class _ChatScreenState extends State<ChatScreen>
               );
               if (user != null) {
                 await viewModel.checkAuthStatus();
+                if (viewModel.isLoggedIn) {
+                  await viewModel.fetchChats();
+                }
                 setState(() {}); // Trigger UI rebuild
               }
             },

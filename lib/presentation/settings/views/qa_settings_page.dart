@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/injection_container.dart';
+import '../../chat/viewModels/chat_view_model.dart';
 import '../viewModels/qa_settings_view_model.dart';
 
 class QASettingsPage extends StatelessWidget {
@@ -50,9 +51,12 @@ class QASettingsPage extends StatelessWidget {
         leading: Radio<String>(
           value: 'development',
           groupValue: viewModel.currentEnvironment,
-          onChanged: (String? value) {
+          onChanged: (String? value) async {
             if (value != null) {
-              viewModel.changeEnvironment(value);
+              await viewModel.changeEnvironment(value);
+              if (context.mounted) {
+                await context.read<ChatViewModel>().clearChatStateOnLogout();
+              }
             }
           },
         ),
@@ -62,9 +66,12 @@ class QASettingsPage extends StatelessWidget {
         leading: Radio<String>(
           value: 'production',
           groupValue: viewModel.currentEnvironment,
-          onChanged: (String? value) {
+          onChanged: (String? value) async {
             if (value != null) {
-              viewModel.changeEnvironment(value);
+              await viewModel.changeEnvironment(value);
+              if (context.mounted) {
+                await context.read<ChatViewModel>().clearChatStateOnLogout();
+              }
             }
           },
         ),

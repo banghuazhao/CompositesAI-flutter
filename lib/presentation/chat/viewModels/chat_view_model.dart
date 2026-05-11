@@ -57,7 +57,7 @@ class ChatViewModel extends ChangeNotifier {
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
 
   List<String> defaultQuestions = [
-    "What is Composites AI?",
+    "What is CompositesAI?",
     "What are the challenges for modeling composites?",
     "Can you tell me the early history of composites?",
     "What are common misconceptions of rules of mixtures?",
@@ -297,6 +297,39 @@ class ChatViewModel extends ChangeNotifier {
     } else {
       user = null; // Ensure user is null if not logged in
     }
+    notifyListeners();
+  }
+
+  /// Clears chat UI state when the session ends (logout, account deletion, QA env switch).
+  /// Call after auth token is invalidated so the next login does not see another user's thread.
+  Future<void> clearChatStateOnLogout() async {
+    selectedChat = null;
+    messages = [];
+    chats = [];
+    pinnedChats = [];
+    allChatsLoaded = true;
+    _nextChatListPage = 2;
+    isLoadingMessages = false;
+    isLoadingChats = false;
+    isLoadingMoreChats = false;
+    isSendingMessage = false;
+    errorMessage = null;
+    copyingMessageId = null;
+    _submittingFeedbackMessageIds.clear();
+    isSubmittingFeedback = false;
+
+    if (!threadResponseController.isClosed) {
+      await threadResponseController.close();
+    }
+    threadResponseController = StreamController<Message>.broadcast();
+
+    if (scrollController.hasClients) {
+      scrollController.jumpTo(0);
+    }
+    if (chatListScrollController.hasClients) {
+      chatListScrollController.jumpTo(0);
+    }
+
     notifyListeners();
   }
 

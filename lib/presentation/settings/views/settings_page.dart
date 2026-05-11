@@ -9,6 +9,7 @@ import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import '../../../app/injection_container.dart';
+import '../../chat/viewModels/chat_view_model.dart';
 import '../../conponents/base64-image.dart';
 import '../viewModels/settings_view_model.dart';
 import 'apply_expert_page.dart';
@@ -73,6 +74,13 @@ class _SettingsPageState extends State<SettingsPage> {
                               );
                               if (user != null) {
                                 viewModel.updateUser(user);
+                                final chatViewModel =
+                                    context.read<ChatViewModel>();
+                                await chatViewModel.checkAuthStatus();
+                                if (!context.mounted) return;
+                                if (chatViewModel.isLoggedIn) {
+                                  await chatViewModel.fetchChats();
+                                }
                               }
                             },
                           ),

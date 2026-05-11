@@ -173,8 +173,13 @@ class UserProfilePage extends StatelessWidget {
 
                   ElevatedButton(
                     onPressed: () async {
-                      await viewModel.logoutUser(context);
-                      Navigator.of(context).pop("refresh");
+                      final ok = await viewModel.logoutUser(context);
+                      if (context.mounted && ok) {
+                        await context.read<ChatViewModel>().clearChatStateOnLogout();
+                      }
+                      if (context.mounted) {
+                        Navigator.of(context).pop("refresh");
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: Size(MediaQuery.of(context).size.width * 0.5, 50),
@@ -259,6 +264,7 @@ class UserProfilePage extends StatelessWidget {
                   // immediately so Chat/Settings switch to logged-out UI.
                   await settingsViewModel.fetchAuthSessionNew();
                   await chatViewModel.fetchAuthSessionNew();
+                  await chatViewModel.clearChatStateOnLogout();
 
                   // Show a short success hint, but do not block navigation.
                   ScaffoldMessenger.of(context).showSnackBar(

@@ -27,7 +27,8 @@ class UserProfileViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> logoutUser(BuildContext context) async {
+  /// Returns `true` if server logout and token removal succeeded.
+  Future<bool> logoutUser(BuildContext context) async {
     setLoading(true);
     try {
       await authUseCase.logout();
@@ -44,6 +45,7 @@ class UserProfileViewModel extends ChangeNotifier {
       // Update state
       user = null; // Clear user data
       notifyListeners();
+      return true;
     } catch (e) {
       // Log the error and display an error Snackbar
       print("Logout failed: $e");
@@ -54,6 +56,7 @@ class UserProfileViewModel extends ChangeNotifier {
           backgroundColor: Colors.red,
         ),
       );
+      return false;
     } finally {
       setLoading(false); // Ensure loading state is cleared
     }
