@@ -26,14 +26,18 @@ class ChatViewModel extends ChangeNotifier {
   User? user;
 
   final ScrollController scrollController = ScrollController();
+
   /// Sidebar chat history list (separate from message [scrollController]).
   final ScrollController chatListScrollController = ScrollController();
 
   bool isSendingMessage = false;
   bool isLoadingMessages = false;
   bool isLoadingChats = false;
+  bool isLoadingTools = false;
+
   /// Appending next page for GET /chats/?page=n (infinite scroll).
   bool isLoadingMoreChats = false;
+
   /// After first page: false if last page had [chatListPageSize] items (may have more).
   bool allChatsLoaded = true;
   int _nextChatListPage = 2;
@@ -43,6 +47,10 @@ class ChatViewModel extends ChangeNotifier {
 
   List<Chat> chats = [];
   List<Chat> pinnedChats = [];
+  List<ChatTool> tools = [];
+  ChatModel? selectedModel;
+  Set<String> selectedToolIds = <String>{};
+  bool _hasUserConfiguredTools = false;
   Chat? selectedChat;
   String? errorMessage;
 
@@ -93,7 +101,7 @@ class ChatViewModel extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print(e);
+        debugPrint('$e');
       }
       isLoggedIn = false;
       user = null; // Ensure proper reset
@@ -107,7 +115,7 @@ class ChatViewModel extends ChangeNotifier {
       isLoggedIn = true; // Ensure isLoggedIn is updated correctly
     } catch (e) {
       if (kDebugMode) {
-        print(e);
+        debugPrint('$e');
       }
       isLoggedIn = false; // Handle fetch user failure
       user = null;
@@ -129,6 +137,70 @@ class ChatViewModel extends ChangeNotifier {
     await _loadChatLists(showLoading: true);
   }
 
+  Future<void> fetchTools() async {
+    if (!isLoggedIn) return;
+
+    isLoadingTools = true;
+    notifyListeners();
+    try {
+      final toolsFuture = _chatUseCase.fetchTools();
+      final modelsFuture = _chatUseCase.fetchModels();
+      tools = await toolsFuture;
+      final models = await modelsFuture;
+      selectedModel = _selectChatModel(models);
+
+      final availableIds = tools.map((tool) => tool.id).toSet();
+      selectedToolIds = _hasUserConfiguredTools
+          ? selectedToolIds.intersection(availableIds)
+          : selectedModel?.toolIds
+                  .where((toolId) => availableIds.contains(toolId))
+                  .toSet() ??
+              <String>{};
+      if (kDebugMode) {
+        debugPrint(
+          'fetchTools: available=${tools.length} '
+          'model=${selectedModel?.id} '
+          'modelToolIds=${selectedModel?.toolIds ?? []} '
+          'selectedToolIds=$selectedToolIds',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('fetchTools error: $e');
+      }
+      tools = [];
+      selectedModel = null;
+      selectedToolIds = <String>{};
+    } finally {
+      isLoadingTools = false;
+      notifyListeners();
+    }
+  }
+
+  ChatModel _selectChatModel(List<ChatModel> models) {
+    return models.firstWhere(
+      (model) => model.id == 'composites-ai-2026-02-23',
+      orElse: () => ChatModel.fallback(),
+    );
+  }
+
+  void toggleToolSelection(String toolId) {
+    _hasUserConfiguredTools = true;
+    if (selectedToolIds.contains(toolId)) {
+      selectedToolIds.remove(toolId);
+    } else {
+      selectedToolIds.add(toolId);
+    }
+    notifyListeners();
+  }
+
+  void setAllToolsEnabled(bool enabled) {
+    _hasUserConfiguredTools = true;
+    selectedToolIds =
+        enabled ? tools.map((tool) => tool.id).toSet() : <String>{};
+    notifyListeners();
+  }
+
   /// GET /chats/{chatId}/pinned — use when you need server truth for Pin vs Unpin.
   Future<bool> fetchChatPinned(String chatId) {
     return _chatUseCase.fetchChatPinned(chatId);
@@ -144,7 +216,7 @@ class ChatViewModel extends ChangeNotifier {
     try {
       final list = await _chatUseCase.fetchChats(page: _nextChatListPage);
       if (kDebugMode) {
-        print(
+        debugPrint(
             'loadMoreChats: page $_nextChatListPage returned ${list.length} chats');
       }
       if (list.isEmpty) {
@@ -165,7 +237,7 @@ class ChatViewModel extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('loadMoreChats error: $e');
+        debugPrint('loadMoreChats error: $e');
       }
       errorMessage = 'Failed to load more chats.';
     } finally {
@@ -184,7 +256,7 @@ class ChatViewModel extends ChangeNotifier {
     try {
       final list = await _chatUseCase.fetchChats(page: 1);
       if (kDebugMode) {
-        print('fetchChats page=1: API returned ${list.length} chats');
+        debugPrint('fetchChats page=1: API returned ${list.length} chats');
       }
       chats = list;
       if (list.isEmpty || list.length < chatListPageSize) {
@@ -195,7 +267,7 @@ class ChatViewModel extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('fetchChats error: $e');
+        debugPrint('fetchChats error: $e');
       }
       chats = [];
       allChatsLoaded = true;
@@ -203,11 +275,12 @@ class ChatViewModel extends ChangeNotifier {
     try {
       pinnedChats = await _chatUseCase.fetchPinnedChats();
       if (kDebugMode) {
-        print('fetchPinnedChats: API returned ${pinnedChats.length} pinned');
+        debugPrint(
+            'fetchPinnedChats: API returned ${pinnedChats.length} pinned');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('fetchPinnedChats error: $e');
+        debugPrint('fetchPinnedChats error: $e');
       }
       pinnedChats = [];
     } finally {
@@ -236,7 +309,7 @@ class ChatViewModel extends ChangeNotifier {
       pinnedChats.removeWhere((c) => c.id == chat.id);
       notifyListeners();
     } catch (e) {
-      print('Delete error: $e');
+      debugPrint('Delete error: $e');
       errorMessage = 'Failed to delete chat. Please try again.';
       notifyListeners();
     }
@@ -255,7 +328,7 @@ class ChatViewModel extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      if (kDebugMode) print('Update error: $e');
+      if (kDebugMode) debugPrint('Update error: $e');
       errorMessage = 'Failed to rename chat. Please try again.';
       notifyListeners();
     }
@@ -268,7 +341,7 @@ class ChatViewModel extends ChangeNotifier {
       await _chatUseCase.togglePin(chat);
       await _loadChatLists(showLoading: false);
     } catch (e) {
-      if (kDebugMode) print('Pin/Unpin error: $e');
+      if (kDebugMode) debugPrint('Pin/Unpin error: $e');
       errorMessage = 'Failed to operate. Please try again.';
       notifyListeners();
     }
@@ -282,7 +355,7 @@ class ChatViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      if (kDebugMode) print('Share error: $e');
+      if (kDebugMode) debugPrint('Share error: $e');
       errorMessage = 'Failed to create share link. Please try again.';
       notifyListeners();
       return false;
@@ -291,7 +364,7 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> checkAuthStatus() async {
     isLoggedIn = await _authUseCase.isLoggedIn();
-    print("isLoggedIn: $isLoggedIn");
+    debugPrint("isLoggedIn: $isLoggedIn");
     if (isLoggedIn) {
       await fetchUser();
     } else {
@@ -307,6 +380,10 @@ class ChatViewModel extends ChangeNotifier {
     messages = [];
     chats = [];
     pinnedChats = [];
+    tools = [];
+    selectedModel = null;
+    selectedToolIds = <String>{};
+    _hasUserConfiguredTools = false;
     allChatsLoaded = true;
     _nextChatListPage = 2;
     isLoadingMessages = false;
@@ -387,16 +464,20 @@ class ChatViewModel extends ChangeNotifier {
       }
 
       final messagesForRequest = List<Message>.from(messages);
+      final toolIdsForRequest = selectedToolIds.toList(growable: false);
       final sendId = Uuid().v4();
 
-      streamBuilder() => _chatUseCase
-          .sendMessages(messagesForRequest, selectedChat!, sendId)
-          .map((content) => Message(
-              role: 'assistant', content: content, parentId: userMessage.id));
+      streamBuilder() => _chatUseCase.sendMessages(
+            messagesForRequest,
+            selectedChat!,
+            sendId,
+            toolIds: toolIdsForRequest,
+            model: selectedModel,
+          );
 
       await _processResponseStream(streamBuilder, sendId);
     } catch (e) {
-      if (kDebugMode) print('sendInputMessage error: $e');
+      if (kDebugMode) debugPrint('sendInputMessage error: $e');
       setSendingMessage(false);
       errorMessage = 'Failed to send message. Please try again.';
       notifyListeners();
@@ -404,9 +485,13 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> _processResponseStream(
-      Stream<Message> Function() streamBuilder, String sendId) async {
+      Stream<ChatStreamEvent> Function() streamBuilder, String sendId) async {
     threadResponseController = StreamController<Message>.broadcast();
     Message assistantMessage = Message(role: 'assistant', content: '');
+    if (selectedModel != null) {
+      assistantMessage.model = selectedModel!.id;
+      assistantMessage.modelName = selectedModel!.name;
+    }
     assistantMessage.parentId = messages.last.id;
     messages.last.childrenIds = [assistantMessage.id];
     messages.add(assistantMessage);
@@ -416,24 +501,60 @@ class ChatViewModel extends ChangeNotifier {
       final stream = streamBuilder();
 
       await for (final response in stream) {
-        threadResponseController.add(response);
+        if (response.error != null) {
+          throw Exception(response.error);
+        }
 
-        assistantMessage.content += response.content;
+        if (response.status != null && !response.status!.hidden) {
+          assistantMessage.statusHistory.add(response.status!);
+        }
+
+        if (response.hasContent) {
+          if (response.replacesContent) {
+            assistantMessage.content = response.content;
+          } else {
+            assistantMessage.content += response.content;
+          }
+          threadResponseController.add(Message(
+            role: 'assistant',
+            content: response.content,
+            parentId: messages.last.id,
+          ));
+        }
         notifyListeners();
         scrollToBottom();
+      }
+      if (assistantMessage.content.trim().isEmpty &&
+          assistantMessage.statusHistory.isEmpty) {
+        throw Exception('No response received from the chat service.');
       }
       await _chatLimiter.incrementChatCount();
       assistantMessage.thinkingElapsed = math.max(
           0,
-          (DateTime.now().millisecondsSinceEpoch - assistantMessage.timestamp) ~/
+          (DateTime.now().millisecondsSinceEpoch -
+                  assistantMessage.timestamp) ~/
               1000);
       assistantMessage.isDone = true;
       selectedChat?.updatedAt = DateTime.now().microsecondsSinceEpoch ~/ 1000;
       await _chatUseCase.updateChatMessage(assistantMessage, selectedChat!);
       await _chatUseCase.persistMessages(messages, selectedChat!);
     } catch (error) {
+      if (assistantMessage.content.trim().isEmpty &&
+          assistantMessage.statusHistory.isEmpty) {
+        messages.removeWhere((message) => message.id == assistantMessage.id);
+        final parentId = assistantMessage.parentId;
+        if (parentId != null) {
+          final parentIndex =
+              messages.indexWhere((message) => message.id == parentId);
+          if (parentIndex >= 0) {
+            messages[parentIndex].childrenIds = [];
+          }
+        }
+      }
+      errorMessage = 'Failed to receive response. Please try again.';
       threadResponseController.addError(error);
-      if (kDebugMode) print('Error receiving messages: $error');
+      if (kDebugMode) debugPrint('Error receiving messages: $error');
+      notifyListeners();
     } finally {
       await threadResponseController.close();
       setSendingMessage(false);
@@ -493,7 +614,7 @@ class ChatViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      if (kDebugMode) print('submitMessageFeedback error: $e');
+      if (kDebugMode) debugPrint('submitMessageFeedback error: $e');
       errorMessage = 'Failed to submit feedback. Please try again.';
       notifyListeners();
       return false;
@@ -503,5 +624,4 @@ class ChatViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 }

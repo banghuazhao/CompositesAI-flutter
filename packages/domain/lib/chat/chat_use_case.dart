@@ -1,5 +1,8 @@
 import 'entities/message.dart';
 import 'entities/chat.dart';
+import 'entities/chat_model.dart';
+import 'entities/chat_stream_event.dart';
+import 'entities/chat_tool.dart';
 import 'chat_repository.dart';
 
 abstract class ChatUseCase {
@@ -13,6 +16,10 @@ abstract class ChatUseCase {
 
   Future<List<Message>> fetchMessages(Chat chat);
 
+  Future<List<ChatTool>> fetchTools();
+
+  Future<List<ChatModel>> fetchModels();
+
   Future<Chat> createChat(Message message);
 
   Future<void> deleteChat(Chat chat);
@@ -21,7 +28,13 @@ abstract class ChatUseCase {
 
   Future<Chat> togglePin(Chat chat);
 
-  Stream<String> sendMessages(List<Message> messages, Chat chat, String id);
+  Stream<ChatStreamEvent> sendMessages(
+    List<Message> messages,
+    Chat chat,
+    String id, {
+    List<String> toolIds = const [],
+    ChatModel? model,
+  });
 
   Future<String> shareChat(Chat chat);
 
@@ -71,6 +84,16 @@ class ChatUseCaseImpl implements ChatUseCase {
   }
 
   @override
+  Future<List<ChatTool>> fetchTools() {
+    return repository.fetchTools();
+  }
+
+  @override
+  Future<List<ChatModel>> fetchModels() {
+    return repository.fetchModels();
+  }
+
+  @override
   Future<Chat> createChat(Message message) {
     return repository.createChat(message);
   }
@@ -91,8 +114,20 @@ class ChatUseCaseImpl implements ChatUseCase {
   }
 
   @override
-  Stream<String> sendMessages(List<Message> messages, Chat chat, String id) {
-    return repository.sendMessages(messages, chat, id);
+  Stream<ChatStreamEvent> sendMessages(
+    List<Message> messages,
+    Chat chat,
+    String id, {
+    List<String> toolIds = const [],
+    ChatModel? model,
+  }) {
+    return repository.sendMessages(
+      messages,
+      chat,
+      id,
+      toolIds: toolIds,
+      model: model,
+    );
   }
 
   @override
@@ -107,8 +142,7 @@ class ChatUseCaseImpl implements ChatUseCase {
   }
 
   @override
-  Future<void> persistMessages(
-      List<Message> messages, Chat chat) async {
+  Future<void> persistMessages(List<Message> messages, Chat chat) async {
     return repository.persistMessages(messages, chat);
   }
 

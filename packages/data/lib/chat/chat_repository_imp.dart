@@ -1,17 +1,22 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:data/chat/message_delta_dto.dart';
+import 'package:data/chat/chat_socket_session.dart';
 import 'package:domain/chat/entities/chat.dart';
 import 'package:domain/chat/chat_repository.dart';
+import 'package:domain/chat/entities/chat_model.dart';
+import 'package:domain/chat/entities/chat_stream_event.dart';
 import 'package:domain/chat/entities/feedback_response.dart';
 import 'package:domain/chat/entities/message.dart';
+import 'package:domain/chat/entities/chat_tool.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 import 'package:infrastructure/token_provider.dart';
 
 import '../mappers/domain_exception_mapper.dart';
-import '../utils/sse_stream.dart';
 
 /// Main chat list: `GET {base}/chats/` (trailing slash matters on some servers).
 String _unpinnedChatsListUri(String baseURL, {int? page}) {
@@ -135,9 +140,67 @@ class ChatRepositoryImpl implements ChatRepository {
       if (messagesRaw is! List) {
         return <Message>[];
       }
-      final messages =
-          messagesRaw.map((json) => Message.fromJson(json as Map<String, dynamic>)).toList();
+      final messages = messagesRaw
+          .map((json) => Message.fromJson(json as Map<String, dynamic>))
+          .toList();
       return messages;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<List<ChatTool>> fetchTools() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/tools/');
+    final response = await authClient.get(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is! List) {
+        throw FormatException('GET /tools/: expected a JSON array');
+      }
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ChatTool.fromJson)
+          .where((tool) => tool.id.isNotEmpty)
+          .toList();
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<List<ChatModel>> fetchModels() async {
+    final webBaseUrl = await apiEnvironment.getWebBaseUrl();
+    final url = Uri.parse('$webBaseUrl/api/models');
+    final response = await authClient.get(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      final modelsRaw = data is Map<String, dynamic> ? data['data'] : null;
+      if (modelsRaw is! List) {
+        throw FormatException('GET /api/models: expected data array');
+      }
+      return modelsRaw
+          .whereType<Map<String, dynamic>>()
+          .map(ChatModel.fromJson)
+          .where((model) => model.id.isNotEmpty)
+          .toList();
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -250,83 +313,284 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Stream<String> sendMessages(
-      List<Message> messages, Chat chat, String id) async* {
+  Stream<ChatStreamEvent> sendMessages(
+    List<Message> messages,
+    Chat chat,
+    String id, {
+    List<String> toolIds = const [],
+    ChatModel? model,
+  }) async* {
     final accessToken = await tokenProvider.getToken();
-    final url = Uri.parse('https://compositesai.com/api/chat/completions');
+    if (accessToken == null || accessToken.isEmpty) {
+      throw Exception('No active chat session token found.');
+    }
+
+    final webBaseUrl = await apiEnvironment.getWebBaseUrl();
+    final webBaseUri = Uri.parse(webBaseUrl);
+    final url = Uri.parse('$webBaseUrl/api/chat/completions');
+    final chatModel = model ?? ChatModel.fallback();
+    ChatSocketSession? socketSession;
+
+    if (toolIds.isNotEmpty) {
+      socketSession = await ChatSocketSession.connect(
+        webBaseUri: webBaseUri,
+        token: accessToken,
+      );
+
+      if (socketSession == null) {
+        throw Exception(
+          'Unable to connect to the chat socket required for tool execution.',
+        );
+      }
+    }
+
+    final body = {
+      "model": chatModel.id,
+      "stream": true,
+      "chat_id": chat.id,
+      "id": id,
+      if (socketSession != null) "session_id": socketSession.sessionId,
+      if (toolIds.isNotEmpty) "tool_ids": toolIds,
+      "model_item": chatModel.rawJson,
+      'features': {
+        'image_generation': false,
+        'code_interpreter': false,
+        'web_search': false
+      },
+      'messages': messages.map((message) {
+        return {
+          'role': message.role,
+          'content': message.content,
+        };
+      }).toList()
+    };
     final request = http.Request('POST', url)
       ..headers.addAll({
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $accessToken'
       })
-      ..body = jsonEncode({
-        "model": "composites-ai-2026-02-23",
-        "stream": true,
-        "chat_id": chat.id,
-        "id": id,
-        "tool_ids": [
-          // "laminate_analysis",
-          // "ann_based_woven_analysis",
-          // "cylindrical_bending_api",
-          // "a2",
-          // "a1",
-          // "dev_composites_knowledge_retrieval",
-          // "cs_analysis_assistant_dev"
-        ],
-        'features': {
-          'image_generation': false,
-          'code_interpreter': false,
-          'web_search': false
-        },
-        'messages': messages.map((message) {
-          return {
-            'role': message.role,
-            'content': message.content,
-          };
-        }).toList()
-      });
+      ..body = jsonEncode(body);
 
-    final stream = await getStream(request);
+    if (kDebugMode) {
+      debugPrint(
+        'sendMessages request: url=$url model=${chatModel.id} '
+        'toolIds=$toolIds messages=${messages.length} chatId=${chat.id} '
+        'id=$id sessionId=${socketSession?.sessionId ?? ''}',
+      );
+    }
 
-    await for (final line
-        in stream.transform(utf8.decoder).transform(const LineSplitter())) {
-      final jsonString = line.replaceFirst('data: ', '').trim();
+    final client = http.Client();
+    try {
+      final response = await client.send(request);
+      if (kDebugMode) {
+        debugPrint(
+          'sendMessages response: status=${response.statusCode} '
+          'contentType=${response.headers['content-type']}',
+        );
+      }
 
-      if (jsonString.isEmpty) continue;
+      final contentType = response.headers['content-type'] ?? '';
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final responseBody = await response.stream.bytesToString();
+        if (kDebugMode) {
+          debugPrint('sendMessages error body: $responseBody');
+        }
+        throw Exception(
+          'Chat completion failed (${response.statusCode}): $responseBody',
+        );
+      }
 
-      if (jsonString == '[DONE]') return;
+      if (socketSession != null &&
+          !contentType.contains('text/event-stream') &&
+          !contentType.contains('application/x-ndjson')) {
+        final responseBody = await response.stream.bytesToString();
+        if (kDebugMode) {
+          debugPrint('sendMessages socket kickoff body: $responseBody');
+        }
+        _throwIfKickoffFailed(responseBody);
 
-      final data = jsonDecode(jsonString);
+        yield* _eventsFromChatSocket(
+          socketSession,
+          chatId: chat.id,
+          messageId: id,
+        );
+        return;
+      }
 
-      final messageDelta = MessageDeltaDTO.fromJson(data);
+      await for (final line in response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
+        final jsonString = _jsonStringFromStreamLine(line);
 
-      final content = messageDelta.choice.delta.content;
-      if (content != null) {
-        yield content;
+        if (jsonString == null || jsonString.isEmpty) continue;
+
+        if (jsonString == '[DONE]') return;
+
+        final dynamic decoded;
+        try {
+          decoded = jsonDecode(jsonString);
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+                'sendMessages ignored unparsable stream line: $jsonString');
+          }
+          continue;
+        }
+
+        if (decoded is! Map<String, dynamic>) {
+          if (kDebugMode) {
+            debugPrint(
+                'sendMessages ignored non-object stream event: $decoded');
+          }
+          continue;
+        }
+
+        final event = _chatStreamEventFromJson(decoded);
+        if (event != null) {
+          if (kDebugMode) {
+            final type = decoded['type']?.toString() ?? 'chat:completion';
+            debugPrint(
+              'sendMessages event: type=$type '
+              'contentLength=${event.content.length} '
+              'replace=${event.replacesContent} '
+              'status=${event.status?.description ?? ''}',
+            );
+          }
+          yield event;
+        } else if (kDebugMode) {
+          debugPrint('sendMessages ignored stream event: $decoded');
+        }
+      }
+    } finally {
+      client.close();
+      await socketSession?.close();
+    }
+  }
+
+  void _throwIfKickoffFailed(String responseBody) {
+    if (responseBody.trim().isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(responseBody);
+      if (decoded is Map<String, dynamic>) {
+        final error = decoded['error'];
+        if (error != null) {
+          throw Exception(error.toString());
+        }
+        if (decoded['status'] == false) {
+          throw Exception(responseBody);
+        }
+      }
+    } on FormatException {
+      return;
+    }
+  }
+
+  Stream<ChatStreamEvent> _eventsFromChatSocket(
+    ChatSocketSession socketSession, {
+    required String chatId,
+    required String messageId,
+  }) async* {
+    var sawContent = false;
+
+    await for (final envelope in socketSession.events.timeout(
+      const Duration(minutes: 3),
+      onTimeout: (sink) {
+        sink.addError(
+          TimeoutException('Timed out waiting for chat socket response.'),
+        );
+      },
+    )) {
+      if (!_isSocketEventForMessage(envelope, chatId, messageId)) {
+        continue;
+      }
+
+      final data = envelope['data'];
+      if (data is! Map<String, dynamic>) {
+        if (kDebugMode) {
+          debugPrint('sendMessages ignored socket event payload: $envelope');
+        }
+        continue;
+      }
+
+      final event = _chatStreamEventFromJson(data);
+      if (event != null) {
+        sawContent = sawContent || event.hasContent || event.error != null;
+        if (kDebugMode) {
+          final type = data['type']?.toString() ?? 'chat:completion';
+          debugPrint(
+            'sendMessages socket event: type=$type '
+            'contentLength=${event.content.length} '
+            'replace=${event.replacesContent} '
+            'status=${event.status?.description ?? ''} '
+            'error=${event.error ?? ''}',
+          );
+        }
+        yield event;
+      } else if (kDebugMode) {
+        debugPrint('sendMessages ignored socket event: $data');
+      }
+
+      if (_isDoneChatCompletion(data)) {
+        if (!sawContent && kDebugMode) {
+          debugPrint('sendMessages socket completed without content.');
+        }
+        return;
       }
     }
+  }
+
+  bool _isSocketEventForMessage(
+    Map<String, dynamic> envelope,
+    String chatId,
+    String messageId,
+  ) {
+    return envelope['chat_id']?.toString() == chatId &&
+        envelope['message_id']?.toString() == messageId;
+  }
+
+  bool _isDoneChatCompletion(Map<String, dynamic> data) {
+    final type = data['type']?.toString();
+    final eventData = data['data'];
+    if (type == 'chat:completion' && eventData is Map<String, dynamic>) {
+      return eventData['done'] == true;
+    }
+    return data['done'] == true;
+  }
+
+  String? _jsonStringFromStreamLine(String line) {
+    final trimmedLine = line.trim();
+    if (trimmedLine.isEmpty) return null;
+
+    if (trimmedLine.startsWith('data:')) {
+      return trimmedLine.replaceFirst(RegExp(r'^data:\s*'), '').trim();
+    }
+
+    if (trimmedLine.startsWith('{') || trimmedLine.startsWith('[')) {
+      return trimmedLine;
+    }
+
+    if (kDebugMode) {
+      debugPrint('sendMessages ignored non-data stream line: $trimmedLine');
+    }
+    return null;
   }
 
   @override
   Future<void> completeSendMessages(
       List<Message> messages, Chat chat, String id) async {
-    final url = Uri.parse('https://compositesai.com/api/chat/completed');
+    final webBaseUrl = await apiEnvironment.getWebBaseUrl();
+    final url = Uri.parse('$webBaseUrl/api/chat/completed');
+    final modelItem = _completedModelItemFromMessages(messages);
     final response = await authClient.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'chat_id': chat.id,
         'id': id,
-        'model': "composites-ai-2026-02-23",
+        'model': modelItem['id'] ?? "composites-ai-2026-02-23",
         'messages': messages.map((m) => m.toCompletedJson()).toList(),
-        'model_item': {
-          'id': "composites-ai-2026-02-23",
-          'object': "model",
-          'created': 1744316542,
-          'owned_by': "openai",
-          'name': "CompositesAI",
-          'tags': []
-        }
+        'model_item': modelItem,
       }),
     );
 
@@ -335,6 +599,79 @@ class ChatRepositoryImpl implements ChatRepository {
     } else {
       throw mapServerErrorToDomainException(response);
     }
+  }
+
+  ChatStreamEvent? _chatStreamEventFromJson(Map<String, dynamic> data) {
+    final type = data['type']?.toString();
+    final eventData = data['data'];
+
+    if (type == 'status' && eventData is Map<String, dynamic>) {
+      return ChatStreamEvent(status: ToolStatus.fromJson(eventData));
+    }
+    if ((type == 'chat:message:delta' || type == 'message') &&
+        eventData is Map<String, dynamic>) {
+      final content = eventData['content']?.toString() ?? '';
+      return content.isEmpty ? null : ChatStreamEvent(content: content);
+    }
+    if ((type == 'chat:message' || type == 'replace') &&
+        eventData is Map<String, dynamic>) {
+      final content = eventData['content']?.toString() ?? '';
+      return content.isEmpty
+          ? null
+          : ChatStreamEvent(content: content, replacesContent: true);
+    }
+    if (type == 'chat:completion' && eventData is Map<String, dynamic>) {
+      return _chatCompletionEventFromJson(eventData);
+    }
+
+    return _chatCompletionEventFromJson(data);
+  }
+
+  ChatStreamEvent? _chatCompletionEventFromJson(Map<String, dynamic> data) {
+    final error = data['error'];
+    if (error != null) {
+      return ChatStreamEvent(error: error.toString());
+    }
+
+    final content = data['content'];
+    if (content is String && content.isNotEmpty) {
+      return ChatStreamEvent(content: content, replacesContent: true);
+    }
+
+    final messageDelta = MessageDeltaDTO.fromJson(data);
+    final deltaContent = messageDelta.choice.delta.content;
+    if (deltaContent != null && deltaContent.isNotEmpty) {
+      return ChatStreamEvent(content: deltaContent);
+    }
+
+    final choices = data['choices'];
+    if (choices is List && choices.isNotEmpty) {
+      final first = choices.first;
+      if (first is Map<String, dynamic>) {
+        final message = first['message'];
+        if (message is Map<String, dynamic>) {
+          final messageContent = message['content'];
+          if (messageContent is String && messageContent.isNotEmpty) {
+            return ChatStreamEvent(content: messageContent);
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  Map<String, dynamic> _completedModelItemFromMessages(List<Message> messages) {
+    for (final message in messages.reversed) {
+      if (message.role == 'assistant' && message.model.isNotEmpty) {
+        return ChatModel.fallback(
+          id: message.model,
+          name:
+              message.modelName.isNotEmpty ? message.modelName : 'CompositesAI',
+        ).rawJson;
+      }
+    }
+    return ChatModel.fallback().rawJson;
   }
 
   @override
@@ -375,9 +712,7 @@ class ChatRepositoryImpl implements ChatRepository {
     final url = Uri.parse('$baseURL/chats/${chat.id}/messages/${message.id}');
     final response = await authClient.post(url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'content': message.content
-        }));
+        body: jsonEncode({'content': message.content}));
 
     if (response.statusCode == 200) {
       return;

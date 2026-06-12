@@ -38,7 +38,10 @@ class _ChatScreenState extends State<ChatScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await viewModel.fetchAuthSessionNew();
       if (viewModel.isLoggedIn) {
-        await viewModel.fetchChats();
+        await Future.wait([
+          viewModel.fetchChats(),
+          viewModel.fetchTools(),
+        ]);
       }
     });
   }
@@ -55,6 +58,7 @@ class _ChatScreenState extends State<ChatScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && viewModel.isLoggedIn) {
       viewModel.fetchChats();
+      viewModel.fetchTools();
     }
   }
 
@@ -64,6 +68,16 @@ class _ChatScreenState extends State<ChatScreen>
     return Consumer<ChatViewModel>(
       //Consumer widget dynamically rebuilds the UI whenever the ChatViewModel changes
       builder: (context, viewModel, _) {
+        if (viewModel.errorMessage != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || viewModel.errorMessage == null) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(viewModel.errorMessage!)),
+            );
+            viewModel.errorMessage = null;
+          });
+        }
+
         return Scaffold(
           appBar: AppBar(
             title: const Text("Chat"),
@@ -85,7 +99,10 @@ class _ChatScreenState extends State<ChatScreen>
                         if (user != null) {
                           await viewModel.checkAuthStatus();
                           if (viewModel.isLoggedIn) {
-                            await viewModel.fetchChats();
+                            await Future.wait([
+                              viewModel.fetchChats(),
+                              viewModel.fetchTools(),
+                            ]);
                           }
                         }
                       },
@@ -201,8 +218,9 @@ class _ChatScreenState extends State<ChatScreen>
     final name = (viewModel.user?.name ?? '').trim();
     final email = (viewModel.user?.email ?? '').trim();
     final greetingTarget = name.isNotEmpty ? name : email;
-    final greeting =
-        greetingTarget.isNotEmpty ? 'Hi, $greetingTarget' : 'Hi, I am Composites AI';
+    final greeting = greetingTarget.isNotEmpty
+        ? 'Hi, $greetingTarget'
+        : 'Hi, I am Composites AI';
 
     return SingleChildScrollView(
       child: Column(
@@ -269,7 +287,6 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           ),
           const SizedBox(height: 20),
-
           Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
@@ -353,7 +370,8 @@ class _ChatScreenState extends State<ChatScreen>
               child: Text(
                 question,
                 textAlign: TextAlign.start,
-                style: (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
+                style:
+                    (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
                   fontSize: 15,
                   height: 1.35,
                   color: textColor,
@@ -444,6 +462,7 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                 ),
               ),
+              _buildToolsButton(),
               viewModel.isSendingMessage
                   ? Padding(
                       padding: const EdgeInsets.only(left: 8.0),
@@ -470,6 +489,102 @@ class _ChatScreenState extends State<ChatScreen>
         ),
         const SizedBox(height: 10),
       ],
+    );
+  }
+
+  Widget _buildToolsButton() {
+    final selectedCount = viewModel.selectedToolIds.length;
+    final hasTools = viewModel.tools.isNotEmpty;
+    final color = selectedCount > 0
+        ? Theme.of(context).colorScheme.primary
+        : Colors.grey.shade600;
+
+    return IconButton(
+      icon: viewModel.isLoadingTools
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Badge(
+              isLabelVisible: selectedCount > 0,
+              label: Text('$selectedCount'),
+              child: Icon(Icons.build_circle_outlined, color: color),
+            ),
+      tooltip: hasTools ? 'Tools' : 'No tools available',
+      onPressed: viewModel.isLoadingTools || !hasTools
+          ? null
+          : () {
+              _showToolsSheet();
+            },
+    );
+  }
+
+  Future<void> _showToolsSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return Consumer<ChatViewModel>(
+          builder: (context, model, _) {
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 12, 8),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Tools',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            final enableAll = model.selectedToolIds.length !=
+                                model.tools.length;
+                            model.setAllToolsEnabled(enableAll);
+                          },
+                          child: Text(
+                            model.selectedToolIds.length == model.tools.length
+                                ? 'Disable all'
+                                : 'Enable all',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: model.tools.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final tool = model.tools[index];
+                        final selected =
+                            model.selectedToolIds.contains(tool.id);
+                        return SwitchListTile(
+                          value: selected,
+                          onChanged: (_) => model.toggleToolSelection(tool.id),
+                          title: Text(tool.name),
+                          subtitle: tool.description.isEmpty
+                              ? Text(tool.id)
+                              : Text(tool.description),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -512,7 +627,10 @@ class _ChatScreenState extends State<ChatScreen>
               if (user != null) {
                 await viewModel.checkAuthStatus();
                 if (viewModel.isLoggedIn) {
-                  await viewModel.fetchChats();
+                  await Future.wait([
+                    viewModel.fetchChats(),
+                    viewModel.fetchTools(),
+                  ]);
                 }
                 setState(() {}); // Trigger UI rebuild
               }

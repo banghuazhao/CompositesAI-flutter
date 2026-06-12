@@ -250,7 +250,8 @@ class _MessageListState extends State<MessageList> {
                             height: 30,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: selected ? Colors.white : Colors.transparent,
+                              color:
+                                  selected ? Colors.white : Colors.transparent,
                               border: Border.all(
                                 color: Colors.white.withOpacity(0.35),
                                 width: 1,
@@ -391,7 +392,8 @@ class _MessageListState extends State<MessageList> {
                             detailsRating: detailsRating,
                             reasons: selectedReasons.toList(),
                             comment: commentText,
-                            messageIndex: messageIndex + 1, // backend is 1-based
+                            messageIndex:
+                                messageIndex + 1, // backend is 1-based
                           );
 
                           if (ok) {
@@ -439,13 +441,16 @@ class _MessageListState extends State<MessageList> {
     final isLast =
         viewModel.messages.isNotEmpty && viewModel.messages.last == message;
     final isStreaming = isLast && viewModel.isSendingMessage;
+    final statusWidget = buildToolStatus(message);
 
-    return message.content.isNotEmpty
+    return message.content.isNotEmpty || statusWidget != null
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 2,
             children: [
-              gptResponseWidget(message.content),
+              if (statusWidget != null) statusWidget,
+              if (message.content.isNotEmpty)
+                gptResponseWidget(message.content),
               if (!isStreaming)
                 buildAssistantMessageActions(
                   viewModel,
@@ -457,9 +462,75 @@ class _MessageListState extends State<MessageList> {
         : Container();
   }
 
+  Widget? buildToolStatus(Message message) {
+    final visibleStatuses =
+        message.statusHistory.where((status) => !status.hidden).toList();
+    if (visibleStatuses.isEmpty) return null;
+
+    final status = visibleStatuses.last;
+    final description = _toolStatusDescription(status);
+    if (description.isEmpty) return null;
+
+    final isRunning = status.done == false;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isRunning)
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Icon(
+              Icons.check_circle_outline,
+              size: 16,
+              color: Colors.grey.shade600,
+            ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              description,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade700,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _toolStatusDescription(ToolStatus status) {
+    if (status.action == 'knowledge_search' && status.query.isNotEmpty) {
+      return 'Searching Knowledge for "${status.query}"';
+    }
+
+    var description = status.description;
+    if (description.contains('{{searchQuery}}')) {
+      description = description.replaceAll('{{searchQuery}}', status.query);
+    }
+    if (description.contains('{{count}}')) {
+      description =
+          description.replaceAll('{{count}}', '${status.urls.length}');
+    }
+    if (description.isNotEmpty) return description;
+    if (status.query.isNotEmpty) return 'Searching "${status.query}"';
+    if (status.action.isNotEmpty) return status.action.replaceAll('_', ' ');
+    return '';
+  }
+
   Widget gptResponseWidget(String originalResponse) {
     RegExp citationRegExp = RegExp(r'【.*?】');
-    String cleanText = originalResponse.replaceAll(citationRegExp, '');
+    RegExp toolDetailsRegExp =
+        RegExp(r'<details[^>]*type="tool_calls"[\s\S]*?<\/details>');
+    String cleanText = originalResponse
+        .replaceAll(toolDetailsRegExp, '')
+        .replaceAll(citationRegExp, '');
     String finalText = cleanText.replaceAll('\n\n', '\n');
     return SelectionArea(
       child: GptMarkdown(

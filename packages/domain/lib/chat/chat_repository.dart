@@ -1,5 +1,8 @@
 import 'entities/message.dart';
 import 'entities/chat.dart';
+import 'entities/chat_model.dart';
+import 'entities/chat_stream_event.dart';
+import 'entities/chat_tool.dart';
 import 'entities/feedback_response.dart';
 
 abstract class ChatRepository {
@@ -16,6 +19,10 @@ abstract class ChatRepository {
 
   Future<List<Message>> fetchMessages(Chat chat);
 
+  Future<List<ChatTool>> fetchTools();
+
+  Future<List<ChatModel>> fetchModels();
+
   Future<Chat> createChat(Message message); // Fetch sessions from a data source
   Future<void> deleteChat(Chat chat);
 
@@ -25,7 +32,13 @@ abstract class ChatRepository {
   /// ChatResponse JSON, 204, or empty body; client should refresh pinned list.
   Future<Chat> togglePin(Chat chat);
 
-  Stream<String> sendMessages(List<Message> messages, Chat chat, String id);
+  Stream<ChatStreamEvent> sendMessages(
+    List<Message> messages,
+    Chat chat,
+    String id, {
+    List<String> toolIds = const [],
+    ChatModel? model,
+  });
 
   Future<String> shareChat(Chat chat);
 
@@ -40,8 +53,7 @@ abstract class ChatRepository {
   Future<Map<String, dynamic>> fetchChatSnapshot(String chatId);
 
   /// POST /api/v1/evaluations/feedback
-  Future<FeedbackResponse> createFeedback(
-      Map<String, dynamic> feedbackForm);
+  Future<FeedbackResponse> createFeedback(Map<String, dynamic> feedbackForm);
 
   /// POST /api/v1/evaluations/feedback/{feedbackId}
   Future<FeedbackResponse> updateFeedback(
