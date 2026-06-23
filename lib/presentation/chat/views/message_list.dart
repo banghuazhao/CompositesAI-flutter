@@ -40,7 +40,7 @@ class _MessageListState extends State<MessageList> {
             return messagesList(context, chatViewModel)[index];
           },
           separatorBuilder: (context, index) {
-            return SizedBox(height: 5);
+            return const SizedBox(height: 16);
           },
         )
       ],
@@ -71,26 +71,30 @@ class _MessageListState extends State<MessageList> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        IntrinsicWidth(
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: max(280, MediaQuery.of(context).size.width * 0.6),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            child: SelectableText(
-              message.content,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Colors.black,
+        if (message.files.isNotEmpty) buildAttachedFiles(viewModel, message),
+        if (message.content.isNotEmpty)
+          IntrinsicWidth(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: max(280, MediaQuery.of(context).size.width * 0.72),
+              ),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFEFEF),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(4),
+                ),
+              ),
+              child: SelectableText(
+                message.content,
+                style: const TextStyle(fontSize: 15, color: Colors.black87),
               ),
             ),
           ),
-        ),
-        if (message.files.isNotEmpty) buildAttachedFiles(viewModel, message),
         buildMessageActions(viewModel, message),
       ],
     );

@@ -437,90 +437,100 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget inputBar() {
-    return Column(
-      children: [
-        _buildPendingFiles(),
-        Container(
-          width: context.contentWidth,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24.0),
-            border: Border.all(color: Colors.grey.shade300),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 15,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.only(left: 4, right: 16, top: 4, bottom: 4),
-          child: Row(
-            children: [
-              _buildAttachButton(),
-              Expanded(
-                child: KeyboardListener(
-                  focusNode: FocusNode(),
-                  onKeyEvent: (KeyEvent event) async {
-                    if (event is KeyDownEvent &&
-                        event.logicalKey == LogicalKeyboardKey.enter) {
-                      final isShiftPressed = HardwareKeyboard
-                              .instance.logicalKeysPressed
-                              .contains(LogicalKeyboardKey.shiftLeft) ||
-                          HardwareKeyboard.instance.logicalKeysPressed
-                              .contains(LogicalKeyboardKey.shiftRight);
-                      if (isShiftPressed) {
-                        // Insert newline
-                        final text = textController.text;
-                        textController.text = "$text\n";
-                        textController.selection = TextSelection.fromPosition(
-                          TextPosition(offset: textController.text.length),
-                        );
-                      } else if (!viewModel.isSendingMessage) {
-                        final text = textController.text.trim();
-                        if (text.isNotEmpty ||
-                            viewModel.pendingFiles.isNotEmpty) {
-                          if (await viewModel.reachChatLimit()) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text(
-                                      'Daily chat limit reached (50/day)')),
-                            );
-                            return;
+    final hPad = context.horizontalSidePaddingForContentWidth;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    return Container(
+      color: Colors.transparent,
+      padding: EdgeInsets.fromLTRB(hPad, 0, hPad, bottomInset > 0 ? bottomInset : 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildPendingFiles(),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: Colors.grey.shade300),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _buildAttachButton(),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: KeyboardListener(
+                    focusNode: FocusNode(),
+                    onKeyEvent: (KeyEvent event) async {
+                      if (event is KeyDownEvent &&
+                          event.logicalKey == LogicalKeyboardKey.enter) {
+                        final isShiftPressed = HardwareKeyboard
+                                .instance.logicalKeysPressed
+                                .contains(LogicalKeyboardKey.shiftLeft) ||
+                            HardwareKeyboard.instance.logicalKeysPressed
+                                .contains(LogicalKeyboardKey.shiftRight);
+                        if (isShiftPressed) {
+                          final text = textController.text;
+                          textController.text = "$text\n";
+                          textController.selection =
+                              TextSelection.fromPosition(
+                            TextPosition(offset: textController.text.length),
+                          );
+                        } else if (!viewModel.isSendingMessage) {
+                          final text = textController.text.trim();
+                          if (text.isNotEmpty ||
+                              viewModel.pendingFiles.isNotEmpty) {
+                            if (await viewModel.reachChatLimit()) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Daily chat limit reached (50/day)')),
+                              );
+                              return;
+                            }
+                            textController.clear();
+                            await viewModel.sendInputMessage(text);
                           }
-                          textController.clear();
-                          await viewModel.sendInputMessage(text);
                         }
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          focusNode.requestFocus();
+                        });
                       }
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        focusNode.requestFocus();
-                      });
-                    }
-                  },
-                  child: TextField(
-                    controller: textController,
-                    focusNode: focusNode,
-                    decoration: InputDecoration(
-                      hintText: 'Ask anything about Composites...',
-                      hintStyle: TextStyle(color: Colors.grey.shade500),
-                      border: InputBorder.none,
-                    ),
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.done,
-                    minLines: 2,
-                    maxLines: 8,
-                    onChanged: (text) {
-                      setState(() {}); // Update UI for button state
                     },
+                    child: TextField(
+                      controller: textController,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(
+                        hintText: 'Message',
+                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      minLines: 1,
+                      maxLines: 8,
+                      onChanged: (_) => setState(() {}),
+                    ),
                   ),
                 ),
-              ),
-              _buildRightButton(),
-            ],
+                const SizedBox(width: 6),
+                _buildRightButton(),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-      ],
+        ],
+      ),
     );
   }
 
@@ -533,11 +543,11 @@ class _ChatScreenState extends State<ChatScreen>
 
   Widget _buildRightButton() {
     if (viewModel.isSendingMessage) {
-      return const Padding(
-        padding: EdgeInsets.only(left: 8),
-        child: SizedBox(
-          width: 24,
-          height: 24,
+      return const SizedBox(
+        width: 34,
+        height: 34,
+        child: Padding(
+          padding: EdgeInsets.all(5),
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
       );
@@ -545,43 +555,74 @@ class _ChatScreenState extends State<ChatScreen>
     if (_isListening) {
       return ScaleTransition(
         scale: _pulseAnimation,
-        child: IconButton(
-          icon: const Icon(Icons.mic, color: Colors.red),
-          tooltip: 'Stop listening',
-          onPressed: _stopListening,
+        child: GestureDetector(
+          onTap: _stopListening,
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.stop_rounded,
+                color: Colors.white, size: 18),
+          ),
         ),
       );
     }
     if (_canSendMessage()) {
-      return IconButton(
-        icon: const Icon(Icons.send),
-        onPressed: () {
+      return GestureDetector(
+        onTap: () {
           final text = textController.text.trim();
           textController.clear();
           viewModel.sendInputMessage(text);
         },
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: const BoxDecoration(
+            color: Colors.black,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.arrow_upward_rounded,
+              color: Colors.white, size: 20),
+        ),
       );
     }
-    return IconButton(
-      icon: const Icon(Icons.mic_none),
-      tooltip: 'Voice input',
-      onPressed: viewModel.isUploadingFile ? null : _startListening,
+    return GestureDetector(
+      onTap: viewModel.isUploadingFile ? null : _startListening,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.shade400, width: 1.5),
+        ),
+        child: Icon(Icons.mic_none,
+            size: 18, color: Colors.grey.shade700),
+      ),
     );
   }
 
   Widget _buildAttachButton() {
-    return IconButton(
-      tooltip: 'Add attachment',
-      icon: viewModel.isUploadingFile
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.add_circle_outline),
-      onPressed: viewModel.isUploadingFile || viewModel.isSendingMessage
+    return GestureDetector(
+      onTap: viewModel.isUploadingFile || viewModel.isSendingMessage
           ? null
           : _showAttachmentSheet,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey.shade400, width: 1.5),
+        ),
+        child: viewModel.isUploadingFile
+            ? const Padding(
+                padding: EdgeInsets.all(8),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(Icons.add, size: 20, color: Colors.grey.shade700),
+      ),
     );
   }
 
