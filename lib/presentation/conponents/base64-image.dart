@@ -1,59 +1,90 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:infrastructure/api_environment.dart';
 import 'package:swiftcomp/app/injection_container.dart';
 
-Widget Base64Image(String data) {
-  final trimmed = data.trim();
-  if (trimmed.isEmpty) {
-    return const Icon(Icons.account_circle);
+class Base64Image extends StatefulWidget {
+  final String data;
+
+  const Base64Image(this.data, {Key? key}) : super(key: key);
+
+  @override
+  State<Base64Image> createState() => _Base64ImageState();
+}
+
+class _Base64ImageState extends State<Base64Image> {
+  String? _resolvedUrl;
+  Uint8List? _bytes;
+  bool _resolved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolve(widget.data);
   }
 
-  // Absolute URL
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return Image.network(
-      trimmed,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return const Icon(Icons.account_circle);
-      },
-    );
+  @override
+  void didUpdateWidget(Base64Image old) {
+    super.didUpdateWidget(old);
+    if (old.data != widget.data) {
+      setState(() {
+        _resolvedUrl = null;
+        _bytes = null;
+        _resolved = false;
+      });
+      _resolve(widget.data);
+    }
   }
 
-  // Relative URL from backend (e.g. "/user.png")
-  if (trimmed.startsWith('/')) {
-    return FutureBuilder<String>(
-      future: sl<APIEnvironment>().getBaseUrl(),
-      builder: (context, snapshot) {
-        final baseUrl = snapshot.data;
-        if (baseUrl == null || baseUrl.isEmpty) {
-          return const Icon(Icons.account_circle);
-        }
-        final baseUri = Uri.parse(baseUrl);
-        // baseUrl is API base (often includes /api/v1). Static files typically live on origin.
-        final origin = '${baseUri.scheme}://${baseUri.authority}';
-        final fullUrl = '$origin$trimmed';
-        return Image.network(
-          fullUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return const Icon(Icons.account_circle);
-          },
-        );
-      },
-    );
+  Future<void> _resolve(String data) async {
+    final trimmed = data.trim();
+    if (trimmed.isEmpty) {
+      if (mounted) setState(() => _resolved = true);
+      return;
+    }
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      if (mounted) setState(() { _resolvedUrl = trimmed; _resolved = true; });
+      return;
+    }
+
+    if (trimmed.startsWith('/')) {
+      final baseUrl = await sl<APIEnvironment>().getBaseUrl();
+      if (!mounted) return;
+      final uri = Uri.parse(baseUrl);
+      final origin = '${uri.scheme}://${uri.authority}';
+      setState(() { _resolvedUrl = '$origin$trimmed'; _resolved = true; });
+      return;
+    }
+
+    // Base64 (with optional data-uri prefix)
+    try {
+      final b64 = trimmed.contains(',') ? trimmed.split(',').last : trimmed;
+      final bytes = base64Decode(base64.normalize(b64));
+      if (mounted) setState(() { _bytes = bytes; _resolved = true; });
+    } catch (_) {
+      if (mounted) setState(() => _resolved = true);
+    }
   }
 
-  // Base64 (optionally data-uri)
-  final base64String = trimmed.contains(',') ? trimmed.split(',').last : trimmed;
-  try {
-    final normalized = base64.normalize(base64String);
-    final Uint8List bytes = base64Decode(normalized);
-    return Image.memory(bytes, fit: BoxFit.cover);
-  } catch (_) {
-    // Unknown/invalid format: avoid crashing UI.
-    return const Icon(Icons.account_circle);
+  @override
+  Widget build(BuildContext context) {
+    if (_bytes != null) {
+      return Image.memory(_bytes!, fit: BoxFit.cover);
+    }
+    if (_resolvedUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: _resolvedUrl!,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => const SizedBox.shrink(),
+        errorWidget: (_, __, ___) =>
+            const Icon(Icons.account_circle, color: Colors.grey),
+      );
+    }
+    if (!_resolved) return const SizedBox.shrink();
+    return const Icon(Icons.account_circle, color: Colors.grey);
   }
 }
