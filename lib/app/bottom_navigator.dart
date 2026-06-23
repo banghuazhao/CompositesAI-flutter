@@ -76,7 +76,7 @@ class _BottomNavigatorState extends State<BottomNavigator> {
               type: BottomNavigationBarType.fixed,
               items: [
                 _bottomItem(Icons.chat, Icons.chat, "Chat"),
-                _bottomItem(Icons.view_list, Icons.view_list, "Tools"),
+                _bottomItem(Icons.calculate_outlined, Icons.calculate, "Calculators"),
                 _bottomItem(Icons.more_horiz, Icons.more_horiz, "Settings"),
               ]));
     });
