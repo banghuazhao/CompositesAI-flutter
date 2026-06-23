@@ -406,9 +406,10 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+          padding: const EdgeInsets.only(left: 4, right: 16, top: 4, bottom: 4),
           child: Row(
             children: [
+              _buildAttachButton(),
               Expanded(
                 child: KeyboardListener(
                   focusNode: FocusNode(),
@@ -466,8 +467,6 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                 ),
               ),
-              _buildAttachButton(),
-              _buildToolsButton(),
               viewModel.isSendingMessage
                   ? Padding(
                       padding: const EdgeInsets.only(left: 8.0),
@@ -661,102 +660,6 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildToolsButton() {
-    final selectedCount = viewModel.selectedToolIds.length;
-    final hasTools = viewModel.tools.isNotEmpty;
-    final color = selectedCount > 0
-        ? Theme.of(context).colorScheme.primary
-        : Colors.grey.shade600;
-
-    return IconButton(
-      icon: viewModel.isLoadingTools
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Badge(
-              isLabelVisible: selectedCount > 0,
-              label: Text('$selectedCount'),
-              child: Icon(Icons.build_circle_outlined, color: color),
-            ),
-      tooltip: hasTools ? 'Tools' : 'No tools available',
-      onPressed: viewModel.isLoadingTools || !hasTools
-          ? null
-          : () {
-              _showToolsSheet();
-            },
-    );
-  }
-
-  Future<void> _showToolsSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return Consumer<ChatViewModel>(
-          builder: (context, model, _) {
-            return SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 12, 8),
-                    child: Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Tools',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            final enableAll = model.selectedToolIds.length !=
-                                model.tools.length;
-                            model.setAllToolsEnabled(enableAll);
-                          },
-                          child: Text(
-                            model.selectedToolIds.length == model.tools.length
-                                ? 'Disable all'
-                                : 'Enable all',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Flexible(
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: model.tools.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final tool = model.tools[index];
-                        final selected =
-                            model.selectedToolIds.contains(tool.id);
-                        return SwitchListTile(
-                          value: selected,
-                          onChanged: (_) => model.toggleToolSelection(tool.id),
-                          title: Text(tool.name),
-                          subtitle: tool.description.isEmpty
-                              ? Text(tool.id)
-                              : Text(tool.description),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
