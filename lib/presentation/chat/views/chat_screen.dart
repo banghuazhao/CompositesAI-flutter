@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import '../../auth/login_page.dart';
@@ -21,7 +22,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen>
-    with AutomaticKeepAliveClientMixin, RouteAware, WidgetsBindingObserver {
+    with AutomaticKeepAliveClientMixin, RouteAware, WidgetsBindingObserver, TickerProviderStateMixin {
   /// Empty-state suggestion chips: matches Card shape + InkWell ripple.
   static const double _kSuggestionChipRadius = 18;
 
@@ -31,6 +32,12 @@ class _ChatScreenState extends State<ChatScreen>
   final FocusNode focusNode = FocusNode();
 
   late ChatViewModel viewModel;
+
+  // Voice input
+  final SpeechToText _speech = SpeechToText();
+  bool _isListening = false;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
@@ -46,6 +53,13 @@ class _ChatScreenState extends State<ChatScreen>
         ]);
       }
     });
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.85, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -53,7 +67,41 @@ class _ChatScreenState extends State<ChatScreen>
     WidgetsBinding.instance.removeObserver(this);
     focusNode.dispose();
     textController.dispose();
+    _pulseController.dispose();
+    _speech.stop();
     super.dispose();
+  }
+
+  Future<void> _startListening() async {
+    final available = await _speech.initialize(
+      onError: (_) => setState(() => _isListening = false),
+      onStatus: (status) {
+        if (status == SpeechToText.doneStatus ||
+            status == SpeechToText.notListeningStatus) {
+          if (mounted) setState(() => _isListening = false);
+        }
+      },
+    );
+    if (!available || !mounted) return;
+    setState(() => _isListening = true);
+    await _speech.listen(
+      onResult: (result) {
+        if (!mounted) return;
+        textController.text = result.recognizedWords;
+        textController.selection = TextSelection.fromPosition(
+          TextPosition(offset: textController.text.length),
+        );
+        setState(() {});
+      },
+      listenFor: const Duration(seconds: 60),
+      pauseFor: const Duration(seconds: 3),
+      partialResults: true,
+    );
+  }
+
+  Future<void> _stopListening() async {
+    await _speech.stop();
+    if (mounted) setState(() => _isListening = false);
   }
 
   @override
@@ -467,25 +515,7 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                 ),
               ),
-              viewModel.isSendingMessage
-                  ? Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : IconButton(
-                      icon: Icon(Icons.send),
-                      onPressed: !_canSendMessage()
-                          ? null
-                          : () {
-                              final text = textController.text.trim();
-                              textController.clear();
-                              viewModel.sendInputMessage(text);
-                            },
-                    ),
+              _buildRightButton(),
             ],
           ),
         ),
@@ -499,6 +529,44 @@ class _ChatScreenState extends State<ChatScreen>
         !viewModel.isUploadingFile &&
         (textController.text.trim().isNotEmpty ||
             viewModel.pendingFiles.isNotEmpty);
+  }
+
+  Widget _buildRightButton() {
+    if (viewModel.isSendingMessage) {
+      return const Padding(
+        padding: EdgeInsets.only(left: 8),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    if (_isListening) {
+      return ScaleTransition(
+        scale: _pulseAnimation,
+        child: IconButton(
+          icon: const Icon(Icons.mic, color: Colors.red),
+          tooltip: 'Stop listening',
+          onPressed: _stopListening,
+        ),
+      );
+    }
+    if (_canSendMessage()) {
+      return IconButton(
+        icon: const Icon(Icons.send),
+        onPressed: () {
+          final text = textController.text.trim();
+          textController.clear();
+          viewModel.sendInputMessage(text);
+        },
+      );
+    }
+    return IconButton(
+      icon: const Icon(Icons.mic_none),
+      tooltip: 'Voice input',
+      onPressed: viewModel.isUploadingFile ? null : _startListening,
+    );
   }
 
   Widget _buildAttachButton() {

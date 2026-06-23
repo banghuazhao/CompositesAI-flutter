@@ -237,5 +237,9 @@
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Microphone access is needed for voice input in the chat.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>Speech recognition is used to convert your voice to text in the chat.</string>
 	</dict>
 </plist>
