@@ -48,7 +48,7 @@ class UserProfileViewModel extends ChangeNotifier {
       return true;
     } catch (e) {
       // Log the error and display an error Snackbar
-      print("Logout failed: $e");
+      debugPrint("Logout failed: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Logout failed. Please try again."),
@@ -71,7 +71,7 @@ class UserProfileViewModel extends ChangeNotifier {
       user = null;
       isSignedIn = false;
       notifyListeners();
-      print("Account deleted successfully");
+      debugPrint("Account deleted successfully");
       return true;
     } catch (e) {
       _errorMessage = 'Delete failed: ${e.toString()}';
@@ -98,13 +98,9 @@ class UserProfileViewModel extends ChangeNotifier {
       }
     } catch (error) {
       // Handle any errors that may occur
-      print("Failed to update user name: $error");
+      debugPrint("Failed to update user name: $error");
     }
   }
 
-  void _setLoadingState(bool value) {
-    isLoading = value;
-    notifyListeners();
-  }
 }
  
