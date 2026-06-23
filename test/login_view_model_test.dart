@@ -104,7 +104,7 @@ void main() {
 
         final result = await loginViewModel.login(email, password);
         expect(result, null);
-        expect(loginViewModel.errorMessage, 'Login failed: Exception: Login error');
+        expect(loginViewModel.errorMessage, 'Login error');
       });
     });
 
@@ -233,7 +233,7 @@ void main() {
         // Assert
         expect(
           loginViewModel.errorMessage,
-          'Sign in with Apple failed: Exception: Identity token not available in Apple credentials',
+          'Identity token not available in Apple credentials',
         );
         expect(loginViewModel.isSigningIn, false);
       });
@@ -252,7 +252,7 @@ void main() {
         // Assert
         expect(
           loginViewModel.errorMessage,
-          'Sign in with Apple failed: Exception: Apple sign-in error',
+          'Apple sign-in error',
         );
         expect(loginViewModel.isSigningIn, false);
       });
@@ -288,7 +288,7 @@ void main() {
         // Assert
         expect(
           loginViewModel.errorMessage,
-          'Sign in with Apple failed: Exception: Auth use case error',
+          'Auth use case error',
         );
         expect(loginViewModel.isSigningIn, false);
         verify(mockAppleSignInService.getAppleIDCredential(
@@ -352,7 +352,7 @@ void main() {
 
         // Assert
         expect(loginViewModel.errorMessage,
-            'Exception: Unable to retrieve ID token. Please try again.');
+            'Unable to retrieve ID token. Please try again.');
         expect(loginViewModel.isSigningIn, false);
       });
 
@@ -369,7 +369,7 @@ void main() {
         await loginViewModel.signInWithGoogle();
 
         // Assert
-        expect(loginViewModel.errorMessage, 'Exception: Google Sign-In failed');
+        expect(loginViewModel.errorMessage, 'Google Sign-In failed');
         expect(loginViewModel.isSigningIn, false);
       });
     });
