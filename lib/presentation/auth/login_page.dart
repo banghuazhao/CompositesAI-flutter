@@ -13,7 +13,7 @@ import 'login_view_model.dart';
 import 'forget_password_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -21,254 +21,114 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  String email = '';
-  String password = '';
-  bool isLoading = false;
-  bool isButtonEnabled = false;
-  bool isPasswordValid = false;
-  bool isLoginFailed = false;
+  bool _isButtonEnabled = false;
+  String? _emailLoginError;
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Add listeners to check if the fields are non-empty
     _emailController.addListener(_checkFields);
     _passwordController.addListener(_checkFields);
   }
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   void _checkFields() {
+    final isEmailValid =
+        RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(_emailController.text);
+    final isPasswordValid = _passwordController.text.length >= 6;
+    setState(() => _isButtonEnabled = isEmailValid && isPasswordValid);
+  }
+
+  bool _isCancellation(String msg) {
+    final lower = msg.toLowerCase();
+    return lower.contains('cancel') || lower.contains('dismissed');
+  }
+
+  // ── Email/password login ─────────────────────────────────────────────────
+
+  Future<void> _login(LoginViewModel viewModel) async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _emailLoginError = null);
+
+    final user = await viewModel.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+
+    if (!mounted) return;
+
+    if (user != null) {
+      Navigator.pop(context, user);
+      return;
+    }
+
     setState(() {
-      final isEmailValid =
-          RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(_emailController.text);
-      isButtonEnabled = isEmailValid &&
-          _passwordController.text.isNotEmpty &&
-          _passwordController.text.length >= 6;
+      _emailLoginError =
+          viewModel.errorMessage ?? 'Login failed. Please try again.';
     });
   }
 
-  void _login(LoginViewModel viewModel, BuildContext context) async {
-    if (!_formKey.currentState!.validate()) return;
+  // ── Social sign-in (Google / Apple / Microsoft) ──────────────────────────
+  // Shows a loading spinner while `signIn()` runs, then navigates on success
+  // or shows an error snackbar on failure. Cancellations are silent.
 
-    try {
-      // Call login from viewModel and pass the credentials
-      final user = await viewModel.login(
-        _emailController.text,
-        _passwordController.text,
-      );
-
-      if (user != null) {
-        // Login successful
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Logged in"),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.black,
-          ),
-        );
-
-        Navigator.pop(context, user);
-      } else {
-        // Login failed - error handled within viewModel and errorMessage will be populated
-        if (viewModel.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(viewModel.errorMessage!),
-              duration: Duration(seconds: 4),
-              backgroundColor: Colors.red,
-            ),
-          );
-          isLoginFailed = true;
-        }
-      }
-    } catch (e) {
-      // General error handling, if something unexpected happens
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('An unexpected error occurred: ${e.toString()}'),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _googleSignIn(LoginViewModel viewModel, BuildContext context) async {
-    // Show loading dialog
+  Future<void> _handleSocialSignIn(Future<void> Function() signIn) async {
     showDialog(
       context: context,
       barrierDismissible: false,
-      // Prevent closing the dialog by tapping outside
-      builder: (BuildContext context) {
-        return Center(
-          child: CircularProgressIndicator(), // Display loading indicator
-        );
-      },
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    try {
-      // Perform Google Sign-In
-      await viewModel.signInWithGoogle();
+    await signIn();
 
-      // Dismiss loading dialog before performing further actions
-      Navigator.of(context, rootNavigator: true).pop();
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // dismiss spinner
 
-      // Check the result of the sign-in
-      if (viewModel.isSigningIn) {
-        // Display success Snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Logged in with Google"),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.black,
-          ),
-        );
+    final viewModel = context.read<LoginViewModel>();
+    if (viewModel.isSigningIn) {
+      Navigator.pop(context, viewModel.signedInUser);
+      return;
+    }
 
-        // Navigate to the next screen
-        Navigator.pop(context, viewModel.signedInUser); // Pop with User?
-      } else {
-        // Display failure Snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(viewModel.errorMessage ?? "Google Sign-In failed"),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      // Handle any unexpected errors
-      Navigator.of(context, rootNavigator: true)
-          .pop(); // Dismiss loading dialog
+    final error = viewModel.errorMessage;
+    if (error != null && !_isCancellation(error)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("An error occurred: $e"),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.red,
+          content: Text(error),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
   }
 
-  void _microsoftSignIn(LoginViewModel viewModel, BuildContext context) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(child: CircularProgressIndicator());
-      },
-    );
+  // ── GitHub device-flow sign-in ───────────────────────────────────────────
 
-    try {
-      await viewModel.signInWithMicrosoft();
-
-      Navigator.of(context, rootNavigator: true).pop();
-
-      if (viewModel.isSigningIn) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Logged in with Microsoft"),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.black,
-          ),
-        );
-        Navigator.pop(context, viewModel.signedInUser);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text(viewModel.errorMessage ?? "Microsoft Sign-In failed"),
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      Navigator.of(context, rootNavigator: true).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("An error occurred: $e"),
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _appleSignIn(LoginViewModel viewModel, BuildContext context) async {
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      // Prevent closing the dialog by tapping outside
-      builder: (BuildContext context) {
-        return Center(
-          child: CircularProgressIndicator(), // Display loading indicator
-        );
-      },
-    );
-
-    try {
-      // Perform Apple Sign-In
-      await viewModel.signInWithApple();
-
-      // Dismiss loading dialog before performing further actions
-      Navigator.of(context, rootNavigator: true).pop();
-
-      // Check the result of the sign-in
-      if (viewModel.isSigningIn) {
-        // Display success Snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Logged in with Apple"),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.black,
-          ),
-        );
-
-        // Navigate to the next screen
-        Navigator.pop(context, viewModel.signedInUser); // Pass result back
-      } else {
-        // Display failure Snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(viewModel.errorMessage ?? "Apple Sign in failed"),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      // Handle any unexpected errors
-      Navigator.of(context, rootNavigator: true)
-          .pop(); // Ensure dialog is dismissed
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("An error occurred: $e"),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _githubSignIn(LoginViewModel viewModel, BuildContext context) async {
+  Future<void> _githubSignIn(LoginViewModel viewModel) async {
     try {
       bool started = false;
       bool dialogClosed = false;
+
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (BuildContext dialogContext) {
-          // Rebuild dialog whenever the view model notifies.
           return AnimatedBuilder(
             animation: viewModel,
             builder: (context, _) {
-              void safeCloseDialog() {
+              void safeClose() {
                 if (dialogClosed) return;
                 dialogClosed = true;
-                // Avoid Navigator lock assertions by popping next frame.
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (Navigator.of(dialogContext).canPop()) {
                     Navigator.of(dialogContext).pop();
@@ -278,10 +138,7 @@ class _LoginPageState extends State<LoginPage> {
 
               if (!started) {
                 started = true;
-                // Start device flow in background.
-                viewModel.signInWithGithub().whenComplete(() {
-                  safeCloseDialog();
-                });
+                viewModel.signInWithGithub().whenComplete(safeClose);
               }
 
               final code = viewModel.githubUserCode;
@@ -310,7 +167,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                          'If the browser didn’t open automatically, open:'),
+                          "If the browser didn't open automatically, open:"),
                       const SizedBox(height: 6),
                       SelectableText(uri),
                       const SizedBox(height: 12),
@@ -321,23 +178,20 @@ class _LoginPageState extends State<LoginPage> {
                 actions: [
                   if (code != null)
                     TextButton(
-                      onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: code));
-                      },
+                      onPressed: () async =>
+                          Clipboard.setData(ClipboardData(text: code)),
                       child: const Text('Copy code'),
                     ),
                   if (uri != null)
                     TextButton(
-                      onPressed: () async {
-                        await launchUrl(Uri.parse(uri),
-                            mode: LaunchMode.externalApplication);
-                      },
+                      onPressed: () async => launchUrl(Uri.parse(uri),
+                          mode: LaunchMode.externalApplication),
                       child: const Text('Open GitHub'),
                     ),
                   TextButton(
                     onPressed: () {
                       viewModel.cancelGithubSignIn();
-                      safeCloseDialog();
+                      safeClose();
                     },
                     child: const Text('Cancel'),
                   ),
@@ -348,15 +202,9 @@ class _LoginPageState extends State<LoginPage> {
         },
       );
 
+      if (!mounted) return;
+
       if (viewModel.isSigningIn) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Logged in with GitHub"),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.black,
-          ),
-        );
-        // Pop next frame to avoid Navigator lock assertions.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           Navigator.pop(context, viewModel.signedInUser);
@@ -364,34 +212,41 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      // If cancelled, keep silent; otherwise show error.
-      if (viewModel.errorMessage != null &&
-          viewModel.errorMessage != 'Exception: GitHub sign-in cancelled') {
+      final error = viewModel.errorMessage;
+      if (error != null && !_isCancellation(error)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(viewModel.errorMessage ?? "GitHub Sign-In failed"),
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.red,
+            content: Text(error),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("An error occurred: $e"),
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.red,
+          content: const Text('GitHub sign-in failed. Please try again.'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  // ── Sign-up navigation ───────────────────────────────────────────────────
+
+  Future<void> _signup() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SignupPage()),
+    );
+    if (!mounted) return;
+    if (result is User) Navigator.pop(context, result);
   }
+
+  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -399,268 +254,247 @@ class _LoginPageState extends State<LoginPage> {
 
     return ChangeNotifierProvider(
       create: (_) => sl<LoginViewModel>(),
-      child: Consumer<LoginViewModel>(builder: (context, viewModel, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Login'),
-            centerTitle: true, // Center the title
-            elevation: 0, // Remove AppBar shadow
-          ),
-          body: SingleChildScrollView(
-            padding: EdgeInsets.zero, // Remove any padding for the scroll view
-            child: Container(
-              // Ensure it matches appBar or desired color
-              alignment: Alignment.topCenter, // Align content at the top center
-              child: Container(
-                width: screenWidth > 600 ? screenWidth * 0.4 : double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                // Reduce padding
-                child: Form(
-                  key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // App Icon
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10.0), // Adjust top padding
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.asset(
-                              'images/app_icon.png',
-                              height: 40,
-                              width: 40,
-                              fit: BoxFit.contain,
+      child: Consumer<LoginViewModel>(
+        builder: (context, viewModel, _) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Login'),
+              centerTitle: true,
+              elevation: 0,
+            ),
+            body: SingleChildScrollView(
+              padding: EdgeInsets.zero,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  width:
+                      screenWidth > 600 ? screenWidth * 0.4 : double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: Form(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // App icon
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10.0),
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.asset(
+                                'images/app_icon.png',
+                                height: 40,
+                                width: 40,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 50),
+                        const SizedBox(height: 50),
 
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: TextStyle(
-                            color: Colors.black, // Ensure label text is visible
+                        // Email
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            errorBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                            ),
+                            focusedErrorBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                            ),
+                            errorStyle: TextStyle(color: Color(0xFFB71C1C)),
                           ),
-                          errorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                          ),
-                          focusedErrorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                          ),
-                          errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                          onChanged: (_) =>
+                              setState(() => _emailLoginError = null),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email address';
+                            }
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                                .hasMatch(value)) {
+                              return 'Please enter a valid email address';
+                            }
+                            return null;
+                          },
                         ),
-                        onChanged: (value) => email = value.trim(),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email address';
-                          }
-                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                            return 'Please enter a valid email address';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16.0),
+                        const SizedBox(height: 16.0),
 
-                      // Password Field
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: viewModel.obscureText,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              viewModel.obscureText
+                        // Password
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: viewModel.obscureText,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            suffixIcon: IconButton(
+                              icon: Icon(viewModel.obscureText
                                   ? Icons.visibility_off
-                                  : Icons.visibility,
+                                  : Icons.visibility),
+                              onPressed: viewModel.togglePasswordVisibility,
                             ),
-                            onPressed: viewModel.togglePasswordVisibility,
                           ),
+                          onChanged: (_) =>
+                              setState(() => _emailLoginError = null),
                         ),
-                        onChanged: (value) {
-                          password = value.trim();
-                          setState(() {
-                            isPasswordValid = password.length >= 6;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 4.0),
+                        const SizedBox(height: 2.0),
 
-                      // Password Validation Message
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 3.0),
-                        ),
-                      ),
-                      const SizedBox(height: 20.0),
-
-                      // Login Button
-                      viewModel.isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : MaterialButton(
-                              minWidth: double.infinity,
-                              height: 45,
-                              color: isButtonEnabled
-                                  ? AppColors.primary
-                                  : AppColors.secondary,
-                              disabledColor: AppColors.secondary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              onPressed: isButtonEnabled
-                                  ? () => _login(viewModel, context)
-                                  : null,
-                              child: const Text(
-                                'Login',
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 16),
-                              ),
-                            ),
-                      const SizedBox(height: 20.0),
-
-                      RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          style: const TextStyle(
-                              fontSize: 15, color: Colors.black),
-                          // Default text style
-                          children: [
-                            const TextSpan(text: 'Not a member yet? '),
-                            // Static part
-                            TextSpan(
-                              text: 'Sign up',
-                              // Clickable part
-                              style: const TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold),
-                              // Custom style for clickable text
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  _signup(); // Call your signup method
-                                },
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20.0),
-
-                      // Social Login Section
-                      Row(
-                        children: const [
-                          Expanded(
-                            child: Divider(
-                              color: Colors.grey, // Line color
-                              thickness: 1, // Line thickness
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            // Space around "OR"
-                            child: Text(
-                              'OR',
-                              style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.black), // Style for "OR"
-                            ),
-                          ),
-                          Expanded(
-                            child: Divider(
-                              color: Colors.grey, // Line color
-                              thickness: 1, // Line thickness
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 5.0),
-                      Column(
-                        children: [
-                          _buildSocialButton(
-                            iconPath: 'images/google_logo.png',
-                            text: 'Continue with Google',
-                            onPressed: () => _googleSignIn(viewModel, context),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildSocialButtonIcon(
-                            icon: FontAwesomeIcons.github,
-                            text: 'Continue with GitHub',
-                            onPressed: () => _githubSignIn(viewModel, context),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildSocialButtonIcon(
-                            iconWidget: _microsoftLogo(size: 20),
-                            text: 'Continue with Microsoft',
-                            onPressed: () =>
-                                _microsoftSignIn(viewModel, context),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildSocialButton(
-                            iconPath: 'images/apple_logo.png',
-                            text: 'Continue with Apple',
-                            onPressed: () => _appleSignIn(viewModel, context),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 15.0),
-
-                      // Forgot Password Button
-                      if (isLoginFailed) ...[
+                        // Forgot password — always visible
                         Align(
-                          alignment: Alignment.center,
+                          alignment: Alignment.centerRight,
                           child: TextButton(
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
-                              // Removes extra padding for the button
-                              minimumSize: Size(50, 20),
-                              // Ensures the button has a smaller clickable area
+                              minimumSize: const Size(50, 28),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              // Shrinks the tap area
-                              alignment: Alignment
-                                  .center, // Centers the text inside the button
                             ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ForgetPasswordPage(),
-                                ),
-                              );
-                            },
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => ForgetPasswordPage()),
+                            ),
                             child: const Text(
-                              'Forgot Password',
-                              style: TextStyle(
-                                color: Colors.blue, // Button text color
-                                fontSize: 14, // Font size for the text
-                                decoration: TextDecoration
-                                    .underline, // Adds underline to make it look like a link
-                              ),
+                              'Forgot password?',
+                              style:
+                                  TextStyle(fontSize: 13, color: Colors.grey),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 15.0),
+                        const SizedBox(height: 12.0),
+
+                        // Login button
+                        viewModel.isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 45),
+                                  backgroundColor: _isButtonEnabled
+                                      ? AppColors.primary
+                                      : AppColors.secondary,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6)),
+                                  elevation: 0,
+                                ),
+                                onPressed: _isButtonEnabled
+                                    ? () => _login(viewModel)
+                                    : null,
+                                child: const Text(
+                                  'Login',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 16),
+                                ),
+                              ),
+
+                        // Inline login error
+                        if (_emailLoginError != null) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  color: Colors.red, size: 16),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  _emailLoginError!,
+                                  style: const TextStyle(
+                                      color: Colors.red, fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
+                        const SizedBox(height: 20.0),
+
+                        // Sign-up link
+                        RichText(
+                          textAlign: TextAlign.center,
+                          text: TextSpan(
+                            style: const TextStyle(
+                                fontSize: 15, color: Colors.black),
+                            children: [
+                              const TextSpan(text: 'Not a member yet? '),
+                              TextSpan(
+                                text: 'Sign up',
+                                style: const TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.bold),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = _signup,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20.0),
+
+                        // Divider
+                        const Row(
+                          children: [
+                            Expanded(
+                                child: Divider(
+                                    color: Colors.grey, thickness: 1)),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Text('OR',
+                                  style: TextStyle(
+                                      fontSize: 15, color: Colors.black)),
+                            ),
+                            Expanded(
+                                child: Divider(
+                                    color: Colors.grey, thickness: 1)),
+                          ],
+                        ),
+
+                        const SizedBox(height: 10.0),
+
+                        // Social buttons
+                        _buildSocialButton(
+                          iconPath: 'images/google_logo.png',
+                          text: 'Continue with Google',
+                          onPressed: () => _handleSocialSignIn(
+                              () => viewModel.signInWithGoogle()),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildSocialButtonIcon(
+                          icon: FontAwesomeIcons.github,
+                          text: 'Continue with GitHub',
+                          onPressed: () => _githubSignIn(viewModel),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildSocialButtonIcon(
+                          iconWidget: _microsoftLogo(size: 20),
+                          text: 'Continue with Microsoft',
+                          onPressed: () => _handleSocialSignIn(
+                              () => viewModel.signInWithMicrosoft()),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildSocialButton(
+                          iconPath: 'images/apple_logo.png',
+                          text: 'Continue with Apple',
+                          onPressed: () => _handleSocialSignIn(
+                              () => viewModel.signInWithApple()),
+                        ),
+                        const SizedBox(height: 24.0),
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 
-// Helper Method for Social Buttons
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
   static Widget _microsoftLogo({required double size}) {
     final gap = size * 0.08;
     final tile = (size - gap) / 2;
@@ -679,21 +513,17 @@ class _LoginPageState extends State<LoginPage> {
       height: size,
       child: Column(
         children: [
-          Row(
-            children: [
-              square(const Color(0xFFF25022)),
-              SizedBox(width: gap),
-              square(const Color(0xFF7FBA00)),
-            ],
-          ),
+          Row(children: [
+            square(const Color(0xFFF25022)),
+            SizedBox(width: gap),
+            square(const Color(0xFF7FBA00)),
+          ]),
           SizedBox(height: gap),
-          Row(
-            children: [
-              square(const Color(0xFF00A4EF)),
-              SizedBox(width: gap),
-              square(const Color(0xFFFFB900)),
-            ],
-          ),
+          Row(children: [
+            square(const Color(0xFF00A4EF)),
+            SizedBox(width: gap),
+            square(const Color(0xFFFFB900)),
+          ]),
         ],
       ),
     );
@@ -708,7 +538,8 @@ class _LoginPageState extends State<LoginPage> {
       onTap: onPressed,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding:
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -719,10 +550,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 24,
-                height: 24,
-                child: Center(child: leading),
-              ),
+                  width: 24, height: 24, child: Center(child: leading)),
               const SizedBox(width: 12),
               Text(
                 text,
@@ -740,18 +568,13 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildSocialButton({
-    //a function that returns a widget (Widget type)
     required String iconPath,
     required String text,
     required VoidCallback onPressed,
   }) {
     return _buildSocialButtonBase(
-      leading: Image.asset(
-        iconPath,
-        height: 22,
-        width: 22,
-        fit: BoxFit.contain,
-      ),
+      leading: Image.asset(iconPath, height: 22, width: 22,
+          fit: BoxFit.contain),
       text: text,
       onPressed: onPressed,
     );
@@ -769,17 +592,5 @@ class _LoginPageState extends State<LoginPage> {
       text: text,
       onPressed: onPressed,
     );
-  }
-
-  void _signup() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => SignupPage()),
-    );
-
-    if (!mounted) return;
-    if (result is User) {
-      Navigator.pop(context, result);
-    }
   }
 }

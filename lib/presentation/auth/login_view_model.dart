@@ -78,14 +78,47 @@ class LoginViewModel extends ChangeNotifier {
     try {
       final user = await authUseCase.login(email, password);
       _signedInUser = user;
-      return user; // Successful login returns the access token
+      return user;
     } catch (e) {
-      _errorMessage = 'Login failed: ${e.toString()}';
+      _errorMessage = _friendlyError(e);
       return null;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // Maps raw exceptions to user-readable strings.
+  static String _friendlyError(Object error,
+      {String fallback = 'Something went wrong. Please try again.'}) {
+    // Strip class-name prefixes: "BadRequestException: …", "Exception: …", etc.
+    var msg = error.toString()
+        .replaceFirst(RegExp(r'^\w*Exception:\s*'), '')
+        .trim();
+    final lower = msg.toLowerCase();
+    if (lower.contains('401') ||
+        lower.contains('invalid credentials') ||
+        lower.contains('incorrect password') ||
+        lower.contains('wrong password')) {
+      return 'Incorrect email or password.';
+    }
+    if (lower.contains('404') || lower.contains('no user') ||
+        lower.contains('not found')) {
+      return 'No account found with this email.';
+    }
+    if (lower.contains('429') || lower.contains('too many')) {
+      return 'Too many attempts. Please try again later.';
+    }
+    if (lower.contains('500') || lower.contains('502') ||
+        lower.contains('503') || lower.contains('internal server')) {
+      return 'Server error. Please try again later.';
+    }
+    if (lower.contains('network') || lower.contains('socket') ||
+        lower.contains('connection') || lower.contains('timeout') ||
+        lower.contains('unreachable')) {
+      return 'Network error. Please check your connection.';
+    }
+    return msg.isEmpty ? fallback : msg;
   }
 
   static String? _env(String key) {
@@ -152,11 +185,11 @@ class LoginViewModel extends ChangeNotifier {
               scopes: <String>['email', 'openid', 'profile'],
             );
 
-      print(user);
+      debugPrint('Google sign-in user: $user');
 
       if (user == null) {
-        // User canceled the sign-in
-        throw Exception('Sign-in was canceled by the user.');
+        // User cancelled — stay silent, no error shown
+        return;
       }
 
       // For non-web platforms, retrieve authentication details
@@ -178,9 +211,8 @@ class LoginViewModel extends ChangeNotifier {
       // Mark signing-in as successful
       _isSigningIn = true;
     } catch (error) {
-      // Handle any errors during the process
-      print('Error during Google Sign-In: $error');
-      _errorMessage = error.toString();
+      debugPrint('Error during Google Sign-In: $error');
+      _errorMessage = _friendlyError(error);
     } finally {
       // Notify listeners regardless of success or failure
       notifyListeners();
@@ -249,8 +281,8 @@ class LoginViewModel extends ChangeNotifier {
 
       _isSigningIn = true;
     } catch (error) {
-      print('Error during GitHub OAuth: $error');
-      _errorMessage = error.toString();
+      debugPrint('Error during GitHub OAuth: $error');
+      _errorMessage = _friendlyError(error);
     } finally {
       _githubUserCode = null;
       _githubVerificationUri = null;
@@ -301,11 +333,11 @@ class LoginViewModel extends ChangeNotifier {
       _signedInUser = session.user;
       _isSigningIn = true;
     } on MsalException catch (e) {
-      print('MSAL error during Microsoft Sign-In: $e');
-      _errorMessage = e.toString();
+      debugPrint('MSAL error during Microsoft Sign-In: $e');
+      _errorMessage = _friendlyError(e);
     } catch (e) {
-      print('Error during Microsoft Sign-In: $e');
-      _errorMessage = e.toString();
+      debugPrint('Error during Microsoft Sign-In: $e');
+      _errorMessage = _friendlyError(e);
     } finally {
       notifyListeners();
     }
@@ -400,8 +432,7 @@ class LoginViewModel extends ChangeNotifier {
 
   Future<void> syncUser(
       String? displayName, String email, String? photoUrl) async {
-    final accessToken =
-        await authUseCase.syncUser(displayName, email, photoUrl);
+    await authUseCase.syncUser(displayName, email, photoUrl);
   }
 
   Future<void> signInWithApple() async {
@@ -427,7 +458,7 @@ class LoginViewModel extends ChangeNotifier {
         ),
       );
 
-      print('Apple credential: $credential');
+      debugPrint('Apple credential: $credential');
 
       final identityToken = credential.identityToken;
       if (identityToken == null || identityToken.isEmpty) {
@@ -438,7 +469,7 @@ class LoginViewModel extends ChangeNotifier {
       final displayName = [
         credential.givenName,
         credential.familyName,
-      ].where((s) => s != null && s!.trim().isNotEmpty).map((s) => s!.trim()).join(' ');
+      ].where((s) => s != null && s.trim().isNotEmpty).map((s) => s!.trim()).join(' ');
 
       final AuthSession session = await authUseCase.validateAppleToken(
         identityToken,
@@ -453,14 +484,13 @@ class LoginViewModel extends ChangeNotifier {
           );
       _isSigningIn = true;
     } on SignInWithAppleAuthorizationException catch (e) {
-      if (e.code == AuthorizationErrorCode.canceled) {
-        _errorMessage = 'Sign-in was canceled by the user.';
-      } else {
-        _errorMessage = 'Sign in with Apple failed: $e';
+      if (e.code != AuthorizationErrorCode.canceled) {
+        _errorMessage = _friendlyError(e);
       }
+      // Cancellation stays silent (_errorMessage remains null)
       _isSigningIn = false;
     } catch (e) {
-      _errorMessage = 'Sign in with Apple failed: $e';
+      _errorMessage = _friendlyError(e);
       _isSigningIn = false;
     } finally {
       notifyListeners();

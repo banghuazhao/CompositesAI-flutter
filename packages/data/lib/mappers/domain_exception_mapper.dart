@@ -9,7 +9,8 @@ DomainException mapServerErrorToDomainException(Response response) {
   String? message;
   try {
     final responseData = jsonDecode(response.body);
-    message = responseData['message'];
+    // FastAPI uses 'detail'; fall back to 'message' for other backends.
+    message = (responseData['detail'] ?? responseData['message'])?.toString();
   } catch (e) {
     // 不是JSON，用原始body或null
     message = null;
