@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import 'chat_file.dart';
 import 'chat_stream_event.dart';
 
 class Message {
@@ -15,6 +16,7 @@ class Message {
   int thinkingElapsed = 0;
   bool isDone = false;
   List<ToolStatus> statusHistory = [];
+  List<ChatFile> files = [];
   // Client-side cache for evaluation update.
   // Filled after first POST /evaluations/feedback returns FeedbackModel.id.
   String? feedbackId;
@@ -24,10 +26,12 @@ class Message {
       this.content = '',
       this.parentId,
       this.childrenIds = const [],
+      List<ChatFile> files = const [],
       List<ToolStatus> statusHistory = const []})
       : id = const Uuid().v4(),
         timestamp = DateTime.now().microsecondsSinceEpoch ~/ 1000,
         statusHistory = List<ToolStatus>.from(statusHistory),
+        files = List<ChatFile>.from(files),
         models = ["composites-ai-2026-02-23"],
         model = "composites-ai-2026-02-23",
         modelName = role == 'assistant' ? 'CompositeAI' : '';
@@ -44,6 +48,7 @@ class Message {
         model = json['model'] ?? '',
         thinkingElapsed = json['thinking_elapsed'] ?? 0,
         isDone = json['done'] ?? false,
+        files = _parseFiles(json),
         statusHistory = _parseStatusHistory(json),
         feedbackId = json['feedbackId'] ?? json['feedback_id'];
 
@@ -56,6 +61,9 @@ class Message {
     data['timestamp'] = timestamp;
     data['childrenIds'] = childrenIds;
     data['parentId'] = parentId;
+    if (files.isNotEmpty) {
+      data['files'] = files.map((file) => file.toJson()).toList();
+    }
 
     if (role == 'assistant') {
       data['model'] = model;
@@ -82,6 +90,9 @@ class Message {
     data['role'] = role;
     data['content'] = content;
     data['timestamp'] = timestamp;
+    if (files.isNotEmpty) {
+      data['files'] = files.map((file) => file.toJson()).toList();
+    }
     return data;
   }
 
@@ -108,5 +119,16 @@ class Message {
     }
 
     return statuses;
+  }
+
+  static List<ChatFile> _parseFiles(Map<String, dynamic> json) {
+    final rawFiles = json['files'];
+    if (rawFiles is! List) return <ChatFile>[];
+
+    return rawFiles
+        .whereType<Map<String, dynamic>>()
+        .map(ChatFile.fromJson)
+        .where((file) => file.id.isNotEmpty || file.url.isNotEmpty)
+        .toList();
   }
 }

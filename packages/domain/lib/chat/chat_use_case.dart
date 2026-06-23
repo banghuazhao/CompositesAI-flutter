@@ -3,6 +3,7 @@ import 'entities/chat.dart';
 import 'entities/chat_model.dart';
 import 'entities/chat_stream_event.dart';
 import 'entities/chat_tool.dart';
+import 'entities/chat_file.dart';
 import 'chat_repository.dart';
 
 abstract class ChatUseCase {
@@ -19,6 +20,13 @@ abstract class ChatUseCase {
   Future<List<ChatTool>> fetchTools();
 
   Future<List<ChatModel>> fetchModels();
+
+  Future<ChatFile> uploadChatFile({
+    required String name,
+    required int size,
+    String? path,
+    List<int>? bytes,
+  });
 
   Future<Chat> createChat(Message message);
 
@@ -91,6 +99,21 @@ class ChatUseCaseImpl implements ChatUseCase {
   @override
   Future<List<ChatModel>> fetchModels() {
     return repository.fetchModels();
+  }
+
+  @override
+  Future<ChatFile> uploadChatFile({
+    required String name,
+    required int size,
+    String? path,
+    List<int>? bytes,
+  }) {
+    return repository.uploadChatFile(
+      name: name,
+      size: size,
+      path: path,
+      bytes: bytes,
+    );
   }
 
   @override

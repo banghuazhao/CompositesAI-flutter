@@ -3,6 +3,7 @@ import 'entities/chat.dart';
 import 'entities/chat_model.dart';
 import 'entities/chat_stream_event.dart';
 import 'entities/chat_tool.dart';
+import 'entities/chat_file.dart';
 import 'entities/feedback_response.dart';
 
 abstract class ChatRepository {
@@ -22,6 +23,13 @@ abstract class ChatRepository {
   Future<List<ChatTool>> fetchTools();
 
   Future<List<ChatModel>> fetchModels();
+
+  Future<ChatFile> uploadChatFile({
+    required String name,
+    required int size,
+    String? path,
+    List<int>? bytes,
+  });
 
   Future<Chat> createChat(Message message); // Fetch sessions from a data source
   Future<void> deleteChat(Chat chat);

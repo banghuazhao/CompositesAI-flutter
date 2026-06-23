@@ -758,7 +758,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildSocialButtonIcon({
-    IconData? icon,
+    FaIconData? icon,
     Widget? iconWidget,
     required String text,
     required VoidCallback onPressed,

@@ -89,8 +89,30 @@ class _MessageListState extends State<MessageList> {
             ),
           ),
         ),
+        if (message.files.isNotEmpty) buildAttachedFiles(message),
         buildMessageActions(viewModel, message),
       ],
+    );
+  }
+
+  Widget buildAttachedFiles(Message message) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        alignment: WrapAlignment.end,
+        children: message.files.map((file) {
+          return Chip(
+            avatar: const Icon(Icons.insert_drive_file_outlined, size: 16),
+            label: Text(
+              file.name,
+              overflow: TextOverflow.ellipsis,
+            ),
+            visualDensity: VisualDensity.compact,
+          );
+        }).toList(),
+      ),
     );
   }
 

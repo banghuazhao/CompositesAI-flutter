@@ -389,6 +389,7 @@ class _ChatScreenState extends State<ChatScreen>
   Widget inputBar() {
     return Column(
       children: [
+        _buildPendingFiles(),
         Container(
           width: context.contentWidth,
           decoration: BoxDecoration(
@@ -426,7 +427,8 @@ class _ChatScreenState extends State<ChatScreen>
                         );
                       } else if (!viewModel.isSendingMessage) {
                         final text = textController.text.trim();
-                        if (text.isNotEmpty) {
+                        if (text.isNotEmpty ||
+                            viewModel.pendingFiles.isNotEmpty) {
                           if (await viewModel.reachChatLimit()) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -462,6 +464,7 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                 ),
               ),
+              _buildAttachButton(),
               _buildToolsButton(),
               viewModel.isSendingMessage
                   ? Padding(
@@ -474,14 +477,12 @@ class _ChatScreenState extends State<ChatScreen>
                     )
                   : IconButton(
                       icon: Icon(Icons.send),
-                      onPressed: textController.text.isEmpty
+                      onPressed: !_canSendMessage()
                           ? null
                           : () {
                               final text = textController.text.trim();
-                              if (text.isNotEmpty) {
-                                textController.clear();
-                                viewModel.sendInputMessage(text);
-                              }
+                              textController.clear();
+                              viewModel.sendInputMessage(text);
                             },
                     ),
             ],
@@ -489,6 +490,56 @@ class _ChatScreenState extends State<ChatScreen>
         ),
         const SizedBox(height: 10),
       ],
+    );
+  }
+
+  bool _canSendMessage() {
+    return !viewModel.isSendingMessage &&
+        !viewModel.isUploadingFile &&
+        (textController.text.trim().isNotEmpty ||
+            viewModel.pendingFiles.isNotEmpty);
+  }
+
+  Widget _buildAttachButton() {
+    return IconButton(
+      tooltip: 'Attach files',
+      icon: viewModel.isUploadingFile
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.attach_file),
+      onPressed: viewModel.isUploadingFile || viewModel.isSendingMessage
+          ? null
+          : () {
+              viewModel.pickAndUploadFiles();
+            },
+    );
+  }
+
+  Widget _buildPendingFiles() {
+    if (viewModel.pendingFiles.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: context.contentWidth,
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: viewModel.pendingFiles.map((file) {
+          return InputChip(
+            avatar: const Icon(Icons.insert_drive_file_outlined, size: 18),
+            label: Text(
+              file.name,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onDeleted: viewModel.isSendingMessage
+                ? null
+                : () => viewModel.removePendingFile(file),
+          );
+        }).toList(),
+      ),
     );
   }
 

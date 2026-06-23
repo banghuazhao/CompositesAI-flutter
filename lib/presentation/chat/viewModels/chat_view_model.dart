@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:file_picker/file_picker.dart';
 import 'package:domain/chat/entities/chat.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/auth/entities/user.dart';
@@ -34,6 +35,7 @@ class ChatViewModel extends ChangeNotifier {
   bool isLoadingMessages = false;
   bool isLoadingChats = false;
   bool isLoadingTools = false;
+  bool isUploadingFile = false;
 
   /// Appending next page for GET /chats/?page=n (infinite scroll).
   bool isLoadingMoreChats = false;
@@ -48,6 +50,7 @@ class ChatViewModel extends ChangeNotifier {
   List<Chat> chats = [];
   List<Chat> pinnedChats = [];
   List<ChatTool> tools = [];
+  List<ChatFile> pendingFiles = [];
   ChatModel? selectedModel;
   Set<String> selectedToolIds = <String>{};
   bool _hasUserConfiguredTools = false;
@@ -198,6 +201,44 @@ class ChatViewModel extends ChangeNotifier {
     _hasUserConfiguredTools = true;
     selectedToolIds =
         enabled ? tools.map((tool) => tool.id).toSet() : <String>{};
+    notifyListeners();
+  }
+
+  Future<void> pickAndUploadFiles() async {
+    if (!isLoggedIn || isUploadingFile) return;
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      isUploadingFile = true;
+      notifyListeners();
+
+      for (final file in result.files) {
+        final uploaded = await _chatUseCase.uploadChatFile(
+          name: file.name,
+          size: file.size,
+          path: file.path,
+          bytes: file.bytes,
+        );
+        pendingFiles.add(uploaded);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('pickAndUploadFiles error: $e');
+      }
+      errorMessage = 'Failed to upload file. Please try again.';
+    } finally {
+      isUploadingFile = false;
+      notifyListeners();
+    }
+  }
+
+  void removePendingFile(ChatFile file) {
+    pendingFiles.removeWhere((item) => item.id == file.id);
     notifyListeners();
   }
 
@@ -446,7 +487,19 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> sendInputMessage(String text) async {
-    final userMessage = Message(role: 'user', content: text);
+    if (isUploadingFile || isSendingMessage) return;
+
+    final attachments = List<ChatFile>.from(pendingFiles);
+    final prompt =
+        text.trim().isEmpty ? _attachmentOnlyPrompt(attachments) : text.trim();
+    if (prompt.isEmpty) return;
+
+    final userMessage = Message(
+      role: 'user',
+      content: prompt,
+      files: attachments,
+    );
+    pendingFiles = [];
 
     if (selectedChat != null) {
       userMessage.parentId = messages.last.id;
@@ -482,6 +535,16 @@ class ChatViewModel extends ChangeNotifier {
       errorMessage = 'Failed to send message. Please try again.';
       notifyListeners();
     }
+  }
+
+  String _attachmentOnlyPrompt(List<ChatFile> attachments) {
+    if (attachments.isEmpty) return '';
+    final names = attachments
+        .map((file) => file.name.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+    if (names.isEmpty) return 'Please review the attached file(s).';
+    return 'Please review the attached file(s): ${names.join(', ')}.';
   }
 
   Future<void> _processResponseStream(

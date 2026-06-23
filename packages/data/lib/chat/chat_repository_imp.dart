@@ -10,6 +10,7 @@ import 'package:domain/chat/entities/chat_stream_event.dart';
 import 'package:domain/chat/entities/feedback_response.dart';
 import 'package:domain/chat/entities/message.dart';
 import 'package:domain/chat/entities/chat_tool.dart';
+import 'package:domain/chat/entities/chat_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
@@ -207,6 +208,59 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<ChatFile> uploadChatFile({
+    required String name,
+    required int size,
+    String? path,
+    List<int>? bytes,
+  }) async {
+    if (size == 0) {
+      throw Exception('Cannot upload an empty file.');
+    }
+    if ((path == null || path.isEmpty) && (bytes == null || bytes.isEmpty)) {
+      throw Exception('No readable file data found.');
+    }
+
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/files/');
+    final request = http.MultipartRequest('POST', url)
+      ..headers.addAll({
+        'Accept': 'application/json',
+      });
+
+    if (path != null && path.isNotEmpty) {
+      request.files.add(
+        await http.MultipartFile.fromPath('file', path, filename: name),
+      );
+    } else {
+      request.files.add(
+        http.MultipartFile.fromBytes('file', bytes!, filename: name),
+      );
+    }
+
+    final response = await authClient.send(request);
+    final responseBody = await response.stream.bytesToString();
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final decoded = jsonDecode(responseBody);
+      if (decoded is! Map<String, dynamic>) {
+        throw FormatException('Upload response was not a JSON object.');
+      }
+      final id = decoded['id']?.toString();
+      if (id == null || id.isEmpty) {
+        throw FormatException('Upload response did not include file id.');
+      }
+      return ChatFile.fromUploadResponse(
+        json: decoded,
+        url: '$baseURL/files/$id',
+      );
+    }
+
+    throw Exception(
+        'File upload failed (${response.statusCode}): $responseBody');
+  }
+
+  @override
   Future<Chat> createChat(Message message) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/chats/new');
@@ -329,6 +383,7 @@ class ChatRepositoryImpl implements ChatRepository {
     final webBaseUri = Uri.parse(webBaseUrl);
     final url = Uri.parse('$webBaseUrl/api/chat/completions');
     final chatModel = model ?? ChatModel.fallback();
+    final attachedFiles = _attachedFilesFromMessages(messages);
     ChatSocketSession? socketSession;
 
     if (toolIds.isNotEmpty) {
@@ -351,6 +406,7 @@ class ChatRepositoryImpl implements ChatRepository {
       "id": id,
       if (socketSession != null) "session_id": socketSession.sessionId,
       if (toolIds.isNotEmpty) "tool_ids": toolIds,
+      if (attachedFiles.isNotEmpty) "files": attachedFiles,
       "model_item": chatModel.rawJson,
       'features': {
         'image_generation': false,
@@ -465,6 +521,20 @@ class ChatRepositoryImpl implements ChatRepository {
       client.close();
       await socketSession?.close();
     }
+  }
+
+  List<Map<String, dynamic>> _attachedFilesFromMessages(
+      List<Message> messages) {
+    final filesById = <String, ChatFile>{};
+    for (final message in messages) {
+      for (final file in message.files) {
+        final key = file.id.isNotEmpty ? file.id : file.url;
+        if (key.isNotEmpty) {
+          filesById[key] = file;
+        }
+      }
+    }
+    return filesById.values.map((file) => file.toJson()).toList();
   }
 
   void _throwIfKickoffFailed(String responseBody) {
