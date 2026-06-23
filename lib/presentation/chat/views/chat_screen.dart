@@ -1,8 +1,10 @@
 import 'dart:ui';
 
 import 'package:domain/auth/entities/user.dart';
+import 'package:domain/chat/entities/chat_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
@@ -502,44 +504,163 @@ class _ChatScreenState extends State<ChatScreen>
 
   Widget _buildAttachButton() {
     return IconButton(
-      tooltip: 'Attach files',
+      tooltip: 'Add attachment',
       icon: viewModel.isUploadingFile
           ? const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : const Icon(Icons.attach_file),
+          : const Icon(Icons.add_circle_outline),
       onPressed: viewModel.isUploadingFile || viewModel.isSendingMessage
           ? null
-          : () {
-              viewModel.pickAndUploadFiles();
-            },
+          : _showAttachmentSheet,
     );
+  }
+
+  void _showAttachmentSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Photo Library'),
+              onTap: () {
+                Navigator.pop(context);
+                viewModel.pickAndUploadImages(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                viewModel.pickAndUploadImages(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.insert_drive_file_outlined),
+              title: const Text('Files'),
+              onTap: () {
+                Navigator.pop(context);
+                viewModel.pickAndUploadFiles();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static bool _isImageFile(ChatFile file) {
+    final ext = file.name.split('.').last.toLowerCase();
+    return {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'bmp'}.contains(ext);
   }
 
   Widget _buildPendingFiles() {
     if (viewModel.pendingFiles.isEmpty) return const SizedBox.shrink();
 
+    final images =
+        viewModel.pendingFiles.where(_isImageFile).toList();
+    final files =
+        viewModel.pendingFiles.where((f) => !_isImageFile(f)).toList();
+
     return Container(
       width: context.contentWidth,
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 6,
-        children: viewModel.pendingFiles.map((file) {
-          return InputChip(
-            avatar: const Icon(Icons.insert_drive_file_outlined, size: 18),
-            label: Text(
-              file.name,
-              overflow: TextOverflow.ellipsis,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (images.isNotEmpty)
+            SizedBox(
+              height: 90,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) => _buildPendingImageThumb(images[i]),
+              ),
             ),
-            onDeleted: viewModel.isSendingMessage
-                ? null
-                : () => viewModel.removePendingFile(file),
-          );
-        }).toList(),
+          if (images.isNotEmpty && files.isNotEmpty)
+            const SizedBox(height: 6),
+          if (files.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: files
+                  .map((file) => InputChip(
+                        avatar: const Icon(
+                            Icons.insert_drive_file_outlined,
+                            size: 18),
+                        label: Text(file.name,
+                            overflow: TextOverflow.ellipsis),
+                        onDeleted: viewModel.isSendingMessage
+                            ? null
+                            : () => viewModel.removePendingFile(file),
+                      ))
+                  .toList(),
+            ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildPendingImageThumb(ChatFile file) {
+    final bytes = viewModel.pendingImageBytes[file.id];
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.grey.shade200,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: bytes != null
+                ? Image.memory(bytes, fit: BoxFit.cover)
+                : const Center(
+                    child: Icon(Icons.image_outlined, size: 32)),
+          ),
+        ),
+        if (!viewModel.isSendingMessage)
+          Positioned(
+            top: -4,
+            right: -4,
+            child: GestureDetector(
+              onTap: () => viewModel.removePendingFile(file),
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close,
+                    size: 13, color: Colors.white),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

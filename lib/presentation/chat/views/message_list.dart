@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
@@ -89,29 +90,94 @@ class _MessageListState extends State<MessageList> {
             ),
           ),
         ),
-        if (message.files.isNotEmpty) buildAttachedFiles(message),
+        if (message.files.isNotEmpty) buildAttachedFiles(viewModel, message),
         buildMessageActions(viewModel, message),
       ],
     );
   }
 
-  Widget buildAttachedFiles(Message message) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Wrap(
-        spacing: 6,
-        runSpacing: 4,
-        alignment: WrapAlignment.end,
-        children: message.files.map((file) {
-          return Chip(
-            avatar: const Icon(Icons.insert_drive_file_outlined, size: 16),
-            label: Text(
-              file.name,
-              overflow: TextOverflow.ellipsis,
+  static bool _isImageFile(ChatFile file) {
+    final ext = file.name.split('.').last.toLowerCase();
+    return {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'bmp'}.contains(ext);
+  }
+
+  Widget buildAttachedFiles(ChatViewModel viewModel, Message message) {
+    final images = message.files.where(_isImageFile).toList();
+    final files = message.files.where((f) => !_isImageFile(f)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (images.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              alignment: WrapAlignment.end,
+              children: images
+                  .map((f) => _buildMessageImageThumb(viewModel, f))
+                  .toList(),
             ),
-            visualDensity: VisualDensity.compact,
-          );
-        }).toList(),
+          ),
+        if (files.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              alignment: WrapAlignment.end,
+              children: files
+                  .map((file) => Chip(
+                        avatar: const Icon(
+                            Icons.insert_drive_file_outlined,
+                            size: 16),
+                        label: Text(file.name,
+                            overflow: TextOverflow.ellipsis),
+                        visualDensity: VisualDensity.compact,
+                      ))
+                  .toList(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMessageImageThumb(ChatViewModel viewModel, ChatFile file) {
+    final bytes = viewModel.pendingImageBytes[file.id];
+    return GestureDetector(
+      onTap: bytes != null ? () => _showFullImage(bytes) : null,
+      child: Container(
+        width: 160,
+        height: 120,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.grey.shade300,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: bytes != null
+              ? Image.memory(bytes, fit: BoxFit.cover)
+              : const Center(
+                  child: Icon(Icons.image_outlined,
+                      size: 36, color: Colors.grey),
+                ),
+        ),
+      ),
+    );
+  }
+
+  void _showFullImage(Uint8List bytes) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: InteractiveViewer(
+            child: Image.memory(bytes),
+          ),
+        ),
       ),
     );
   }

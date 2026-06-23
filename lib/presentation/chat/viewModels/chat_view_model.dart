@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:domain/chat/entities/chat.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/auth/entities/user.dart';
@@ -51,6 +52,9 @@ class ChatViewModel extends ChangeNotifier {
   List<Chat> pinnedChats = [];
   List<ChatTool> tools = [];
   List<ChatFile> pendingFiles = [];
+  // Local bytes cache for image previews; keyed by ChatFile.id.
+  // Kept alive after sending so message bubbles can show thumbnails.
+  Map<String, Uint8List> pendingImageBytes = {};
   ChatModel? selectedModel;
   Set<String> selectedToolIds = <String>{};
   bool _hasUserConfiguredTools = false;
@@ -237,8 +241,44 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> pickAndUploadImages(ImageSource source) async {
+    if (!isLoggedIn || isUploadingFile) return;
+
+    try {
+      final picker = ImagePicker();
+      final List<XFile> images = source == ImageSource.camera
+          ? await picker
+              .pickImage(source: ImageSource.camera, imageQuality: 85)
+              .then((f) => f != null ? [f] : <XFile>[])
+          : await picker.pickMultiImage(imageQuality: 85);
+
+      if (images.isEmpty) return;
+
+      isUploadingFile = true;
+      notifyListeners();
+
+      for (final image in images) {
+        final bytes = await image.readAsBytes();
+        final uploaded = await _chatUseCase.uploadChatFile(
+          name: image.name,
+          size: bytes.length,
+          bytes: bytes,
+        );
+        pendingFiles.add(uploaded);
+        pendingImageBytes[uploaded.id] = bytes;
+      }
+    } catch (e) {
+      debugPrint('pickAndUploadImages error: $e');
+      errorMessage = 'Failed to upload image. Please try again.';
+    } finally {
+      isUploadingFile = false;
+      notifyListeners();
+    }
+  }
+
   void removePendingFile(ChatFile file) {
     pendingFiles.removeWhere((item) => item.id == file.id);
+    pendingImageBytes.remove(file.id);
     notifyListeners();
   }
 
