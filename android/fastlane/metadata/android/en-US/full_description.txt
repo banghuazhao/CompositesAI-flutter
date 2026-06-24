@@ -1,22 +1,23 @@
-SwiftComp is a composite material simulator and AI-powered engineering assistant for computing material properties of composite structures.
+CompositesAI is an AI-powered platform designed specifically for the composites engineering industry. Ask questions about material design, calculations, and process optimization in natural language — and get instant, expert-level answers.
 
-AI Chat:
-• Chat with CompositeAI, your intelligent composites engineering assistant
-• Attach files to your conversations for deeper analysis
-• Use integrated tools to get more accurate, context-aware answers
+AI Chat Assistant:
+• Ask anything about composites engineering and get domain-specific answers instantly
+• Voice input — dictate your questions hands-free
+• Attach images and files to your conversations for deeper analysis
+• Use integrated tools for more accurate, context-aware answers
 • Share, pin, and manage your chat history
 
-Composite Material Calculations:
-1. Calculate effective beam stiffness matrix for beam model.
-2. Calculate A, B, D matrices, transverse shear stiffness matrix, in-plane properties, and flexural properties for the plate model.
-3. Calculate effective solid stiffness matrix and engineering constants for the solid model.
-4. Calculate the coefficient of thermal expansions (CTEs) for the thermoelastic analysis.
-5. Use Gmsh as a mesh generator to generate mesh and images.
+Composite Material Calculators:
+1. Calculate effective beam stiffness matrix for beam model
+2. Calculate A, B, D matrices, transverse shear stiffness matrix, in-plane properties, and flexural properties for the plate model
+3. Calculate effective solid stiffness matrix and engineering constants for the solid model
+4. Calculate the coefficient of thermal expansion (CTE) for thermoelastic analysis
+5. Use Gmsh as a mesh generator to generate mesh and images
 
-Supported composite models:
+Supported Composite Models:
 • Laminate
 • Unidirectional fibre-reinforced composite
-• Honeycomb Sandwich Structure
-• Particle Reinforced Composite
+• Honeycomb sandwich structure
+• Particle reinforced composite
 
 We are constantly adding more functionalities to this app.
