@@ -1,0 +1,8 @@
+• Voice input — tap the mic to dictate messages in chat
+• Image uploads — attach photos from library or camera via the + button
+• Redesigned chat UI — compact input bar, cleaner bubbles, better spacing
+• Chat tools moved to Settings → Tools Settings
+• Second tab renamed to Calculators
+• Redesigned Settings and Profile screens with modern grouped layout
+• Fixed avatar flickering on the Settings screen
+• Bug fixes and performance improvements
