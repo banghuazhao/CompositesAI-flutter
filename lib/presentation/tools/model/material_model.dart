@@ -19,8 +19,6 @@ extension MechanicalMaterialTypeName on MechanicalMaterialType {
         return "Monoclinic";
       case MechanicalMaterialType.anisotropic:
         return "Anisotropic";
-      default:
-        return "";
     }
   }
 }

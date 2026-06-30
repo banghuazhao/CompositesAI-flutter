@@ -61,6 +61,7 @@ dependencies:
   speech_to_text: ^7.0.0
   flutter_native_splash: ^2.4.0
   uuid: ^4.5.1
+  shared_preferences: ^2.5.5
 
 # Pinned so Android build does not resolve old plugin releases that still
 # reference removed v1 embedding APIs (PluginRegistry.Registrar).

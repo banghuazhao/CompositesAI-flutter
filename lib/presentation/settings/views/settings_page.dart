@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
-import '../../../app/injection_container.dart';
 import '../../chat/viewModels/chat_view_model.dart';
 import '../../conponents/base64-image.dart';
 import '../viewModels/settings_view_model.dart';
@@ -58,8 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () async {
                       final user = await Navigator.push<User>(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const LoginPage()),
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
                       );
                       if (user != null) {
                         viewModel.updateUser(user);
@@ -129,8 +127,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () async {
                       await Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => ApplyExpertPage()),
+                        MaterialPageRoute(builder: (_) => ApplyExpertPage()),
                       );
                     },
                   ),
@@ -166,8 +163,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   // ── Profile header card ────────────────────────────────────────────────
-  Widget _buildProfileCard(
-      BuildContext context, SettingsViewModel viewModel) {
+  Widget _buildProfileCard(BuildContext context, SettingsViewModel viewModel) {
     final name = viewModel.user?.name ?? '';
     final email = viewModel.user?.email ?? '';
     final isExpert = viewModel.user?.isCompositeExpert == true;
@@ -228,8 +224,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right,
-                  color: Colors.grey.shade400, size: 20),
+              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
             ],
           ),
         ),
@@ -306,11 +301,9 @@ class _SettingsPageState extends State<SettingsPage> {
             Icon(icon, size: 22, color: c),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(title,
-                  style: TextStyle(fontSize: 16, color: c)),
+              child: Text(title, style: TextStyle(fontSize: 16, color: c)),
             ),
-            Icon(Icons.chevron_right,
-                color: Colors.grey.shade400, size: 20),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
           ],
         ),
       ),

@@ -1,6 +1,7 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
+
 import 'dart:async';
 import 'package:mockito/mockito.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import '../google_sign_in_service.dart';
 
 class MockGoogleSignInService extends Mock implements GoogleSignInService {

@@ -6,48 +6,49 @@ import 'package:mockito/mockito.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/user_profile_view_model.dart';
 
 void main() {
-  group('UserProfileViewModel Tests', ()
-  {
+  group('UserProfileViewModel Tests', () {
     group('isLoggedIn', () {
-    test('should return true when token is not null', () async {
-      final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
-      //final MockUserUseCase mockUserUseCase = MockUserUseCase();
-      //final UserProfileViewModel userProfileViewModel = UserProfileViewModel(authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase);
-      // Arrange
-      when(mockAuthUseCase.isLoggedIn()).thenAnswer((_) async => true);
-
-      // Act
-      final result = await mockAuthUseCase.isLoggedIn();
-
-      // Assert
-      expect(result, true);
-      verify(mockAuthUseCase.isLoggedIn()).called(1);
-    });
-
-    test('should return false when token is null', () async {
-      final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
-      // Arrange
-      when(mockAuthUseCase.isLoggedIn()).thenAnswer((_) async => false);
-
-      // Act
-      final result = await mockAuthUseCase.isLoggedIn();
-
-      // Assert
-      expect(result, false);
-      verify(mockAuthUseCase.isLoggedIn()).called(1);
-    });
-  });
-    group('logout', () {
-      test('should not call logout or deleteToken when token is null', () async {
+      test('should return true when token is not null', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
-        when(mockAuthUseCase.logout()).thenAnswer((_) async => null);
+        //final MockUserUseCase mockUserUseCase = MockUserUseCase();
+        //final UserProfileViewModel userProfileViewModel = UserProfileViewModel(authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase);
+        // Arrange
+        when(mockAuthUseCase.isLoggedIn()).thenAnswer((_) async => true);
+
+        // Act
+        final result = await mockAuthUseCase.isLoggedIn();
+
+        // Assert
+        expect(result, true);
+        verify(mockAuthUseCase.isLoggedIn()).called(1);
+      });
+
+      test('should return false when token is null', () async {
+        final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
+        // Arrange
+        when(mockAuthUseCase.isLoggedIn()).thenAnswer((_) async => false);
+
+        // Act
+        final result = await mockAuthUseCase.isLoggedIn();
+
+        // Assert
+        expect(result, false);
+        verify(mockAuthUseCase.isLoggedIn()).called(1);
+      });
+    });
+    group('logout', () {
+      test('should not call logout or deleteToken when token is null',
+          () async {
+        final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
+        when(mockAuthUseCase.logout()).thenAnswer((_) async {});
 
         await mockAuthUseCase.logout();
 
         verify(mockAuthUseCase.logout()).called(1);
       });
 
-      test('should not call logout or deleteToken when token is empty', () async {
+      test('should not call logout or deleteToken when token is empty',
+          () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         when(mockAuthUseCase.logout()).thenAnswer((_) async => "");
 
@@ -66,10 +67,8 @@ void main() {
       });
     });
 
-    group('fetchMe', ()
-    {
+    group('fetchMe', () {
       test('should return a User when repository fetchMe succeeds', () async {
-        final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
         // Arrange
         final mockUser = User(
@@ -99,7 +98,8 @@ void main() {
       test('should throw an exception when repository fetchMe fails', () async {
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
         // Arrange
-        when(mockUserUseCase.fetchMe()).thenThrow(Exception('Repository error'));
+        when(mockUserUseCase.fetchMe())
+            .thenThrow(Exception('Repository error'));
 
         // Act & Assert
         expect(() async => await mockUserUseCase.fetchMe(), throwsException);
@@ -109,7 +109,8 @@ void main() {
     });
 
     group('updateMe', () {
-      test('should call repository.updateMe with the correct parameter', () async {
+      test('should call repository.updateMe with the correct parameter',
+          () async {
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
         // Arrange
         const newName = 'Updated Name';
@@ -126,23 +127,28 @@ void main() {
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
         // Arrange
         const newName = 'Updated Name';
-        when(mockUserUseCase.updateMe(newName)).thenThrow(Exception('Update failed'));
+        when(mockUserUseCase.updateMe(newName))
+            .thenThrow(Exception('Update failed'));
 
         // Act & Assert
-        expect(() async => await mockUserUseCase.updateMe(newName), throwsException);
+        expect(() async => await mockUserUseCase.updateMe(newName),
+            throwsException);
 
         // Verify the repository method was called
         verify(mockUserUseCase.updateMe(newName)).called(1);
       });
     });
 
-
     group('deleteUser', () {
-      test('should set loading to true during the process and back to false after success', () async {
+      test(
+          'should set loading to true during the process and back to false after success',
+          () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
         final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
-            authUseCase: mockAuthUseCase, userUseCase: mockUserUseCase, user: User(email: "email"));
+            authUseCase: mockAuthUseCase,
+            userUseCase: mockUserUseCase,
+            user: User(email: "email"));
         // Arrange
         when(mockUserUseCase.deleteAccount()).thenAnswer((_) async {});
 
@@ -161,13 +167,18 @@ void main() {
         verify(mockUserUseCase.deleteAccount()).called(1);
       });
 
-      test('should set loading to true during the process and back to false after failure', () async {
+      test(
+          'should set loading to true during the process and back to false after failure',
+          () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
         final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
-            authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase, user: User(email: "email"));
+            authUseCase: mockAuthUseCase,
+            userUseCase: mockUserUseCase,
+            user: User(email: "email"));
         // Arrange
-        when(mockUserUseCase.deleteAccount()).thenThrow(Exception('Deletion failed'));
+        when(mockUserUseCase.deleteAccount())
+            .thenThrow(Exception('Deletion failed'));
 
         // Act
         bool loadingStarted = false;
@@ -193,13 +204,17 @@ void main() {
         verify(mockUserUseCase.deleteAccount()).called(1);
       });
 
-      test('should handle exceptions and print an error message on failure', () async {
+      test('should handle exceptions and print an error message on failure',
+          () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
         final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
-            authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase, user: User(email: "email"));
+            authUseCase: mockAuthUseCase,
+            userUseCase: mockUserUseCase,
+            user: User(email: "email"));
         // Arrange
-        when(mockUserUseCase.deleteAccount()).thenThrow(Exception('Deletion failed'));
+        when(mockUserUseCase.deleteAccount())
+            .thenThrow(Exception('Deletion failed'));
 
         // Act
         await userProfileViewModel.deleteUser();
@@ -217,7 +232,9 @@ void main() {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
         final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
-            authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase, user: User(email: "email"));
+            authUseCase: mockAuthUseCase,
+            userUseCase: mockUserUseCase,
+            user: User(email: "email"));
         // Act
         userProfileViewModel.setLoading(true);
 
@@ -225,11 +242,14 @@ void main() {
         expect(userProfileViewModel.isLoading, true);
       });
 
-      test('should update isLoading and notify listeners when set to false', () {
+      test('should update isLoading and notify listeners when set to false',
+          () {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
         final MockUserUseCase mockUserUseCase = MockUserUseCase();
         final UserProfileViewModel userProfileViewModel = UserProfileViewModel(
-            authUseCase: mockAuthUseCase,userUseCase: mockUserUseCase, user: User(email: "email"));
+            authUseCase: mockAuthUseCase,
+            userUseCase: mockUserUseCase,
+            user: User(email: "email"));
         // Arrange
         userProfileViewModel.setLoading(true); // Start with true
 
@@ -240,5 +260,5 @@ void main() {
         expect(userProfileViewModel.isLoading, false);
       });
     });
-    });
+  });
 }

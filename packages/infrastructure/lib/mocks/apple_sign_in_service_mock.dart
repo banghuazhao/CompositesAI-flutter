@@ -26,6 +26,7 @@ class MockAppleSignInService extends Mock implements AppleSignInService {
           email: 'mockuser@example.com',
           authorizationCode: 'mock-auth-code',
           identityToken: 'mock-identity-token',
+          state: null,
         ),
       ),
       returnValueForMissingStub: Future.value(
@@ -36,6 +37,7 @@ class MockAppleSignInService extends Mock implements AppleSignInService {
           email: 'mockuser@example.com',
           authorizationCode: 'mock-auth-code',
           identityToken: 'mock-identity-token',
+          state: null,
         ),
       ),
     );

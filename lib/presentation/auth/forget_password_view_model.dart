@@ -1,5 +1,4 @@
 import 'package:domain/auth/use_cases/auth_use_case.dart';
-import 'package:domain/auth/use_cases/auth_use_case.dart';
 import 'package:flutter/material.dart';
 
 class ForgetPasswordViewModel extends ChangeNotifier {
@@ -46,7 +45,6 @@ class ForgetPasswordViewModel extends ChangeNotifier {
     try {
       // Call the auth use case to send the confirmation code to the email
       await authUseCase.resetPassword(email, newPassword, confirmCode);
-
     } catch (error) {
       errorMessage = 'Failed to send confirmation code.';
     } finally {
@@ -58,5 +56,4 @@ class ForgetPasswordViewModel extends ChangeNotifier {
     isLoading = value;
     notifyListeners();
   }
-
 }

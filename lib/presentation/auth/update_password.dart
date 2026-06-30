@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/auth/update_password_view_model.dart';
 
 import '../../app/injection_container.dart';
-import '../settings/viewModels/user_profile_view_model.dart';
 
 class UpdatePasswordPage extends StatefulWidget {
   @override
@@ -12,9 +11,11 @@ class UpdatePasswordPage extends StatefulWidget {
 
 class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _currentPassWordController = TextEditingController();
+  final TextEditingController _currentPassWordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool isNewPasswordValid = false;
   bool isCurrentPasswordValid = false;
   String? currentPassword;
@@ -38,12 +39,12 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
         create: (_) => sl<UpdatePasswordViewModel>(),
-        child: Consumer<UpdatePasswordViewModel>(builder: (context, viewModel, _) {
+        child:
+            Consumer<UpdatePasswordViewModel>(builder: (context, viewModel, _) {
           return Scaffold(
             appBar: AppBar(title: Text('Update Password')),
             body: Padding(
@@ -111,9 +112,13 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
                       child: Padding(
                         padding: const EdgeInsets.only(left: 3.0),
                         child: Text(
-                          isNewPasswordValid ? '' : 'Password must be at least 6 characters long',
+                          isNewPasswordValid
+                              ? ''
+                              : 'Password must be at least 6 characters long',
                           style: TextStyle(
-                            color: isNewPasswordValid ? Colors.transparent : Colors.black54,
+                            color: isNewPasswordValid
+                                ? Colors.transparent
+                                : Colors.black54,
                             fontSize: 14.0,
                           ),
                         ),
@@ -124,7 +129,7 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
                     TextFormField(
                       controller: _confirmPasswordController,
                       decoration: InputDecoration(
-                        labelText: 'Confirm New Password',
+                          labelText: 'Confirm New Password',
                           hintText: "Re-enter your password",
                           hintStyle: const TextStyle(color: Colors.black54),
                           border: UnderlineInputBorder(),
@@ -141,9 +146,9 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
                                   ? Icons.visibility_off
                                   : Icons.visibility,
                             ),
-                            onPressed: viewModel.toggleConfirmPasswordVisibility,
-                          )
-                      ),
+                            onPressed:
+                                viewModel.toggleConfirmPasswordVisibility,
+                          )),
                       obscureText: viewModel.obscureTextConfirmPassword,
                       onChanged: (text) {
                         checkConfirmInput(); // Call this to update button state
@@ -162,16 +167,15 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
                     viewModel.isLoading
                         ? CircularProgressIndicator()
                         : ElevatedButton(
-                      onPressed: confirmEnable
-                          ? () async {
-                        if (_formKey.currentState!.validate()) {
-                          await _updatePassword(viewModel);
-                        }
-                      }
-                          : null, // Disable button if confirmEnable is false
-                      child: Text('Update Password'),
-                    ),
-
+                            onPressed: confirmEnable
+                                ? () async {
+                                    if (_formKey.currentState!.validate()) {
+                                      await _updatePassword(viewModel);
+                                    }
+                                  }
+                                : null, // Disable button if confirmEnable is false
+                            child: Text('Update Password'),
+                          ),
                   ],
                 ),
               ),
@@ -188,8 +192,9 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
       );
     }
 
-      // Access the view model and update the user's password
-    await viewModel.updatePassword(_currentPassWordController.text, _newPasswordController.text);
+    // Access the view model and update the user's password
+    await viewModel.updatePassword(
+        _currentPassWordController.text, _newPasswordController.text);
     if (viewModel.errorMessage.isNotEmpty) {
       // Show error message if update fails and return error string
       ScaffoldMessenger.of(context).showSnackBar(

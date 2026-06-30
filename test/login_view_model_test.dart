@@ -77,7 +77,8 @@ void main() {
         const email = 'test@example.com';
         const password = 'password123';
         final user = User(email: email);
-        when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => user);
+        when(mockAuthUseCase.login(email, password))
+            .thenAnswer((_) async => user);
 
         final future = loginViewModel.login(email, password);
 
@@ -90,7 +91,8 @@ void main() {
         const email = 'test@example.com';
         const password = 'password123';
         final user = User(email: email);
-        when(mockAuthUseCase.login(email, password)).thenAnswer((_) async => user);
+        when(mockAuthUseCase.login(email, password))
+            .thenAnswer((_) async => user);
 
         final result = await loginViewModel.login(email, password);
         expect(result, user);
@@ -100,7 +102,8 @@ void main() {
       test('should set error message on login failure', () async {
         const email = 'test@example.com';
         const password = 'password123';
-        when(mockAuthUseCase.login(email, password)).thenThrow(Exception('Login error'));
+        when(mockAuthUseCase.login(email, password))
+            .thenThrow(Exception('Login error'));
 
         final result = await loginViewModel.login(email, password);
         expect(result, null);
@@ -109,7 +112,8 @@ void main() {
     });
 
     group('validateGoogleToken', () {
-      test('should return an AuthSession when validation is successful', () async {
+      test('should return an AuthSession when validation is successful',
+          () async {
         const idToken = "1234567";
 
         when(mockAuthUseCase.validateGoogleToken(idToken))
@@ -121,10 +125,12 @@ void main() {
         verify(mockAuthUseCase.validateGoogleToken(idToken)).called(1);
       });
 
-      test('should throw an exception on error during token validation', () async {
+      test('should throw an exception on error during token validation',
+          () async {
         const idToken = "1234567";
 
-        when(mockAuthUseCase.validateGoogleToken(idToken)).thenThrow(Exception('Validation error'));
+        when(mockAuthUseCase.validateGoogleToken(idToken))
+            .thenThrow(Exception('Validation error'));
 
         expect(
           () async => await mockAuthUseCase.validateGoogleToken(idToken),
@@ -135,7 +141,8 @@ void main() {
     });
 
     group('validateAppleToken', () {
-      test('should return an AuthSession when validation is successful', () async {
+      test('should return an AuthSession when validation is successful',
+          () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
 
         const identityToken = 'validIdentityToken';
@@ -169,7 +176,8 @@ void main() {
     });
 
     group('signInWithApple', () {
-      test('should sign in with Apple and update the user state on success', () async {
+      test('should sign in with Apple and update the user state on success',
+          () async {
         // Arrange. setting up mocks and fake data
         final mockCredential = AuthorizationCredentialAppleID(
           userIdentifier: 'mock-user-id',
@@ -178,8 +186,12 @@ void main() {
           email: 'mockuser@example.com',
           authorizationCode: 'mock-auth-code',
           identityToken: 'mock-identity-token',
+          state: null,
         );
-        const scopes = [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName];
+        const scopes = [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName
+        ];
         //those are dependencies that actually doing the work.
         when(mockAppleSignInService.getAppleIDCredential(
           scopes: scopes,
@@ -219,9 +231,13 @@ void main() {
           email: 'mockuser@example.com',
           authorizationCode: 'mock-auth-code',
           identityToken: null,
+          state: null,
         );
 
-        const scopes = [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName];
+        const scopes = [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName
+        ];
         when(mockAppleSignInService.getAppleIDCredential(
           scopes: scopes,
           webAuthenticationOptions: anyNamed('webAuthenticationOptions'),
@@ -240,7 +256,10 @@ void main() {
 
       test('should set errorMessage on Apple sign-in error', () async {
         // Arrange
-        const scopes = [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName];
+        const scopes = [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName
+        ];
         when(mockAppleSignInService.getAppleIDCredential(
           scopes: scopes,
           webAuthenticationOptions: anyNamed('webAuthenticationOptions'),
@@ -257,7 +276,8 @@ void main() {
         expect(loginViewModel.isSigningIn, false);
       });
 
-      test('should handle error in authUseCase during validateAppleToken', () async {
+      test('should handle error in authUseCase during validateAppleToken',
+          () async {
         // Arrange
         final mockCredential = AuthorizationCredentialAppleID(
           userIdentifier: 'mock-user-id',
@@ -266,9 +286,13 @@ void main() {
           email: 'mockuser@example.com',
           authorizationCode: 'mock-auth-code',
           identityToken: 'mock-identity-token',
+          state: null,
         );
 
-        const scopes = [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName];
+        const scopes = [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName
+        ];
         when(mockAppleSignInService.getAppleIDCredential(
           scopes: scopes,
           webAuthenticationOptions: anyNamed('webAuthenticationOptions'),
@@ -279,8 +303,7 @@ void main() {
           'mock-identity-token',
           email: anyNamed('email'),
           displayName: anyNamed('displayName'),
-        ))
-            .thenThrow(Exception('Auth use case error'));
+        )).thenThrow(Exception('Auth use case error'));
 
         // Act
         await loginViewModel.signInWithApple();
@@ -333,7 +356,9 @@ void main() {
         verify(mockAuthUseCase.validateGoogleToken('idToken')).called(1);
       });
 
-      test('should throw an exception when ID token is missing on non-web platforms', () async {
+      test(
+          'should throw an exception when ID token is missing on non-web platforms',
+          () async {
         // Arrange
 
         when(mockGoogleSignInService.signIn(

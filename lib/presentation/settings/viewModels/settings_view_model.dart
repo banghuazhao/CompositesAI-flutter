@@ -127,11 +127,11 @@ class SettingsViewModel extends ChangeNotifier {
   Future<void> openFeedback() async {
     if (kIsWeb) {
       final url =
-      Uri.parse("https://github.com/banghuazhao/swiftcomp-flutter/issues");
+          Uri.parse("https://github.com/banghuazhao/swiftcomp-flutter/issues");
       launchUrl(url);
       return;
     }
-    
+
     final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
     String device;
     String systemVersion;
@@ -279,16 +279,13 @@ class SettingsViewModel extends ChangeNotifier {
     final accessToken =
         await authUseCase.handleAuthorizationCodeFromLinked(authorizationCode);
 
-    if (accessToken == null) {
-      throw Exception("Failed to get access token.");
-    }
-    print("accessToken: " + accessToken);
+    print("accessToken: $accessToken");
 
     // **Step 4: Fetch LinkedIn User Info**
     final LinkedinUserProfile userProfile =
         await authUseCase.fetchLinkedInUserProfile(accessToken);
 
-    print('LinkedinUserProfile: ' + userProfile.toString());
+    print('LinkedinUserProfile: $userProfile');
     final email = userProfile.email;
     final String? name = userProfile.name;
     final String? profile = userProfile.picture;
