@@ -5,6 +5,8 @@ import 'entities/chat_stream_event.dart';
 import 'entities/chat_tool.dart';
 import 'entities/chat_file.dart';
 import 'entities/feedback_response.dart';
+import 'entities/chat_folder.dart';
+import 'entities/chat_tag.dart';
 
 abstract class ChatRepository {
   /// GET /api/v1/chats/ — unpinned chats, ordered by `updated_at` (optional `?page=`).
@@ -17,6 +19,26 @@ abstract class ChatRepository {
   /// GET /api/v1/chats/pinned — JSON array of ChatResponse (same shape as elsewhere).
   /// HTTP 200 with body `[]` when there are no pinned chats (not null, not 404).
   Future<List<Chat>> fetchPinnedChats();
+
+  Future<List<Chat>> searchChats(String text, {int page = 1});
+
+  Future<List<Chat>> fetchArchivedChats();
+
+  Future<List<Chat>> fetchChatsByTag(String tagName);
+
+  Future<List<Chat>> fetchChatsByFolder(String folderId);
+
+  Future<List<ChatTag>> fetchAllTags();
+
+  Future<List<ChatTag>> fetchChatTags(String chatId);
+
+  Future<List<ChatTag>> addChatTag(String chatId, String tagName);
+
+  Future<List<ChatTag>> removeChatTag(String chatId, String tagName);
+
+  Future<List<ChatFolder>> fetchFolders();
+
+  Future<ChatFolder> createFolder(String name);
 
   Future<List<Message>> fetchMessages(Chat chat);
 
@@ -39,6 +61,10 @@ abstract class ChatRepository {
   /// POST /api/v1/chats/{chatId}/pin — no body; toggles pinned. Response may be
   /// ChatResponse JSON, 204, or empty body; client should refresh pinned list.
   Future<Chat> togglePin(Chat chat);
+
+  Future<Chat> updateChatFolder(Chat chat, String? folderId);
+
+  Future<Chat> archiveChat(Chat chat);
 
   Stream<ChatStreamEvent> sendMessages(
     List<Message> messages,

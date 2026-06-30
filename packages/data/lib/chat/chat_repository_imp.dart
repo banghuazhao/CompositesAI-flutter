@@ -8,7 +8,9 @@ import 'package:domain/chat/chat_repository.dart';
 import 'package:domain/chat/entities/chat_model.dart';
 import 'package:domain/chat/entities/chat_stream_event.dart';
 import 'package:domain/chat/entities/feedback_response.dart';
+import 'package:domain/chat/entities/chat_folder.dart';
 import 'package:domain/chat/entities/message.dart';
+import 'package:domain/chat/entities/chat_tag.dart';
 import 'package:domain/chat/entities/chat_tool.dart';
 import 'package:domain/chat/entities/chat_file.dart';
 import 'package:flutter/foundation.dart';
@@ -27,6 +29,73 @@ String _unpinnedChatsListUri(String baseURL, {int? page}) {
   final root = Uri.parse('$base/chats/');
   if (page == null) return root.toString();
   return root.replace(queryParameters: {'page': '$page'}).toString();
+}
+
+List<Chat> _decodeChatListResponse(http.Response response, String label) {
+  if (response.statusCode == 200) {
+    final decoded = utf8.decode(response.bodyBytes);
+    final data = jsonDecode(decoded);
+    if (data is! List) {
+      throw FormatException('$label: expected JSON array');
+    }
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(Chat.fromJson)
+        .where((chat) => chat.id.isNotEmpty)
+        .toList();
+  }
+  throw mapServerErrorToDomainException(response);
+}
+
+List<ChatTag> _decodeTagListResponse(http.Response response, String label) {
+  if (response.statusCode == 200) {
+    return _decodeTagList(
+      response.statusCode,
+      utf8.decode(response.bodyBytes),
+      response.headers,
+      label,
+    );
+  }
+  throw mapServerErrorToDomainException(response);
+}
+
+List<ChatTag> _decodeTagList(
+  int statusCode,
+  String body,
+  Map<String, String> headers,
+  String label,
+) {
+  if (statusCode == 200) {
+    final data = jsonDecode(body);
+    if (data is! List) {
+      throw FormatException('$label: expected JSON array');
+    }
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(ChatTag.fromJson)
+        .where((tag) => tag.name.isNotEmpty)
+        .toList();
+  }
+  throw Exception('$label failed ($statusCode): $body');
+}
+
+List<ChatFolder> _decodeFolderListResponse(
+  http.Response response,
+  String label,
+) {
+  if (response.statusCode == 200) {
+    final decoded = utf8.decode(response.bodyBytes);
+    final data = jsonDecode(decoded);
+    if (data is! List) {
+      throw FormatException('$label: expected JSON array');
+    }
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(ChatFolder.fromJson)
+        .where((folder) => folder.id.isNotEmpty)
+        .toList();
+  }
+  throw mapServerErrorToDomainException(response);
 }
 
 class ChatRepositoryImpl implements ChatRepository {
@@ -121,6 +190,140 @@ class ChatRepositoryImpl implements ChatRepository {
     } else {
       throw mapServerErrorToDomainException(response);
     }
+  }
+
+  @override
+  Future<List<Chat>> searchChats(String text, {int page = 1}) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/search').replace(
+      queryParameters: {
+        'text': text,
+        'page': '$page',
+      },
+    );
+    final response = await authClient.get(
+      url,
+      headers: {'Accept': 'application/json'},
+    );
+    return _decodeChatListResponse(response, 'GET /chats/search');
+  }
+
+  @override
+  Future<List<Chat>> fetchArchivedChats() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/archived');
+    final response = await authClient.get(
+      url,
+      headers: {'Accept': 'application/json'},
+    );
+    return _decodeChatListResponse(response, 'GET /chats/archived');
+  }
+
+  @override
+  Future<List<Chat>> fetchChatsByTag(String tagName) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/tags');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': tagName}),
+    );
+    return _decodeChatListResponse(response, 'POST /chats/tags');
+  }
+
+  @override
+  Future<List<Chat>> fetchChatsByFolder(String folderId) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/folder/$folderId');
+    final response = await authClient.get(
+      url,
+      headers: {'Accept': 'application/json'},
+    );
+    return _decodeChatListResponse(response, 'GET /chats/folder/:id');
+  }
+
+  @override
+  Future<List<ChatTag>> fetchAllTags() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/all/tags');
+    final response = await authClient.get(
+      url,
+      headers: {'Accept': 'application/json'},
+    );
+    return _decodeTagListResponse(response, 'GET /chats/all/tags');
+  }
+
+  @override
+  Future<List<ChatTag>> fetchChatTags(String chatId) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/$chatId/tags');
+    final response = await authClient.get(
+      url,
+      headers: {'Accept': 'application/json'},
+    );
+    return _decodeTagListResponse(response, 'GET /chats/:id/tags');
+  }
+
+  @override
+  Future<List<ChatTag>> addChatTag(String chatId, String tagName) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/$chatId/tags');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': tagName}),
+    );
+    return _decodeTagListResponse(response, 'POST /chats/:id/tags');
+  }
+
+  @override
+  Future<List<ChatTag>> removeChatTag(String chatId, String tagName) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/$chatId/tags');
+    final request = http.Request('DELETE', url)
+      ..headers.addAll({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      })
+      ..body = jsonEncode({'name': tagName});
+    final response = await authClient.send(request);
+    final body = await response.stream.bytesToString();
+    return _decodeTagList(
+      response.statusCode,
+      body,
+      response.headers,
+      'DELETE /chats/:id/tags',
+    );
+  }
+
+  @override
+  Future<List<ChatFolder>> fetchFolders() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/folders/');
+    final response = await authClient.get(
+      url,
+      headers: {'Accept': 'application/json'},
+    );
+    return _decodeFolderListResponse(response, 'GET /folders/');
+  }
+
+  @override
+  Future<ChatFolder> createFolder(String name) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/folders/');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name}),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      if (data is Map<String, dynamic>) {
+        return ChatFolder.fromJson(data);
+      }
+      throw FormatException('POST /folders/: expected JSON object');
+    }
+    throw mapServerErrorToDomainException(response);
   }
 
   @override
@@ -327,6 +530,55 @@ class ChatRepositoryImpl implements ChatRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/chats/${chat.id}/pin');
     // Toggle: no body; server updates pinned state.
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
+        return chat;
+      }
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is Map<String, dynamic>) {
+        return Chat.fromJson(data);
+      }
+      return chat;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<Chat> updateChatFolder(Chat chat, String? folderId) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/${chat.id}/folder');
+    final response = await authClient.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'folder_id': folderId}),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
+        chat.folderId = folderId;
+        return chat;
+      }
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is Map<String, dynamic>) {
+        return Chat.fromJson(data);
+      }
+      chat.folderId = folderId;
+      return chat;
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<Chat> archiveChat(Chat chat) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/chats/${chat.id}/archive');
     final response = await authClient.post(
       url,
       headers: {'Content-Type': 'application/json'},

@@ -35,6 +35,7 @@ class ChatViewModel extends ChangeNotifier {
   bool isSendingMessage = false;
   bool isLoadingMessages = false;
   bool isLoadingChats = false;
+  bool isLoadingChatFilters = false;
   bool isLoadingTools = false;
   bool isUploadingFile = false;
 
@@ -50,6 +51,10 @@ class ChatViewModel extends ChangeNotifier {
 
   List<Chat> chats = [];
   List<Chat> pinnedChats = [];
+  List<Chat> filteredChats = [];
+  List<Chat> archivedChats = [];
+  List<ChatFolder> chatFolders = [];
+  List<ChatTag> chatTags = [];
   List<ChatTool> tools = [];
   List<ChatModel> models = [];
   List<ChatFile> pendingFiles = [];
@@ -57,6 +62,10 @@ class ChatViewModel extends ChangeNotifier {
   // Kept alive after sending so message bubbles can show thumbnails.
   Map<String, Uint8List> pendingImageBytes = {};
   ChatModel? selectedModel;
+  String chatSearchQuery = '';
+  ChatTag? selectedChatTag;
+  ChatFolder? selectedChatFolder;
+  bool showingArchivedChats = false;
   Set<String> selectedToolIds = <String>{};
   bool _hasUserConfiguredTools = false;
   Chat? selectedChat;
@@ -143,6 +152,7 @@ class ChatViewModel extends ChangeNotifier {
   /// Pull-to-refresh / init: GET /chats/?page=1 (replace list) + GET /chats/pinned.
   Future<void> fetchChats() async {
     await _loadChatLists(showLoading: true);
+    await refreshChatOrganization();
   }
 
   Future<void> fetchTools() async {
@@ -314,6 +324,7 @@ class ChatViewModel extends ChangeNotifier {
   /// Next page for GET /chats/?page=n; append to [chats]. Stops when empty or short page (see [chatListPageSize]).
   Future<void> loadMoreChats() async {
     if (!isLoggedIn) return;
+    if (hasActiveChatFilter) return;
     if (allChatsLoaded || isLoadingMoreChats || isLoadingChats) return;
 
     isLoadingMoreChats = true;
@@ -349,6 +360,129 @@ class ChatViewModel extends ChangeNotifier {
       isLoadingMoreChats = false;
       notifyListeners();
     }
+  }
+
+  bool get hasActiveChatFilter =>
+      chatSearchQuery.trim().isNotEmpty ||
+      selectedChatTag != null ||
+      selectedChatFolder != null ||
+      showingArchivedChats;
+
+  String get activeChatFilterLabel {
+    if (chatSearchQuery.trim().isNotEmpty) return 'Search results';
+    if (selectedChatTag != null) return '#${selectedChatTag!.name}';
+    if (selectedChatFolder != null) return selectedChatFolder!.name;
+    if (showingArchivedChats) return 'Archived';
+    return 'Previous chats';
+  }
+
+  Future<void> refreshChatOrganization() async {
+    if (!isLoggedIn) return;
+    try {
+      final tagsFuture = _chatUseCase.fetchAllTags();
+      final foldersFuture = _chatUseCase.fetchFolders();
+      chatTags = await tagsFuture;
+      chatFolders = await foldersFuture;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('refreshChatOrganization error: $e');
+      }
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> searchChatHistory(String query) async {
+    final trimmed = query.trim();
+    chatSearchQuery = trimmed;
+    selectedChatTag = null;
+    selectedChatFolder = null;
+    showingArchivedChats = false;
+    if (trimmed.isEmpty) {
+      filteredChats = [];
+      notifyListeners();
+      return;
+    }
+
+    isLoadingChatFilters = true;
+    notifyListeners();
+    try {
+      filteredChats = await _chatUseCase.searchChats(trimmed);
+    } catch (e) {
+      if (kDebugMode) debugPrint('searchChatHistory error: $e');
+      errorMessage = 'Failed to search chats.';
+      filteredChats = [];
+    } finally {
+      isLoadingChatFilters = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> filterChatsByTag(ChatTag tag) async {
+    chatSearchQuery = '';
+    selectedChatTag = tag;
+    selectedChatFolder = null;
+    showingArchivedChats = false;
+    isLoadingChatFilters = true;
+    notifyListeners();
+    try {
+      filteredChats = await _chatUseCase.fetchChatsByTag(tag.name);
+    } catch (e) {
+      if (kDebugMode) debugPrint('filterChatsByTag error: $e');
+      errorMessage = 'Failed to load tagged chats.';
+      filteredChats = [];
+    } finally {
+      isLoadingChatFilters = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> filterChatsByFolder(ChatFolder folder) async {
+    chatSearchQuery = '';
+    selectedChatTag = null;
+    selectedChatFolder = folder;
+    showingArchivedChats = false;
+    isLoadingChatFilters = true;
+    notifyListeners();
+    try {
+      filteredChats = await _chatUseCase.fetchChatsByFolder(folder.id);
+    } catch (e) {
+      if (kDebugMode) debugPrint('filterChatsByFolder error: $e');
+      errorMessage = 'Failed to load folder chats.';
+      filteredChats = [];
+    } finally {
+      isLoadingChatFilters = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> showArchivedChats() async {
+    chatSearchQuery = '';
+    selectedChatTag = null;
+    selectedChatFolder = null;
+    showingArchivedChats = true;
+    isLoadingChatFilters = true;
+    notifyListeners();
+    try {
+      archivedChats = await _chatUseCase.fetchArchivedChats();
+      filteredChats = archivedChats;
+    } catch (e) {
+      if (kDebugMode) debugPrint('showArchivedChats error: $e');
+      errorMessage = 'Failed to load archived chats.';
+      filteredChats = [];
+    } finally {
+      isLoadingChatFilters = false;
+      notifyListeners();
+    }
+  }
+
+  void clearChatFilters() {
+    chatSearchQuery = '';
+    selectedChatTag = null;
+    selectedChatFolder = null;
+    showingArchivedChats = false;
+    filteredChats = [];
+    notifyListeners();
   }
 
   Future<void> _loadChatLists({required bool showLoading}) async {
@@ -412,6 +546,7 @@ class ChatViewModel extends ChangeNotifier {
       await _chatUseCase.deleteChat(chat);
       chats.removeWhere((c) => c.id == chat.id);
       pinnedChats.removeWhere((c) => c.id == chat.id);
+      filteredChats.removeWhere((c) => c.id == chat.id);
       notifyListeners();
     } catch (e) {
       debugPrint('Delete error: $e');
@@ -423,15 +558,7 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> updateChatTitle(Chat chat, String newTitle) async {
     try {
       final updated = await _chatUseCase.updateChatTitle(chat, newTitle);
-      final index = chats.indexWhere((c) => c.id == chat.id);
-      if (index >= 0) {
-        chats[index].title = updated.title;
-      }
-      final pinIndex = pinnedChats.indexWhere((c) => c.id == chat.id);
-      if (pinIndex >= 0) {
-        pinnedChats[pinIndex].title = updated.title;
-      }
-      notifyListeners();
+      _replaceChatInLists(updated);
     } catch (e) {
       if (kDebugMode) debugPrint('Update error: $e');
       errorMessage = 'Failed to rename chat. Please try again.';
@@ -450,6 +577,89 @@ class ChatViewModel extends ChangeNotifier {
       errorMessage = 'Failed to operate. Please try again.';
       notifyListeners();
     }
+  }
+
+  Future<void> archiveChat(Chat chat) async {
+    try {
+      await _chatUseCase.archiveChat(chat);
+      chats.removeWhere((c) => c.id == chat.id);
+      pinnedChats.removeWhere((c) => c.id == chat.id);
+      filteredChats.removeWhere((c) => c.id == chat.id);
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) debugPrint('Archive error: $e');
+      errorMessage = 'Failed to archive chat. Please try again.';
+      notifyListeners();
+    }
+  }
+
+  Future<void> moveChatToFolder(Chat chat, String? folderId) async {
+    try {
+      final updated = await _chatUseCase.updateChatFolder(chat, folderId);
+      _replaceChatInLists(updated);
+      await refreshChatOrganization();
+    } catch (e) {
+      if (kDebugMode) debugPrint('Move chat error: $e');
+      errorMessage = 'Failed to move chat. Please try again.';
+      notifyListeners();
+    }
+  }
+
+  Future<void> createFolderAndMoveChat(Chat chat, String folderName) async {
+    final trimmed = folderName.trim();
+    if (trimmed.isEmpty) return;
+    try {
+      final folder = await _chatUseCase.createFolder(trimmed);
+      await moveChatToFolder(chat, folder.id);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Create folder error: $e');
+      errorMessage = 'Failed to create folder. Please try again.';
+      notifyListeners();
+    }
+  }
+
+  Future<void> addTagToChat(Chat chat, String tagName) async {
+    final trimmed = tagName.trim();
+    if (trimmed.isEmpty) return;
+    try {
+      await _chatUseCase.addChatTag(chat.id, trimmed);
+      await refreshChatOrganization();
+    } catch (e) {
+      if (kDebugMode) debugPrint('Add tag error: $e');
+      errorMessage = 'Failed to add tag. Please try again.';
+      notifyListeners();
+    }
+  }
+
+  Future<List<ChatTag>> fetchTagsForChat(Chat chat) {
+    return _chatUseCase.fetchChatTags(chat.id);
+  }
+
+  Future<void> removeTagFromChat(Chat chat, ChatTag tag) async {
+    try {
+      await _chatUseCase.removeChatTag(chat.id, tag.name);
+      await refreshChatOrganization();
+      if (selectedChatTag?.id == tag.id) {
+        clearChatFilters();
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('Remove tag error: $e');
+      errorMessage = 'Failed to remove tag. Please try again.';
+      notifyListeners();
+    }
+  }
+
+  void _replaceChatInLists(Chat updated) {
+    void replaceIn(List<Chat> list) {
+      final index = list.indexWhere((chat) => chat.id == updated.id);
+      if (index >= 0) list[index] = updated;
+    }
+
+    replaceIn(chats);
+    replaceIn(pinnedChats);
+    replaceIn(filteredChats);
+    if (selectedChat?.id == updated.id) selectedChat = updated;
+    notifyListeners();
   }
 
   /// Calls share API, copies link to clipboard. Returns true if success. No need to store the link.
@@ -485,6 +695,10 @@ class ChatViewModel extends ChangeNotifier {
     messages = [];
     chats = [];
     pinnedChats = [];
+    filteredChats = [];
+    archivedChats = [];
+    chatFolders = [];
+    chatTags = [];
     tools = [];
     models = [];
     selectedModel = null;
@@ -494,10 +708,15 @@ class ChatViewModel extends ChangeNotifier {
     _nextChatListPage = 2;
     isLoadingMessages = false;
     isLoadingChats = false;
+    isLoadingChatFilters = false;
     isLoadingMoreChats = false;
     isSendingMessage = false;
     errorMessage = null;
     copyingMessageId = null;
+    chatSearchQuery = '';
+    selectedChatTag = null;
+    selectedChatFolder = null;
+    showingArchivedChats = false;
     _submittingFeedbackMessageIds.clear();
     isSubmittingFeedback = false;
 

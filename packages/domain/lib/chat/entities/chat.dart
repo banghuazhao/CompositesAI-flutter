@@ -3,6 +3,7 @@ class Chat {
   String title;
   int updatedAt;
   int createdAt;
+  String? folderId;
 
   /// Pinned state is not stored here: use [GET /chats/{id}/pinned], the Pinned vs
   /// Previous list partition, or optimistic UI after POST …/pin.
@@ -11,18 +12,24 @@ class Chat {
     required this.title,
     this.updatedAt = 0,
     this.createdAt = 0,
+    this.folderId,
   });
 
   /// GET /chats, nested `chat`, etc. Ignores extra fields (e.g. `pinned` on ChatResponse).
   factory Chat.fromJson(Map<String, dynamic> json) {
     final bool hasTopLevel = json['id'] != null || json['title'] != null;
-    final map = hasTopLevel ? json : (json['chat'] is Map<String, dynamic> ? json['chat'] as Map<String, dynamic> : json);
+    final map = hasTopLevel
+        ? json
+        : (json['chat'] is Map<String, dynamic>
+            ? json['chat'] as Map<String, dynamic>
+            : json);
 
     return Chat(
       id: map['id']?.toString() ?? '',
       title: map['title']?.toString() ?? '',
       updatedAt: map['updated_at'] as int? ?? 0,
       createdAt: map['created_at'] as int? ?? 0,
+      folderId: map['folder_id']?.toString(),
     );
   }
 
@@ -32,6 +39,7 @@ class Chat {
       'title': title,
       'updatedAt': updatedAt,
       'createdAt': createdAt,
+      'folderId': folderId,
     };
   }
 }

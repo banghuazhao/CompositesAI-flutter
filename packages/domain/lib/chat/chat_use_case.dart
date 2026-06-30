@@ -4,6 +4,8 @@ import 'entities/chat_model.dart';
 import 'entities/chat_stream_event.dart';
 import 'entities/chat_tool.dart';
 import 'entities/chat_file.dart';
+import 'entities/chat_folder.dart';
+import 'entities/chat_tag.dart';
 import 'chat_repository.dart';
 
 abstract class ChatUseCase {
@@ -14,6 +16,26 @@ abstract class ChatUseCase {
   Future<bool> fetchChatPinned(String chatId);
 
   Future<List<Chat>> fetchPinnedChats();
+
+  Future<List<Chat>> searchChats(String text, {int page = 1});
+
+  Future<List<Chat>> fetchArchivedChats();
+
+  Future<List<Chat>> fetchChatsByTag(String tagName);
+
+  Future<List<Chat>> fetchChatsByFolder(String folderId);
+
+  Future<List<ChatTag>> fetchAllTags();
+
+  Future<List<ChatTag>> fetchChatTags(String chatId);
+
+  Future<List<ChatTag>> addChatTag(String chatId, String tagName);
+
+  Future<List<ChatTag>> removeChatTag(String chatId, String tagName);
+
+  Future<List<ChatFolder>> fetchFolders();
+
+  Future<ChatFolder> createFolder(String name);
 
   Future<List<Message>> fetchMessages(Chat chat);
 
@@ -35,6 +57,10 @@ abstract class ChatUseCase {
   Future<Chat> updateChatTitle(Chat chat, String newTitle);
 
   Future<Chat> togglePin(Chat chat);
+
+  Future<Chat> updateChatFolder(Chat chat, String? folderId);
+
+  Future<Chat> archiveChat(Chat chat);
 
   Stream<ChatStreamEvent> sendMessages(
     List<Message> messages,
@@ -87,6 +113,56 @@ class ChatUseCaseImpl implements ChatUseCase {
   }
 
   @override
+  Future<List<Chat>> searchChats(String text, {int page = 1}) {
+    return repository.searchChats(text, page: page);
+  }
+
+  @override
+  Future<List<Chat>> fetchArchivedChats() {
+    return repository.fetchArchivedChats();
+  }
+
+  @override
+  Future<List<Chat>> fetchChatsByTag(String tagName) {
+    return repository.fetchChatsByTag(tagName);
+  }
+
+  @override
+  Future<List<Chat>> fetchChatsByFolder(String folderId) {
+    return repository.fetchChatsByFolder(folderId);
+  }
+
+  @override
+  Future<List<ChatTag>> fetchAllTags() {
+    return repository.fetchAllTags();
+  }
+
+  @override
+  Future<List<ChatTag>> fetchChatTags(String chatId) {
+    return repository.fetchChatTags(chatId);
+  }
+
+  @override
+  Future<List<ChatTag>> addChatTag(String chatId, String tagName) {
+    return repository.addChatTag(chatId, tagName);
+  }
+
+  @override
+  Future<List<ChatTag>> removeChatTag(String chatId, String tagName) {
+    return repository.removeChatTag(chatId, tagName);
+  }
+
+  @override
+  Future<List<ChatFolder>> fetchFolders() {
+    return repository.fetchFolders();
+  }
+
+  @override
+  Future<ChatFolder> createFolder(String name) {
+    return repository.createFolder(name);
+  }
+
+  @override
   Future<List<Message>> fetchMessages(Chat chat) async {
     return repository.fetchMessages(chat);
   }
@@ -134,6 +210,16 @@ class ChatUseCaseImpl implements ChatUseCase {
   @override
   Future<Chat> togglePin(Chat chat) async {
     return repository.togglePin(chat);
+  }
+
+  @override
+  Future<Chat> updateChatFolder(Chat chat, String? folderId) {
+    return repository.updateChatFolder(chat, folderId);
+  }
+
+  @override
+  Future<Chat> archiveChat(Chat chat) {
+    return repository.archiveChat(chat);
   }
 
   @override
