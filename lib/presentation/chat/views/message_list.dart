@@ -133,7 +133,30 @@ class _MessageListState extends State<MessageList> {
               children: files
                   .map((file) => Chip(
                         avatar: Icon(_attachedFileIcon(file), size: 16),
-                        label: Text(file.name, overflow: TextOverflow.ellipsis),
+                        label: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 220),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                file.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (_attachedFileDetail(file).isNotEmpty)
+                                Text(
+                                  _attachedFileDetail(file),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                         visualDensity: VisualDensity.compact,
                       ))
                   .toList(),
@@ -147,6 +170,21 @@ class _MessageListState extends State<MessageList> {
     if (file.isKnowledgeCollection) return Icons.library_books_outlined;
     if (file.isKnowledgeFile) return Icons.description_outlined;
     return Icons.insert_drive_file_outlined;
+  }
+
+  String _attachedFileDetail(ChatFile file) {
+    if (file.isKnowledgeCollection) return 'Knowledge collection';
+    if (file.isKnowledgeFile) return 'Knowledge file';
+    if (file.size > 0) return _formatFileSize(file.size);
+    return '';
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    final kb = bytes / 1024;
+    if (kb < 1024) return '${kb.toStringAsFixed(kb >= 100 ? 0 : 1)} KB';
+    final mb = kb / 1024;
+    return '${mb.toStringAsFixed(mb >= 100 ? 0 : 1)} MB';
   }
 
   Widget _buildMessageImageThumb(ChatViewModel viewModel, ChatFile file) {

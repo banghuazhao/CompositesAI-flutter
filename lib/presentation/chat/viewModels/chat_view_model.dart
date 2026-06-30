@@ -19,6 +19,7 @@ import '../../../util/feedback_id_cache.dart';
 class ChatViewModel extends ChangeNotifier {
   /// Matches backend: skip = (page - 1) * 60, limit 60 when page is set.
   static const int chatListPageSize = 60;
+  static const int maxPendingAttachments = 10;
 
   final ChatUseCase _chatUseCase;
   final AuthUseCase _authUseCase;
@@ -60,6 +61,7 @@ class ChatViewModel extends ChangeNotifier {
   List<ChatModel> models = [];
   List<ChatKnowledge> knowledgeBases = [];
   List<ChatFile> pendingFiles = [];
+  List<String> uploadingFileNames = [];
   // Local bytes cache for image previews; keyed by ChatFile.id.
   // Kept alive after sending so message bubbles can show thumbnails.
   Map<String, Uint8List> pendingImageBytes = {};
@@ -268,21 +270,43 @@ class ChatViewModel extends ChangeNotifier {
     try {
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
-        withData: true,
+        withData: kIsWeb,
       );
       if (result == null || result.files.isEmpty) return;
 
       isUploadingFile = true;
       notifyListeners();
 
+      var skipped = 0;
       for (final file in result.files) {
-        final uploaded = await _chatUseCase.uploadChatFile(
-          name: file.name,
-          size: file.size,
-          path: file.path,
-          bytes: file.bytes,
-        );
-        pendingFiles.add(uploaded);
+        if (pendingFiles.length >= maxPendingAttachments) {
+          skipped++;
+          break;
+        }
+        if (file.size <= 0) {
+          skipped++;
+          continue;
+        }
+
+        uploadingFileNames.add(file.name);
+        notifyListeners();
+        try {
+          final uploaded = await _chatUseCase.uploadChatFile(
+            name: file.name,
+            size: file.size,
+            path: file.path,
+            bytes: file.bytes,
+          );
+          _addPendingAttachment(uploaded);
+        } finally {
+          uploadingFileNames.remove(file.name);
+          notifyListeners();
+        }
+      }
+      if (skipped > 0) {
+        errorMessage = pendingFiles.length >= maxPendingAttachments
+            ? 'Attachment limit reached ($maxPendingAttachments).'
+            : 'Some empty files were skipped.';
       }
     } catch (e) {
       if (kDebugMode) {
@@ -311,15 +335,36 @@ class ChatViewModel extends ChangeNotifier {
       isUploadingFile = true;
       notifyListeners();
 
+      var skipped = 0;
       for (final image in images) {
+        if (pendingFiles.length >= maxPendingAttachments) {
+          skipped++;
+          break;
+        }
         final bytes = await image.readAsBytes();
-        final uploaded = await _chatUseCase.uploadChatFile(
-          name: image.name,
-          size: bytes.length,
-          bytes: bytes,
-        );
-        pendingFiles.add(uploaded);
-        pendingImageBytes[uploaded.id] = bytes;
+        if (bytes.isEmpty) {
+          skipped++;
+          continue;
+        }
+        uploadingFileNames.add(image.name);
+        notifyListeners();
+        try {
+          final uploaded = await _chatUseCase.uploadChatFile(
+            name: image.name,
+            size: bytes.length,
+            bytes: bytes,
+          );
+          _addPendingAttachment(uploaded);
+          pendingImageBytes[uploaded.id] = bytes;
+        } finally {
+          uploadingFileNames.remove(image.name);
+          notifyListeners();
+        }
+      }
+      if (skipped > 0) {
+        errorMessage = pendingFiles.length >= maxPendingAttachments
+            ? 'Attachment limit reached ($maxPendingAttachments).'
+            : 'Some empty images were skipped.';
       }
     } catch (e) {
       debugPrint('pickAndUploadImages error: $e');
@@ -328,6 +373,30 @@ class ChatViewModel extends ChangeNotifier {
       isUploadingFile = false;
       notifyListeners();
     }
+  }
+
+  void _addPendingAttachment(ChatFile attachment) {
+    final key = _attachmentKey(attachment);
+    final existingIndex =
+        pendingFiles.indexWhere((file) => _attachmentKey(file) == key);
+    if (existingIndex >= 0) {
+      pendingImageBytes.remove(pendingFiles[existingIndex].id);
+      pendingFiles[existingIndex] = attachment;
+      return;
+    }
+    pendingFiles.add(attachment);
+  }
+
+  String _attachmentKey(ChatFile file) {
+    if (file.isKnowledgeCollection) return 'collection:${file.id}';
+    if (file.isKnowledgeFile) return 'knowledge-file:${file.id}';
+    return 'upload:${file.name}:${file.size}';
+  }
+
+  void clearPendingFiles() {
+    pendingFiles = [];
+    pendingImageBytes.clear();
+    notifyListeners();
   }
 
   void removePendingFile(ChatFile file) {
@@ -349,12 +418,19 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   void _togglePendingAttachment(ChatFile attachment) {
-    final index = pendingFiles.indexWhere((file) => file.id == attachment.id);
+    final key = _attachmentKey(attachment);
+    final index =
+        pendingFiles.indexWhere((file) => _attachmentKey(file) == key);
     if (index >= 0) {
       final removed = pendingFiles.removeAt(index);
       pendingImageBytes.remove(removed.id);
     } else {
-      pendingFiles.add(attachment);
+      if (pendingFiles.length >= maxPendingAttachments) {
+        errorMessage = 'Attachment limit reached ($maxPendingAttachments).';
+        notifyListeners();
+        return;
+      }
+      _addPendingAttachment(attachment);
     }
     notifyListeners();
   }
@@ -746,6 +822,9 @@ class ChatViewModel extends ChangeNotifier {
     models = [];
     knowledgeBases = [];
     selectedModel = null;
+    pendingFiles = [];
+    uploadingFileNames = [];
+    pendingImageBytes.clear();
     selectedToolIds = <String>{};
     _hasUserConfiguredTools = false;
     allChatsLoaded = true;

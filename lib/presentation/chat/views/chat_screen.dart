@@ -1148,11 +1148,16 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildPendingFiles() {
-    if (viewModel.pendingFiles.isEmpty) return const SizedBox.shrink();
+    if (viewModel.pendingFiles.isEmpty &&
+        viewModel.uploadingFileNames.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     final images = viewModel.pendingFiles.where(_isImageFile).toList();
     final files =
         viewModel.pendingFiles.where((f) => !_isImageFile(f)).toList();
+    final attachmentCount =
+        viewModel.pendingFiles.length + viewModel.uploadingFileNames.length;
 
     return Container(
       width: context.contentWidth,
@@ -1160,6 +1165,41 @@ class _ChatScreenState extends State<ChatScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.attach_file_rounded,
+                  size: 16,
+                  color: Colors.grey.shade700,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '$attachmentCount attachment${attachmentCount == 1 ? '' : 's'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+                if (!viewModel.isSendingMessage &&
+                    viewModel.pendingFiles.isNotEmpty)
+                  TextButton(
+                    onPressed: viewModel.clearPendingFiles,
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: const Text('Clear'),
+                  ),
+              ],
+            ),
+          ),
           if (images.isNotEmpty)
             SizedBox(
               height: 90,
@@ -1171,23 +1211,80 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ),
           if (images.isNotEmpty && files.isNotEmpty) const SizedBox(height: 6),
-          if (files.isNotEmpty)
+          if (files.isNotEmpty || viewModel.uploadingFileNames.isNotEmpty)
             Wrap(
               spacing: 8,
               runSpacing: 6,
-              children: files
-                  .map((file) => InputChip(
-                        avatar: Icon(_pendingFileIcon(file), size: 18),
-                        label: Text(file.name, overflow: TextOverflow.ellipsis),
-                        onDeleted: viewModel.isSendingMessage
-                            ? null
-                            : () => viewModel.removePendingFile(file),
-                      ))
-                  .toList(),
+              children: [
+                ...viewModel.uploadingFileNames
+                    .map(_buildUploadingAttachmentChip),
+                ...files.map(_buildPendingFileChip),
+              ],
             ),
         ],
       ),
     );
+  }
+
+  Widget _buildUploadingAttachmentChip(String name) {
+    return Chip(
+      avatar: const SizedBox.square(
+        dimension: 16,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+      label: Text(
+        name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Widget _buildPendingFileChip(ChatFile file) {
+    final detail = _pendingFileDetail(file);
+    return InputChip(
+      avatar: Icon(_pendingFileIcon(file), size: 18),
+      label: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              file.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (detail.isNotEmpty)
+              Text(
+                detail,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
+          ],
+        ),
+      ),
+      onDeleted: viewModel.isSendingMessage
+          ? null
+          : () => viewModel.removePendingFile(file),
+    );
+  }
+
+  String _pendingFileDetail(ChatFile file) {
+    if (file.isKnowledgeCollection) return 'Knowledge collection';
+    if (file.isKnowledgeFile) return 'Knowledge file';
+    if (file.size > 0) return _formatFileSize(file.size);
+    return '';
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    final kb = bytes / 1024;
+    if (kb < 1024) return '${kb.toStringAsFixed(kb >= 100 ? 0 : 1)} KB';
+    final mb = kb / 1024;
+    return '${mb.toStringAsFixed(mb >= 100 ? 0 : 1)} MB';
   }
 
   IconData _pendingFileIcon(ChatFile file) {
