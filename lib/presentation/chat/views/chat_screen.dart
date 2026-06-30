@@ -499,12 +499,22 @@ class _ChatScreenState extends State<ChatScreen>
                 Row(
                   children: [
                     _buildAttachButton(),
-                    if (viewModel.shouldShowModelSelector) ...[
+                    if (viewModel.isAdmin) ...[
                       const SizedBox(width: 8),
                       Expanded(
-                        child: viewModel.canSelectModels
-                            ? _buildModelPickerButton()
-                            : _buildModelLoadingChip(),
+                        child: Row(
+                          children: [
+                            _buildAdminIndicator(),
+                            if (viewModel.shouldShowModelSelector) ...[
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: viewModel.canSelectModels
+                                    ? _buildModelPickerButton()
+                                    : _buildModelLoadingChip(),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ] else
                       const Spacer(),
@@ -565,6 +575,38 @@ class _ChatScreenState extends State<ChatScreen>
         !viewModel.isUploadingFile &&
         (textController.text.trim().isNotEmpty ||
             viewModel.pendingFiles.isNotEmpty);
+  }
+
+  Widget _buildAdminIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E8),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFD7B5)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.admin_panel_settings_rounded,
+            size: 16,
+            color: Color(0xFFC65F1A),
+          ),
+          SizedBox(width: 4),
+          Text(
+            'Admin',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFC65F1A),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildModelPickerButton() {

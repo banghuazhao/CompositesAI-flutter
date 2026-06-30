@@ -202,6 +202,8 @@ class ChatViewModel extends ChangeNotifier {
   bool get shouldShowModelSelector =>
       user?.isAdmin == true && (isLoadingTools || models.isNotEmpty);
 
+  bool get isAdmin => user?.isAdmin == true;
+
   bool get canSelectModels => user?.isAdmin == true && models.isNotEmpty;
 
   void selectModel(ChatModel model) {
