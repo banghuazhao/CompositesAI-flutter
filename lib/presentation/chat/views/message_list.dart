@@ -132,8 +132,7 @@ class _MessageListState extends State<MessageList> {
               alignment: WrapAlignment.end,
               children: files
                   .map((file) => Chip(
-                        avatar: const Icon(Icons.insert_drive_file_outlined,
-                            size: 16),
+                        avatar: Icon(_attachedFileIcon(file), size: 16),
                         label: Text(file.name, overflow: TextOverflow.ellipsis),
                         visualDensity: VisualDensity.compact,
                       ))
@@ -142,6 +141,12 @@ class _MessageListState extends State<MessageList> {
           ),
       ],
     );
+  }
+
+  IconData _attachedFileIcon(ChatFile file) {
+    if (file.isKnowledgeCollection) return Icons.library_books_outlined;
+    if (file.isKnowledgeFile) return Icons.description_outlined;
+    return Icons.insert_drive_file_outlined;
   }
 
   Widget _buildMessageImageThumb(ChatViewModel viewModel, ChatFile file) {

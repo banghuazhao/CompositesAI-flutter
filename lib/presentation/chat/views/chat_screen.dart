@@ -1,5 +1,6 @@
 import 'package:domain/auth/entities/user.dart';
 import 'package:domain/chat/entities/chat_file.dart';
+import 'package:domain/chat/entities/chat_knowledge.dart';
 import 'package:domain/chat/entities/chat_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +21,86 @@ class ChatScreen extends StatefulWidget {
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _KnowledgePickerCard extends StatelessWidget {
+  final ChatKnowledge knowledge;
+  final ChatViewModel viewModel;
+
+  const _KnowledgePickerCard({
+    required this.knowledge,
+    required this.viewModel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ChatViewModel>(
+      builder: (context, chat, _) {
+        final collectionSelected = chat.isKnowledgeSelected(knowledge.id);
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const Icon(Icons.library_books_outlined),
+                  title: Text(
+                    knowledge.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    knowledge.description.isNotEmpty
+                        ? knowledge.description
+                        : '${knowledge.files.length} files',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: collectionSelected
+                      ? const Icon(Icons.check_rounded, color: Colors.blue)
+                      : null,
+                  onTap: () => viewModel.toggleKnowledgeCollection(knowledge),
+                ),
+                if (knowledge.files.isNotEmpty) ...[
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    endIndent: 16,
+                    color: Colors.grey.shade300,
+                  ),
+                  ...knowledge.files.map((file) {
+                    final selected = chat.isKnowledgeSelected(file.id);
+                    return ListTile(
+                      dense: true,
+                      contentPadding:
+                          const EdgeInsets.only(left: 56, right: 16),
+                      leading: const Icon(Icons.description_outlined, size: 20),
+                      title: Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: selected
+                          ? const Icon(Icons.check_rounded, color: Colors.blue)
+                          : null,
+                      onTap: () => viewModel.toggleKnowledgeFile(file),
+                    );
+                  }),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _ChatScreenState extends State<ChatScreen>
@@ -56,6 +137,7 @@ class _ChatScreenState extends State<ChatScreen>
         await Future.wait([
           viewModel.fetchChats(),
           viewModel.fetchTools(),
+          viewModel.fetchKnowledgeBases(),
         ]);
       }
     });
@@ -100,9 +182,11 @@ class _ChatScreenState extends State<ChatScreen>
         );
         setState(() {});
       },
-      listenFor: const Duration(seconds: 60),
-      pauseFor: const Duration(seconds: 3),
-      partialResults: true,
+      listenOptions: SpeechListenOptions(
+        listenFor: const Duration(seconds: 60),
+        pauseFor: const Duration(seconds: 3),
+        partialResults: true,
+      ),
     );
   }
 
@@ -116,6 +200,7 @@ class _ChatScreenState extends State<ChatScreen>
     if (state == AppLifecycleState.resumed && viewModel.isLoggedIn) {
       viewModel.fetchChats();
       viewModel.fetchTools();
+      viewModel.fetchKnowledgeBases();
     }
   }
 
@@ -159,6 +244,7 @@ class _ChatScreenState extends State<ChatScreen>
                             await Future.wait([
                               viewModel.fetchChats(),
                               viewModel.fetchTools(),
+                              viewModel.fetchKnowledgeBases(),
                             ]);
                           }
                         }
@@ -916,11 +1002,144 @@ class _ChatScreenState extends State<ChatScreen>
                 viewModel.pickAndUploadFiles();
               },
             ),
+            ListTile(
+              leading: viewModel.isLoadingKnowledge
+                  ? const SizedBox.square(
+                      dimension: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.library_books_outlined),
+              title: const Text('Knowledge'),
+              subtitle: const Text('Attach RAG sources'),
+              enabled: !viewModel.isLoadingKnowledge,
+              onTap: () {
+                Navigator.pop(context);
+                _showKnowledgePickerSheet();
+              },
+            ),
             const SizedBox(height: 8),
           ],
         ),
       ),
     );
+  }
+
+  void _showKnowledgePickerSheet() {
+    if (viewModel.knowledgeBases.isEmpty && !viewModel.isLoadingKnowledge) {
+      viewModel.fetchKnowledgeBases();
+    }
+
+    final searchController = TextEditingController();
+    var query = '';
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Consumer<ChatViewModel>(
+              builder: (context, chat, _) {
+                final lowerQuery = query.trim().toLowerCase();
+                final knowledgeItems = chat.knowledgeBases.where((item) {
+                  if (lowerQuery.isEmpty) return true;
+                  final text =
+                      '${item.name} ${item.description} ${item.files.map((f) => f.name).join(' ')}'
+                          .toLowerCase();
+                  return text.contains(lowerQuery);
+                }).toList();
+
+                return SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      0,
+                      20,
+                      MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Knowledge',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search knowledge',
+                            prefixIcon: const Icon(Icons.search_rounded),
+                            suffixIcon: query.isEmpty
+                                ? null
+                                : IconButton(
+                                    tooltip: 'Clear search',
+                                    icon: const Icon(Icons.close_rounded),
+                                    onPressed: () {
+                                      searchController.clear();
+                                      setSheetState(() => query = '');
+                                    },
+                                  ),
+                            filled: true,
+                            fillColor: Colors.grey.shade100,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          onChanged: (value) =>
+                              setSheetState(() => query = value),
+                        ),
+                        const SizedBox(height: 14),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: MediaQuery.sizeOf(context).height * 0.58,
+                          ),
+                          child: chat.isLoadingKnowledge
+                              ? const Center(child: CircularProgressIndicator())
+                              : knowledgeItems.isEmpty
+                                  ? Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(24),
+                                        child: Text(
+                                          'No knowledge sources found',
+                                          style: TextStyle(
+                                              color: Colors.grey.shade600),
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      shrinkWrap: true,
+                                      itemCount: knowledgeItems.length,
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(height: 10),
+                                      itemBuilder: (context, index) {
+                                        final knowledge = knowledgeItems[index];
+                                        return _KnowledgePickerCard(
+                                          knowledge: knowledge,
+                                          viewModel: chat,
+                                        );
+                                      },
+                                    ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    ).whenComplete(searchController.dispose);
   }
 
   static bool _isImageFile(ChatFile file) {
@@ -958,8 +1177,7 @@ class _ChatScreenState extends State<ChatScreen>
               runSpacing: 6,
               children: files
                   .map((file) => InputChip(
-                        avatar: const Icon(Icons.insert_drive_file_outlined,
-                            size: 18),
+                        avatar: Icon(_pendingFileIcon(file), size: 18),
                         label: Text(file.name, overflow: TextOverflow.ellipsis),
                         onDeleted: viewModel.isSendingMessage
                             ? null
@@ -970,6 +1188,12 @@ class _ChatScreenState extends State<ChatScreen>
         ],
       ),
     );
+  }
+
+  IconData _pendingFileIcon(ChatFile file) {
+    if (file.isKnowledgeCollection) return Icons.library_books_outlined;
+    if (file.isKnowledgeFile) return Icons.description_outlined;
+    return Icons.insert_drive_file_outlined;
   }
 
   Widget _buildPendingImageThumb(ChatFile file) {

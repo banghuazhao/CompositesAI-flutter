@@ -9,6 +9,7 @@ import 'package:domain/chat/entities/chat_model.dart';
 import 'package:domain/chat/entities/chat_stream_event.dart';
 import 'package:domain/chat/entities/feedback_response.dart';
 import 'package:domain/chat/entities/chat_folder.dart';
+import 'package:domain/chat/entities/chat_knowledge.dart';
 import 'package:domain/chat/entities/message.dart';
 import 'package:domain/chat/entities/chat_tag.dart';
 import 'package:domain/chat/entities/chat_tool.dart';
@@ -415,6 +416,34 @@ class ChatRepositoryImpl implements ChatRepository {
           .whereType<Map<String, dynamic>>()
           .map(ChatModel.fromJson)
           .where((model) => model.id.isNotEmpty)
+          .toList();
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<List<ChatKnowledge>> fetchKnowledgeBases() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/knowledge/');
+    final response = await authClient.get(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is! List) {
+        throw const FormatException('GET /knowledge/: expected a JSON array');
+      }
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ChatKnowledge.fromJson)
+          .where((knowledge) => knowledge.id.isNotEmpty)
           .toList();
     } else {
       throw mapServerErrorToDomainException(response);

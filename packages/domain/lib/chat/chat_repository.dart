@@ -6,6 +6,7 @@ import 'entities/chat_tool.dart';
 import 'entities/chat_file.dart';
 import 'entities/feedback_response.dart';
 import 'entities/chat_folder.dart';
+import 'entities/chat_knowledge.dart';
 import 'entities/chat_tag.dart';
 
 abstract class ChatRepository {
@@ -45,6 +46,8 @@ abstract class ChatRepository {
   Future<List<ChatTool>> fetchTools();
 
   Future<List<ChatModel>> fetchModels();
+
+  Future<List<ChatKnowledge>> fetchKnowledgeBases();
 
   Future<List<ChatModel>> fetchWorkspaceModels();
 

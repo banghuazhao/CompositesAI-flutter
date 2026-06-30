@@ -62,6 +62,47 @@ class ChatFile {
     );
   }
 
+  factory ChatFile.fromKnowledgeFile(
+    Map<String, dynamic> json,
+    Map<String, dynamic> knowledge,
+  ) {
+    final meta = json['meta'];
+    final metaMap =
+        meta is Map ? Map<String, dynamic>.from(meta) : <String, dynamic>{};
+    final name = metaMap['name']?.toString() ??
+        json['name']?.toString() ??
+        json['filename']?.toString() ??
+        json['id']?.toString() ??
+        'file';
+    final knowledgeId = knowledge['id']?.toString() ?? '';
+
+    return ChatFile(
+      type: 'file',
+      id: json['id']?.toString() ?? '',
+      name: name,
+      url: json['url']?.toString() ?? '',
+      collectionName: json['collection_name']?.toString() ??
+          metaMap['collection_name']?.toString() ??
+          knowledgeId,
+      status: json['status']?.toString() ?? 'uploaded',
+      size: metaMap.isNotEmpty
+          ? _parseInt(metaMap['size'])
+          : _parseInt(json['size']),
+      file: {
+        ...Map<String, dynamic>.from(json),
+        'collection': {
+          'id': knowledgeId,
+          'name': knowledge['name']?.toString() ?? '',
+          'description': knowledge['description']?.toString() ?? '',
+        },
+      },
+    );
+  }
+
+  bool get isKnowledgeCollection => type == 'collection';
+
+  bool get isKnowledgeFile => collectionName.isNotEmpty && type == 'file';
+
   Map<String, dynamic> toJson() => {
         'type': type,
         'id': id,

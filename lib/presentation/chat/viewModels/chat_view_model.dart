@@ -37,6 +37,7 @@ class ChatViewModel extends ChangeNotifier {
   bool isLoadingChats = false;
   bool isLoadingChatFilters = false;
   bool isLoadingTools = false;
+  bool isLoadingKnowledge = false;
   bool isUploadingFile = false;
 
   /// Appending next page for GET /chats/?page=n (infinite scroll).
@@ -57,6 +58,7 @@ class ChatViewModel extends ChangeNotifier {
   List<ChatTag> chatTags = [];
   List<ChatTool> tools = [];
   List<ChatModel> models = [];
+  List<ChatKnowledge> knowledgeBases = [];
   List<ChatFile> pendingFiles = [];
   // Local bytes cache for image previews; keyed by ChatFile.id.
   // Kept alive after sending so message bubbles can show thumbnails.
@@ -200,6 +202,24 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchKnowledgeBases() async {
+    if (!isLoggedIn) return;
+
+    isLoadingKnowledge = true;
+    notifyListeners();
+    try {
+      knowledgeBases = await _chatUseCase.fetchKnowledgeBases();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('fetchKnowledgeBases error: $e');
+      }
+      knowledgeBases = [];
+    } finally {
+      isLoadingKnowledge = false;
+      notifyListeners();
+    }
+  }
+
   ChatModel _selectChatModel(List<ChatModel> models) {
     if (models.isEmpty) return ChatModel.fallback();
 
@@ -313,6 +333,29 @@ class ChatViewModel extends ChangeNotifier {
   void removePendingFile(ChatFile file) {
     pendingFiles.removeWhere((item) => item.id == file.id);
     pendingImageBytes.remove(file.id);
+    notifyListeners();
+  }
+
+  void toggleKnowledgeCollection(ChatKnowledge knowledge) {
+    _togglePendingAttachment(knowledge.toCollectionAttachment());
+  }
+
+  void toggleKnowledgeFile(ChatFile file) {
+    _togglePendingAttachment(file);
+  }
+
+  bool isKnowledgeSelected(String id) {
+    return pendingFiles.any((file) => file.id == id);
+  }
+
+  void _togglePendingAttachment(ChatFile attachment) {
+    final index = pendingFiles.indexWhere((file) => file.id == attachment.id);
+    if (index >= 0) {
+      final removed = pendingFiles.removeAt(index);
+      pendingImageBytes.remove(removed.id);
+    } else {
+      pendingFiles.add(attachment);
+    }
     notifyListeners();
   }
 
@@ -701,6 +744,7 @@ class ChatViewModel extends ChangeNotifier {
     chatTags = [];
     tools = [];
     models = [];
+    knowledgeBases = [];
     selectedModel = null;
     selectedToolIds = <String>{};
     _hasUserConfiguredTools = false;
@@ -709,6 +753,7 @@ class ChatViewModel extends ChangeNotifier {
     isLoadingMessages = false;
     isLoadingChats = false;
     isLoadingChatFilters = false;
+    isLoadingKnowledge = false;
     isLoadingMoreChats = false;
     isSendingMessage = false;
     errorMessage = null;

@@ -5,6 +5,7 @@ import 'entities/chat_stream_event.dart';
 import 'entities/chat_tool.dart';
 import 'entities/chat_file.dart';
 import 'entities/chat_folder.dart';
+import 'entities/chat_knowledge.dart';
 import 'entities/chat_tag.dart';
 import 'chat_repository.dart';
 
@@ -42,6 +43,8 @@ abstract class ChatUseCase {
   Future<List<ChatTool>> fetchTools();
 
   Future<List<ChatModel>> fetchModels();
+
+  Future<List<ChatKnowledge>> fetchKnowledgeBases();
 
   Future<List<ChatModel>> fetchWorkspaceModels();
 
@@ -193,6 +196,11 @@ class ChatUseCaseImpl implements ChatUseCase {
   @override
   Future<List<ChatModel>> fetchModels() {
     return repository.fetchModels();
+  }
+
+  @override
+  Future<List<ChatKnowledge>> fetchKnowledgeBases() {
+    return repository.fetchKnowledgeBases();
   }
 
   @override
