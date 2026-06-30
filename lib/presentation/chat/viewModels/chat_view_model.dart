@@ -51,6 +51,7 @@ class ChatViewModel extends ChangeNotifier {
   List<Chat> chats = [];
   List<Chat> pinnedChats = [];
   List<ChatTool> tools = [];
+  List<ChatModel> models = [];
   List<ChatFile> pendingFiles = [];
   // Local bytes cache for image previews; keyed by ChatFile.id.
   // Kept alive after sending so message bubbles can show thumbnails.
@@ -150,11 +151,15 @@ class ChatViewModel extends ChangeNotifier {
     isLoadingTools = true;
     notifyListeners();
     try {
+      final shouldFetchModels = user?.isAdmin == true;
       final toolsFuture = _chatUseCase.fetchTools();
-      final modelsFuture = _chatUseCase.fetchModels();
+      final modelsFuture = shouldFetchModels
+          ? _chatUseCase.fetchModels()
+          : Future<List<ChatModel>>.value(<ChatModel>[]);
       tools = await toolsFuture;
-      final models = await modelsFuture;
-      selectedModel = _selectChatModel(models);
+      models = await modelsFuture;
+      selectedModel =
+          shouldFetchModels ? _selectChatModel(models) : ChatModel.fallback();
 
       final availableIds = tools.map((tool) => tool.id).toSet();
       selectedToolIds = _hasUserConfiguredTools
@@ -176,6 +181,7 @@ class ChatViewModel extends ChangeNotifier {
         debugPrint('fetchTools error: $e');
       }
       tools = [];
+      models = [];
       selectedModel = null;
       selectedToolIds = <String>{};
     } finally {
@@ -185,10 +191,26 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   ChatModel _selectChatModel(List<ChatModel> models) {
+    if (models.isEmpty) return ChatModel.fallback();
+
     return models.firstWhere(
       (model) => model.id == 'composites-ai-2026-02-23',
-      orElse: () => ChatModel.fallback(),
+      orElse: () => models.first,
     );
+  }
+
+  bool get shouldShowModelSelector =>
+      user?.isAdmin == true && (isLoadingTools || models.isNotEmpty);
+
+  bool get canSelectModels => user?.isAdmin == true && models.isNotEmpty;
+
+  void selectModel(ChatModel model) {
+    selectedModel = model;
+    _hasUserConfiguredTools = false;
+    final availableIds = tools.map((tool) => tool.id).toSet();
+    selectedToolIds =
+        model.toolIds.where((toolId) => availableIds.contains(toolId)).toSet();
+    notifyListeners();
   }
 
   void toggleToolSelection(String toolId) {
@@ -462,6 +484,7 @@ class ChatViewModel extends ChangeNotifier {
     chats = [];
     pinnedChats = [];
     tools = [];
+    models = [];
     selectedModel = null;
     selectedToolIds = <String>{};
     _hasUserConfiguredTools = false;

@@ -1,7 +1,6 @@
-import 'dart:ui';
-
 import 'package:domain/auth/entities/user.dart';
 import 'package:domain/chat/entities/chat_file.dart';
+import 'package:domain/chat/entities/chat_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,12 +16,18 @@ import 'message_list.dart';
 import 'chat_list.dart';
 
 class ChatScreen extends StatefulWidget {
+  const ChatScreen({super.key});
+
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen>
-    with AutomaticKeepAliveClientMixin, RouteAware, WidgetsBindingObserver, TickerProviderStateMixin {
+    with
+        AutomaticKeepAliveClientMixin,
+        RouteAware,
+        WidgetsBindingObserver,
+        TickerProviderStateMixin {
   /// Empty-state suggestion chips: matches Card shape + InkWell ripple.
   static const double _kSuggestionChipRadius = 18;
 
@@ -30,6 +35,7 @@ class _ChatScreenState extends State<ChatScreen>
   bool get wantKeepAlive => true;
   final TextEditingController textController = TextEditingController();
   final FocusNode focusNode = FocusNode();
+  final FocusNode _sendShortcutFocusNode = FocusNode();
 
   late ChatViewModel viewModel;
 
@@ -65,6 +71,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _sendShortcutFocusNode.dispose();
     focusNode.dispose();
     textController.dispose();
     _pulseController.dispose();
@@ -313,7 +320,7 @@ class _ChatScreenState extends State<ChatScreen>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
-              children: [
+              children: const [
                 Text(
                   "How can I help you today?",
                   style: TextStyle(
@@ -323,7 +330,7 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   "Choose a topic or ask your own question",
                   style: TextStyle(
@@ -441,7 +448,12 @@ class _ChatScreenState extends State<ChatScreen>
     final bottomInset = MediaQuery.of(context).padding.bottom;
     return Container(
       color: Colors.transparent,
-      padding: EdgeInsets.fromLTRB(hPad, 0, hPad, bottomInset > 0 ? bottomInset : 12),
+      padding: EdgeInsets.fromLTRB(
+        hPad,
+        0,
+        hPad,
+        bottomInset > 0 ? bottomInset : 12,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -459,73 +471,47 @@ class _ChatScreenState extends State<ChatScreen>
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            padding: const EdgeInsets.fromLTRB(12, 10, 10, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _buildAttachButton(),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: KeyboardListener(
-                    focusNode: FocusNode(),
-                    onKeyEvent: (KeyEvent event) async {
-                      if (event is KeyDownEvent &&
-                          event.logicalKey == LogicalKeyboardKey.enter) {
-                        final isShiftPressed = HardwareKeyboard
-                                .instance.logicalKeysPressed
-                                .contains(LogicalKeyboardKey.shiftLeft) ||
-                            HardwareKeyboard.instance.logicalKeysPressed
-                                .contains(LogicalKeyboardKey.shiftRight);
-                        if (isShiftPressed) {
-                          final text = textController.text;
-                          textController.text = "$text\n";
-                          textController.selection =
-                              TextSelection.fromPosition(
-                            TextPosition(offset: textController.text.length),
-                          );
-                        } else if (!viewModel.isSendingMessage) {
-                          final text = textController.text.trim();
-                          if (text.isNotEmpty ||
-                              viewModel.pendingFiles.isNotEmpty) {
-                            if (await viewModel.reachChatLimit()) {
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Daily chat limit reached (50/day)')),
-                              );
-                              return;
-                            }
-                            textController.clear();
-                            await viewModel.sendInputMessage(text);
-                          }
-                        }
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          focusNode.requestFocus();
-                        });
-                      }
-                    },
-                    child: TextField(
-                      controller: textController,
-                      focusNode: focusNode,
-                      decoration: InputDecoration(
-                        hintText: 'Message',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      minLines: 1,
-                      maxLines: 8,
-                      onChanged: (_) => setState(() {}),
+                KeyboardListener(
+                  focusNode: _sendShortcutFocusNode,
+                  onKeyEvent: _handleComposerKeyEvent,
+                  child: TextField(
+                    controller: textController,
+                    focusNode: focusNode,
+                    decoration: InputDecoration(
+                      hintText: 'Message',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     ),
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    minLines: 1,
+                    maxLines: 8,
+                    onChanged: (_) => setState(() {}),
                   ),
                 ),
-                const SizedBox(width: 6),
-                _buildRightButton(),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildAttachButton(),
+                    if (viewModel.shouldShowModelSelector) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: viewModel.canSelectModels
+                            ? _buildModelPickerButton()
+                            : _buildModelLoadingChip(),
+                      ),
+                    ] else
+                      const Spacer(),
+                    const SizedBox(width: 8),
+                    _buildRightButton(),
+                  ],
+                ),
               ],
             ),
           ),
@@ -534,11 +520,136 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  Future<void> _handleComposerKeyEvent(KeyEvent event) async {
+    if (event is! KeyDownEvent ||
+        event.logicalKey != LogicalKeyboardKey.enter) {
+      return;
+    }
+
+    final isShiftPressed = HardwareKeyboard.instance.logicalKeysPressed
+            .contains(LogicalKeyboardKey.shiftLeft) ||
+        HardwareKeyboard.instance.logicalKeysPressed
+            .contains(LogicalKeyboardKey.shiftRight);
+    if (isShiftPressed) {
+      final text = textController.text;
+      textController.text = "$text\n";
+      textController.selection = TextSelection.fromPosition(
+        TextPosition(offset: textController.text.length),
+      );
+      return;
+    }
+
+    if (!viewModel.isSendingMessage) {
+      final text = textController.text.trim();
+      if (text.isNotEmpty || viewModel.pendingFiles.isNotEmpty) {
+        if (await viewModel.reachChatLimit()) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Daily chat limit reached (50/day)'),
+            ),
+          );
+          return;
+        }
+        textController.clear();
+        await viewModel.sendInputMessage(text);
+      }
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      focusNode.requestFocus();
+    });
+  }
+
   bool _canSendMessage() {
     return !viewModel.isSendingMessage &&
         !viewModel.isUploadingFile &&
         (textController.text.trim().isNotEmpty ||
             viewModel.pendingFiles.isNotEmpty);
+  }
+
+  Widget _buildModelPickerButton() {
+    final selectedModel = viewModel.selectedModel;
+    final label = selectedModel?.name ?? 'Select model';
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: SizedBox(
+          width: double.infinity,
+          child: Material(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              onTap: viewModel.isSendingMessage ? null : _showModelPickerSheet,
+              borderRadius: BorderRadius.circular(18),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: Colors.grey.shade700,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModelLoadingChip() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Models',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildRightButton() {
@@ -564,8 +675,8 @@ class _ChatScreenState extends State<ChatScreen>
               color: Colors.red,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.stop_rounded,
-                color: Colors.white, size: 18),
+            child:
+                const Icon(Icons.stop_rounded, color: Colors.white, size: 18),
           ),
         ),
       );
@@ -598,8 +709,7 @@ class _ChatScreenState extends State<ChatScreen>
           shape: BoxShape.circle,
           border: Border.all(color: Colors.grey.shade400, width: 1.5),
         ),
-        child: Icon(Icons.mic_none,
-            size: 18, color: Colors.grey.shade700),
+        child: Icon(Icons.mic_none, size: 18, color: Colors.grey.shade700),
       ),
     );
   }
@@ -623,6 +733,100 @@ class _ChatScreenState extends State<ChatScreen>
               )
             : Icon(Icons.add, size: 20, color: Colors.grey.shade700),
       ),
+    );
+  }
+
+  void _showModelPickerSheet() {
+    final models = List<ChatModel>.from(viewModel.models);
+    final selectedId = viewModel.selectedModel?.id;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Select model',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+                  ),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: models.length,
+                      separatorBuilder: (_, __) => Divider(
+                        height: 1,
+                        indent: 20,
+                        endIndent: 20,
+                        color: Colors.grey.shade300,
+                      ),
+                      itemBuilder: (context, index) {
+                        final model = models[index];
+                        final isSelected = model.id == selectedId;
+                        final showId = model.id != model.name;
+
+                        return ListTile(
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 20),
+                          title: Text(
+                            model.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                          subtitle: showId
+                              ? Text(
+                                  model.id,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                              : null,
+                          trailing: isSelected
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  color: Colors.blue,
+                                )
+                              : null,
+                          onTap: () {
+                            Navigator.pop(context);
+                            viewModel.selectModel(model);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -685,8 +889,7 @@ class _ChatScreenState extends State<ChatScreen>
   Widget _buildPendingFiles() {
     if (viewModel.pendingFiles.isEmpty) return const SizedBox.shrink();
 
-    final images =
-        viewModel.pendingFiles.where(_isImageFile).toList();
+    final images = viewModel.pendingFiles.where(_isImageFile).toList();
     final files =
         viewModel.pendingFiles.where((f) => !_isImageFile(f)).toList();
 
@@ -706,19 +909,16 @@ class _ChatScreenState extends State<ChatScreen>
                 itemBuilder: (_, i) => _buildPendingImageThumb(images[i]),
               ),
             ),
-          if (images.isNotEmpty && files.isNotEmpty)
-            const SizedBox(height: 6),
+          if (images.isNotEmpty && files.isNotEmpty) const SizedBox(height: 6),
           if (files.isNotEmpty)
             Wrap(
               spacing: 8,
               runSpacing: 6,
               children: files
                   .map((file) => InputChip(
-                        avatar: const Icon(
-                            Icons.insert_drive_file_outlined,
+                        avatar: const Icon(Icons.insert_drive_file_outlined,
                             size: 18),
-                        label: Text(file.name,
-                            overflow: TextOverflow.ellipsis),
+                        label: Text(file.name, overflow: TextOverflow.ellipsis),
                         onDeleted: viewModel.isSendingMessage
                             ? null
                             : () => viewModel.removePendingFile(file),
@@ -746,8 +946,7 @@ class _ChatScreenState extends State<ChatScreen>
             borderRadius: BorderRadius.circular(10),
             child: bytes != null
                 ? Image.memory(bytes, fit: BoxFit.cover)
-                : const Center(
-                    child: Icon(Icons.image_outlined, size: 32)),
+                : const Center(child: Icon(Icons.image_outlined, size: 32)),
           ),
         ),
         if (!viewModel.isSendingMessage)
@@ -763,8 +962,7 @@ class _ChatScreenState extends State<ChatScreen>
                   color: Colors.black54,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close,
-                    size: 13, color: Colors.white),
+                child: const Icon(Icons.close, size: 13, color: Colors.white),
               ),
             ),
           ),
