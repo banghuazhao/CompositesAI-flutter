@@ -3,28 +3,25 @@ import 'dart:typed_data';
 
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_math_fork/flutter_math.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import 'package:ui_components/blinking_text.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../viewModels/chat_view_model.dart';
+import 'ai_markdown_message.dart';
 
 class MessageList extends StatefulWidget {
-  const MessageList({Key? key}) : super(key: key);
+  const MessageList({super.key});
 
   @override
   _MessageListState createState() => _MessageListState();
 }
 
 class _MessageListState extends State<MessageList> {
-  int? copyingMessageIndex;
-
   @override
   Widget build(BuildContext context) {
     final chatViewModel = Provider.of<ChatViewModel>(context);
+    final messageWidgets = messagesList(context, chatViewModel);
 
     return Stack(
       children: [
@@ -35,9 +32,9 @@ class _MessageListState extends State<MessageList> {
               20,
               context.horizontalSidePaddingForContentWidth,
               20 + 100),
-          itemCount: messagesList(context, chatViewModel).length,
+          itemCount: messageWidgets.length,
           itemBuilder: (context, index) {
-            return messagesList(context, chatViewModel)[index];
+            return messageWidgets[index];
           },
           separatorBuilder: (context, index) {
             return const SizedBox(height: 16);
@@ -76,10 +73,12 @@ class _MessageListState extends State<MessageList> {
           IntrinsicWidth(
             child: Container(
               constraints: BoxConstraints(
-                maxWidth: max(280, MediaQuery.of(context).size.width * 0.72),
+                maxWidth: min(
+                  680,
+                  max(280, MediaQuery.of(context).size.width * 0.72),
+                ),
               ),
-              padding:
-                  const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
                 color: const Color(0xFFEFEFEF),
                 borderRadius: const BorderRadius.only(
@@ -133,11 +132,9 @@ class _MessageListState extends State<MessageList> {
               alignment: WrapAlignment.end,
               children: files
                   .map((file) => Chip(
-                        avatar: const Icon(
-                            Icons.insert_drive_file_outlined,
+                        avatar: const Icon(Icons.insert_drive_file_outlined,
                             size: 16),
-                        label: Text(file.name,
-                            overflow: TextOverflow.ellipsis),
+                        label: Text(file.name, overflow: TextOverflow.ellipsis),
                         visualDensity: VisualDensity.compact,
                       ))
                   .toList(),
@@ -163,8 +160,8 @@ class _MessageListState extends State<MessageList> {
           child: bytes != null
               ? Image.memory(bytes, fit: BoxFit.cover)
               : const Center(
-                  child: Icon(Icons.image_outlined,
-                      size: 36, color: Colors.grey),
+                  child:
+                      Icon(Icons.image_outlined, size: 36, color: Colors.grey),
                 ),
         ),
       ),
@@ -345,7 +342,7 @@ class _MessageListState extends State<MessageList> {
                               color:
                                   selected ? Colors.white : Colors.transparent,
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.35),
+                                color: Colors.white.withValues(alpha: 0.35),
                                 width: 1,
                               ),
                             ),
@@ -369,13 +366,13 @@ class _MessageListState extends State<MessageList> {
                       children: [
                         Text(
                           '1 - Awful',
-                          style:
-                              TextStyle(color: Colors.white.withOpacity(0.6)),
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6)),
                         ),
                         Text(
                           '10 - Amazing',
-                          style:
-                              TextStyle(color: Colors.white.withOpacity(0.6)),
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6)),
                         ),
                       ],
                     ),
@@ -383,7 +380,7 @@ class _MessageListState extends State<MessageList> {
                     Text(
                       'Why?',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.95),
+                        color: Colors.white.withValues(alpha: 0.95),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -420,7 +417,8 @@ class _MessageListState extends State<MessageList> {
                     const SizedBox(height: 12),
                     Text(
                       'Feel free to add specific details',
-                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      style:
+                          TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -432,7 +430,7 @@ class _MessageListState extends State<MessageList> {
                       decoration: InputDecoration(
                         hintText: 'Type more details...',
                         hintStyle: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                         ),
                         filled: true,
                         fillColor: Colors.grey.shade800,
@@ -488,6 +486,7 @@ class _MessageListState extends State<MessageList> {
                                 messageIndex + 1, // backend is 1-based
                           );
 
+                          if (!dialogContext.mounted) return;
                           if (ok) {
                             Navigator.of(dialogContext).pop(true);
                           } else {
@@ -535,23 +534,40 @@ class _MessageListState extends State<MessageList> {
     final isStreaming = isLast && viewModel.isSendingMessage;
     final statusWidget = buildToolStatus(message);
 
-    return message.content.isNotEmpty || statusWidget != null
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 2,
-            children: [
-              if (statusWidget != null) statusWidget,
-              if (message.content.isNotEmpty)
-                gptResponseWidget(message.content),
-              if (!isStreaming)
-                buildAssistantMessageActions(
+    if (message.content.isEmpty && statusWidget == null) {
+      return Container();
+    }
+
+    final maxContentWidth = min(MediaQuery.of(context).size.width, 820.0);
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxContentWidth),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 4,
+          children: [
+            if (statusWidget != null) statusWidget,
+            if (message.content.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: AiMarkdownMessage(markdown: message.content),
+              ),
+            if (!isStreaming)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: buildAssistantMessageActions(
                   viewModel,
                   message,
                   messageIndex,
                 ),
-            ],
-          )
-        : Container();
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget? buildToolStatus(Message message) {
@@ -616,47 +632,6 @@ class _MessageListState extends State<MessageList> {
     return '';
   }
 
-  Widget gptResponseWidget(String originalResponse) {
-    RegExp citationRegExp = RegExp(r'【.*?】');
-    RegExp toolDetailsRegExp =
-        RegExp(r'<details[^>]*type="tool_calls"[\s\S]*?<\/details>');
-    String cleanText = originalResponse
-        .replaceAll(toolDetailsRegExp, '')
-        .replaceAll(citationRegExp, '');
-    String finalText = cleanText.replaceAll('\n\n', '\n');
-    return SelectionArea(
-      child: GptMarkdown(
-        finalText,
-        style: const TextStyle(fontSize: 15, color: Colors.black),
-        latexBuilder: (context, tex, textStyle, inline) {
-          final math = Math.tex(
-            tex,
-            textStyle: textStyle,
-            mathStyle: inline ? MathStyle.text : MathStyle.display,
-          );
-
-          // Keep normal short inline math unchanged, so existing rendering style stays intact.
-          if (inline && tex.length < 50) {
-            return math;
-          }
-
-          // For long or block formulas, provide horizontal scrolling container
-          // to avoid overflow without affecting other markdown widgets.
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: math,
-            ),
-          );
-        },
-        onLinkTap: (String url, String title) {
-          launchUrl(Uri.parse(url));
-        },
-      ),
-    );
-  }
-
   StreamBuilder<Message> messageStream(ChatViewModel viewModel) {
     return StreamBuilder<Message>(
         stream: viewModel.threadResponseController.stream,
@@ -673,7 +648,7 @@ class _MessageListState extends State<MessageList> {
       if (viewModel.isSendingMessage) {
         return BlinkingText(
           text: "Thinking...",
-          style: TextStyle(fontSize: 15.0),
+          style: const TextStyle(fontSize: 15.0),
         );
       }
       return Container();

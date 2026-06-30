@@ -409,14 +409,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_markdown:
-    dependency: "direct main"
-    description:
-      name: flutter_markdown
-      sha256: "255b00afa1a7bad19727da6a7780cf3db6c3c12e68d302d85e0ff1fdf173db9e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.4+3"
   flutter_math_fork:
     dependency: "direct main"
     description:
@@ -599,10 +591,10 @@ packages:
     dependency: "direct main"
     description:
       name: gpt_markdown
-      sha256: "68d5337c8a00fc03a37dbddf84a6fd90401c30e99b6baf497ef9522a81fc34ee"
+      sha256: c14c2a4599a67df5b6a984808cbb7631b8d15c91984ffdd7998597b93a6ff136
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.2"
+    version: "1.1.7"
   html:
     dependency: transitive
     description:
@@ -842,14 +834,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.0"
-  markdown:
-    dependency: transitive
-    description:
-      name: markdown
-      sha256: "935e23e1ff3bc02d390bad4d4be001208ee92cc217cb5b5a6c19bc14aaa318c1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.3.0"
   matcher:
     dependency: transitive
     description:
