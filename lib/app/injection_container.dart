@@ -24,6 +24,7 @@ import 'package:infrastructure/token_provider.dart';
 import 'package:swiftcomp/presentation/auth/forget_password_view_model.dart';
 import 'package:swiftcomp/presentation/auth/login_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
+import 'package:swiftcomp/presentation/settings/viewModels/admin_model_tool_view_model.dart';
 import 'package:swiftcomp/presentation/auth/signup_view_model.dart';
 import 'package:swiftcomp/presentation/auth/update_password_view_model.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
@@ -45,6 +46,8 @@ void initInjection() {
       authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
   sl.registerFactory<QASettingsViewModel>(() => QASettingsViewModel(
       featureFlagProvider: sl(), apiEnvironment: sl(), authUseCase: sl()));
+  sl.registerFactory<AdminModelToolViewModel>(
+      () => AdminModelToolViewModel(chatUseCase: sl()));
   sl.registerFactory<ForgetPasswordViewModel>(
       () => ForgetPasswordViewModel(authUseCase: sl()));
   sl.registerFactory<UpdatePasswordViewModel>(

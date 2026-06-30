@@ -46,6 +46,24 @@ abstract class ChatRepository {
 
   Future<List<ChatModel>> fetchModels();
 
+  Future<List<ChatModel>> fetchWorkspaceModels();
+
+  Future<ChatModel> createModel(Map<String, dynamic> model);
+
+  Future<ChatModel> updateModel(String id, Map<String, dynamic> model);
+
+  Future<ChatModel> toggleModel(String id);
+
+  Future<void> deleteModel(String id);
+
+  Future<List<ChatTool>> fetchToolList();
+
+  Future<ChatTool> createTool(Map<String, dynamic> tool);
+
+  Future<ChatTool> updateTool(String id, Map<String, dynamic> tool);
+
+  Future<void> deleteTool(String id);
+
   Future<ChatFile> uploadChatFile({
     required String name,
     required int size,

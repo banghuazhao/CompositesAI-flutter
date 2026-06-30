@@ -43,6 +43,24 @@ abstract class ChatUseCase {
 
   Future<List<ChatModel>> fetchModels();
 
+  Future<List<ChatModel>> fetchWorkspaceModels();
+
+  Future<ChatModel> createModel(Map<String, dynamic> model);
+
+  Future<ChatModel> updateModel(String id, Map<String, dynamic> model);
+
+  Future<ChatModel> toggleModel(String id);
+
+  Future<void> deleteModel(String id);
+
+  Future<List<ChatTool>> fetchToolList();
+
+  Future<ChatTool> createTool(Map<String, dynamic> tool);
+
+  Future<ChatTool> updateTool(String id, Map<String, dynamic> tool);
+
+  Future<void> deleteTool(String id);
+
   Future<ChatFile> uploadChatFile({
     required String name,
     required int size,
@@ -175,6 +193,51 @@ class ChatUseCaseImpl implements ChatUseCase {
   @override
   Future<List<ChatModel>> fetchModels() {
     return repository.fetchModels();
+  }
+
+  @override
+  Future<List<ChatModel>> fetchWorkspaceModels() {
+    return repository.fetchWorkspaceModels();
+  }
+
+  @override
+  Future<ChatModel> createModel(Map<String, dynamic> model) {
+    return repository.createModel(model);
+  }
+
+  @override
+  Future<ChatModel> updateModel(String id, Map<String, dynamic> model) {
+    return repository.updateModel(id, model);
+  }
+
+  @override
+  Future<ChatModel> toggleModel(String id) {
+    return repository.toggleModel(id);
+  }
+
+  @override
+  Future<void> deleteModel(String id) {
+    return repository.deleteModel(id);
+  }
+
+  @override
+  Future<List<ChatTool>> fetchToolList() {
+    return repository.fetchToolList();
+  }
+
+  @override
+  Future<ChatTool> createTool(Map<String, dynamic> tool) {
+    return repository.createTool(tool);
+  }
+
+  @override
+  Future<ChatTool> updateTool(String id, Map<String, dynamic> tool) {
+    return repository.updateTool(id, tool);
+  }
+
+  @override
+  Future<void> deleteTool(String id) {
+    return repository.deleteTool(id);
   }
 
   @override

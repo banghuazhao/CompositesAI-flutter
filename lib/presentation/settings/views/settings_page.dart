@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
+import 'package:swiftcomp/presentation/settings/views/admin_model_tool_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import '../../chat/viewModels/chat_view_model.dart';
@@ -84,6 +85,19 @@ class _SettingsPageState extends State<SettingsPage> {
                     MaterialPageRoute(builder: (_) => ToolSettingPage()),
                   ),
                 ),
+                if (viewModel.isAdmin) ...[
+                  _buildDivider(),
+                  _buildTile(
+                    icon: Icons.admin_panel_settings_outlined,
+                    title: 'Model & Tool Management',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AdminModelToolPage(),
+                      ),
+                    ),
+                  ),
+                ],
                 _buildDivider(),
                 _buildTile(
                   icon: Icons.chat_bubble_outline_rounded,

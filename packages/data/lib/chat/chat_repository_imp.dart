@@ -79,6 +79,15 @@ List<ChatTag> _decodeTagList(
   throw Exception('$label failed ($statusCode): $body');
 }
 
+Map<String, dynamic> _decodeMapResponse(http.Response response, String label) {
+  final decoded = utf8.decode(response.bodyBytes);
+  final data = jsonDecode(decoded);
+  if (data is Map<String, dynamic>) {
+    return data;
+  }
+  throw FormatException('$label: expected JSON object');
+}
+
 List<ChatFolder> _decodeFolderListResponse(
   http.Response response,
   String label,
@@ -124,7 +133,7 @@ class ChatRepositoryImpl implements ChatRepository {
     if (response.statusCode == 200) {
       final decoded = utf8.decode(response.bodyBytes).trimLeft();
       if (decoded.startsWith('<') || decoded.startsWith('<!')) {
-        throw FormatException(
+        throw const FormatException(
           'GET /chats/ returned HTML, not JSON. '
           'Check base URL and path (use /chats/ with trailing slash).',
         );
@@ -161,7 +170,8 @@ class ChatRepositoryImpl implements ChatRepository {
         if (v == true || v == 1) return true;
         if (v == false || v == 0) return false;
       }
-      throw FormatException('Unexpected /chats/.../pinned response shape');
+      throw const FormatException(
+          'Unexpected /chats/.../pinned response shape');
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -321,7 +331,7 @@ class ChatRepositoryImpl implements ChatRepository {
       if (data is Map<String, dynamic>) {
         return ChatFolder.fromJson(data);
       }
-      throw FormatException('POST /folders/: expected JSON object');
+      throw const FormatException('POST /folders/: expected JSON object');
     }
     throw mapServerErrorToDomainException(response);
   }
@@ -338,7 +348,8 @@ class ChatRepositoryImpl implements ChatRepository {
       final Map<String, dynamic> data = jsonDecode(decoded);
       final chat = data['chat'];
       if (chat is! Map<String, dynamic>) {
-        throw FormatException('GET /chats/:id: missing or invalid "chat"');
+        throw const FormatException(
+            'GET /chats/:id: missing or invalid "chat"');
       }
       final messagesRaw = chat['messages'];
       if (messagesRaw is! List) {
@@ -369,7 +380,7 @@ class ChatRepositoryImpl implements ChatRepository {
       final decoded = utf8.decode(response.bodyBytes);
       final data = jsonDecode(decoded);
       if (data is! List) {
-        throw FormatException('GET /tools/: expected a JSON array');
+        throw const FormatException('GET /tools/: expected a JSON array');
       }
       return data
           .whereType<Map<String, dynamic>>()
@@ -398,7 +409,7 @@ class ChatRepositoryImpl implements ChatRepository {
       final data = jsonDecode(decoded);
       final modelsRaw = data is Map<String, dynamic> ? data['data'] : null;
       if (modelsRaw is! List) {
-        throw FormatException('GET /api/models: expected data array');
+        throw const FormatException('GET /api/models: expected data array');
       }
       return modelsRaw
           .whereType<Map<String, dynamic>>()
@@ -406,6 +417,206 @@ class ChatRepositoryImpl implements ChatRepository {
           .where((model) => model.id.isNotEmpty)
           .toList();
     } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<List<ChatModel>> fetchWorkspaceModels() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/models/');
+    final response = await authClient.get(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is! List) {
+        throw const FormatException('GET /models/: expected a JSON array');
+      }
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ChatModel.fromJson)
+          .where((model) => model.id.isNotEmpty)
+          .toList();
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<ChatModel> createModel(Map<String, dynamic> model) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/models/create');
+    final response = await authClient.post(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(model),
+    );
+
+    if (response.statusCode == 200) {
+      return ChatModel.fromJson(
+          _decodeMapResponse(response, 'POST /models/create'));
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<ChatModel> updateModel(String id, Map<String, dynamic> model) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/models/model/update')
+        .replace(queryParameters: {'id': id});
+    final response = await authClient.post(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(model),
+    );
+
+    if (response.statusCode == 200) {
+      return ChatModel.fromJson(
+        _decodeMapResponse(response, 'POST /models/model/update'),
+      );
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<ChatModel> toggleModel(String id) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/models/model/toggle')
+        .replace(queryParameters: {'id': id});
+    final response = await authClient.post(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return ChatModel.fromJson(
+        _decodeMapResponse(response, 'POST /models/model/toggle'),
+      );
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<void> deleteModel(String id) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/models/model/delete')
+        .replace(queryParameters: {'id': id});
+    final response = await authClient.delete(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<List<ChatTool>> fetchToolList() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/tools/list');
+    final response = await authClient.get(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(decoded);
+      if (data is! List) {
+        throw const FormatException('GET /tools/list: expected a JSON array');
+      }
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ChatTool.fromJson)
+          .where((tool) => tool.id.isNotEmpty)
+          .toList();
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<ChatTool> createTool(Map<String, dynamic> tool) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/tools/create');
+    final response = await authClient.post(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(tool),
+    );
+
+    if (response.statusCode == 200) {
+      return ChatTool.fromJson(
+          _decodeMapResponse(response, 'POST /tools/create'));
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<ChatTool> updateTool(String id, Map<String, dynamic> tool) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/tools/id/$id/update');
+    final response = await authClient.post(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(tool),
+    );
+
+    if (response.statusCode == 200) {
+      return ChatTool.fromJson(
+        _decodeMapResponse(response, 'POST /tools/id/:id/update'),
+      );
+    } else {
+      throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  @override
+  Future<void> deleteTool(String id) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final url = Uri.parse('$baseURL/tools/id/$id/delete');
+    final response = await authClient.delete(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
       throw mapServerErrorToDomainException(response);
     }
   }
@@ -447,11 +658,11 @@ class ChatRepositoryImpl implements ChatRepository {
     if (response.statusCode == 200 || response.statusCode == 201) {
       final decoded = jsonDecode(responseBody);
       if (decoded is! Map<String, dynamic>) {
-        throw FormatException('Upload response was not a JSON object.');
+        throw const FormatException('Upload response was not a JSON object.');
       }
       final id = decoded['id']?.toString();
       if (id == null || id.isEmpty) {
-        throw FormatException('Upload response did not include file id.');
+        throw const FormatException('Upload response did not include file id.');
       }
       return ChatFile.fromUploadResponse(
         json: decoded,
@@ -1058,7 +1269,7 @@ class ChatRepositoryImpl implements ChatRepository {
       if (data is Map<String, dynamic>) {
         return data;
       }
-      throw FormatException('Unexpected chat snapshot format');
+      throw const FormatException('Unexpected chat snapshot format');
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -1086,7 +1297,7 @@ class ChatRepositoryImpl implements ChatRepository {
       if (data is Map<String, dynamic>) {
         return FeedbackResponse.fromJson(data);
       }
-      throw FormatException('Unexpected feedback format');
+      throw const FormatException('Unexpected feedback format');
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -1114,7 +1325,7 @@ class ChatRepositoryImpl implements ChatRepository {
       if (data is Map<String, dynamic>) {
         return FeedbackResponse.fromJson(data);
       }
-      throw FormatException('Unexpected feedback format');
+      throw const FormatException('Unexpected feedback format');
     } else {
       throw mapServerErrorToDomainException(response);
     }

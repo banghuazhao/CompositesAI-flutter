@@ -24,7 +24,7 @@ class FeedbackResponse {
   factory FeedbackResponse.fromJson(Map<String, dynamic> json) {
     final id = (json['id'] ?? '').toString().trim();
     if (id.isEmpty) {
-      throw FormatException('Feedback response missing id');
+      throw const FormatException('Feedback response missing id');
     }
 
     return FeedbackResponse(
@@ -41,11 +41,8 @@ class FeedbackResponse {
       snapshot: json['snapshot'] is Map<String, dynamic>
           ? json['snapshot'] as Map<String, dynamic>
           : null,
-      createdAt:
-          json['created_at'] is int ? json['created_at'] as int : null,
-      updatedAt:
-          json['updated_at'] is int ? json['updated_at'] as int : null,
+      createdAt: json['created_at'] is int ? json['created_at'] as int : null,
+      updatedAt: json['updated_at'] is int ? json['updated_at'] as int : null,
     );
   }
 }
-
