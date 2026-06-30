@@ -20,6 +20,10 @@ class Message {
   // Client-side cache for evaluation update.
   // Filled after first POST /evaluations/feedback returns FeedbackModel.id.
   String? feedbackId;
+  int? feedbackRating;
+  int? feedbackDetailsRating;
+  List<String> feedbackReasons = [];
+  String? feedbackComment;
 
   Message(
       {required this.role,
@@ -50,7 +54,13 @@ class Message {
         isDone = json['done'] ?? false,
         files = _parseFiles(json),
         statusHistory = _parseStatusHistory(json),
-        feedbackId = json['feedbackId'] ?? json['feedback_id'];
+        feedbackId = json['feedbackId'] ?? json['feedback_id'],
+        feedbackRating = json['feedbackRating'] ?? json['feedback_rating'],
+        feedbackDetailsRating =
+            json['feedbackDetailsRating'] ?? json['feedback_details_rating'],
+        feedbackReasons =
+            List<String>.from(json['feedbackReasons'] ?? const []),
+        feedbackComment = json['feedbackComment'] ?? json['feedback_comment'];
 
   // Method for converting a Message instance to JSON format
   Map<String, dynamic> toJson() {
@@ -77,6 +87,21 @@ class Message {
       if (statusHistory.isNotEmpty) {
         data['statusHistory'] =
             statusHistory.map((status) => status.toJson()).toList();
+      }
+      if (feedbackId != null) {
+        data['feedbackId'] = feedbackId;
+      }
+      if (feedbackRating != null) {
+        data['feedbackRating'] = feedbackRating;
+      }
+      if (feedbackDetailsRating != null) {
+        data['feedbackDetailsRating'] = feedbackDetailsRating;
+      }
+      if (feedbackReasons.isNotEmpty) {
+        data['feedbackReasons'] = feedbackReasons;
+      }
+      if (feedbackComment != null && feedbackComment!.trim().isNotEmpty) {
+        data['feedbackComment'] = feedbackComment;
       }
     } else {
       data['models'] = models;

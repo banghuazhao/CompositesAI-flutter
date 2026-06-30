@@ -209,49 +209,86 @@ class _MessageListState extends State<MessageList> {
 
   Widget buildAssistantMessageActions(
       ChatViewModel viewModel, Message message, int messageIndex) {
+    final isSubmitting = viewModel.isSubmittingFeedbackFor(message);
+    final liked = message.feedbackRating == 1;
+    final disliked = message.feedbackRating == -1;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         buildCopyIconButton(viewModel, message),
-        IconButton(
-          tooltip: 'Good response',
-          icon: const Icon(Icons.thumb_up_alt_outlined, size: 18),
-          onPressed: () async {
-            await _showResponseFeedbackDialog(
-              context: context,
-              viewModel: viewModel,
-              message: message,
-              initialIsGood: true,
-              messageIndex: messageIndex,
-            );
-          },
-          style: ButtonStyle(
-            padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-            minimumSize: WidgetStateProperty.all(Size.zero),
+        if (isSubmitting)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        else ...[
+          IconButton(
+            tooltip: liked ? 'Edit positive feedback' : 'Good response',
+            icon: Icon(
+              liked ? Icons.thumb_up_alt_rounded : Icons.thumb_up_alt_outlined,
+              size: 18,
+              color: liked ? Colors.green.shade700 : null,
+            ),
+            onPressed: () async {
+              await _showResponseFeedbackSheet(
+                context: context,
+                viewModel: viewModel,
+                message: message,
+                initialIsGood: true,
+                messageIndex: messageIndex,
+              );
+            },
+            style: ButtonStyle(
+              padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
+              minimumSize: WidgetStateProperty.all(Size.zero),
+            ),
           ),
-        ),
-        IconButton(
-          tooltip: 'Bad response',
-          icon: const Icon(Icons.thumb_down_alt_outlined, size: 18),
-          onPressed: () async {
-            await _showResponseFeedbackDialog(
-              context: context,
-              viewModel: viewModel,
-              message: message,
-              initialIsGood: false,
-              messageIndex: messageIndex,
-            );
-          },
-          style: ButtonStyle(
-            padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-            minimumSize: WidgetStateProperty.all(Size.zero),
+          IconButton(
+            tooltip: disliked ? 'Edit negative feedback' : 'Bad response',
+            icon: Icon(
+              disliked
+                  ? Icons.thumb_down_alt_rounded
+                  : Icons.thumb_down_alt_outlined,
+              size: 18,
+              color: disliked ? Colors.red.shade700 : null,
+            ),
+            onPressed: () async {
+              await _showResponseFeedbackSheet(
+                context: context,
+                viewModel: viewModel,
+                message: message,
+                initialIsGood: false,
+                messageIndex: messageIndex,
+              );
+            },
+            style: ButtonStyle(
+              padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
+              minimumSize: WidgetStateProperty.all(Size.zero),
+            ),
           ),
-        ),
+        ],
+        if (message.feedbackId != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 2),
+            child: Tooltip(
+              message: 'Feedback submitted',
+              child: Icon(
+                Icons.check_circle_rounded,
+                size: 16,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  Future<void> _showResponseFeedbackDialog({
+  Future<void> _showResponseFeedbackSheet({
     required BuildContext context,
     required ChatViewModel viewModel,
     required Message message,
@@ -261,256 +298,275 @@ class _MessageListState extends State<MessageList> {
     if (viewModel.selectedChat == null) return;
     final BuildContext pageContext = context;
 
-    final List<String> reasons = initialIsGood
-        ? const [
-            'Accurate information',
-            'Followed instructions perfectly',
-            'Showcased creativity',
-            'Positive attitude',
-            'Attention to detail',
-            'Thorough explanation',
-            'Other',
-          ]
-        : const [
-            "Don't like the style",
-            'Too verbose',
-            'Not helpful',
-            'Not factually correct',
-            "Didn't fully follow instructions",
-            "Refused when it shouldn't have",
-            'Being lazy',
-            'Other',
-          ];
+    const positiveReasons = [
+      'Accurate information',
+      'Followed instructions',
+      'Clear explanation',
+      'Useful detail',
+      'Good structure',
+      'Creative answer',
+      'Other',
+    ];
+    const negativeReasons = [
+      "Don't like the style",
+      'Too verbose',
+      'Not helpful',
+      'Not factually correct',
+      "Didn't follow instructions",
+      "Refused incorrectly",
+      'Other',
+    ];
 
     final int initialRating = initialIsGood ? 10 : 1;
+    final existingFeedbackMatches =
+        message.feedbackRating == (initialIsGood ? 1 : -1);
 
-    int rating = initialRating;
-    final selectedReasons = <String>{};
-    final commentController = TextEditingController();
+    int rating = existingFeedbackMatches
+        ? message.feedbackDetailsRating ?? initialRating
+        : initialRating;
+    final selectedReasons = existingFeedbackMatches
+        ? <String>{...message.feedbackReasons}
+        : <String>{};
+    final commentController = TextEditingController(
+        text: existingFeedbackMatches ? message.feedbackComment ?? '' : '');
     String? localError;
     bool isSaving = false;
+    bool isGood = initialIsGood;
 
-    final bool? saved = await showDialog<bool>(
+    final bool? saved = await showModalBottomSheet<bool>(
       context: pageContext,
-      barrierDismissible: false,
-      builder: (dialogContext) {
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
         return StatefulBuilder(
           builder: (statefulContext, setState) {
-            return AlertDialog(
-              backgroundColor: Colors.grey.shade900,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'How would you rate this response?',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.of(dialogContext).pop(false),
-                  ),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: List.generate(10, (index) {
-                        final value = index + 1;
-                        final selected = value == rating;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              rating = value;
-                              localError = null;
-                            });
-                          },
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color:
-                                  selected ? Colors.white : Colors.transparent,
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.35),
-                                width: 1,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '$value',
-                                style: TextStyle(
-                                  color: selected ? Colors.black : Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
+            final activeReasons = isGood ? positiveReasons : negativeReasons;
+            final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, bottomInset + 20),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Rate response',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '1 - Awful',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6)),
+                          IconButton(
+                            tooltip: 'Close',
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: isSaving
+                                ? null
+                                : () => Navigator.of(sheetContext).pop(false),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SegmentedButton<bool>(
+                        segments: const [
+                          ButtonSegment(
+                            value: true,
+                            icon: Icon(Icons.thumb_up_alt_outlined),
+                            label: Text('Good'),
+                          ),
+                          ButtonSegment(
+                            value: false,
+                            icon: Icon(Icons.thumb_down_alt_outlined),
+                            label: Text('Bad'),
+                          ),
+                        ],
+                        selected: {isGood},
+                        onSelectionChanged: isSaving
+                            ? null
+                            : (values) {
+                                setState(() {
+                                  isGood = values.first;
+                                  rating = isGood ? 10 : 1;
+                                  selectedReasons.clear();
+                                  localError = null;
+                                });
+                              },
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Quality score',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
                         ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: List.generate(10, (index) {
+                          final value = index + 1;
+                          final selected = value == rating;
+                          return ChoiceChip(
+                            label: Text('$value'),
+                            selected: selected,
+                            onSelected: isSaving
+                                ? null
+                                : (_) {
+                                    setState(() {
+                                      rating = value;
+                                      localError = null;
+                                    });
+                                  },
+                            selectedColor: Colors.black,
+                            labelStyle: TextStyle(
+                              color: selected ? Colors.white : Colors.black87,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '1 - Poor',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                          Text(
+                            '10 - Excellent',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Reason',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: activeReasons.map((reason) {
+                          final selected = selectedReasons.contains(reason);
+                          return FilterChip(
+                            label: Text(reason),
+                            selected: selected,
+                            onSelected: isSaving
+                                ? null
+                                : (_) {
+                                    setState(() {
+                                      if (selected) {
+                                        selectedReasons.remove(reason);
+                                      } else {
+                                        selectedReasons.add(reason);
+                                      }
+                                      localError = null;
+                                    });
+                                  },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: commentController,
+                        enabled: !isSaving,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Optional details',
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          contentPadding: const EdgeInsets.all(12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                      if (localError != null) ...[
+                        const SizedBox(height: 12),
                         Text(
-                          '10 - Amazing',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6)),
+                          localError!,
+                          style: const TextStyle(color: Colors.red),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Why?',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.95),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: reasons.map((reason) {
-                        final bool selected = selectedReasons.contains(reason);
-                        return FilterChip(
-                          label: Text(
-                            reason,
-                            style: TextStyle(
-                              color: selected ? Colors.black : Colors.white,
-                            ),
-                          ),
-                          selected: selected,
-                          onSelected: (_) {
-                            setState(() {
-                              if (selected) {
-                                selectedReasons.remove(reason);
-                              } else {
-                                selectedReasons.add(reason);
-                              }
-                              localError = null;
-                            });
-                          },
-                          selectedColor: Colors.white,
-                          backgroundColor: Colors.grey.shade800,
-                          checkmarkColor: Colors.black,
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Feel free to add specific details',
-                      style:
-                          TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: commentController,
-                      maxLines: 3,
-                      cursorColor: Colors.white,
-                      cursorErrorColor: Colors.white,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Type more details...',
-                        hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  if (selectedReasons.isEmpty) {
+                                    setState(() {
+                                      localError =
+                                          'Please select at least one reason.';
+                                    });
+                                    return;
+                                  }
+
+                                  setState(() {
+                                    isSaving = true;
+                                    localError = null;
+                                  });
+
+                                  final commentText =
+                                      commentController.text.trim().isNotEmpty
+                                          ? commentController.text.trim()
+                                          : null;
+                                  final ok =
+                                      await viewModel.submitMessageFeedback(
+                                    message: message,
+                                    goodBadRating: isGood ? 1 : -1,
+                                    detailsRating: rating,
+                                    reasons: selectedReasons.toList(),
+                                    comment: commentText,
+                                    messageIndex: messageIndex + 1,
+                                  );
+
+                                  if (!sheetContext.mounted) return;
+                                  if (ok) {
+                                    Navigator.of(sheetContext).pop(true);
+                                  } else {
+                                    setState(() {
+                                      isSaving = false;
+                                      localError =
+                                          'Failed to submit feedback. Please try again.';
+                                    });
+                                  }
+                                },
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(message.feedbackId == null
+                                  ? 'Submit feedback'
+                                  : 'Update feedback'),
                         ),
-                        filled: true,
-                        fillColor: Colors.grey.shade800,
-                        contentPadding: const EdgeInsets.all(12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    if (localError != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        localError!,
-                        style: const TextStyle(color: Colors.redAccent),
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
-              actions: [
-                ElevatedButton(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          if (selectedReasons.isEmpty) {
-                            setState(() {
-                              localError = 'Please select at least one reason.';
-                            });
-                            return;
-                          }
-
-                          setState(() {
-                            isSaving = true;
-                            localError = null;
-                          });
-
-                          final int goodBadRating =
-                              initialIsGood ? 1 : -1; // data.rating: 1/-1
-                          final int detailsRating = rating; // details.rating
-                          final String? commentText =
-                              commentController.text.trim().isNotEmpty
-                                  ? commentController.text.trim()
-                                  : null;
-
-                          final ok = await viewModel.submitMessageFeedback(
-                            message: message,
-                            goodBadRating: goodBadRating,
-                            detailsRating: detailsRating,
-                            reasons: selectedReasons.toList(),
-                            comment: commentText,
-                            messageIndex:
-                                messageIndex + 1, // backend is 1-based
-                          );
-
-                          if (!dialogContext.mounted) return;
-                          if (ok) {
-                            Navigator.of(dialogContext).pop(true);
-                          } else {
-                            setState(() {
-                              isSaving = false;
-                              localError =
-                                  'Failed to submit feedback. Please try again.';
-                            });
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(isSaving ? 'Saving...' : 'Save'),
-                ),
-              ],
             );
           },
         );
@@ -520,11 +576,12 @@ class _MessageListState extends State<MessageList> {
     if (saved == true && pageContext.mounted) {
       ScaffoldMessenger.of(pageContext).showSnackBar(
         const SnackBar(
-          content: Text('Thanks for your feedback!'),
+          content: Text('Feedback saved'),
           duration: Duration(seconds: 2),
         ),
       );
     }
+    commentController.dispose();
   }
 
   Widget buildAssistantMessage(

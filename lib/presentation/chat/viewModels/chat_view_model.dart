@@ -927,6 +927,10 @@ class ChatViewModel extends ChangeNotifier {
     return copyingMessageId == message.id;
   }
 
+  bool isSubmittingFeedbackFor(Message message) {
+    return _submittingFeedbackMessageIds.contains(message.id);
+  }
+
   Future<bool> submitMessageFeedback({
     required Message message,
     required int goodBadRating, // 1 for Good, -1 for Bad
@@ -953,11 +957,16 @@ class ChatViewModel extends ChangeNotifier {
         messageIndex: messageIndex,
       );
       message.feedbackId = feedbackId;
+      message.feedbackRating = goodBadRating;
+      message.feedbackDetailsRating = detailsRating;
+      message.feedbackReasons = List<String>.from(reasons);
+      message.feedbackComment = comment;
       await FeedbackIdCache.setFeedbackId(
         selectedChat!.id,
         message.id,
         feedbackId,
       );
+      await _chatUseCase.persistMessages(messages, selectedChat!);
       notifyListeners();
       return true;
     } catch (e) {
