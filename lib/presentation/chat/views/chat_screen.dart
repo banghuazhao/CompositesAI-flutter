@@ -252,9 +252,32 @@ class _ChatScreenState extends State<ChatScreen>
                     );
                   } else {
                     // If the user is logged in, show profile info
+                    final displayName =
+                        (viewModel.user?.name ?? viewModel.user?.email ?? '')
+                            .trim();
                     return Row(
                       mainAxisSize: MainAxisSize.min, // Keep it compact
                       children: [
+                        if (displayName.isNotEmpty) ...[
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 150),
+                            child: Text(
+                              displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          if (viewModel.isAdmin) ...[
+                            const SizedBox(width: 6),
+                            _buildAdminIndicator(compact: true),
+                          ],
+                          const SizedBox(width: 8),
+                        ],
                         // Avatar or Profile Button
                         GestureDetector(
                           onTap: () async {
@@ -590,9 +613,7 @@ class _ChatScreenState extends State<ChatScreen>
                       Expanded(
                         child: Row(
                           children: [
-                            _buildAdminIndicator(),
                             if (viewModel.shouldShowModelSelector) ...[
-                              const SizedBox(width: 8),
                               Flexible(
                                 child: viewModel.canSelectModels
                                     ? _buildModelPickerButton()
@@ -663,29 +684,32 @@ class _ChatScreenState extends State<ChatScreen>
             viewModel.pendingFiles.isNotEmpty);
   }
 
-  Widget _buildAdminIndicator() {
+  Widget _buildAdminIndicator({bool compact = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 7 : 10,
+        vertical: compact ? 3 : 8,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF3E8),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFFFD7B5)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
+        children: const [
           Icon(
             Icons.admin_panel_settings_rounded,
-            size: 16,
+            size: 14,
             color: Color(0xFFC65F1A),
           ),
-          SizedBox(width: 4),
+          SizedBox(width: 3),
           Text(
             'Admin',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               color: Color(0xFFC65F1A),
             ),
@@ -741,6 +765,11 @@ class _ChatScreenState extends State<ChatScreen>
         ),
       ),
     );
+  }
+
+  void _closeSheet(BuildContext context) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.pop(context);
   }
 
   Widget _buildModelLoadingChip() {
@@ -899,54 +928,56 @@ class _ChatScreenState extends State<ChatScreen>
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: models.length,
-                      separatorBuilder: (_, __) => Divider(
-                        height: 1,
-                        indent: 20,
-                        endIndent: 20,
-                        color: Colors.grey.shade300,
-                      ),
-                      itemBuilder: (context, index) {
-                        final model = models[index];
-                        final isSelected = model.id == selectedId;
-                        final showId = model.id != model.name;
+                    child: ExcludeFocus(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: models.length,
+                        separatorBuilder: (_, __) => Divider(
+                          height: 1,
+                          indent: 20,
+                          endIndent: 20,
+                          color: Colors.grey.shade300,
+                        ),
+                        itemBuilder: (context, index) {
+                          final model = models[index];
+                          final isSelected = model.id == selectedId;
+                          final showId = model.id != model.name;
 
-                        return ListTile(
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 20),
-                          title: Text(
-                            model.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                          return ListTile(
+                            contentPadding:
+                                const EdgeInsets.symmetric(horizontal: 20),
+                            title: Text(
+                              model.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          subtitle: showId
-                              ? Text(
-                                  model.id,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : null,
-                          trailing: isSelected
-                              ? const Icon(
-                                  Icons.check_rounded,
-                                  color: Colors.blue,
-                                )
-                              : null,
-                          onTap: () {
-                            Navigator.pop(context);
-                            viewModel.selectModel(model);
-                          },
-                        );
-                      },
+                            subtitle: showId
+                                ? Text(
+                                    model.id,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : null,
+                            trailing: isSelected
+                                ? const Icon(
+                                    Icons.check_rounded,
+                                    color: Colors.blue,
+                                  )
+                                : null,
+                            onTap: () {
+                              _closeSheet(context);
+                              viewModel.selectModel(model);
+                            },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -964,61 +995,65 @@ class _ChatScreenState extends State<ChatScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+      builder: (sheetContext) => SafeArea(
+        child: ExcludeFocus(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Photo Library'),
-              onTap: () {
-                Navigator.pop(context);
-                viewModel.pickAndUploadImages(ImageSource.gallery);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Camera'),
-              onTap: () {
-                Navigator.pop(context);
-                viewModel.pickAndUploadImages(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.insert_drive_file_outlined),
-              title: const Text('Files'),
-              onTap: () {
-                Navigator.pop(context);
-                viewModel.pickAndUploadFiles();
-              },
-            ),
-            ListTile(
-              leading: viewModel.isLoadingKnowledge
-                  ? const SizedBox.square(
-                      dimension: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.library_books_outlined),
-              title: const Text('Knowledge'),
-              subtitle: const Text('Attach RAG sources'),
-              enabled: !viewModel.isLoadingKnowledge,
-              onTap: () {
-                Navigator.pop(context);
-                _showKnowledgePickerSheet();
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Photo Library'),
+                onTap: () {
+                  _closeSheet(sheetContext);
+                  viewModel.pickAndUploadImages(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Camera'),
+                onTap: () {
+                  _closeSheet(sheetContext);
+                  viewModel.pickAndUploadImages(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.insert_drive_file_outlined),
+                title: const Text('Files'),
+                onTap: () {
+                  _closeSheet(sheetContext);
+                  viewModel.pickAndUploadFiles();
+                },
+              ),
+              ListTile(
+                leading: viewModel.isLoadingKnowledge
+                    ? const SizedBox.square(
+                        dimension: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.library_books_outlined),
+                title: const Text('Knowledge'),
+                subtitle: const Text('Attach RAG sources'),
+                enabled: !viewModel.isLoadingKnowledge,
+                onTap: () {
+                  _closeSheet(sheetContext);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _showKnowledgePickerSheet();
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
@@ -1116,18 +1151,21 @@ class _ChatScreenState extends State<ChatScreen>
                                         ),
                                       ),
                                     )
-                                  : ListView.separated(
-                                      shrinkWrap: true,
-                                      itemCount: knowledgeItems.length,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(height: 10),
-                                      itemBuilder: (context, index) {
-                                        final knowledge = knowledgeItems[index];
-                                        return _KnowledgePickerCard(
-                                          knowledge: knowledge,
-                                          viewModel: chat,
-                                        );
-                                      },
+                                  : ExcludeFocus(
+                                      child: ListView.separated(
+                                        shrinkWrap: true,
+                                        itemCount: knowledgeItems.length,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(height: 10),
+                                        itemBuilder: (context, index) {
+                                          final knowledge =
+                                              knowledgeItems[index];
+                                          return _KnowledgePickerCard(
+                                            knowledge: knowledge,
+                                            viewModel: chat,
+                                          );
+                                        },
+                                      ),
                                     ),
                         ),
                       ],
@@ -1139,7 +1177,10 @@ class _ChatScreenState extends State<ChatScreen>
           },
         );
       },
-    ).whenComplete(searchController.dispose);
+    ).whenComplete(() {
+      FocusManager.instance.primaryFocus?.unfocus();
+      searchController.dispose();
+    });
   }
 
   static bool _isImageFile(ChatFile file) {
