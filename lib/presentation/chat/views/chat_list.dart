@@ -46,7 +46,8 @@ Future<void> showShareChatDialog(
 }
 
 /// Returns the new title if user confirms, null if cancelled.
-Future<String?> showRenameDialog(BuildContext context, String currentTitle) async {
+Future<String?> showRenameDialog(
+    BuildContext context, String currentTitle) async {
   final controller = TextEditingController(text: currentTitle);
   return showDialog<String>(
     context: context,
@@ -188,15 +189,16 @@ Widget _chatSectionExpansionTile({
 }
 
 class ChatList extends StatelessWidget {
-  const ChatList({Key? key}) : super(key: key);
+  const ChatList({super.key});
 
   @override
   Widget build(BuildContext context) {
     final chatViewModel = Provider.of<ChatViewModel>(context);
     if (chatViewModel.errorMessage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted || chatViewModel.errorMessage == null) return;
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(chatViewModel.errorMessage!))
+          SnackBar(content: Text(chatViewModel.errorMessage!)),
         );
         chatViewModel.errorMessage = null;
       });
@@ -210,118 +212,148 @@ class ChatList extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.zero,
           children: <Widget>[
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade800,
-            ),
-            child: Text(
-              'Chats',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-              ),
-            ),
-          ),
-          ListTile(
-            leading: Icon(Icons.add),
-            title: Text('New Chat'),
-            onTap: () {
-              chatViewModel.onTapNewChat();
-              Navigator.pop(context);
-            },
-          ),
-          if (!chatViewModel.isLoadingChats)
-            Builder(
-              builder: (context) {
-                // Pinned titles only appear under Pinned; exclude those ids from Previous.
-                final pinnedIds =
-                    chatViewModel.pinnedChats.map((c) => c.id).toSet();
-                final previousChats = chatViewModel.chats
-                    .where((c) => !pinnedIds.contains(c.id))
-                    .toList();
-
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _chatSectionExpansionTile(
-                      context: context,
-                      title: 'Pinned',
-                      initiallyExpanded: false,
-                      children: [
-                        if (chatViewModel.pinnedChats.isEmpty)
-                          ListTile(
-                            dense: true,
-                            title: Text(
-                              'No pinned chats',
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 13,
-                              ),
-                            ),
-                          )
-                        else
-                          ...chatViewModel.pinnedChats.map(
-                            (chat) => _chatListTile(
-                              context,
-                              chatViewModel,
-                              chat,
-                              pinMenuAsUnpin: true,
-                            ),
-                          ),
-                      ],
-                    ),
-                    _chatSectionExpansionTile(
-                      context: context,
-                      title: 'Previous chats',
-                      initiallyExpanded: true,
-                      children: [
-                        if (previousChats.isEmpty)
-                          ListTile(
-                            dense: true,
-                            title: Text(
-                              'No previous chats',
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 13,
-                              ),
-                            ),
-                          )
-                        else
-                          ...previousChats.map(
-                            (chat) => _chatListTile(
-                              context,
-                              chatViewModel,
-                              chat,
-                              pinMenuAsUnpin: false,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                );
+            _ChatDrawerHeader(
+              onNewChat: () {
+                chatViewModel.onTapNewChat();
+                Navigator.pop(context);
               },
             ),
-          if (chatViewModel.isLoadingChats)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
+            if (!chatViewModel.isLoadingChats)
+              Builder(
+                builder: (context) {
+                  // Pinned titles only appear under Pinned; exclude those ids from Previous.
+                  final pinnedIds =
+                      chatViewModel.pinnedChats.map((c) => c.id).toSet();
+                  final previousChats = chatViewModel.chats
+                      .where((c) => !pinnedIds.contains(c.id))
+                      .toList();
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _chatSectionExpansionTile(
+                        context: context,
+                        title: 'Pinned',
+                        initiallyExpanded: false,
+                        children: [
+                          if (chatViewModel.pinnedChats.isEmpty)
+                            ListTile(
+                              dense: true,
+                              title: Text(
+                                'No pinned chats',
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            )
+                          else
+                            ...chatViewModel.pinnedChats.map(
+                              (chat) => _chatListTile(
+                                context,
+                                chatViewModel,
+                                chat,
+                                pinMenuAsUnpin: true,
+                              ),
+                            ),
+                        ],
+                      ),
+                      _chatSectionExpansionTile(
+                        context: context,
+                        title: 'Previous chats',
+                        initiallyExpanded: true,
+                        children: [
+                          if (previousChats.isEmpty)
+                            ListTile(
+                              dense: true,
+                              title: Text(
+                                'No previous chats',
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            )
+                          else
+                            ...previousChats.map(
+                              (chat) => _chatListTile(
+                                context,
+                                chatViewModel,
+                                chat,
+                                pinMenuAsUnpin: false,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
-            ),
-          if (chatViewModel.isLoadingMoreChats)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.0),
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+            if (chatViewModel.isLoadingChats)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
                 ),
               ),
-            ),
+            if (chatViewModel.isLoadingMoreChats)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.0),
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ChatDrawerHeader extends StatelessWidget {
+  const _ChatDrawerHeader({required this.onNewChat});
+
+  final VoidCallback onNewChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final topInset = MediaQuery.paddingOf(context).top;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, topInset + 10, 8, 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade800,
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Chats',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'New Chat',
+            onPressed: onNewChat,
+            icon: const Icon(Icons.add, color: Colors.white, size: 20),
+            style: IconButton.styleFrom(
+              minimumSize: const Size.square(36),
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ],
       ),
     );
   }
