@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:domain/chat/entities/chat.dart';
+import 'package:domain/chat/entities/chat_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewModels/chat_view_model.dart';
@@ -186,66 +189,236 @@ Future<void> _showTagsSheet(
   ChatViewModel viewModel,
   Chat chat,
 ) async {
-  final tags = await viewModel.fetchTagsForChat(chat);
-  if (!context.mounted) return;
-
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
-    builder: (sheetContext) => SafeArea(
-      child: ListView(
-        shrinkWrap: true,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [
-          const ListTile(
-            title: Text(
-              'Tags',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.sell_outlined),
-            title: const Text('Add tag'),
-            onTap: () async {
-              Navigator.pop(sheetContext);
-              final tag = await _showTextInputDialog(
-                context,
-                title: 'Add tag',
-                label: 'Tag name',
-              );
-              if (tag != null && tag.trim().isNotEmpty) {
-                await viewModel.addTagToChat(chat, tag);
-              }
-            },
-          ),
-          const Divider(),
-          if (tags.isEmpty)
-            ListTile(
-              enabled: false,
-              title: Text(
-                'No tags on this chat',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-            )
-          else
-            ...tags.map(
-              (tag) => ListTile(
-                leading: const Icon(Icons.tag),
-                title: Text(tag.name, overflow: TextOverflow.ellipsis),
-                trailing: IconButton(
-                  tooltip: 'Remove tag',
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    viewModel.removeTagFromChat(chat, tag);
-                  },
-                ),
-              ),
-            ),
-        ],
-      ),
+    isScrollControlled: true,
+    builder: (sheetContext) => _ChatTagsSheet(
+      viewModel: viewModel,
+      chat: chat,
     ),
   );
+}
+
+class _ChatTagsSheet extends StatefulWidget {
+  const _ChatTagsSheet({
+    required this.viewModel,
+    required this.chat,
+  });
+
+  final ChatViewModel viewModel;
+  final Chat chat;
+
+  @override
+  State<_ChatTagsSheet> createState() => _ChatTagsSheetState();
+}
+
+class _ChatTagsSheetState extends State<_ChatTagsSheet> {
+  final TextEditingController _tagController = TextEditingController();
+  List<ChatTag> _tags = const [];
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTags();
+  }
+
+  @override
+  void dispose() {
+    _tagController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadTags() async {
+    setState(() => _isLoading = true);
+    try {
+      final tags = await widget.viewModel.fetchTagsForChat(widget.chat);
+      if (!mounted) return;
+      setState(() => _tags = tags);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _tags = const []);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _addTag(String value) async {
+    final name = value.trim();
+    if (name.isEmpty || _isSaving) return;
+    if (_tags.any((tag) => tag.name.toLowerCase() == name.toLowerCase())) {
+      _tagController.clear();
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      await widget.viewModel.addTagToChat(widget.chat, name);
+      if (!mounted) return;
+      _tagController.clear();
+      await _loadTags();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _removeTag(ChatTag tag) async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
+      await widget.viewModel.removeTagFromChat(widget.chat, tag);
+      if (!mounted) return;
+      await _loadTags();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentNames = _tags.map((tag) => tag.name.toLowerCase()).toSet();
+    final suggestions = widget.viewModel.chatTags
+        .where((tag) => !currentNames.contains(tag.name.toLowerCase()))
+        .toList();
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 0, 20, bottomInset + 20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 540),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Manage tags',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (_isSaving)
+                    const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _tagController,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  hintText: 'Add a tag',
+                  prefixIcon: const Icon(Icons.sell_outlined),
+                  suffixIcon: IconButton(
+                    tooltip: 'Add tag',
+                    icon: const Icon(Icons.add_rounded),
+                    onPressed: () => _addTag(_tagController.text),
+                  ),
+                  isDense: true,
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onSubmitted: _addTag,
+              ),
+              const SizedBox(height: 18),
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView(
+                        children: [
+                          _TagSection(
+                            title: 'On this chat',
+                            emptyText: 'No tags yet',
+                            children: _tags
+                                .map(
+                                  (tag) => InputChip(
+                                    avatar: const Icon(Icons.tag, size: 16),
+                                    label: _ChipLabel(tag.name),
+                                    onDeleted: () => _removeTag(tag),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                          const SizedBox(height: 18),
+                          _TagSection(
+                            title: 'Suggested tags',
+                            emptyText: 'No other tags available',
+                            children: suggestions
+                                .map(
+                                  (tag) => ActionChip(
+                                    avatar: const Icon(
+                                      Icons.add_rounded,
+                                      size: 16,
+                                    ),
+                                    label: _ChipLabel(tag.name),
+                                    onPressed: () => _addTag(tag.name),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TagSection extends StatelessWidget {
+  const _TagSection({
+    required this.title,
+    required this.emptyText,
+    required this.children,
+  });
+
+  final String title;
+  final String emptyText;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (children.isEmpty)
+          Text(
+            emptyText,
+            style: TextStyle(color: Colors.grey.shade500),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: children,
+          ),
+      ],
+    );
+  }
 }
 
 Widget _chatListTile(
@@ -408,21 +581,67 @@ class ChatList extends StatefulWidget {
 
 class _ChatListState extends State<ChatList> {
   final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  bool _syncingSearchText = false;
+  String _lastRequestedSearch = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchTextChanged);
+  }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onSearchTextChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchTextChanged() {
+    if (_syncingSearchText) return;
+    if (mounted) setState(() {});
+
+    final query = _searchController.text;
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      _runSearch(query);
+    });
+  }
+
+  void _runSearch(String query) {
+    final trimmed = query.trim();
+    if (trimmed == _lastRequestedSearch) return;
+    _lastRequestedSearch = trimmed;
+    context.read<ChatViewModel>().searchChatHistory(query);
+  }
+
+  void _submitSearch(String query) {
+    _searchDebounce?.cancel();
+    _lastRequestedSearch = query.trim();
+    context.read<ChatViewModel>().searchChatHistory(query);
+  }
+
+  void _clearSearch(ChatViewModel chatViewModel) {
+    _searchDebounce?.cancel();
+    _lastRequestedSearch = '';
+    _searchController.clear();
+    chatViewModel.clearChatFilters();
   }
 
   @override
   Widget build(BuildContext context) {
     final chatViewModel = Provider.of<ChatViewModel>(context);
     if (_searchController.text != chatViewModel.chatSearchQuery) {
+      _syncingSearchText = true;
       _searchController.text = chatViewModel.chatSearchQuery;
       _searchController.selection = TextSelection.collapsed(
         offset: _searchController.text.length,
       );
+      _lastRequestedSearch = chatViewModel.chatSearchQuery.trim();
+      _syncingSearchText = false;
     }
     if (chatViewModel.errorMessage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -450,8 +669,10 @@ class _ChatListState extends State<ChatList> {
             ),
             _ChatSearchField(
               controller: _searchController,
-              onSearch: chatViewModel.searchChatHistory,
-              onClear: chatViewModel.clearChatFilters,
+              isSearching: chatViewModel.chatSearchQuery.trim().isNotEmpty &&
+                  chatViewModel.isLoadingChatFilters,
+              onSearch: _submitSearch,
+              onClear: () => _clearSearch(chatViewModel),
             ),
             _ChatFilterChips(viewModel: chatViewModel),
             if (!chatViewModel.isLoadingChats)
@@ -631,11 +852,13 @@ class _ChatSearchField extends StatelessWidget {
     required this.controller,
     required this.onSearch,
     required this.onClear,
+    required this.isSearching,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onSearch;
   final VoidCallback onClear;
+  final bool isSearching;
 
   @override
   Widget build(BuildContext context) {
@@ -647,16 +870,21 @@ class _ChatSearchField extends StatelessWidget {
         decoration: InputDecoration(
           hintText: 'Search chats',
           prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: controller.text.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: 'Clear search',
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () {
-                    controller.clear();
-                    onClear();
-                  },
-                ),
+          suffixIcon: isSearching
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : controller.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Clear search',
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: onClear,
+                    ),
           isDense: true,
           filled: true,
           fillColor: Colors.grey.shade100,
@@ -712,9 +940,11 @@ class _ChatFilterChips extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
                 avatar: const Icon(Icons.folder_outlined, size: 18),
-                label: Text(folder.name, overflow: TextOverflow.ellipsis),
+                label: _ChipLabel(folder.name),
                 selected: viewModel.selectedChatFolder?.id == folder.id,
-                onSelected: (_) => viewModel.filterChatsByFolder(folder),
+                onSelected: (selected) => selected
+                    ? viewModel.filterChatsByFolder(folder)
+                    : viewModel.clearChatFilters(),
               ),
             ),
           ),
@@ -723,13 +953,33 @@ class _ChatFilterChips extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
                 avatar: const Icon(Icons.tag, size: 18),
-                label: Text(tag.name, overflow: TextOverflow.ellipsis),
+                label: _ChipLabel(tag.name),
                 selected: viewModel.selectedChatTag?.id == tag.id,
-                onSelected: (_) => viewModel.filterChatsByTag(tag),
+                onSelected: (selected) => selected
+                    ? viewModel.filterChatsByTag(tag)
+                    : viewModel.clearChatFilters(),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ChipLabel extends StatelessWidget {
+  const _ChipLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 140),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

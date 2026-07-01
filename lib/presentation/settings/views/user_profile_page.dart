@@ -12,7 +12,7 @@ import '../viewModels/user_profile_view_model.dart';
 class UserProfilePage extends StatelessWidget {
   final User? user;
 
-  const UserProfilePage({Key? key, required this.user}) : super(key: key);
+  const UserProfilePage({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -55,8 +55,7 @@ class UserProfilePage extends StatelessWidget {
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => UpdatePasswordPage()),
+                        MaterialPageRoute(builder: (_) => UpdatePasswordPage()),
                       );
                       if (result == 'password_updated') {
                         await viewModel.fetchUser();
@@ -110,6 +109,7 @@ class UserProfilePage extends StatelessWidget {
     final name = viewModel.user?.name ?? '';
     final email = viewModel.user?.email ?? '';
     final isExpert = viewModel.user?.isCompositeExpert == true;
+    final isAdmin = viewModel.user?.isAdmin == true;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 36),
@@ -146,8 +146,8 @@ class UserProfilePage extends StatelessWidget {
                     color: Colors.white,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.verified,
-                      color: Colors.blue, size: 20),
+                  child:
+                      const Icon(Icons.verified, color: Colors.blue, size: 20),
                 ),
             ],
           ),
@@ -156,13 +156,21 @@ class UserProfilePage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
+                Flexible(
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
+                if (isAdmin) ...[
+                  const SizedBox(width: 8),
+                  _buildAdminBadge(),
+                ],
               ],
             ),
           if (name.isNotEmpty) const SizedBox(height: 4),
@@ -171,6 +179,38 @@ class UserProfilePage extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdminBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E8),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFFFD7B5)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.admin_panel_settings_rounded,
+            size: 14,
+            color: Color(0xFFC65F1A),
+          ),
+          SizedBox(width: 4),
+          Text(
+            'Admin',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFC65F1A),
             ),
           ),
         ],
@@ -223,8 +263,7 @@ class UserProfilePage extends StatelessWidget {
               ),
             ),
             if (color == null)
-              Icon(Icons.chevron_right,
-                  color: Colors.grey.shade400, size: 20),
+              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
           ],
         ),
       ),
@@ -294,8 +333,8 @@ class UserProfilePage extends StatelessWidget {
                   Navigator.of(context).pop('refresh');
                 }
               },
-              child: Text('Delete',
-                  style: TextStyle(color: Colors.red.shade600)),
+              child:
+                  Text('Delete', style: TextStyle(color: Colors.red.shade600)),
             ),
           ],
         );

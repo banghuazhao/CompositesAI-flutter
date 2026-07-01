@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
 import 'package:swiftcomp/presentation/settings/views/admin_model_tool_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
+import 'package:swiftcomp/presentation/tools/page/tool_page.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import '../../chat/viewModels/chat_view_model.dart';
 import '../../conponents/base64-image.dart';
@@ -14,7 +15,7 @@ import '../../auth/login_page.dart';
 import 'tool_setting_page.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  const SettingsPage({super.key});
 
   @override
   _SettingsPageState createState() => _SettingsPageState();
@@ -62,6 +63,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       );
                       if (user != null) {
                         viewModel.updateUser(user);
+                        if (!context.mounted) return;
                         final chat = context.read<ChatViewModel>();
                         await chat.checkAuthStatus();
                         if (!context.mounted) return;
@@ -83,6 +85,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => ToolSettingPage()),
+                  ),
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: Icons.calculate_outlined,
+                  title: 'Composite Calculators',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ToolPage()),
                   ),
                 ),
                 if (viewModel.isAdmin) ...[
@@ -181,6 +192,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final name = viewModel.user?.name ?? '';
     final email = viewModel.user?.email ?? '';
     final isExpert = viewModel.user?.isCompositeExpert == true;
+    final isAdmin = viewModel.user?.isAdmin == true;
 
     return _buildSection([
       InkWell(
@@ -222,6 +234,10 @@ class _SettingsPageState extends State<SettingsPage> {
                             child: Icon(Icons.verified,
                                 color: Colors.blue, size: 16),
                           ),
+                        if (isAdmin) ...[
+                          const SizedBox(width: 6),
+                          _buildAdminBadge(),
+                        ],
                       ],
                     ),
                     if (name.isNotEmpty && email.isNotEmpty) ...[
@@ -244,6 +260,38 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     ]);
+  }
+
+  Widget _buildAdminBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E8),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFFFD7B5)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.admin_panel_settings_rounded,
+            size: 13,
+            color: Color(0xFFC65F1A),
+          ),
+          SizedBox(width: 3),
+          Text(
+            'Admin',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFC65F1A),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAvatar(SettingsViewModel viewModel) {

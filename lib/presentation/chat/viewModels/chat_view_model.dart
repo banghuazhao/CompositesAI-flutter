@@ -70,6 +70,7 @@ class ChatViewModel extends ChangeNotifier {
   ChatTag? selectedChatTag;
   ChatFolder? selectedChatFolder;
   bool showingArchivedChats = false;
+  int _chatFilterRequestId = 0;
   Set<String> selectedToolIds = <String>{};
   bool _hasUserConfiguredTools = false;
   Chat? selectedChat;
@@ -488,7 +489,9 @@ class ChatViewModel extends ChangeNotifier {
       showingArchivedChats;
 
   String get activeChatFilterLabel {
-    if (chatSearchQuery.trim().isNotEmpty) return 'Search results';
+    if (chatSearchQuery.trim().isNotEmpty) {
+      return 'Search "${chatSearchQuery.trim()}"';
+    }
     if (selectedChatTag != null) return '#${selectedChatTag!.name}';
     if (selectedChatFolder != null) return selectedChatFolder!.name;
     if (showingArchivedChats) return 'Archived';
@@ -513,6 +516,7 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> searchChatHistory(String query) async {
     final trimmed = query.trim();
+    final requestId = ++_chatFilterRequestId;
     chatSearchQuery = trimmed;
     selectedChatTag = null;
     selectedChatFolder = null;
@@ -524,20 +528,26 @@ class ChatViewModel extends ChangeNotifier {
     }
 
     isLoadingChatFilters = true;
+    filteredChats = _localSearchChats(trimmed);
     notifyListeners();
     try {
-      filteredChats = await _chatUseCase.searchChats(trimmed);
+      final remoteChats = await _chatUseCase.searchChats(trimmed);
+      if (requestId != _chatFilterRequestId) return;
+      filteredChats = _mergeUniqueChats([...remoteChats, ...filteredChats]);
     } catch (e) {
+      if (requestId != _chatFilterRequestId) return;
       if (kDebugMode) debugPrint('searchChatHistory error: $e');
       errorMessage = 'Failed to search chats.';
-      filteredChats = [];
     } finally {
-      isLoadingChatFilters = false;
-      notifyListeners();
+      if (requestId == _chatFilterRequestId) {
+        isLoadingChatFilters = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> filterChatsByTag(ChatTag tag) async {
+    final requestId = ++_chatFilterRequestId;
     chatSearchQuery = '';
     selectedChatTag = tag;
     selectedChatFolder = null;
@@ -545,18 +555,24 @@ class ChatViewModel extends ChangeNotifier {
     isLoadingChatFilters = true;
     notifyListeners();
     try {
-      filteredChats = await _chatUseCase.fetchChatsByTag(tag.name);
+      final chats = await _chatUseCase.fetchChatsByTag(tag.name);
+      if (requestId != _chatFilterRequestId) return;
+      filteredChats = chats;
     } catch (e) {
+      if (requestId != _chatFilterRequestId) return;
       if (kDebugMode) debugPrint('filterChatsByTag error: $e');
       errorMessage = 'Failed to load tagged chats.';
       filteredChats = [];
     } finally {
-      isLoadingChatFilters = false;
-      notifyListeners();
+      if (requestId == _chatFilterRequestId) {
+        isLoadingChatFilters = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> filterChatsByFolder(ChatFolder folder) async {
+    final requestId = ++_chatFilterRequestId;
     chatSearchQuery = '';
     selectedChatTag = null;
     selectedChatFolder = folder;
@@ -564,18 +580,24 @@ class ChatViewModel extends ChangeNotifier {
     isLoadingChatFilters = true;
     notifyListeners();
     try {
-      filteredChats = await _chatUseCase.fetchChatsByFolder(folder.id);
+      final chats = await _chatUseCase.fetchChatsByFolder(folder.id);
+      if (requestId != _chatFilterRequestId) return;
+      filteredChats = chats;
     } catch (e) {
+      if (requestId != _chatFilterRequestId) return;
       if (kDebugMode) debugPrint('filterChatsByFolder error: $e');
       errorMessage = 'Failed to load folder chats.';
       filteredChats = [];
     } finally {
-      isLoadingChatFilters = false;
-      notifyListeners();
+      if (requestId == _chatFilterRequestId) {
+        isLoadingChatFilters = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> showArchivedChats() async {
+    final requestId = ++_chatFilterRequestId;
     chatSearchQuery = '';
     selectedChatTag = null;
     selectedChatFolder = null;
@@ -583,25 +605,55 @@ class ChatViewModel extends ChangeNotifier {
     isLoadingChatFilters = true;
     notifyListeners();
     try {
-      archivedChats = await _chatUseCase.fetchArchivedChats();
+      final chats = await _chatUseCase.fetchArchivedChats();
+      if (requestId != _chatFilterRequestId) return;
+      archivedChats = chats;
       filteredChats = archivedChats;
     } catch (e) {
+      if (requestId != _chatFilterRequestId) return;
       if (kDebugMode) debugPrint('showArchivedChats error: $e');
       errorMessage = 'Failed to load archived chats.';
       filteredChats = [];
     } finally {
-      isLoadingChatFilters = false;
-      notifyListeners();
+      if (requestId == _chatFilterRequestId) {
+        isLoadingChatFilters = false;
+        notifyListeners();
+      }
     }
   }
 
   void clearChatFilters() {
+    _chatFilterRequestId++;
     chatSearchQuery = '';
     selectedChatTag = null;
     selectedChatFolder = null;
     showingArchivedChats = false;
     filteredChats = [];
     notifyListeners();
+  }
+
+  List<Chat> _localSearchChats(String query) {
+    final normalized = query.toLowerCase();
+    final allKnownChats = _mergeUniqueChats([
+      ...pinnedChats,
+      ...chats,
+      ...chatFolders.expand((folder) => folder.chats),
+      ...filteredChats,
+    ]);
+    return allKnownChats
+        .where((chat) => chat.title.toLowerCase().contains(normalized))
+        .toList();
+  }
+
+  List<Chat> _mergeUniqueChats(Iterable<Chat> source) {
+    final seenIds = <String>{};
+    final merged = <Chat>[];
+    for (final chat in source) {
+      if (chat.id.isEmpty || seenIds.contains(chat.id)) continue;
+      seenIds.add(chat.id);
+      merged.add(chat);
+    }
+    return merged;
   }
 
   Future<void> _loadChatLists({required bool showLoading}) async {

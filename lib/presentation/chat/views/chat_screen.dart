@@ -252,32 +252,9 @@ class _ChatScreenState extends State<ChatScreen>
                     );
                   } else {
                     // If the user is logged in, show profile info
-                    final displayName =
-                        (viewModel.user?.name ?? viewModel.user?.email ?? '')
-                            .trim();
                     return Row(
                       mainAxisSize: MainAxisSize.min, // Keep it compact
                       children: [
-                        if (displayName.isNotEmpty) ...[
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 150),
-                            child: Text(
-                              displayName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          if (viewModel.isAdmin) ...[
-                            const SizedBox(width: 6),
-                            _buildAdminIndicator(compact: true),
-                          ],
-                          const SizedBox(width: 8),
-                        ],
                         // Avatar or Profile Button
                         GestureDetector(
                           onTap: () async {
@@ -682,41 +659,6 @@ class _ChatScreenState extends State<ChatScreen>
         !viewModel.isUploadingFile &&
         (textController.text.trim().isNotEmpty ||
             viewModel.pendingFiles.isNotEmpty);
-  }
-
-  Widget _buildAdminIndicator({bool compact = false}) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 7 : 10,
-        vertical: compact ? 3 : 8,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E8),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFFFD7B5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(
-            Icons.admin_panel_settings_rounded,
-            size: 14,
-            color: Color(0xFFC65F1A),
-          ),
-          SizedBox(width: 3),
-          Text(
-            'Admin',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFC65F1A),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildModelPickerButton() {
