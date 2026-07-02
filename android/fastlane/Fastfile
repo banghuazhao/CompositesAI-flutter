@@ -32,15 +32,35 @@ platform :android do
 
   desc "Deploy a new version to the Google Play"
   lane :deploy do
-    new_version_code = increment_version_code_time()
+    version_file_content = File.read(File.expand_path("../version.properties", __dir__))
+    version_code = version_file_content.match(/versionCode=(\d+)/)[1].to_i
+    aab_path = File.expand_path("../../build/app/outputs/bundle/release/app-release.aab", __dir__)
     gradle(
-      task: "assemble",
+      task: "bundle",
       build_type: "Release"
     )
     upload_to_play_store(
       track: 'production',
-      version_code: new_version_code,
+      aab: aab_path,
+      version_code: version_code,
       release_status: 'draft'
+    )
+  end
+
+  desc "Submit the current Google Play draft release for review"
+  lane :submit do
+    version_file_content = File.read(File.expand_path("../version.properties", __dir__))
+    version_code = version_file_content.match(/versionCode=(\d+)/)[1].to_i
+    upload_to_play_store(
+      track: 'production',
+      version_code: version_code,
+      release_status: 'completed',
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
     )
   end
 
@@ -79,7 +99,7 @@ platform :android do
     # Write the updated pubspec.yaml content
     File.open(pubspec_path, "w") { |file| file.puts new_pubspec_content }
 
-    version_code
+    new_version_code
   end
   
 end

@@ -16,6 +16,18 @@ platform :ios do
     upload_to_appstore()
   end
 
+  desc "Create and submit a new App Store release"
+  lane :release do
+    refresh_flutter_config()
+    archive_appstore()
+    submit_to_appstore()
+  end
+
+  lane :refresh_flutter_config do
+    UI.header "🔄 Refreshing Flutter iOS build settings"
+    sh "cd .. && flutter pub get"
+  end
+
   lane :set_build_number do
     UI.header "⏰ Setting time as build number"
 
@@ -30,6 +42,8 @@ platform :ios do
       workspace: workspace,
       scheme: "Runner",
       export_method: "app-store",
+      output_directory: "build",
+      output_name: "SwiftComp",
       xcargs: "-allowProvisioningUpdates"
     )
   end
@@ -52,6 +66,26 @@ platform :ios do
         issuer_id: ENV['APPSTORE_ISSUER_ID'], 
         key_filepath: ENV['APPSTORE_KEY_FILEPATH']
       )
+    )
+  end
+
+  lane :submit_to_appstore do
+    UI.header "🚀 Submitting to App Store Review"
+    deliver(
+      api_key: app_store_api_key,
+      ipa: "build/SwiftComp.ipa",
+      app_version: flutter_version_name,
+      submit_for_review: true,
+      automatic_release: true,
+      skip_screenshots: true,
+      precheck_include_in_app_purchases: false,
+      force: true,
+      submission_information: {
+        export_compliance_uses_encryption: false,
+        content_rights_contains_third_party_content: false,
+        content_rights_has_rights: true,
+        add_id_info_uses_idfa: false
+      }
     )
   end
 
@@ -122,5 +156,13 @@ platform :ios do
   
     # Return the list of languages
     languages
+  end
+
+  def flutter_version_name
+    pubspec = File.read(File.expand_path("../../pubspec.yaml", __dir__))
+    version = pubspec.match(/^version:\s*([^\s+]+)/)
+    UI.user_error!("Could not find Flutter version in pubspec.yaml") unless version
+
+    version[1]
   end
 end

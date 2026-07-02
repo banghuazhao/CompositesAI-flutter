@@ -1,1 +1,5 @@
-- Bug fixes and performance improvements
+• Improved expert request flow
+• Better chat drawer search and organisation
+• Improved chat file attachments workflow
+• Knowledge RAG picker for richer AI context
+• Bug fixes and performance improvements

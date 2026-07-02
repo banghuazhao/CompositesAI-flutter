@@ -39,6 +39,14 @@ Submit a new Beta Build to Crashlytics Beta
 
 Deploy a new version to the Google Play
 
+### android submit
+
+```sh
+[bundle exec] fastlane android submit
+```
+
+Submit the current Google Play draft release for review
+
 ### android increment_version_code_time
 
 ```sh

@@ -23,6 +23,22 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 Push a new beta build to TestFlight
 
+### ios release
+
+```sh
+[bundle exec] fastlane ios release
+```
+
+Create and submit a new App Store release
+
+### ios refresh_flutter_config
+
+```sh
+[bundle exec] fastlane ios refresh_flutter_config
+```
+
+
+
 ### ios set_build_number
 
 ```sh
@@ -51,6 +67,14 @@ Push a new beta build to TestFlight
 
 ```sh
 [bundle exec] fastlane ios upload_to_appstore
+```
+
+
+
+### ios submit_to_appstore
+
+```sh
+[bundle exec] fastlane ios submit_to_appstore
 ```
 
 
