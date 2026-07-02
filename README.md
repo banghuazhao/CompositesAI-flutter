@@ -5,6 +5,8 @@
 [![App Store](https://img.shields.io/badge/App%20Store-Download-blue.svg)](https://apps.apple.com/us/app/compositesai-ai-for-engineers/id1297825946)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Download-green.svg)](https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&hl=en_US)
 
+> **Note:** This repository was previously known as [swiftcomp-flutter](https://github.com/banghuazhao/swiftcomp-flutter) and the app as SwiftComp. It was renamed to CompositesAI to better reflect the AI-first direction of the project.
+
 CompositesAI is an AI-powered platform designed specifically for the composites engineering industry. Ask questions about material design, calculations, and process optimization in natural language — and get instant, expert-level answers.
 
 The app is available for iOS, Android, and the web at [compositesai.com](https://compositesai.com/).
