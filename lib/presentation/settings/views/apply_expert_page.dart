@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-
 import 'package:provider/provider.dart';
 
 import '../viewModels/settings_view_model.dart';
 
-
-
 class ApplyExpertPage extends StatefulWidget {
+  const ApplyExpertPage({super.key});
+
   @override
-  _ApplyExpertPage createState() => _ApplyExpertPage();
+  State<ApplyExpertPage> createState() => _ApplyExpertPage();
 }
 
 class _ApplyExpertPage extends State<ApplyExpertPage> {
@@ -17,73 +16,62 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
   bool _isLoading = false;
 
   @override
-  @override
   void dispose() {
     _reasonController.dispose();
     _profileLinkController.dispose();
     super.dispose();
   }
 
-
   bool _isUrlValid(String url) {
-    final urlPattern =
+    const urlPattern =
         r'^(https?:\/\/)?(www\.)?([a-zA-Z0-9-_]+\.)+[a-zA-Z]{2,}(:\d+)?(\/.*)?$';
     return RegExp(urlPattern).hasMatch(url);
   }
-
 
   Future<void> _submitApplication() async {
     final profileLink = _profileLinkController.text;
 
     if (profileLink.isNotEmpty && !_isUrlValid(profileLink)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please enter a valid URL.")),
+        const SnackBar(content: Text("Please enter a valid URL.")),
       );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Access the view model and submit the application
       final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
-      final result = await viewModel.submitApplication(_reasonController.text, profileLink);
+      final result = await viewModel.submitExpertRequest(
+        _reasonController.text,
+        profileLink,
+      );
 
-      if (result == 'Application successfully submitted. Please wait for approval.' ||
-          result == 'This user has already submitted an expert application. Please wait for approval.' ||
-          result == 'Submission failed due to an internal error. Please try again later.') {
-        // Show a dialog and wait for the user to close it
-        await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Application Status'),
-            content: Text(result),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
-                },
-                child: Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-
-      // Add a slight delay before navigating back
-      await Future.delayed(Duration(milliseconds: 300)); // Optional delay
-      Navigator.pop(context, 'submit'); // Navigate back after dialog interaction
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Application Status'),
+          content: Text(result),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      Navigator.pop(context, 'submit');
     } catch (error) {
-      print("Submission error: $error"); // Log the error for debugging
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Failed to submit: $error")),
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -98,45 +86,45 @@ class _ApplyExpertPage extends State<ApplyExpertPage> {
           children: [
             Text(
               "Filling these fields will increase your chances of approval and speed up the process.",
-              style: TextStyle(
-                fontSize: 16, // Slightly larger text
-                fontWeight: FontWeight.w500, // Medium weight for emphasis
-                color: Colors.blueAccent, // Use a subtle blue color for emphasis
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.blueAccent,
               ),
-              textAlign: TextAlign.center, // Center the text horizontally
+              textAlign: TextAlign.center,
             ),
-            SizedBox(height: 25.0),
-            Text(
+            const SizedBox(height: 25.0),
+            const Text(
               "Reason:",
               style: TextStyle(fontSize: 16.0),
             ),
             TextFormField(
               controller: _reasonController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: "Tell us why you’re applying to be an expert...",
               ),
             ),
-            SizedBox(height: 20.0),
-            Text(
+            const SizedBox(height: 20.0),
+            const Text(
               "LinkedIn or Other Professional Profile Link:",
               style: TextStyle(fontSize: 16.0),
             ),
             TextFormField(
               controller: _profileLinkController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: "a link to showcase your professional work...",
               ),
-              keyboardType: TextInputType.url, // URL-specific keyboard
+              keyboardType: TextInputType.url,
             ),
-            SizedBox(height: 20.0),
+            const SizedBox(height: 20.0),
             _isLoading
-                ? Center(child: CircularProgressIndicator()) // Center the loading indicator
+                ? const Center(child: CircularProgressIndicator())
                 : Center(
-              child: ElevatedButton(
-                onPressed: _submitApplication,
-                child: Text("Apply"),
-              ),
-            ),
+                    child: ElevatedButton(
+                      onPressed: _submitApplication,
+                      child: const Text("Apply"),
+                    ),
+                  ),
           ],
         ),
       ),

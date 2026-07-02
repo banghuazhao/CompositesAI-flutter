@@ -713,7 +713,9 @@ class _ChatListState extends State<ChatList> {
                               ListTile(
                                 dense: true,
                                 title: Text(
-                                  'No chats found',
+                                  chatViewModel.chatSearchQuery.trim().isEmpty
+                                      ? 'No chats found'
+                                      : 'No loaded chats found',
                                   style: TextStyle(
                                     color: Colors.grey.shade500,
                                     fontSize: 13,

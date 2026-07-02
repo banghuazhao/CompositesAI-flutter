@@ -12,6 +12,7 @@ import '../../conponents/base64-image.dart';
 import '../viewModels/settings_view_model.dart';
 import 'apply_expert_page.dart';
 import '../../auth/login_page.dart';
+import 'expert_requests_page.dart';
 import 'tool_setting_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -108,6 +109,21 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                   ),
+                  _buildDivider(),
+                  _buildTile(
+                    icon: Icons.workspace_premium_outlined,
+                    title: 'Expert Requests',
+                    trailing: _buildExpertRequestBadge(viewModel),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ExpertRequestsPage(),
+                        ),
+                      );
+                      await viewModel.refreshExpertRequestMetadata();
+                    },
+                  ),
                 ],
                 _buildDivider(),
                 _buildTile(
@@ -141,20 +157,33 @@ class _SettingsPageState extends State<SettingsPage> {
               ]),
 
               // ── Account section (expert apply) ───────────────────────
-              if (viewModel.isLoggedIn && !viewModel.isExpert) ...[
+              if (viewModel.isLoggedIn &&
+                  !viewModel.isExpert &&
+                  !viewModel.isAdmin) ...[
                 const SizedBox(height: 24),
                 _buildSectionLabel('Account'),
                 const SizedBox(height: 6),
                 _buildSection([
                   _buildTile(
                     icon: Icons.workspace_premium_outlined,
-                    title: 'Request to Become an Expert',
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ApplyExpertPage()),
-                      );
-                    },
+                    title: _expertRequestTitle(viewModel),
+                    subtitle: _expertRequestSubtitle(viewModel),
+                    trailing: viewModel.isLoadingExpertRequestMetadata
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : null,
+                    onTap: _canOpenExpertRequest(viewModel)
+                        ? () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const ApplyExpertPage()),
+                            );
+                            await viewModel.refreshExpertRequestMetadata();
+                          }
+                        : () => _showExpertRequestStatus(context, viewModel),
                   ),
                 ]),
               ],
@@ -294,6 +323,95 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Widget _buildExpertRequestBadge(SettingsViewModel viewModel) {
+    if (viewModel.isLoadingExpertRequestMetadata) {
+      return const SizedBox.square(
+        dimension: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+
+    final count = viewModel.pendingExpertRequestCount;
+    if (count <= 0) {
+      return Text(
+        'None',
+        style: TextStyle(
+          fontSize: 13,
+          color: Colors.grey.shade500,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
+    return Container(
+      constraints: const BoxConstraints(minWidth: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFC65F1A),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  String _expertRequestTitle(SettingsViewModel viewModel) {
+    final status = viewModel.currentExpertRequest?.status;
+    switch (status) {
+      case 'pending':
+        return 'Expert Request Pending';
+      case 'approved':
+        return 'Expert Request Approved';
+      case 'denied':
+        return 'Request to Become an Expert';
+      default:
+        return 'Request to Become an Expert';
+    }
+  }
+
+  String? _expertRequestSubtitle(SettingsViewModel viewModel) {
+    if (viewModel.isLoadingExpertRequestMetadata) {
+      return 'Checking your request status...';
+    }
+
+    final status = viewModel.currentExpertRequest?.status;
+    switch (status) {
+      case 'pending':
+        return 'Your application is waiting for admin review.';
+      case 'approved':
+        return 'Your application was approved. Refresh your account if the expert badge is not visible yet.';
+      case 'denied':
+        return 'Your previous request was denied. You can submit a new request.';
+      default:
+        return 'Apply for expert access and review permissions.';
+    }
+  }
+
+  bool _canOpenExpertRequest(SettingsViewModel viewModel) {
+    final status = viewModel.currentExpertRequest?.status;
+    return !viewModel.isLoadingExpertRequestMetadata &&
+        status != 'pending' &&
+        status != 'approved';
+  }
+
+  void _showExpertRequestStatus(
+    BuildContext context,
+    SettingsViewModel viewModel,
+  ) {
+    final message = _expertRequestSubtitle(viewModel) ??
+        'Your expert request is already being reviewed.';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   Widget _buildAvatar(SettingsViewModel viewModel) {
     const double size = 44;
     if (viewModel.user?.avatarUrl != null) {
@@ -351,6 +469,8 @@ class _SettingsPageState extends State<SettingsPage> {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    String? subtitle,
+    Widget? trailing,
     Color? color,
   }) {
     final c = color ?? Colors.black87;
@@ -363,8 +483,29 @@ class _SettingsPageState extends State<SettingsPage> {
             Icon(icon, size: 22, color: c),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(title, style: TextStyle(fontSize: 16, color: c)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 16, color: c)),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
+            if (trailing != null) ...[
+              const SizedBox(width: 12),
+              trailing,
+            ],
+            const SizedBox(width: 8),
             Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
           ],
         ),

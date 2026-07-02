@@ -1,7 +1,6 @@
 import 'package:domain/auth/entities/user.dart';
 import 'package:domain/auth/use_cases/auth_use_case.dart';
 import 'package:domain/auth/use_cases/user_use_case.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // Assuming your use cases are here
 
@@ -15,7 +14,10 @@ class UserProfileViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  UserProfileViewModel({required this.authUseCase, required this.userUseCase, required this.user});
+  UserProfileViewModel(
+      {required this.authUseCase,
+      required this.userUseCase,
+      required this.user});
 
   Future<void> fetchUser() async {
     try {
@@ -32,6 +34,7 @@ class UserProfileViewModel extends ChangeNotifier {
     setLoading(true);
     try {
       await authUseCase.logout();
+      if (!context.mounted) return false;
 
       // Display a success Snackbar
       ScaffoldMessenger.of(context).showSnackBar(
@@ -49,6 +52,7 @@ class UserProfileViewModel extends ChangeNotifier {
     } catch (e) {
       // Log the error and display an error Snackbar
       debugPrint("Logout failed: $e");
+      if (!context.mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Logout failed. Please try again."),
@@ -61,7 +65,6 @@ class UserProfileViewModel extends ChangeNotifier {
       setLoading(false); // Ensure loading state is cleared
     }
   }
-
 
   Future<bool> deleteUser() async {
     setLoading(true);
@@ -101,6 +104,4 @@ class UserProfileViewModel extends ChangeNotifier {
       debugPrint("Failed to update user name: $error");
     }
   }
-
 }
- 

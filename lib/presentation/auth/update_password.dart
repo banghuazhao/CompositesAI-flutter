@@ -5,6 +5,8 @@ import 'package:swiftcomp/presentation/auth/update_password_view_model.dart';
 import '../../app/injection_container.dart';
 
 class UpdatePasswordPage extends StatefulWidget {
+  const UpdatePasswordPage({super.key});
+
   @override
   _UpdatePasswordPageState createState() => _UpdatePasswordPageState();
 }
@@ -188,13 +190,15 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
     if (!_formKey.currentState!.validate()) {
       // If the form validation fails, return immediately
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Form validation failed")),
+        const SnackBar(content: Text("Form validation failed")),
       );
+      return;
     }
 
     // Access the view model and update the user's password
     await viewModel.updatePassword(
         _currentPassWordController.text, _newPasswordController.text);
+    if (!mounted) return;
     if (viewModel.errorMessage.isNotEmpty) {
       // Show error message if update fails and return error string
       ScaffoldMessenger.of(context).showSnackBar(

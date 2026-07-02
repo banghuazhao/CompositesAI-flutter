@@ -7,20 +7,20 @@ import '../../app/injection_container.dart';
 import 'signup_view_model.dart';
 
 class SignupPage extends StatelessWidget {
-  const SignupPage({Key? key}) : super(key: key);
+  const SignupPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     // Provide the SignupViewModel to the widget tree
     return ChangeNotifierProvider(
       create: (_) => sl<SignupViewModel>(),
-      child: SignupForm(),
+      child: const SignupForm(),
     );
   }
 }
 
 class SignupForm extends StatefulWidget {
-  const SignupForm({Key? key}) : super(key: key);
+  const SignupForm({super.key});
 
   @override
   State<SignupForm> createState() => _SignupFormState();
@@ -78,6 +78,7 @@ class _SignupFormState extends State<SignupForm> {
         password,
         profileImageUrl: viewModel.profileImageDataUrl,
       );
+      if (!mounted) return;
       setState(() => isLoading = false);
 
       if (user != null) {
@@ -135,9 +136,9 @@ class _SignupFormState extends State<SignupForm> {
                               ? null
                               : () async {
                                   await viewModel.pickProfileImage();
+                                  if (!context.mounted) return;
                                   if (viewModel.errorMessage != null &&
                                       viewModel.errorMessage!.isNotEmpty) {
-                                    if (!mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(viewModel.errorMessage!),
@@ -187,10 +188,12 @@ class _SignupFormState extends State<SignupForm> {
                 },
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Please enter your email';
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value))
+                  }
+                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                     return 'Enter a valid email';
+                  }
                   return null;
                 },
               ),

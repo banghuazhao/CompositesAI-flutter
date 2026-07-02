@@ -5,15 +5,19 @@ import 'forget_password_view_model.dart'; // Adjust the import path as necessary
 import '../../app/injection_container.dart'; // Import your service locator to inject dependencies
 
 class ForgetPasswordPage extends StatefulWidget {
+  const ForgetPasswordPage({super.key});
+
   @override
   _ForgetPasswordPageState createState() => _ForgetPasswordPageState();
 }
 
 class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _confirmationCodeController = TextEditingController();
+  final TextEditingController _confirmationCodeController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool isEmailValid = false;
 
@@ -25,8 +29,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   @override
   void initState() {
     super.initState();
-    _emailController.addListener(_validateEmail);//these functions to automatically run whenever the text in the associated input field changes
-    _newPasswordController.addListener(checkConfirmInput); //these functions to automatically run whenever the text in the associated input field changes
+    _emailController.addListener(
+        _validateEmail); //these functions to automatically run whenever the text in the associated input field changes
+    _newPasswordController.addListener(
+        checkConfirmInput); //these functions to automatically run whenever the text in the associated input field changes
     _confirmPasswordController.addListener(checkConfirmInput);
     _confirmationCodeController.addListener(checkConfirmInput);
   }
@@ -44,13 +50,15 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => sl<ForgetPasswordViewModel>(),//Creates an instance of the ForgetPasswordViewModel using the create function
+      create: (_) => sl<
+          ForgetPasswordViewModel>(), //Creates an instance of the ForgetPasswordViewModel using the create function
       child: Scaffold(
         appBar: AppBar(
           title: Text("Reset Password"),
           backgroundColor: Color.fromRGBO(66, 66, 66, 1.0),
         ),
-        body: Consumer<ForgetPasswordViewModel>(//widget listens to changes in the ForgetPasswordViewModel
+        body: Consumer<ForgetPasswordViewModel>(
+          //widget listens to changes in the ForgetPasswordViewModel
           builder: (context, viewModel, child) {
             return Padding(
               padding: const EdgeInsets.all(16.0),
@@ -106,7 +114,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                                       ? Icons.visibility_off
                                       : Icons.visibility,
                                 ),
-                                onPressed: viewModel.toggleNewPasswordVisibility,
+                                onPressed:
+                                    viewModel.toggleNewPasswordVisibility,
                               ),
                             ),
                             onChanged: (text) {
@@ -125,9 +134,13 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             child: Padding(
                               padding: const EdgeInsets.only(left: 3.0),
                               child: Text(
-                                isNewPasswordValid ? '' : 'Password must be at least 6 characters long',
+                                isNewPasswordValid
+                                    ? ''
+                                    : 'Password must be at least 6 characters long',
                                 style: TextStyle(
-                                  color: isNewPasswordValid ? Colors.transparent : Colors.black54,
+                                  color: isNewPasswordValid
+                                      ? Colors.transparent
+                                      : Colors.black54,
                                   fontSize: 14.0,
                                 ),
                               ),
@@ -159,7 +172,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                                   ? Icons.visibility_off
                                   : Icons.visibility,
                             ),
-                            onPressed: viewModel.toggleConfirmPasswordVisibility,
+                            onPressed:
+                                viewModel.toggleConfirmPasswordVisibility,
                           ),
                         ),
                         validator: (value) {
@@ -218,16 +232,21 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                         enable: confirmEnable,
                         onPressed: () async {
                           await viewModel.confirmResetPassword(
-                              _emailController.text, _newPasswordController.text , _confirmationCodeController.text);
+                              _emailController.text,
+                              _newPasswordController.text,
+                              _confirmationCodeController.text);
+                          if (!context.mounted) return;
                           if (viewModel.errorMessage.isNotEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Failed to reset password: ${viewModel.errorMessage}.'),
+                                content: Text(
+                                    'Failed to reset password: ${viewModel.errorMessage}.'),
                               ),
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Password reset successful!")),
+                              SnackBar(
+                                  content: Text("Password reset successful!")),
                             );
                             Navigator.pop(context);
                           }
@@ -237,38 +256,47 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                     // Reset Password Button
                     if (!viewModel.isPasswordResetting)
                       Padding(
-                        padding: const EdgeInsets.only(top: 1.0), // Adjust top padding here
+                        padding: const EdgeInsets.only(
+                            top: 1.0), // Adjust top padding here
                         child: MaterialButton(
                           onPressed: viewModel.isLoading
                               ? null
                               : () async {
-                            if (_formKey.currentState!.validate()) {
-                              await viewModel.forgetPassword(_emailController.text);
+                                  if (_formKey.currentState!.validate()) {
+                                    await viewModel
+                                        .forgetPassword(_emailController.text);
+                                    if (!context.mounted) return;
 
-                              if (viewModel.errorMessage.isNotEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Failed to send confirmation code.'),
-                                  ),
-                                );
-                              }
-                            }
-                          },
+                                    if (viewModel.errorMessage.isNotEmpty) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Failed to send confirmation code.'),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
                           height: 45,
                           minWidth: double.infinity,
-                          color: isEmailValid ? Color.fromRGBO(66, 66, 66, 1.0) : Color.fromRGBO(180, 180, 180, 1),
+                          color: isEmailValid
+                              ? Color.fromRGBO(66, 66, 66, 1.0)
+                              : Color.fromRGBO(180, 180, 180, 1),
                           disabledColor: Color.fromRGBO(180, 180, 180, 1),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: viewModel.isLoading
                               ? CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          )
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                )
                               : Text(
-                            "Reset Password",
-                            style: TextStyle(color: Colors.white, fontSize: 16),
-                          ),
+                                  "Reset Password",
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 16),
+                                ),
                         ),
                       ),
                   ],
@@ -291,9 +319,11 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
     setState(() {
       confirmEnable = _emailController.text.isNotEmpty &&
           (isEmailValid) &&
-          (_newPasswordController.text.isNotEmpty && _newPasswordController.text.length >= 6) &&
+          (_newPasswordController.text.isNotEmpty &&
+              _newPasswordController.text.length >= 6) &&
           (_confirmPasswordController.text == _newPasswordController.text) &&
-          (_confirmationCodeController.text.isNotEmpty && _confirmationCodeController.text.length == 6);
+          (_confirmationCodeController.text.isNotEmpty &&
+              _confirmationCodeController.text.length == 6);
     });
   }
 }

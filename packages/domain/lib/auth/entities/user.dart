@@ -29,8 +29,8 @@ class User {
         name: json['name'],
         description: json['description'] ?? '',
         avatarUrl: json['profile_image_url'],
-        isAdmin: json['role'] == "admin",
-        isCompositeExpert: json['is_expert']);
+        isAdmin: json['role'] == "admin" || json['is_admin'] == true,
+        isCompositeExpert: json['is_expert'] == true);
   }
 
   @override

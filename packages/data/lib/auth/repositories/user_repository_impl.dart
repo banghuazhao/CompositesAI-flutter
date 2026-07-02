@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:domain/auth/entities/user.dart';
+import 'package:domain/auth/entities/expert_upgrade_request.dart';
 import 'package:domain/auth/repositories_abstract/user_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:infrastructure/api_environment.dart';
@@ -31,7 +32,7 @@ class UserRepositoryImpl implements UserRepository {
       final data = jsonDecode(response.body);
       final user = User.fromJson(data);
       if (kDebugMode) {
-        print(user);
+        debugPrint('Fetched current user: $user');
       }
       return user;
     } else {
@@ -114,6 +115,123 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
+  Future<List<ExpertUpgradeRequest>> fetchPendingExpertRequests() async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final response = await authClient.get(
+      Uri.parse('$baseURL/upgrade-requests/pending'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      if (data is! List) {
+        throw const FormatException(
+            'GET /upgrade-requests/pending: expected JSON array');
+      }
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ExpertUpgradeRequest.fromJson)
+          .where((request) =>
+              request.id.isNotEmpty &&
+              request.userId.isNotEmpty &&
+              request.requestedLevel == 'expert')
+          .toList();
+    }
+
+    throw mapServerErrorToDomainException(response);
+  }
+
+  @override
+  Future<ExpertUpgradeRequest?> fetchExpertRequestForUser(String userId) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final response = await authClient.get(
+      Uri.parse('$baseURL/upgrade-requests/$userId/expert'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      if (data is! Map<String, dynamic>) {
+        throw const FormatException(
+            'GET /upgrade-requests/{userId}/expert: expected JSON object');
+      }
+      return ExpertUpgradeRequest.fromJson({
+        ...data,
+        'user_id': userId,
+        'requested_level': data['requested_level'] ?? 'expert',
+      });
+    }
+
+    if (response.statusCode == 404) return null;
+    throw mapServerErrorToDomainException(response);
+  }
+
+  @override
+  Future<ExpertUpgradeRequest> requestExpertUpgrade(
+    String userId,
+    String requesterNotes,
+  ) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final response = await authClient.post(
+      Uri.parse('$baseURL/upgrade-requests/request'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'user_id': userId,
+        'requested_level': 'expert',
+        'requester_notes': requesterNotes,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      if (data is! Map<String, dynamic>) {
+        throw const FormatException(
+            'POST /upgrade-requests/request: expected JSON object');
+      }
+      return ExpertUpgradeRequest.fromJson({
+        ...data,
+        'user_id': userId,
+        'requested_level': data['requested_level'] ?? 'expert',
+      });
+    }
+
+    throw mapServerErrorToDomainException(response);
+  }
+
+  @override
+  Future<void> updateExpertRequestStatus(
+      String requestId, String status) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final response = await authClient.post(
+      Uri.parse('$baseURL/upgrade-requests/$requestId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'id': requestId,
+        'status': status,
+      }),
+    );
+
+    if (response.statusCode == 200) return;
+    throw mapServerErrorToDomainException(response);
+  }
+
+  @override
+  Future<void> updateUserExpertStatus(String userId, bool isExpert) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final response = await authClient.post(
+      Uri.parse('$baseURL/users/update/expert'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'id': userId,
+        'is_expert': isExpert,
+      }),
+    );
+
+    if (response.statusCode == 200) return;
+    throw mapServerErrorToDomainException(response);
+  }
+
+  @override
   Future<User> getUserById(int userId) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/users/$userId');
@@ -153,8 +271,9 @@ class UserRepositoryImpl implements UserRepository {
         throw Exception("Failed to add the expert: ${response.statusCode}");
       }
     } catch (e) {
-      // Log or rethrow the error
-      print("Error in becomeExpert: $e");
+      if (kDebugMode) {
+        debugPrint("Error in becomeExpert: $e");
+      }
       throw Exception("An error occurred while adding the expert.");
     }
   }

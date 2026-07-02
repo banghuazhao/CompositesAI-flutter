@@ -21,10 +21,17 @@ void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  await dotenv.load();
+  try {
+    await dotenv.load();
+  } catch (error) {
+    debugPrint('Failed to load .env: $error');
+  }
 
-  Future.delayed(Duration(seconds: 1), () {
-    AppTrackingTransparency.requestTrackingAuthorization();
+  Future.delayed(const Duration(seconds: 1), () {
+    AppTrackingTransparency.requestTrackingAuthorization().catchError((error) {
+      debugPrint('Failed to request tracking authorization: $error');
+      return TrackingStatus.notSupported;
+    });
   });
 
   InAppReviewHelper.checkAndAskForReview();
@@ -33,11 +40,11 @@ void main() async {
 
   initInjection();
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   _MyAppState createState() => _MyAppState();
@@ -64,7 +71,7 @@ class _MyAppState extends State<MyApp> {
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          localizationsDelegates: [
+          localizationsDelegates: const [
             S.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -74,7 +81,6 @@ class _MyAppState extends State<MyApp> {
           supportedLocales: S.delegate.supportedLocales,
           // 插件目前不完善手动处理简繁体
           localeResolutionCallback: (locale, supportLocales) {
-            print(locale);
             // 中文 简繁体处理
             if (locale?.languageCode == 'zh') {
               if (locale?.scriptCode == 'Hant') {

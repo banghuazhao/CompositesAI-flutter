@@ -516,34 +516,20 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> searchChatHistory(String query) async {
     final trimmed = query.trim();
-    final requestId = ++_chatFilterRequestId;
+    _chatFilterRequestId++;
     chatSearchQuery = trimmed;
     selectedChatTag = null;
     selectedChatFolder = null;
     showingArchivedChats = false;
+    isLoadingChatFilters = false;
     if (trimmed.isEmpty) {
       filteredChats = [];
       notifyListeners();
       return;
     }
 
-    isLoadingChatFilters = true;
     filteredChats = _localSearchChats(trimmed);
     notifyListeners();
-    try {
-      final remoteChats = await _chatUseCase.searchChats(trimmed);
-      if (requestId != _chatFilterRequestId) return;
-      filteredChats = _mergeUniqueChats([...remoteChats, ...filteredChats]);
-    } catch (e) {
-      if (requestId != _chatFilterRequestId) return;
-      if (kDebugMode) debugPrint('searchChatHistory error: $e');
-      errorMessage = 'Failed to search chats.';
-    } finally {
-      if (requestId == _chatFilterRequestId) {
-        isLoadingChatFilters = false;
-        notifyListeners();
-      }
-    }
   }
 
   Future<void> filterChatsByTag(ChatTag tag) async {
