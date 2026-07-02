@@ -1,17 +1,19 @@
-# CompositesAI (Former SwiftComp)
+# CompositesAI
 
-[![Version](https://img.shields.io/github/v/release/banghuazhao/swiftcomp-flutter)](https://github.com/banghuazhao/swiftcomp-flutter/releases)
+[![Version](https://img.shields.io/github/v/release/banghuazhao/CompositesAI-flutter)](https://github.com/banghuazhao/CompositesAI-flutter/releases)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web-blue)](#)
-[![App Store](https://img.shields.io/badge/App%20Store-Download-blue.svg)](https://apps.apple.com/us/app/swiftcomp-composite-calculator/id1297825946)
+[![App Store](https://img.shields.io/badge/App%20Store-Download-blue.svg)](https://apps.apple.com/us/app/compositesai-ai-for-engineers/id1297825946)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Download-green.svg)](https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&hl=en_US)
 
-CompositesAI is a cross-platform Flutter app for composite materials engineering. It combines SwiftComp-based composite calculators with an AI chat assistant for questions, calculations, and simulation-oriented workflows.
+CompositesAI is an AI-powered platform designed specifically for the composites engineering industry. Ask questions about material design, calculations, and process optimization in natural language — and get instant, expert-level answers.
 
 The app is available for iOS, Android, and the web at [compositesai.com](https://compositesai.com/).
 
 ## Features
 
-- AI chat assistant for composites questions, calculations, and guided workflows.
+- AI chat assistant for composites engineering — ask anything and get domain-specific answers instantly.
+- Voice input — dictate questions hands-free.
+- Image and file attachments — add context to your conversations.
 - Lamina stress/strain calculator for a single layer with arbitrary fiber orientation.
 - Lamina engineering constants calculator.
 - Laminate stress/strain calculator.
@@ -24,9 +26,10 @@ The app is available for iOS, Android, and the web at [compositesai.com](https:/
 ## Screenshots
 
 <p align="center">
-  <img src="./sreenshots/1.png" alt="SwiftComp screenshot 1" width="200">
-  <img src="./sreenshots/2.png" alt="SwiftComp screenshot 2" width="200">
-  <img src="./sreenshots/3.png" alt="SwiftComp screenshot 3" width="200">
+  <img src="./android/fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png" alt="CompositesAI screenshot 1" width="180">
+  <img src="./android/fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png" alt="CompositesAI screenshot 2" width="180">
+  <img src="./android/fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png" alt="CompositesAI screenshot 3" width="180">
+  <img src="./android/fastlane/metadata/android/en-US/images/phoneScreenshots/4_en-US.png" alt="CompositesAI screenshot 4" width="180">
 </p>
 
 ## Tech Stack
@@ -36,6 +39,8 @@ The app is available for iOS, Android, and the web at [compositesai.com](https:/
 - GetIt for dependency injection
 - Local packages for domain, data, infrastructure, and shared UI components
 - `composite_calculator` for composite mechanics calculations
+- `speech_to_text` for voice input
+- `image_picker` for photo and file attachments
 - Fastlane metadata and lanes for mobile release workflows
 
 ## Requirements
@@ -77,8 +82,8 @@ ios/                    iOS app and Fastlane config
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/banghuazhao/swiftcomp-flutter.git
-cd swiftcomp-flutter
+git clone https://github.com/banghuazhao/CompositesAI-flutter.git
+cd CompositesAI-flutter
 ```
 
 2. Create local configuration files as needed. At minimum, local development and CI expect a `.env` file to exist:
@@ -114,9 +119,9 @@ flutter test
 
 ## Downloads
 
-- [Download SwiftComp from the App Store](https://apps.apple.com/us/app/swiftcomp-composite-calculator/id1297825946)
-- [Download SwiftComp from Google Play](https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&hl=en_US)
-- [Use SwiftComp online](https://compositesai.com/)
+- [Download CompositesAI from the App Store](https://apps.apple.com/us/app/compositesai-ai-for-engineers/id1297825946)
+- [Download CompositesAI from Google Play](https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&hl=en_US)
+- [Use CompositesAI online](https://compositesai.com/)
 
 ## Contributing
 
@@ -124,4 +129,4 @@ Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before
 
 ## License
 
-SwiftComp / CompositesAI is released under the MIT License. See [LICENSE](LICENSE) for details.
+CompositesAI is released under the MIT License. See [LICENSE](LICENSE) for details.
