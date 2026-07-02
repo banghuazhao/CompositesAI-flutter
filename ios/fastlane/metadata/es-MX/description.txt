@@ -1,0 +1,16 @@
+CompositesAI es una plataforma impulsada por IA diseñada específicamente para la industria de los materiales compuestos. Haga preguntas sobre diseño de materiales, cálculos y optimización de procesos en lenguaje natural — y obtenga respuestas instantáneas a nivel de experto.
+
+Asistente de Chat IA:
+• Pregunte cualquier cosa sobre ingeniería de compuestos y obtenga respuestas especializadas al instante
+• Entrada de voz — dicte sus preguntas con manos libres
+• Adjunte imágenes y archivos a sus conversaciones
+• Comparta, fije y administre su historial de chat
+
+Calculadoras de Materiales Compuestos:
+1. Calcular la matriz de rigidez efectiva para modelo de viga
+2. Calcular matrices A, B, D, rigidez a cortante transversal, propiedades en el plano y flexurales para el modelo de placa
+3. Calcular la matriz de rigidez sólida efectiva y constantes de ingeniería para el modelo sólido
+4. Calcular los coeficientes de expansión térmica (CTE) para análisis termoelástico
+5. Usar Gmsh para generar mallas e imágenes
+
+Seguimos añadiendo más funcionalidades a esta app.

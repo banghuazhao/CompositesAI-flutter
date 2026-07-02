@@ -1,0 +1,16 @@
+CompositesAI est une plateforme propulsée par l'IA, conçue spécifiquement pour l'industrie des matériaux composites. Posez des questions sur la conception des matériaux, les calculs et l'optimisation des procédés en langage naturel — et obtenez des réponses instantanées au niveau expert.
+
+Assistant Chat IA :
+• Posez n'importe quelle question sur l'ingénierie des composites et obtenez des réponses spécialisées instantanément
+• Saisie vocale — dictez vos questions en mode mains libres
+• Joignez des images et des fichiers à vos conversations
+• Partagez, épinglez et gérez votre historique de chat
+
+Calculateurs de Matériaux Composites :
+1. Calculer la matrice de rigidité effective pour le modèle de poutre
+2. Calculer les matrices A, B, D, la rigidité au cisaillement transversal, les propriétés dans le plan et en flexion pour le modèle de plaque
+3. Calculer la matrice de rigidité solide effective et les constantes d'ingénierie pour le modèle solide
+4. Calculer les coefficients de dilatation thermique (CTE) pour l'analyse thermoélastique
+5. Utiliser Gmsh pour générer des maillages et des images
+
+Nous ajoutons constamment de nouvelles fonctionnalités à cette application.
