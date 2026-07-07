@@ -806,7 +806,16 @@ class _ChatScreenState extends State<ChatScreen>
       return Pressable(
         haptic: true,
         borderRadius: BorderRadius.circular(17),
-        onTap: () {
+        onTap: () async {
+          if (await viewModel.reachChatLimit()) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Daily chat limit reached (50/day)'),
+              ),
+            );
+            return;
+          }
           final text = textController.text.trim();
           textController.clear();
           viewModel.sendInputMessage(text);

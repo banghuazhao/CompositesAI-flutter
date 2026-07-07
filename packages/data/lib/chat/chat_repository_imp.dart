@@ -721,6 +721,9 @@ class ChatRepositoryImpl implements ChatRepository {
       }),
     );
     if (response.statusCode == 200 || response.statusCode == 204) {
+      if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
+        throw const FormatException('POST /chats/new: missing chat response');
+      }
       final decoded = utf8.decode(response.bodyBytes);
       final data = jsonDecode(decoded) as Map<String, dynamic>;
       final chat = Chat.fromJson(data);
@@ -757,6 +760,10 @@ class ChatRepositoryImpl implements ChatRepository {
       }),
     );
     if (response.statusCode == 200 || response.statusCode == 204) {
+      if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
+        chat.title = newTitle;
+        return chat;
+      }
       final decoded = utf8.decode(response.bodyBytes);
       final data = jsonDecode(decoded) as Map<String, dynamic>;
       return Chat.fromJson(data);
@@ -847,6 +854,9 @@ class ChatRepositoryImpl implements ChatRepository {
       headers: {'Content-Type': 'application/json'},
     );
     if (response.statusCode == 200 || response.statusCode == 204) {
+      if (response.statusCode == 204 || response.bodyBytes.isEmpty) {
+        throw const FormatException('POST /chats/:id/share: missing share id');
+      }
       final decoded = utf8.decode(response.bodyBytes);
       final data = jsonDecode(decoded) as Map<String, dynamic>;
       final item = Chat.fromJson(data);
@@ -1261,7 +1271,7 @@ class ChatRepositoryImpl implements ChatRepository {
           'dismissed_at': null
         }));
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 204) {
       return;
     } else {
       throw mapServerErrorToDomainException(response);
@@ -1276,7 +1286,7 @@ class ChatRepositoryImpl implements ChatRepository {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'content': message.content}));
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 204) {
       return;
     } else {
       throw mapServerErrorToDomainException(response);

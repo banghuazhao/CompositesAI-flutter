@@ -202,15 +202,15 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> updatePassword(String currentPassword, String newPassword) async {
+  Future<void> updatePassword(
+      String currentPassword, String newPassword) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/update/password');
     final response = await authClient.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'password': currentPassword,
-        'new_password': newPassword}),
+      body: jsonEncode(
+          {'password': currentPassword, 'new_password': newPassword}),
     );
 
     if (response.statusCode == 200) {
@@ -239,7 +239,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
     if (response.statusCode == 200) {
       // User already exists, backend returns an access token
-      final accessToken = data['accessToken'];
+      final accessToken = data['accessToken'] ?? data['token'];
       if (accessToken != null) {
         await tokenProvider.saveToken(accessToken);
         return;
@@ -248,9 +248,10 @@ class AuthRepositoryImpl implements AuthRepository {
       }
     } else if (response.statusCode == 201) {
       // New user created, backend returns a success message
-      final accessToken = data['accessToken'];
+      final accessToken = data['accessToken'] ?? data['token'];
       if (accessToken != null) {
-        return accessToken; // Return the access token
+        await tokenProvider.saveToken(accessToken);
+        return;
       } else {
         throw Exception('Access token missing in response');
       }

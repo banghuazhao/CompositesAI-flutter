@@ -71,6 +71,7 @@ class ChatViewModel extends ChangeNotifier {
   ChatFolder? selectedChatFolder;
   bool showingArchivedChats = false;
   int _chatFilterRequestId = 0;
+  int _selectedChatRequestId = 0;
   Set<String> selectedToolIds = <String>{};
   bool _hasUserConfiguredTools = false;
   Chat? selectedChat;
@@ -689,10 +690,18 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> updateNewChat(Chat newChat) async {
     await fetchChats();
-    selectedChat = chats.firstWhere((chat) => chat.id == newChat.id);
+    final index = chats.indexWhere((chat) => chat.id == newChat.id);
+    if (index >= 0) {
+      selectedChat = chats[index];
+    } else {
+      chats.insert(0, newChat);
+      selectedChat = newChat;
+      notifyListeners();
+    }
   }
 
   void onTapNewChat() {
+    _selectedChatRequestId++;
     selectedChat = null;
     messages = [];
     notifyListeners();
@@ -910,22 +919,36 @@ class ChatViewModel extends ChangeNotifier {
     });
   }
 
-  void selectChat(Chat chat) async {
+  Future<void> selectChat(Chat chat) async {
+    final requestId = ++_selectedChatRequestId;
     selectedChat = chat;
     isLoadingMessages = true;
     notifyListeners();
-    messages = await _chatUseCase.fetchMessages(chat);
-    // Restore feedbackId from local cache so update calls are reliable
-    // even after page rebuild / app restart.
-    for (final m in messages) {
-      final cached = FeedbackIdCache.getFeedbackId(chat.id, m.id);
-      if (cached != null) {
-        m.feedbackId = cached;
+    try {
+      final loadedMessages = await _chatUseCase.fetchMessages(chat);
+      if (requestId != _selectedChatRequestId) return;
+
+      // Restore feedbackId from local cache so update calls are reliable
+      // even after page rebuild / app restart.
+      for (final m in loadedMessages) {
+        final cached = FeedbackIdCache.getFeedbackId(chat.id, m.id);
+        if (cached != null) {
+          m.feedbackId = cached;
+        }
+      }
+      messages = loadedMessages;
+    } catch (e) {
+      if (requestId != _selectedChatRequestId) return;
+      if (kDebugMode) debugPrint('selectChat error: $e');
+      messages = [];
+      errorMessage = 'Failed to load chat messages. Please try again.';
+    } finally {
+      if (requestId == _selectedChatRequestId) {
+        isLoadingMessages = false;
+        notifyListeners();
+        scrollToBottom();
       }
     }
-    isLoadingMessages = false;
-    notifyListeners();
-    scrollToBottom();
   }
 
   Future<bool> reachChatLimit() async {
@@ -934,6 +957,11 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> sendInputMessage(String text) async {
     if (isUploadingFile || isSendingMessage) return;
+    if (await _chatLimiter.reachChatLimit()) {
+      errorMessage = 'Daily chat limit reached (50/day)';
+      notifyListeners();
+      return;
+    }
 
     final attachments = List<ChatFile>.from(pendingFiles);
     final prompt =
@@ -947,7 +975,7 @@ class ChatViewModel extends ChangeNotifier {
     );
     pendingFiles = [];
 
-    if (selectedChat != null) {
+    if (selectedChat != null && messages.isNotEmpty) {
       userMessage.parentId = messages.last.id;
       messages.last.childrenIds = [userMessage.id];
     }
@@ -959,7 +987,7 @@ class ChatViewModel extends ChangeNotifier {
       if (selectedChat == null) {
         final newChat = await _chatUseCase.createChat(userMessage);
         selectedChat = newChat;
-        updateNewChat(newChat);
+        await updateNewChat(newChat);
       }
 
       final messagesForRequest = List<Message>.from(messages);
@@ -1001,8 +1029,10 @@ class ChatViewModel extends ChangeNotifier {
       assistantMessage.model = selectedModel!.id;
       assistantMessage.modelName = selectedModel!.name;
     }
-    assistantMessage.parentId = messages.last.id;
-    messages.last.childrenIds = [assistantMessage.id];
+    if (messages.isNotEmpty) {
+      assistantMessage.parentId = messages.last.id;
+      messages.last.childrenIds = [assistantMessage.id];
+    }
     messages.add(assistantMessage);
 
     selectedChat?.updatedAt = DateTime.now().microsecondsSinceEpoch ~/ 1000;
