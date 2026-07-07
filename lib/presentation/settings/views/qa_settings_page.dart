@@ -6,6 +6,8 @@ import '../../chat/viewModels/chat_view_model.dart';
 import '../viewModels/qa_settings_view_model.dart';
 
 class QASettingsPage extends StatelessWidget {
+  const QASettingsPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -21,7 +23,8 @@ class QASettingsPage extends StatelessWidget {
         }));
   }
 
-  List<Widget> _buildChild(QASettingsViewModel viewModel, BuildContext context) {
+  List<Widget> _buildChild(
+      QASettingsViewModel viewModel, BuildContext context) {
     List<Widget> result = [];
     result.add(
       Padding(
@@ -45,35 +48,28 @@ class QASettingsPage extends StatelessWidget {
       child: Text('Select API Environment',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     ));
-    List<Widget> apiEnvironmentList = [
-      ListTile(
-        title: Text('Development'),
-        leading: Radio<String>(
-          value: 'development',
-          groupValue: viewModel.currentEnvironment,
-          onChanged: (String? value) async {
-            if (value != null) {
-              await viewModel.changeEnvironment(value);
-              if (context.mounted) {
-                await context.read<ChatViewModel>().clearChatStateOnLogout();
-              }
-            }
-          },
-        ),
-      ),
-      ListTile(
-        title: Text('Production'),
-        leading: Radio<String>(
-          value: 'production',
-          groupValue: viewModel.currentEnvironment,
-          onChanged: (String? value) async {
-            if (value != null) {
-              await viewModel.changeEnvironment(value);
-              if (context.mounted) {
-                await context.read<ChatViewModel>().clearChatStateOnLogout();
-              }
-            }
-          },
+    final List<Widget> apiEnvironmentList = [
+      RadioGroup<String>(
+        groupValue: viewModel.currentEnvironment,
+        onChanged: (String? value) async {
+          if (value == null) return;
+
+          await viewModel.changeEnvironment(value);
+          if (context.mounted) {
+            await context.read<ChatViewModel>().clearChatStateOnLogout();
+          }
+        },
+        child: Column(
+          children: const [
+            ListTile(
+              title: Text('Development'),
+              leading: Radio<String>(value: 'development'),
+            ),
+            ListTile(
+              title: Text('Production'),
+              leading: Radio<String>(value: 'production'),
+            ),
+          ],
         ),
       ),
     ];

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
@@ -7,7 +7,9 @@ class Result3By3Matrix extends StatelessWidget {
   final String title;
   final List<List<double>> matrixList;
 
-  const Result3By3Matrix({Key? key, required this.matrixList, required this.title}) : super(key: key);
+  const Result3By3Matrix(
+      {Key? key, required this.matrixList, required this.title})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -31,13 +33,16 @@ class Result3By3Matrix extends StatelessWidget {
             itemCount: 9,
             itemBuilder: (BuildContext context, int index) {
               double value = matrixList[index ~/ 3][index % 3];
-              return Consumer<NumberPrecisionHelper>(builder: (context, precs, child) {
+              return Consumer<NumberPrecisionHelper>(
+                  builder: (context, precs, child) {
                 return Center(
                   child: Container(
                     height: 40,
                     child: Center(
                       child: Text(
-                        value == 0 ? "0" : value.toStringAsExponential(precs.precision),
+                        value == 0
+                            ? "0"
+                            : value.toStringAsExponential(precs.precision),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),

@@ -5,7 +5,8 @@ class LayupAngleRow extends StatefulWidget {
   final LayupAngle layupAngle;
   final bool validate;
 
-  const LayupAngleRow({Key? key, required this.layupAngle, required this.validate})
+  const LayupAngleRow(
+      {Key? key, required this.layupAngle, required this.validate})
       : super(key: key);
 
   @override
@@ -38,13 +39,16 @@ class _LayupAngleRowState extends State<LayupAngleRow> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
             child: TextField(
-              keyboardType: TextInputType.numberWithOptions(decimal: true, signed: true),
+              keyboardType:
+                  TextInputType.numberWithOptions(decimal: true, signed: true),
               decoration: InputDecoration(
                   isDense: true,
                   contentPadding: EdgeInsets.all(12),
                   border: OutlineInputBorder(),
                   labelText: "(-90 <= Angle <= 90)",
-                  errorText: widget.validate ? validateLayupAngle(widget.layupAngle.value) : null),
+                  errorText: widget.validate
+                      ? validateLayupAngle(widget.layupAngle.value)
+                      : null),
               onChanged: (value) {
                 widget.layupAngle.value = double.tryParse(value);
               },

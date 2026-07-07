@@ -7,7 +7,10 @@ class PlaneStressStrainRow extends StatefulWidget {
   final Function(String) callback;
 
   const PlaneStressStrainRow(
-      {Key? key, required this.mechanicalTensor, required this.validate, required this.callback})
+      {Key? key,
+      required this.mechanicalTensor,
+      required this.validate,
+      required this.callback})
       : super(key: key);
 
   @override
@@ -66,7 +69,8 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                       textEditingController3.clear();
                     });
                   },
-                  items: <String>["Stress", "Strain"].map<DropdownMenuItem<String>>((String value) {
+                  items: <String>["Stress", "Strain"]
+                      .map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(value),
@@ -83,8 +87,8 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                 Expanded(
                   child: TextField(
                     controller: textEditingController1,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
                     decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
@@ -92,15 +96,19 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         labelText: dropValue == "Stress" ? "σ11" : "ε11",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress"
-                                ? (widget.mechanicalTensor as PlaneStress).sigma11
-                                : (widget.mechanicalTensor as PlaneStrain).epsilon11)
+                                ? (widget.mechanicalTensor as PlaneStress)
+                                    .sigma11
+                                : (widget.mechanicalTensor as PlaneStrain)
+                                    .epsilon11)
                             : null,
                         errorStyle: const TextStyle(fontSize: 10)),
                     onChanged: (value) {
                       if (dropValue == "Stress") {
-                        (widget.mechanicalTensor as PlaneStress).sigma11 = double.tryParse(value);
+                        (widget.mechanicalTensor as PlaneStress).sigma11 =
+                            double.tryParse(value);
                       } else {
-                        (widget.mechanicalTensor as PlaneStrain).epsilon11 = double.tryParse(value);
+                        (widget.mechanicalTensor as PlaneStrain).epsilon11 =
+                            double.tryParse(value);
                       }
                     },
                   ),
@@ -111,8 +119,8 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                 Expanded(
                   child: TextField(
                     controller: textEditingController2,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
                     decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
@@ -120,15 +128,19 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         labelText: dropValue == "Stress" ? "σ22" : "ε22",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress"
-                                ? (widget.mechanicalTensor as PlaneStress).sigma22
-                                : (widget.mechanicalTensor as PlaneStrain).epsilon22)
+                                ? (widget.mechanicalTensor as PlaneStress)
+                                    .sigma22
+                                : (widget.mechanicalTensor as PlaneStrain)
+                                    .epsilon22)
                             : null,
                         errorStyle: const TextStyle(fontSize: 10)),
                     onChanged: (value) {
                       if (dropValue == "Stress") {
-                        (widget.mechanicalTensor as PlaneStress).sigma22 = double.tryParse(value);
+                        (widget.mechanicalTensor as PlaneStress).sigma22 =
+                            double.tryParse(value);
                       } else {
-                        (widget.mechanicalTensor as PlaneStrain).epsilon22 = double.tryParse(value);
+                        (widget.mechanicalTensor as PlaneStrain).epsilon22 =
+                            double.tryParse(value);
                       }
                     },
                   ),
@@ -146,8 +158,8 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                 Expanded(
                   child: TextField(
                     controller: textEditingController3,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
                     decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
@@ -155,15 +167,19 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         labelText: dropValue == "Stress" ? "σ12" : "γ12 (2ε12)",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress"
-                                ? (widget.mechanicalTensor as PlaneStress).sigma12
-                                : (widget.mechanicalTensor as PlaneStrain).gamma12)
+                                ? (widget.mechanicalTensor as PlaneStress)
+                                    .sigma12
+                                : (widget.mechanicalTensor as PlaneStrain)
+                                    .gamma12)
                             : null,
                         errorStyle: const TextStyle(fontSize: 10)),
                     onChanged: (value) {
                       if (dropValue == "Stress") {
-                        (widget.mechanicalTensor as PlaneStress).sigma12 = double.tryParse(value);
+                        (widget.mechanicalTensor as PlaneStress).sigma12 =
+                            double.tryParse(value);
                       } else {
-                        (widget.mechanicalTensor as PlaneStrain).gamma12 = double.tryParse(value);
+                        (widget.mechanicalTensor as PlaneStrain).gamma12 =
+                            double.tryParse(value);
                       }
                     },
                   ),

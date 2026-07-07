@@ -14,7 +14,8 @@ class OrthotropicPropertiesWidget extends StatelessWidget {
     return Consumer<NumberPrecisionHelper>(builder: (context, precs, child) {
       return SizedBox(
         height: 40,
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        child:
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium,
@@ -31,7 +32,8 @@ class OrthotropicPropertiesWidget extends StatelessWidget {
   String getValue(double? value, int precision) {
     String valueString = "";
     if (value != null) {
-      valueString = value == 0 ? "0" : value.toStringAsExponential(precision).toString();
+      valueString =
+          value == 0 ? "0" : value.toStringAsExponential(precision).toString();
     }
     return valueString;
   }
@@ -64,7 +66,8 @@ class OrthotropicPropertiesWidget extends StatelessWidget {
       const Divider(height: 1),
       _propertyRow(context, "ν23", orthotropicMaterial.nu23),
     ];
-    if (orthotropicMaterial.alpha11 != null && orthotropicMaterial.alpha33 == null) {
+    if (orthotropicMaterial.alpha11 != null &&
+        orthotropicMaterial.alpha33 == null) {
       result += [
         const Divider(height: 1),
         _propertyRow(context, "ɑ11", orthotropicMaterial.alpha11),
@@ -74,7 +77,8 @@ class OrthotropicPropertiesWidget extends StatelessWidget {
         _propertyRow(context, "ɑ12", orthotropicMaterial.alpha12),
       ];
     }
-    if (orthotropicMaterial.alpha11 != null && orthotropicMaterial.alpha33 != null) {
+    if (orthotropicMaterial.alpha11 != null &&
+        orthotropicMaterial.alpha33 != null) {
       result += [
         const Divider(height: 1),
         _propertyRow(context, "ɑ11", orthotropicMaterial.alpha11),

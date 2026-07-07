@@ -10,7 +10,10 @@ class LaminaConstantsRow extends StatefulWidget {
   final bool isPlaneStress;
 
   const LaminaConstantsRow(
-      {Key? key, required this.material, required this.validate, required this.isPlaneStress})
+      {Key? key,
+      required this.material,
+      required this.validate,
+      required this.isPlaneStress})
       : super(key: key);
 
   @override
@@ -39,12 +42,16 @@ class _LaminaConstantsRowState extends State<LaminaConstantsRow> {
                       Dialog dialog = Dialog(
                         insetPadding: EdgeInsets.fromLTRB(20, 20, 20, 20),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0)), //this right here
+                            borderRadius:
+                                BorderRadius.circular(12.0)), //this right here
                         child: Container(
                             padding: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                            child: Explain.getExplain(ExplainType.material, context)),
+                            child: Explain.getExplain(
+                                ExplainType.material, context)),
                       );
-                      showDialog(context: context, builder: (BuildContext context) => dialog);
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) => dialog);
                     },
                     icon: Icon(
                       Icons.help_outline_rounded,
@@ -63,14 +70,16 @@ class _LaminaConstantsRowState extends State<LaminaConstantsRow> {
                     children: [
                       Expanded(
                         child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
                               border: const OutlineInputBorder(),
                               labelText: "E1",
-                              errorText:
-                                  widget.validate ? validateModulus(widget.material.e1) : null),
+                              errorText: widget.validate
+                                  ? validateModulus(widget.material.e1)
+                                  : null),
                           onChanged: (value) {
                             widget.material.e1 = double.tryParse(value);
                           },
@@ -79,14 +88,16 @@ class _LaminaConstantsRowState extends State<LaminaConstantsRow> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
                               border: const OutlineInputBorder(),
                               labelText: "E2",
-                              errorText:
-                                  widget.validate ? validateModulus(widget.material.e2) : null),
+                              errorText: widget.validate
+                                  ? validateModulus(widget.material.e2)
+                                  : null),
                           onChanged: (value) {
                             widget.material.e2 = double.tryParse(value);
                           },
@@ -99,14 +110,16 @@ class _LaminaConstantsRowState extends State<LaminaConstantsRow> {
                     children: [
                       Expanded(
                         child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
                               border: const OutlineInputBorder(),
                               labelText: "G12",
-                              errorText:
-                                  widget.validate ? validateModulus(widget.material.g12) : null),
+                              errorText: widget.validate
+                                  ? validateModulus(widget.material.g12)
+                                  : null),
                           onChanged: (value) {
                             widget.material.g12 = double.tryParse(value);
                           },
@@ -115,8 +128,8 @@ class _LaminaConstantsRowState extends State<LaminaConstantsRow> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true, signed: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true, signed: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
@@ -132,21 +145,26 @@ class _LaminaConstantsRowState extends State<LaminaConstantsRow> {
                       ),
                     ],
                   ),
-                  widget.isPlaneStress ? Container() : const SizedBox(height: 12),
+                  widget.isPlaneStress
+                      ? Container()
+                      : const SizedBox(height: 12),
                   widget.isPlaneStress
                       ? Container()
                       : Row(
                           children: [
                             Expanded(
                               child: TextField(
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
                                 decoration: InputDecoration(
                                     isDense: true,
                                     contentPadding: const EdgeInsets.all(12),
                                     border: const OutlineInputBorder(),
                                     labelText: "ν23",
                                     errorText: widget.validate
-                                        ? validatePoissonRatio(widget.material.nu23)
+                                        ? validatePoissonRatio(
+                                            widget.material.nu23)
                                         : null),
                                 onChanged: (value) {
                                   widget.material.nu23 = double.tryParse(value);

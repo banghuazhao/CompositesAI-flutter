@@ -7,11 +7,13 @@ class TransverselyIsotropicRow extends StatefulWidget {
   final TransverselyIsotropicMaterial material;
   final bool validate;
 
-  const TransverselyIsotropicRow({Key? key, required this.material, required this.validate})
+  const TransverselyIsotropicRow(
+      {Key? key, required this.material, required this.validate})
       : super(key: key);
 
   @override
-  _TransverselyIsotropicRowState createState() => _TransverselyIsotropicRowState();
+  _TransverselyIsotropicRowState createState() =>
+      _TransverselyIsotropicRowState();
 }
 
 class _TransverselyIsotropicRowState extends State<TransverselyIsotropicRow> {
@@ -36,12 +38,16 @@ class _TransverselyIsotropicRowState extends State<TransverselyIsotropicRow> {
                       Dialog dialog = Dialog(
                         insetPadding: EdgeInsets.fromLTRB(20, 20, 20, 20),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0)), //this right here
+                            borderRadius:
+                                BorderRadius.circular(12.0)), //this right here
                         child: Container(
                             padding: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                            child: Explain.getExplain(ExplainType.material, context)),
+                            child: Explain.getExplain(
+                                ExplainType.material, context)),
                       );
-                      showDialog(context: context, builder: (BuildContext context) => dialog);
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) => dialog);
                     },
                     icon: Icon(
                       Icons.help_outline_rounded,
@@ -60,14 +66,16 @@ class _TransverselyIsotropicRowState extends State<TransverselyIsotropicRow> {
                     children: [
                       Expanded(
                         child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
                               border: const OutlineInputBorder(),
                               labelText: "E1",
-                              errorText:
-                                  widget.validate ? validateModulus(widget.material.e1) : null),
+                              errorText: widget.validate
+                                  ? validateModulus(widget.material.e1)
+                                  : null),
                           onChanged: (value) {
                             widget.material.e1 = double.tryParse(value);
                           },
@@ -76,14 +84,16 @@ class _TransverselyIsotropicRowState extends State<TransverselyIsotropicRow> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
                               border: const OutlineInputBorder(),
                               labelText: "E2",
-                              errorText:
-                                  widget.validate ? validateModulus(widget.material.e2) : null),
+                              errorText: widget.validate
+                                  ? validateModulus(widget.material.e2)
+                                  : null),
                           onChanged: (value) {
                             widget.material.e2 = double.tryParse(value);
                           },
@@ -96,14 +106,16 @@ class _TransverselyIsotropicRowState extends State<TransverselyIsotropicRow> {
                     children: [
                       Expanded(
                         child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
                               border: const OutlineInputBorder(),
                               labelText: "G12",
-                              errorText:
-                                  widget.validate ? validateModulus(widget.material.g12) : null),
+                              errorText: widget.validate
+                                  ? validateModulus(widget.material.g12)
+                                  : null),
                           onChanged: (value) {
                             widget.material.g12 = double.tryParse(value);
                           },
@@ -112,8 +124,8 @@ class _TransverselyIsotropicRowState extends State<TransverselyIsotropicRow> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true, signed: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true, signed: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
@@ -134,7 +146,8 @@ class _TransverselyIsotropicRowState extends State<TransverselyIsotropicRow> {
                     children: [
                       Expanded(
                         child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),

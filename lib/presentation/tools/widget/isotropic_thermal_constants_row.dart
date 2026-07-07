@@ -9,14 +9,20 @@ class IsotropicThermalConstantsRow extends StatefulWidget {
   final String title;
   final bool validate;
 
-  const IsotropicThermalConstantsRow({Key? key, required this.material, this.title = "CTEs", required this.validate})
+  const IsotropicThermalConstantsRow(
+      {Key? key,
+      required this.material,
+      this.title = "CTEs",
+      required this.validate})
       : super(key: key);
 
   @override
-  _IsotropicThermalConstantsRowState createState() => _IsotropicThermalConstantsRowState();
+  _IsotropicThermalConstantsRowState createState() =>
+      _IsotropicThermalConstantsRowState();
 }
 
-class _IsotropicThermalConstantsRowState extends State<IsotropicThermalConstantsRow> {
+class _IsotropicThermalConstantsRowState
+    extends State<IsotropicThermalConstantsRow> {
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -38,12 +44,16 @@ class _IsotropicThermalConstantsRowState extends State<IsotropicThermalConstants
                       Dialog dialog = Dialog(
                         insetPadding: EdgeInsets.fromLTRB(20, 20, 20, 20),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0)), //this right here
+                            borderRadius:
+                                BorderRadius.circular(12.0)), //this right here
                         child: Container(
                             padding: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                            child: Explain.getExplain(ExplainType.material, context)),
+                            child: Explain.getExplain(
+                                ExplainType.material, context)),
                       );
-                      showDialog(context: context, builder: (BuildContext context) => dialog);
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) => dialog);
                     },
                     icon: Icon(
                       Icons.help_outline_rounded,
@@ -62,7 +72,8 @@ class _IsotropicThermalConstantsRowState extends State<IsotropicThermalConstants
                     children: [
                       Expanded(
                         child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),

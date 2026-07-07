@@ -1,6 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
@@ -8,7 +8,8 @@ class Result6By6Matrix extends StatelessWidget {
   final String title;
   final List<List<double>> matrix;
 
-  const Result6By6Matrix({Key? key, required this.matrix, required this.title}) : super(key: key);
+  const Result6By6Matrix({Key? key, required this.matrix, required this.title})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +34,18 @@ class Result6By6Matrix extends StatelessWidget {
             itemCount: 36,
             itemBuilder: (BuildContext context, int index) {
               double value = matrix[index ~/ 6][index % 6];
-              return Consumer<NumberPrecisionHelper>(builder: (context, precs, child) {
+              return Consumer<NumberPrecisionHelper>(
+                  builder: (context, precs, child) {
                 return Center(
                   child: Container(
                     height: 30,
                     child: Center(
-                      child: Text(value == 0 ? "0" : value.toStringAsExponential(precs.precision),
-                          style: TextStyle(fontSize: 11), maxLines: 2),
+                      child: Text(
+                          value == 0
+                              ? "0"
+                              : value.toStringAsExponential(precs.precision),
+                          style: TextStyle(fontSize: 11),
+                          maxLines: 2),
                     ),
                   ),
                 );

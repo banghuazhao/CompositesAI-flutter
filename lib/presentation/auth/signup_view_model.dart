@@ -79,7 +79,7 @@ class SignupViewModel extends ChangeNotifier {
 
       if (kIsWeb) {
         // On web, file_picker works reliably and provides bytes directly.
-        final result = await FilePicker.platform.pickFiles(
+        final result = await FilePicker.pickFiles(
           type: FileType.image,
           allowMultiple: false,
           withData: true,

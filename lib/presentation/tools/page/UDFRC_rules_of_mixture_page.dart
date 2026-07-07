@@ -1,6 +1,6 @@
 import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/material_model.dart';
 import 'package:swiftcomp/presentation/tools/model/volume_fraction_model.dart';
@@ -15,7 +15,6 @@ import 'package:swiftcomp/presentation/tools/widget/volume_fraction_row.dart';
 import '../../tools/model/thermal_model.dart';
 import '../../tools/widget/analysis_type_row.dart';
 import '../widget/transversely_thermal_constants_row.dart';
-
 
 class RulesOfMixturePage extends StatefulWidget {
   const RulesOfMixturePage({Key? key}) : super(key: key);

@@ -577,6 +577,8 @@ class _ChatScreenState extends State<ChatScreen>
                     focusNode: focusNode,
                     decoration: InputDecoration(
                       hintText: 'Message',
+                      filled: false,
+                      fillColor: Colors.transparent,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,

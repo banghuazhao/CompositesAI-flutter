@@ -1,6 +1,6 @@
 import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:linalg/linalg.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/layer_thickness.dart';
@@ -25,7 +25,8 @@ class LaminateStressStrainPage extends StatefulWidget {
 }
 
 class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
-  TransverselyIsotropicMaterial transverselyIsotropicMaterial = TransverselyIsotropicMaterial();
+  TransverselyIsotropicMaterial transverselyIsotropicMaterial =
+      TransverselyIsotropicMaterial();
   LayupSequence layupSequence = LayupSequence();
   LayerThickness layerThickness = LayerThickness();
   MechanicalTensor mechanicalTensor = LaminateStress();
@@ -36,13 +37,11 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
     return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(
-                Icons.arrow_back_ios_outlined, color: Colors.white),
+            icon:
+                const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: Text(S
-              .of(context)
-              .Laminar_stressstrain),
+          title: Text(S.of(context).Laminar_stressstrain),
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
@@ -51,9 +50,7 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
             });
             _calculate();
           },
-          label: Text(S
-              .of(context)
-              .Calculate),
+          label: Text(S.of(context).Calculate),
         ),
         body: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -65,11 +62,8 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                   crossAxisCount: 8,
                   itemCount: itemList.length,
-                  staggeredTileBuilder: (int index) =>
-                      StaggeredTile.fit(MediaQuery
-                          .of(context)
-                          .size
-                          .width > 600 ? 4 : 8),
+                  staggeredTileBuilder: (int index) => StaggeredTile.fit(
+                      MediaQuery.of(context).size.width > 600 ? 4 : 8),
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                   itemBuilder: (BuildContext context, int index) {
@@ -139,17 +133,14 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
       input.kappa12 = (mechanicalTensor as LaminateStrain).kappa12 ?? 0;
     }
 
-    List<Matrix> QMatrices = LaminarStressStrainCalculator.getQMatrices(
-        input);
-    LaminarStressStrainOutput output = LaminarStressStrainCalculator.calculate(
-        input);
-
+    List<Matrix> QMatrices = LaminarStressStrainCalculator.getQMatrices(input);
+    LaminarStressStrainOutput output =
+        LaminarStressStrainCalculator.calculate(input);
 
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) =>
-                LaminateStressStrainResultPage(
+            builder: (context) => LaminateStressStrainResultPage(
                   inputTensor: mechanicalTensor,
                   output: output,
                   thickness: input.layerThickness,

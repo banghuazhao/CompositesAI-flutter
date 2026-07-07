@@ -5,7 +5,8 @@ class DeltaTemperatureRow extends StatefulWidget {
   final DeltaTemperature deltaTemperature;
   final bool validate;
 
-  const DeltaTemperatureRow({Key? key, required this.deltaTemperature, required this.validate})
+  const DeltaTemperatureRow(
+      {Key? key, required this.deltaTemperature, required this.validate})
       : super(key: key);
 
   @override
@@ -38,14 +39,16 @@ class _DeltaTemperatureRowState extends State<DeltaTemperatureRow> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
             child: TextField(
-              keyboardType: TextInputType.numberWithOptions(decimal: true, signed: true),
+              keyboardType:
+                  TextInputType.numberWithOptions(decimal: true, signed: true),
               decoration: InputDecoration(
                   isDense: true,
                   contentPadding: EdgeInsets.all(12),
                   border: OutlineInputBorder(),
                   labelText: "ΔT",
-                  errorText:
-                      widget.validate ? validateLayupAngle(widget.deltaTemperature.value) : null),
+                  errorText: widget.validate
+                      ? validateLayupAngle(widget.deltaTemperature.value)
+                      : null),
               onChanged: (value) {
                 widget.deltaTemperature.value = double.tryParse(value);
               },

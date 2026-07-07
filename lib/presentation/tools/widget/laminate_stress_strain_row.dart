@@ -7,11 +7,15 @@ class LaminateStressStrainRow extends StatefulWidget {
   final Function(String) callback;
 
   const LaminateStressStrainRow(
-      {Key? key, required this.mechanicalTensor, required this.validate, required this.callback})
+      {Key? key,
+      required this.mechanicalTensor,
+      required this.validate,
+      required this.callback})
       : super(key: key);
 
   @override
-  _LaminateStressStrainRowState createState() => _LaminateStressStrainRowState();
+  _LaminateStressStrainRowState createState() =>
+      _LaminateStressStrainRowState();
 }
 
 class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
@@ -72,8 +76,10 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                       textEditingController6.clear();
                     });
                   },
-                  items: <String>["Stress Resultants", "Plate Strains/Curvatures"]
-                      .map<DropdownMenuItem<String>>((String value) {
+                  items: <String>[
+                    "Stress Resultants",
+                    "Plate Strains/Curvatures"
+                  ].map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(value),
@@ -90,22 +96,26 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                 Expanded(
                   child: TextField(
                     controller: textEditingController1,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
                     decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress Resultants" ? "N11" : "ϵ11",
+                        labelText:
+                            dropValue == "Stress Resultants" ? "N11" : "ϵ11",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
-                                ? (widget.mechanicalTensor as LaminateStress).N11
-                                : (widget.mechanicalTensor as LaminateStrain).epsilon11)
+                                ? (widget.mechanicalTensor as LaminateStress)
+                                    .N11
+                                : (widget.mechanicalTensor as LaminateStrain)
+                                    .epsilon11)
                             : null,
                         errorStyle: const TextStyle(fontSize: 10)),
                     onChanged: (value) {
                       if (dropValue == "Stress Resultants") {
-                        (widget.mechanicalTensor as LaminateStress).N11 = double.tryParse(value);
+                        (widget.mechanicalTensor as LaminateStress).N11 =
+                            double.tryParse(value);
                       } else {
                         (widget.mechanicalTensor as LaminateStrain).epsilon11 =
                             double.tryParse(value);
@@ -119,22 +129,26 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                 Expanded(
                   child: TextField(
                     controller: textEditingController2,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
                     decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress Resultants" ? "N22" : "ϵ22",
+                        labelText:
+                            dropValue == "Stress Resultants" ? "N22" : "ϵ22",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
-                                ? (widget.mechanicalTensor as LaminateStress).N22
-                                : (widget.mechanicalTensor as LaminateStrain).epsilon22)
+                                ? (widget.mechanicalTensor as LaminateStress)
+                                    .N22
+                                : (widget.mechanicalTensor as LaminateStrain)
+                                    .epsilon22)
                             : null,
                         errorStyle: const TextStyle(fontSize: 10)),
                     onChanged: (value) {
                       if (dropValue == "Stress Resultants") {
-                        (widget.mechanicalTensor as LaminateStress).N22 = double.tryParse(value);
+                        (widget.mechanicalTensor as LaminateStress).N22 =
+                            double.tryParse(value);
                       } else {
                         (widget.mechanicalTensor as LaminateStrain).epsilon22 =
                             double.tryParse(value);
@@ -155,22 +169,26 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                 Expanded(
                   child: TextField(
                     controller: textEditingController3,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
                     decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress Resultants" ? "N12" : "ϵ12",
+                        labelText:
+                            dropValue == "Stress Resultants" ? "N12" : "ϵ12",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
-                                ? (widget.mechanicalTensor as LaminateStress).N12
-                                : (widget.mechanicalTensor as LaminateStrain).epsilon12)
+                                ? (widget.mechanicalTensor as LaminateStress)
+                                    .N12
+                                : (widget.mechanicalTensor as LaminateStrain)
+                                    .epsilon12)
                             : null,
                         errorStyle: const TextStyle(fontSize: 10)),
                     onChanged: (value) {
                       if (dropValue == "Stress Resultants") {
-                        (widget.mechanicalTensor as LaminateStress).N12 = double.tryParse(value);
+                        (widget.mechanicalTensor as LaminateStress).N12 =
+                            double.tryParse(value);
                       } else {
                         (widget.mechanicalTensor as LaminateStrain).epsilon12 =
                             double.tryParse(value);
@@ -184,22 +202,26 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                 Expanded(
                   child: TextField(
                     controller: textEditingController4,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
                     decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress Resultants" ? "M11" : "𝞳11",
+                        labelText:
+                            dropValue == "Stress Resultants" ? "M11" : "𝞳11",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
-                                ? (widget.mechanicalTensor as LaminateStress).M11
-                                : (widget.mechanicalTensor as LaminateStrain).kappa11)
+                                ? (widget.mechanicalTensor as LaminateStress)
+                                    .M11
+                                : (widget.mechanicalTensor as LaminateStrain)
+                                    .kappa11)
                             : null,
                         errorStyle: const TextStyle(fontSize: 10)),
                     onChanged: (value) {
                       if (dropValue == "Stress Resultants") {
-                        (widget.mechanicalTensor as LaminateStress).M11 = double.tryParse(value);
+                        (widget.mechanicalTensor as LaminateStress).M11 =
+                            double.tryParse(value);
                       } else {
                         (widget.mechanicalTensor as LaminateStrain).kappa11 =
                             double.tryParse(value);
@@ -220,22 +242,26 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                 Expanded(
                   child: TextField(
                     controller: textEditingController5,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
                     decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress Resultants" ? "M22" : "𝞳22",
+                        labelText:
+                            dropValue == "Stress Resultants" ? "M22" : "𝞳22",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
-                                ? (widget.mechanicalTensor as LaminateStress).M22
-                                : (widget.mechanicalTensor as LaminateStrain).kappa22)
+                                ? (widget.mechanicalTensor as LaminateStress)
+                                    .M22
+                                : (widget.mechanicalTensor as LaminateStrain)
+                                    .kappa22)
                             : null,
                         errorStyle: const TextStyle(fontSize: 10)),
                     onChanged: (value) {
                       if (dropValue == "Stress Resultants") {
-                        (widget.mechanicalTensor as LaminateStress).M22 = double.tryParse(value);
+                        (widget.mechanicalTensor as LaminateStress).M22 =
+                            double.tryParse(value);
                       } else {
                         (widget.mechanicalTensor as LaminateStrain).kappa22 =
                             double.tryParse(value);
@@ -249,22 +275,26 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                 Expanded(
                   child: TextField(
                     controller: textEditingController6,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
                     decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress Resultants" ? "M12" : "𝞳12",
+                        labelText:
+                            dropValue == "Stress Resultants" ? "M12" : "𝞳12",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
-                                ? (widget.mechanicalTensor as LaminateStress).M12
-                                : (widget.mechanicalTensor as LaminateStrain).kappa12)
+                                ? (widget.mechanicalTensor as LaminateStress)
+                                    .M12
+                                : (widget.mechanicalTensor as LaminateStrain)
+                                    .kappa12)
                             : null,
                         errorStyle: const TextStyle(fontSize: 10)),
                     onChanged: (value) {
                       if (dropValue == "Stress Resultants") {
-                        (widget.mechanicalTensor as LaminateStress).M12 = double.tryParse(value);
+                        (widget.mechanicalTensor as LaminateStress).M12 =
+                            double.tryParse(value);
                       } else {
                         (widget.mechanicalTensor as LaminateStrain).kappa12 =
                             double.tryParse(value);

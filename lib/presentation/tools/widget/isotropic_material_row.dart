@@ -9,7 +9,10 @@ class IsotropicMaterialRow extends StatefulWidget {
   final bool validate;
 
   const IsotropicMaterialRow(
-      {Key? key, required this.title, required this.material, required this.validate})
+      {Key? key,
+      required this.title,
+      required this.material,
+      required this.validate})
       : super(key: key);
 
   @override
@@ -38,12 +41,16 @@ class _IsotropicMaterialRowState extends State<IsotropicMaterialRow> {
                       Dialog dialog = Dialog(
                         insetPadding: EdgeInsets.fromLTRB(20, 20, 20, 20),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0)), //this right here
+                            borderRadius:
+                                BorderRadius.circular(12.0)), //this right here
                         child: Container(
                             padding: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                            child: Explain.getExplain(ExplainType.material, context)),
+                            child: Explain.getExplain(
+                                ExplainType.material, context)),
                       );
-                      showDialog(context: context, builder: (BuildContext context) => dialog);
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) => dialog);
                     },
                     icon: Icon(
                       Icons.help_outline_rounded,
@@ -62,14 +69,16 @@ class _IsotropicMaterialRowState extends State<IsotropicMaterialRow> {
                     children: [
                       Expanded(
                         child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
                               border: const OutlineInputBorder(),
                               labelText: "E1",
-                              errorText:
-                                  widget.validate ? validateModulus(widget.material.e) : null),
+                              errorText: widget.validate
+                                  ? validateModulus(widget.material.e)
+                                  : null),
                           onChanged: (value) {
                             widget.material.e = double.tryParse(value);
                           },
@@ -78,15 +87,16 @@ class _IsotropicMaterialRowState extends State<IsotropicMaterialRow> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true, signed: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true, signed: true),
                           decoration: InputDecoration(
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
                               border: const OutlineInputBorder(),
                               labelText: "ν",
                               errorText: widget.validate
-                                  ? validateIsotropicPoissonRatio(widget.material.nu)
+                                  ? validateIsotropicPoissonRatio(
+                                      widget.material.nu)
                                   : null),
                           onChanged: (value) {
                             widget.material.nu = double.tryParse(value);

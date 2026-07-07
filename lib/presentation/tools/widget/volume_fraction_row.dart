@@ -6,7 +6,8 @@ class VolumeFractionRow extends StatefulWidget {
   final VolumeFraction volumeFraction;
   final bool validate;
 
-  const VolumeFractionRow({Key? key, required this.volumeFraction, required this.validate})
+  const VolumeFractionRow(
+      {Key? key, required this.volumeFraction, required this.validate})
       : super(key: key);
 
   @override
@@ -44,12 +45,16 @@ class _VolumeFractionRowState extends State<VolumeFractionRow> {
                     Dialog dialog = Dialog(
                       insetPadding: EdgeInsets.fromLTRB(20, 20, 20, 20),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.0)), //this right here
+                          borderRadius:
+                              BorderRadius.circular(12.0)), //this right here
                       child: Container(
                           padding: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                          child: Explain.getExplain(ExplainType.fiber_volumn_fraction, context)),
+                          child: Explain.getExplain(
+                              ExplainType.fiber_volumn_fraction, context)),
                     );
-                    showDialog(context: context, builder: (BuildContext context) => dialog);
+                    showDialog(
+                        context: context,
+                        builder: (BuildContext context) => dialog);
                   },
                   icon: Icon(
                     Icons.help_outline_rounded,
@@ -68,8 +73,9 @@ class _VolumeFractionRowState extends State<VolumeFractionRow> {
                   contentPadding: EdgeInsets.all(12),
                   border: OutlineInputBorder(),
                   labelText: "Volume Fraction (0.0 ~ 1.0)",
-                  errorText:
-                      widget.validate ? validateLayupAngle(widget.volumeFraction.value) : null),
+                  errorText: widget.validate
+                      ? validateLayupAngle(widget.volumeFraction.value)
+                      : null),
               onChanged: (value) {
                 widget.volumeFraction.value = double.tryParse(value);
               },

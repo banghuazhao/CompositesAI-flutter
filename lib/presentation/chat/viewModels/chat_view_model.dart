@@ -270,7 +270,7 @@ class ChatViewModel extends ChangeNotifier {
     if (!isLoggedIn || isUploadingFile) return;
 
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         allowMultiple: true,
         withData: kIsWeb,
       );

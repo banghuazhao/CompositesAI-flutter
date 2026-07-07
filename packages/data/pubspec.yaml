@@ -10,20 +10,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.2.1
+  http: ^1.6.0
   domain:
     path: ../domain
   infrastructure:
     path: ../infrastructure
-  uuid: ^4.5.1
+  uuid: ^4.5.3
   shared_preferences: ^2.5.5
-  fetch_client: ^1.0.2
-  flutter_dotenv: ^5.0.2
+  fetch_client: ^1.2.1
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

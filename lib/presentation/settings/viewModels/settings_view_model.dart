@@ -270,14 +270,21 @@ class SettingsViewModel extends ChangeNotifier {
     final String appName = packageInfo.appName;
 
     if (Platform.isIOS) {
-      Share.share("http://itunes.apple.com/app/id1297825946",
+      await SharePlus.instance.share(
+        ShareParams(
+          text: "http://itunes.apple.com/app/id1297825946",
           subject: appName,
-          sharePositionOrigin:
-              Rect.fromLTRB(0, 0, size.width, size.height / 2));
+          sharePositionOrigin: Rect.fromLTRB(0, 0, size.width, size.height / 2),
+        ),
+      );
     } else if (Platform.isAndroid) {
-      Share.share(
-          "https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp",
-          subject: appName);
+      await SharePlus.instance.share(
+        ShareParams(
+          text:
+              "https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp",
+          subject: appName,
+        ),
+      );
     } else {
       await Clipboard.setData(ClipboardData(text: "https://compositesai.com"));
     }
