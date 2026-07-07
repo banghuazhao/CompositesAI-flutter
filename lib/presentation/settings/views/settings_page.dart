@@ -6,6 +6,9 @@ import 'package:swiftcomp/presentation/settings/views/qa_settings_page.dart';
 import 'package:swiftcomp/presentation/settings/views/admin_model_tool_page.dart';
 import 'package:swiftcomp/presentation/settings/views/user_profile_page.dart';
 import 'package:swiftcomp/presentation/tools/page/tool_page.dart';
+import 'package:swiftcomp/util/app_colors.dart';
+import 'package:swiftcomp/util/app_interactions.dart';
+import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import '../../chat/viewModels/chat_view_model.dart';
 import '../../conponents/base64-image.dart';
@@ -39,10 +42,12 @@ class _SettingsPageState extends State<SettingsPage> {
     return Consumer<SettingsViewModel>(
       builder: (context, viewModel, _) {
         final hPad = context.horizontalSidePaddingForContentWidth;
+        final theme = Theme.of(context);
+        final scheme = theme.colorScheme;
         return Scaffold(
           appBar: AppBar(title: const Text('Settings')),
           body: ListView(
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 16),
+            padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 24),
             children: [
               // ── Profile / Login ──────────────────────────────────────
               if (viewModel.isLoading)
@@ -201,9 +206,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Center(
                   child: Text(
                     'Version ${viewModel.version}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade500,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -218,6 +222,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // ── Profile header card ────────────────────────────────────────────────
   Widget _buildProfileCard(BuildContext context, SettingsViewModel viewModel) {
+    final scheme = Theme.of(context).colorScheme;
     final name = viewModel.user?.name ?? '';
     final email = viewModel.user?.email ?? '';
     final isExpert = viewModel.user?.isCompositeExpert == true;
@@ -227,6 +232,7 @@ class _SettingsPageState extends State<SettingsPage> {
       InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () async {
+          AppHaptics.light();
           await Navigator.push(
             context,
             MaterialPageRoute(
@@ -258,10 +264,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                         ),
                         if (isExpert)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 4),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
                             child: Icon(Icons.verified,
-                                color: Colors.blue, size: 16),
+                                color: scheme.primary, size: 16),
                           ),
                         if (isAdmin) ...[
                           const SizedBox(width: 6),
@@ -275,7 +281,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         email,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade600,
+                          color: scheme.onSurfaceVariant,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -283,7 +289,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+              Icon(Icons.chevron_right,
+                  color: scheme.onSurfaceVariant, size: 20),
             ],
           ),
         ),
@@ -295,9 +302,9 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E8),
+        color: AppColors.warning.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFFFD7B5)),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.22)),
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
@@ -305,7 +312,7 @@ class _SettingsPageState extends State<SettingsPage> {
           Icon(
             Icons.admin_panel_settings_rounded,
             size: 13,
-            color: Color(0xFFC65F1A),
+            color: AppColors.warning,
           ),
           SizedBox(width: 3),
           Text(
@@ -315,7 +322,7 @@ class _SettingsPageState extends State<SettingsPage> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: Color(0xFFC65F1A),
+              color: AppColors.warning,
             ),
           ),
         ],
@@ -337,7 +344,7 @@ class _SettingsPageState extends State<SettingsPage> {
         'None',
         style: TextStyle(
           fontSize: 13,
-          color: Colors.grey.shade500,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),
       );
@@ -347,7 +354,7 @@ class _SettingsPageState extends State<SettingsPage> {
       constraints: const BoxConstraints(minWidth: 24),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFC65F1A),
+        color: AppColors.warning,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -413,6 +420,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildAvatar(SettingsViewModel viewModel) {
+    final scheme = Theme.of(context).colorScheme;
     const double size = 44;
     if (viewModel.user?.avatarUrl != null) {
       return ClipOval(
@@ -424,13 +432,15 @@ class _SettingsPageState extends State<SettingsPage> {
     }
     return CircleAvatar(
       radius: size / 2,
-      backgroundColor: Colors.grey.shade200,
-      child: Icon(Icons.person, size: size * 0.55, color: Colors.grey.shade500),
+      backgroundColor: scheme.surfaceContainerHighest,
+      child:
+          Icon(Icons.person, size: size * 0.55, color: scheme.onSurfaceVariant),
     );
   }
 
   // ── Shared helpers ─────────────────────────────────────────────────────
   Widget _buildSectionLabel(String label) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
@@ -438,28 +448,17 @@ class _SettingsPageState extends State<SettingsPage> {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.6,
-          color: Colors.grey.shade500,
+          letterSpacing: 0,
+          color: scheme.onSurfaceVariant,
         ),
       ),
     );
   }
 
   Widget _buildSection(List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return Card(
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadii.md),
         child: Column(children: children),
       ),
     );
@@ -473,9 +472,13 @@ class _SettingsPageState extends State<SettingsPage> {
     Widget? trailing,
     Color? color,
   }) {
-    final c = color ?? Colors.black87;
+    final scheme = Theme.of(context).colorScheme;
+    final c = color ?? scheme.onSurface;
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        AppHaptics.light();
+        onTap();
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
@@ -493,7 +496,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey.shade600,
+                        color: scheme.onSurfaceVariant,
                         height: 1.25,
                       ),
                     ),
@@ -506,13 +509,12 @@ class _SettingsPageState extends State<SettingsPage> {
               trailing,
             ],
             const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+            Icon(Icons.chevron_right, color: scheme.onSurfaceVariant, size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDivider() =>
-      Divider(height: 1, indent: 52, color: Colors.grey.shade200);
+  Widget _buildDivider() => const Divider(height: 1, indent: 52);
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
+import 'package:swiftcomp/util/app_interactions.dart';
 
 import '../presentation/chat/views/chat_screen.dart';
 import '../presentation/settings/views/settings_page.dart';
@@ -18,8 +19,6 @@ class _BottomNavigatorState extends State<BottomNavigator> {
     initialPage: 0,
   );
 
-  final _defaultColor = Colors.white;
-  final _activeColor = Colors.green;
   int _currentIndex = 0;
 
   @override
@@ -63,30 +62,51 @@ class _BottomNavigatorState extends State<BottomNavigator> {
           SettingsPage(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.grey.shade800,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        selectedItemColor: _activeColor,
-        unselectedItemColor: _defaultColor,
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          changeIndex(index);
-          if (_currentIndex == 0) {
-            chatViewModel.checkAuthStatus();
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        items: [
-          _bottomItem(Icons.chat, Icons.chat, "Chat"),
-          _bottomItem(Icons.more_horiz, Icons.more_horiz, "Settings"),
-        ],
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(
+            top:
+                BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: BottomNavigationBar(
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              if (index != _currentIndex) AppHaptics.selection();
+              changeIndex(index);
+              if (_currentIndex == 0) {
+                chatViewModel.checkAuthStatus();
+              }
+            },
+            items: [
+              _bottomItem(Icons.chat_bubble_outline_rounded,
+                  Icons.chat_bubble_rounded, "Chat"),
+              _bottomItem(
+                  Icons.settings_outlined, Icons.settings_rounded, "Settings"),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   void changeIndex(int index) {
-    _controller.jumpToPage(index);
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) {
+      _controller.jumpToPage(index);
+    } else {
+      _controller.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeInOut,
+      );
+    }
     setState(() {
       _currentIndex = index;
     });

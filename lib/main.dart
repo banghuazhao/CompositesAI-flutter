@@ -9,7 +9,7 @@ import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:infrastructure/feature_flag_provider.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
-import 'package:swiftcomp/util/app_colors.dart';
+import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/util/others.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -92,19 +92,9 @@ class _MyAppState extends State<MyApp> {
             return Locale('en', '');
           },
           title: 'CompositesAI',
-          theme: ThemeData(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.primary,
-              secondary: AppColors.secondary,
-              onSecondary: Colors.white,
-            ),
-            appBarTheme: AppBarTheme(
-                backgroundColor: AppColors.primary,
-                iconTheme: IconThemeData(color: Colors.white),
-                titleTextStyle: TextStyle(color: Colors.white, fontSize: 20)),
-            scaffoldBackgroundColor: AppColors.background,
-            textTheme: const TextTheme(),
-          ),
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: ThemeMode.system,
           home: const BottomNavigator(),
         ));
   }

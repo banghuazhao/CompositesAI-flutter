@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/tool_model.dart';
 import 'package:swiftcomp/presentation/tools/page/UDFRC_rules_of_mixture_page.dart';
 import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_page.dart';
 import 'package:swiftcomp/presentation/tools/model/DescriptionModels.dart';
+import 'package:swiftcomp/util/app_interactions.dart';
+import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import 'lamina_engineering_constants_page.dart';
@@ -13,7 +14,7 @@ import 'laminate_plate_properties_page.dart';
 import 'laminate_stress_strain_page.dart';
 
 class ToolPage extends StatefulWidget {
-  const ToolPage({Key? key}) : super(key: key);
+  const ToolPage({super.key});
 
   @override
   _ToolPageState createState() => _ToolPageState();
@@ -89,82 +90,99 @@ class _ToolPageState extends State<ToolPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
         appBar: AppBar(title: const Text("Tools")),
         body: SafeArea(
-            child: StaggeredGridView.countBuilder(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 720;
+              return GridView.builder(
                 padding: EdgeInsets.fromLTRB(
-                    context.horizontalSidePaddingForContentWidth,
-                    20,
-                    context.horizontalSidePaddingForContentWidth,
-                    100),
-                crossAxisCount: 8,
+                  context.horizontalSidePaddingForContentWidth,
+                  AppSpacing.md,
+                  context.horizontalSidePaddingForContentWidth,
+                  AppSpacing.xl,
+                ),
                 itemCount: _tools.length,
-                staggeredTileBuilder: (int index) => StaggeredTile.fit(
-                    MediaQuery.of(context).size.width > 600 ? 4 : 8),
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: wide ? 520 : constraints.maxWidth,
+                  mainAxisExtent: 96,
+                  mainAxisSpacing: AppSpacing.sm,
+                  crossAxisSpacing: AppSpacing.sm,
+                ),
                 itemBuilder: (BuildContext context, int index) {
-                  var model = _tools[index];
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        model.action(context);
-                      },
+                  final model = _tools[index];
+                  return Pressable(
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    haptic: true,
+                    onTap: () => model.action(context),
+                    child: Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(12.0),
+                        padding: const EdgeInsets.all(AppSpacing.sm),
                         child: Row(children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4.0),
-                            child: Image(
-                              height: 50,
-                              width: 50,
-                              image: model.image,
-                              fit: BoxFit.cover,
+                          Hero(
+                            tag: 'tool-${model.title}',
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(AppRadii.sm),
+                              child: Image(
+                                height: 56,
+                                width: 56,
+                                image: model.image,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
-                          const SizedBox(
-                            width: 12,
-                          ),
+                          const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
                               model.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                           ),
-                          const SizedBox(
-                            width: 12,
-                          ),
+                          const SizedBox(width: AppSpacing.xs),
                           IconButton(
+                            tooltip: 'About ${model.title}',
                             onPressed: () {
-                              Dialog dialog = Dialog(
-                                insetPadding:
-                                    EdgeInsets.fromLTRB(20, 20, 20, 20),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        12.0)), //this right here
-                                child: Container(
-                                    padding:
-                                        EdgeInsets.fromLTRB(12, 20, 12, 20),
-                                    child: model.descriptionWidget),
-                              );
+                              AppHaptics.light();
                               showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) => dialog);
+                                context: context,
+                                builder: (BuildContext context) => AlertDialog(
+                                  contentPadding: const EdgeInsets.fromLTRB(
+                                    AppSpacing.md,
+                                    AppSpacing.lg,
+                                    AppSpacing.md,
+                                    AppSpacing.md,
+                                  ),
+                                  content: SingleChildScrollView(
+                                    child: model.descriptionWidget,
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(),
+                                      child: const Text('Close'),
+                                    ),
+                                  ],
+                                ),
+                              );
                             },
                             icon: Icon(
                               Icons.help_outline_rounded,
-                              color: Colors.grey,
+                              color: scheme.onSurfaceVariant,
                             ),
                           )
                         ]),
                       ),
                     ),
                   );
-                })));
+                },
+              );
+            },
+          ),
+        ));
   }
 
   @override

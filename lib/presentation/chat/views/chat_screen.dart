@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:swiftcomp/util/app_interactions.dart';
+import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import '../../auth/login_page.dart';
@@ -34,14 +36,11 @@ class _KnowledgePickerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Consumer<ChatViewModel>(
       builder: (context, chat, _) {
         final collectionSelected = chat.isKnowledgeSelected(knowledge.id);
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(20),
-          ),
+        return Card(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
@@ -64,16 +63,18 @@ class _KnowledgePickerCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: collectionSelected
-                      ? const Icon(Icons.check_rounded, color: Colors.blue)
+                      ? Icon(Icons.check_rounded, color: scheme.primary)
                       : null,
-                  onTap: () => viewModel.toggleKnowledgeCollection(knowledge),
+                  onTap: () {
+                    AppHaptics.light();
+                    viewModel.toggleKnowledgeCollection(knowledge);
+                  },
                 ),
                 if (knowledge.files.isNotEmpty) ...[
                   Divider(
                     height: 1,
                     indent: 56,
                     endIndent: 16,
-                    color: Colors.grey.shade300,
                   ),
                   ...knowledge.files.map((file) {
                     final selected = chat.isKnowledgeSelected(file.id);
@@ -88,9 +89,12 @@ class _KnowledgePickerCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       trailing: selected
-                          ? const Icon(Icons.check_rounded, color: Colors.blue)
+                          ? Icon(Icons.check_rounded, color: scheme.primary)
                           : null,
-                      onTap: () => viewModel.toggleKnowledgeFile(file),
+                      onTap: () {
+                        AppHaptics.light();
+                        viewModel.toggleKnowledgeFile(file);
+                      },
                     );
                   }),
                 ],
@@ -230,7 +234,6 @@ class _ChatScreenState extends State<ChatScreen>
                     // If the user is not logged in, show login icon
                     return IconButton(
                       icon: const Icon(Icons.manage_accounts),
-                      color: Colors.white,
                       tooltip: "Sign In",
                       onPressed: () async {
                         User? user = await Navigator.push(
@@ -258,6 +261,7 @@ class _ChatScreenState extends State<ChatScreen>
                         // Avatar or Profile Button
                         GestureDetector(
                           onTap: () async {
+                            AppHaptics.light();
                             String? result = await Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -289,7 +293,6 @@ class _ChatScreenState extends State<ChatScreen>
                                   : const Icon(
                                       Icons.account_circle,
                                       size: 20, // Adjusted size for consistency
-                                      color: Colors.white,
                                     ),
 
                               // Blue verified icon with a white circular background
@@ -302,9 +305,8 @@ class _ChatScreenState extends State<ChatScreen>
                                     // Ensure fixed width
                                     height: 20,
                                     // Ensure fixed height
-                                    decoration: BoxDecoration(
+                                    decoration: const BoxDecoration(
                                       color: Colors.white,
-                                      // White background for contrast
                                       shape: BoxShape
                                           .circle, // Ensure a perfect circle
                                     ),
@@ -312,7 +314,8 @@ class _ChatScreenState extends State<ChatScreen>
                                     // Center the icon
                                     child: Icon(
                                       Icons.verified,
-                                      color: Colors.blue,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
                                       // Blue verification icon
                                       size: 16, // Size of the icon itself
                                     ),
@@ -358,6 +361,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget defaultQuestionView() {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final name = (viewModel.user?.name ?? '').trim();
     final email = (viewModel.user?.email ?? '').trim();
     final greetingTarget = name.isNotEmpty ? name : email;
@@ -365,100 +370,104 @@ class _ChatScreenState extends State<ChatScreen>
         ? 'Hi, $greetingTarget'
         : 'Hi, I am Composites AI';
 
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Logo with rounded corners
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    'images/app_icon.png',
-                    width: 40,
-                    height: 40,
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      child: SingleChildScrollView(
+        key: const ValueKey('defaultQuestionView'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Logo with rounded corners
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'images/app_icon.png',
+                      width: 40,
+                      height: 40,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10), // More spacing for a balanced look
-                Flexible(
-                  child: Text(
-                    greeting,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.normal,
-                      color: Colors.black87,
+                  const SizedBox(width: 10), // More spacing for a balanced look
+                  Flexible(
+                    child: Text(
+                      greeting,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.normal,
+                        color: scheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                children: [
+                  Text(
+                    "How can I help you today?",
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontSize: 22,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              children: const [
-                Text(
-                  "How can I help you today?",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  "Choose a topic or ask your own question",
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.35,
-                    color: Colors.black54,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: context.contentWidth,
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                itemCount: viewModel.defaultQuestions.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(_kSuggestionChipRadius),
-                    onTap: () async {
-                      await viewModel.onDefaultQuestionsTapped(index);
-                    },
-                    child: _buildDefaultQuestionCard(
-                      context,
-                      viewModel.defaultQuestions[index],
-                      index,
+                  SizedBox(height: 8),
+                  Text(
+                    "Choose a topic or ask your own question",
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 14,
+                      height: 1.35,
+                      color: scheme.onSurfaceVariant,
                     ),
-                  );
-                },
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 30),
-        ],
+            const SizedBox(height: 20),
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: context.contentWidth,
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  itemCount: viewModel.defaultQuestions.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    return InkWell(
+                      borderRadius:
+                          BorderRadius.circular(_kSuggestionChipRadius),
+                      onTap: () async {
+                        AppHaptics.light();
+                        await viewModel.onDefaultQuestionsTapped(index);
+                      },
+                      child: _buildDefaultQuestionCard(
+                        context,
+                        viewModel.defaultQuestions[index],
+                        index,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+          ],
+        ),
       ),
     );
   }
@@ -481,7 +490,7 @@ class _ChatScreenState extends State<ChatScreen>
     int index,
   ) {
     final theme = Theme.of(context);
-    final borderColor = Colors.grey.shade200;
+    final borderColor = theme.colorScheme.outlineVariant;
     final fillColor =
         theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.65);
     final iconColor = theme.colorScheme.onSurface.withValues(alpha: 0.55);
@@ -492,8 +501,6 @@ class _ChatScreenState extends State<ChatScreen>
       color: fillColor,
       surfaceTintColor: Colors.transparent,
       clipBehavior: Clip.antiAlias,
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.07),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(_kSuggestionChipRadius),
         side: BorderSide(color: borderColor, width: 1),
@@ -530,6 +537,7 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget inputBar() {
+    final scheme = Theme.of(context).colorScheme;
     final hPad = context.horizontalSidePaddingForContentWidth;
     final bottomInset = MediaQuery.of(context).padding.bottom;
     return Container(
@@ -546,9 +554,9 @@ class _ChatScreenState extends State<ChatScreen>
           _buildPendingFiles(),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: scheme.surface,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: scheme.outlineVariant),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -569,8 +577,9 @@ class _ChatScreenState extends State<ChatScreen>
                     focusNode: focusNode,
                     decoration: InputDecoration(
                       hintText: 'Message',
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     ),
@@ -662,6 +671,7 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildModelPickerButton() {
+    final scheme = Theme.of(context).colorScheme;
     final selectedModel = viewModel.selectedModel;
     final label = selectedModel?.name ?? 'Select model';
 
@@ -672,10 +682,15 @@ class _ChatScreenState extends State<ChatScreen>
         child: SizedBox(
           width: double.infinity,
           child: Material(
-            color: Colors.grey.shade100,
+            color: scheme.surfaceContainerHighest.withValues(alpha: 0.72),
             borderRadius: BorderRadius.circular(18),
             child: InkWell(
-              onTap: viewModel.isSendingMessage ? null : _showModelPickerSheet,
+              onTap: viewModel.isSendingMessage
+                  ? null
+                  : () {
+                      AppHaptics.light();
+                      _showModelPickerSheet();
+                    },
               borderRadius: BorderRadius.circular(18),
               child: Padding(
                 padding:
@@ -697,7 +712,7 @@ class _ChatScreenState extends State<ChatScreen>
                     Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 18,
-                      color: Colors.grey.shade700,
+                      color: scheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -715,13 +730,14 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildModelLoadingChip() {
+    final scheme = Theme.of(context).colorScheme;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: scheme.surfaceContainerHighest.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -741,7 +757,7 @@ class _ChatScreenState extends State<ChatScreen>
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -752,6 +768,7 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildRightButton() {
+    final scheme = Theme.of(context).colorScheme;
     if (viewModel.isSendingMessage) {
       return const SizedBox(
         width: 34,
@@ -763,74 +780,86 @@ class _ChatScreenState extends State<ChatScreen>
       );
     }
     if (_isListening) {
+      final reduceMotion =
+          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      final stopButton = Pressable(
+        haptic: true,
+        borderRadius: BorderRadius.circular(17),
+        onTap: _stopListening,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: scheme.error,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.stop_rounded, color: scheme.onError, size: 20),
+        ),
+      );
+      if (reduceMotion) return stopButton;
       return ScaleTransition(
         scale: _pulseAnimation,
-        child: GestureDetector(
-          onTap: _stopListening,
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: const BoxDecoration(
-              color: Colors.red,
-              shape: BoxShape.circle,
-            ),
-            child:
-                const Icon(Icons.stop_rounded, color: Colors.white, size: 18),
-          ),
-        ),
+        child: stopButton,
       );
     }
     if (_canSendMessage()) {
-      return GestureDetector(
+      return Pressable(
+        haptic: true,
+        borderRadius: BorderRadius.circular(17),
         onTap: () {
           final text = textController.text.trim();
           textController.clear();
           viewModel.sendInputMessage(text);
         },
         child: Container(
-          width: 34,
-          height: 34,
-          decoration: const BoxDecoration(
-            color: Colors.black,
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: scheme.primary,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.arrow_upward_rounded,
-              color: Colors.white, size: 20),
+          child: Icon(Icons.arrow_upward_rounded,
+              color: scheme.onPrimary, size: 22),
         ),
       );
     }
-    return GestureDetector(
+    return Pressable(
+      borderRadius: BorderRadius.circular(17),
+      haptic: true,
       onTap: viewModel.isUploadingFile ? null : _startListening,
       child: Container(
-        width: 34,
-        height: 34,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade400, width: 1.5),
+          border: Border.all(color: scheme.outline, width: 1.5),
         ),
-        child: Icon(Icons.mic_none, size: 18, color: Colors.grey.shade700),
+        child: Icon(Icons.mic_none, size: 20, color: scheme.onSurfaceVariant),
       ),
     );
   }
 
   Widget _buildAttachButton() {
-    return GestureDetector(
+    final scheme = Theme.of(context).colorScheme;
+    return Pressable(
+      borderRadius: BorderRadius.circular(17),
+      haptic: true,
       onTap: viewModel.isUploadingFile || viewModel.isSendingMessage
           ? null
           : _showAttachmentSheet,
       child: Container(
-        width: 34,
-        height: 34,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade400, width: 1.5),
+          border: Border.all(color: scheme.outline, width: 1.5),
         ),
         child: viewModel.isUploadingFile
             ? const Padding(
                 padding: EdgeInsets.all(8),
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : Icon(Icons.add, size: 20, color: Colors.grey.shade700),
+            : Icon(Icons.add, size: 22, color: scheme.onSurfaceVariant),
       ),
     );
   }
@@ -841,11 +870,7 @@ class _ChatScreenState extends State<ChatScreen>
 
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
       builder: (_) {
         return SafeArea(
           child: Padding(
@@ -867,7 +892,10 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: ExcludeFocus(
@@ -908,9 +936,10 @@ class _ChatScreenState extends State<ChatScreen>
                                   )
                                 : null,
                             trailing: isSelected
-                                ? const Icon(
+                                ? Icon(
                                     Icons.check_rounded,
-                                    color: Colors.blue,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                   )
                                 : null,
                             onTap: () {
@@ -934,9 +963,6 @@ class _ChatScreenState extends State<ChatScreen>
   void _showAttachmentSheet() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (sheetContext) => SafeArea(
         child: ExcludeFocus(
           child: Column(
@@ -947,7 +973,7 @@ class _ChatScreenState extends State<ChatScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: Theme.of(context).colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1012,11 +1038,7 @@ class _ChatScreenState extends State<ChatScreen>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
@@ -1066,7 +1088,10 @@ class _ChatScreenState extends State<ChatScreen>
                                     },
                                   ),
                             filled: true,
-                            fillColor: Colors.grey.shade100,
+                            fillColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withValues(alpha: 0.55),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide.none,
@@ -1089,7 +1114,9 @@ class _ChatScreenState extends State<ChatScreen>
                                         child: Text(
                                           'No knowledge sources found',
                                           style: TextStyle(
-                                              color: Colors.grey.shade600),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant),
                                         ),
                                       ),
                                     )
@@ -1131,6 +1158,7 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildPendingFiles() {
+    final scheme = Theme.of(context).colorScheme;
     if (viewModel.pendingFiles.isEmpty &&
         viewModel.uploadingFileNames.isEmpty) {
       return const SizedBox.shrink();
@@ -1155,7 +1183,7 @@ class _ChatScreenState extends State<ChatScreen>
                 Icon(
                   Icons.attach_file_rounded,
                   size: 16,
-                  color: Colors.grey.shade700,
+                  color: scheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -1166,7 +1194,7 @@ class _ChatScreenState extends State<ChatScreen>
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade700,
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -1244,7 +1272,9 @@ class _ChatScreenState extends State<ChatScreen>
                 detail,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
           ],
         ),
@@ -1277,6 +1307,7 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildPendingImageThumb(ChatFile file) {
+    final scheme = Theme.of(context).colorScheme;
     final bytes = viewModel.pendingImageBytes[file.id];
     return Stack(
       clipBehavior: Clip.none,
@@ -1286,7 +1317,7 @@ class _ChatScreenState extends State<ChatScreen>
           height: 80,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: Colors.grey.shade200,
+            color: scheme.surfaceContainerHighest,
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
@@ -1299,13 +1330,15 @@ class _ChatScreenState extends State<ChatScreen>
           Positioned(
             top: -4,
             right: -4,
-            child: GestureDetector(
+            child: Pressable(
+              borderRadius: BorderRadius.circular(11),
+              haptic: true,
               onTap: () => viewModel.removePendingFile(file),
               child: Container(
                 width: 22,
                 height: 22,
-                decoration: const BoxDecoration(
-                  color: Colors.black54,
+                decoration: BoxDecoration(
+                  color: scheme.inverseSurface,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close, size: 13, color: Colors.white),
@@ -1318,64 +1351,61 @@ class _ChatScreenState extends State<ChatScreen>
 
   Widget noLoginView() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              'images/app_icon.png',
-              width: 60,
-              height: 60,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: const Text(
-              "Please sign in to access the chat and continue your learning experience.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black, // Keep text fully visible
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'images/app_icon.png',
+                width: 60,
+                height: 60,
               ),
             ),
-          ),
-          const SizedBox(height: 30),
-          ElevatedButton.icon(
-            onPressed: () async {
-              User? user = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LoginPage(),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: const Text(
+                "Please sign in to access the chat and continue your learning experience.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
-              );
-              if (user != null) {
-                await viewModel.checkAuthStatus();
-                if (viewModel.isLoggedIn) {
-                  await Future.wait([
-                    viewModel.fetchChats(),
-                    viewModel.fetchTools(),
-                  ]);
-                }
-                setState(() {}); // Trigger UI rebuild
-              }
-            },
-            icon: const Icon(Icons.manage_accounts, size: 22),
-            label: const Text(
-              "Login to Chat",
-              style: TextStyle(fontSize: 16),
-            ),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              onPressed: () async {
+                User? user = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginPage(),
+                  ),
+                );
+                if (user != null) {
+                  AppHaptics.light();
+                  await viewModel.checkAuthStatus();
+                  if (viewModel.isLoggedIn) {
+                    await Future.wait([
+                      viewModel.fetchChats(),
+                      viewModel.fetchTools(),
+                    ]);
+                  }
+                  setState(() {}); // Trigger UI rebuild
+                }
+              },
+              icon: const Icon(Icons.manage_accounts, size: 22),
+              label: const Text(
+                "Login to Chat",
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

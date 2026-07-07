@@ -5,7 +5,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:domain/auth/entities/user.dart';
 import 'package:swiftcomp/presentation/auth/sigup_page.dart';
-import 'package:swiftcomp/util/app_colors.dart';
+import 'package:swiftcomp/util/app_interactions.dart';
+import 'package:swiftcomp/util/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/injection_container.dart';
@@ -251,6 +252,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
     return ChangeNotifierProvider(
       create: (_) => sl<LoginViewModel>(),
@@ -258,230 +261,212 @@ class _LoginPageState extends State<LoginPage> {
         builder: (context, viewModel, _) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Login'),
-              centerTitle: true,
+              title: const Text('Sign in'),
               elevation: 0,
             ),
-            body: SingleChildScrollView(
-              padding: EdgeInsets.zero,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Container(
-                  width:
-                      screenWidth > 600 ? screenWidth * 0.4 : double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
-                  child: Form(
-                    key: _formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // App icon
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10.0),
-                          child: Align(
-                            alignment: Alignment.topCenter,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.asset(
-                                'images/app_icon.png',
-                                height: 40,
-                                width: 40,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 50),
-
-                        // Email
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            errorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                            ),
-                            focusedErrorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                            ),
-                            errorStyle: TextStyle(color: Color(0xFFB71C1C)),
-                          ),
-                          onChanged: (_) =>
-                              setState(() => _emailLoginError = null),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email address';
-                            }
-                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
-                                .hasMatch(value)) {
-                              return 'Please enter a valid email address';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16.0),
-
-                        // Password
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: viewModel.obscureText,
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            suffixIcon: IconButton(
-                              icon: Icon(viewModel.obscureText
-                                  ? Icons.visibility_off
-                                  : Icons.visibility),
-                              onPressed: viewModel.togglePasswordVisibility,
-                            ),
-                          ),
-                          onChanged: (_) =>
-                              setState(() => _emailLoginError = null),
-                        ),
-                        const SizedBox(height: 2.0),
-
-                        // Forgot password — always visible
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(50, 28),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => ForgetPasswordPage()),
-                            ),
-                            child: const Text(
-                              'Forgot password?',
-                              style:
-                                  TextStyle(fontSize: 13, color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12.0),
-
-                        // Login button
-                        viewModel.isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  minimumSize: const Size(double.infinity, 45),
-                                  backgroundColor: _isButtonEnabled
-                                      ? AppColors.primary
-                                      : AppColors.secondary,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6)),
-                                  elevation: 0,
-                                ),
-                                onPressed: _isButtonEnabled
-                                    ? () => _login(viewModel)
-                                    : null,
-                                child: const Text(
-                                  'Login',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 16),
+            body: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: screenWidth > 600 ? 460 : double.infinity,
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10.0),
+                            child: Align(
+                              alignment: Alignment.topCenter,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.asset(
+                                  'images/app_icon.png',
+                                  height: 56,
+                                  width: 56,
+                                  fit: BoxFit.contain,
                                 ),
                               ),
-
-                        // Inline login error
-                        if (_emailLoginError != null) ...[
-                          const SizedBox(height: 10),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.error_outline,
-                                  color: Colors.red, size: 16),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  _emailLoginError!,
-                                  style: const TextStyle(
-                                      color: Colors.red, fontSize: 13),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-
-                        const SizedBox(height: 20.0),
-
-                        // Sign-up link
-                        RichText(
-                          textAlign: TextAlign.center,
-                          text: TextSpan(
-                            style: const TextStyle(
-                                fontSize: 15, color: Colors.black),
-                            children: [
-                              const TextSpan(text: 'Not a member yet? '),
-                              TextSpan(
-                                text: 'Sign up',
-                                style: const TextStyle(
-                                    color: Colors.blue,
-                                    fontWeight: FontWeight.bold),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = _signup,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20.0),
-
-                        // Divider
-                        const Row(
-                          children: [
-                            Expanded(
-                                child: Divider(
-                                    color: Colors.grey, thickness: 1)),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Text('OR',
-                                  style: TextStyle(
-                                      fontSize: 15, color: Colors.black)),
                             ),
-                            Expanded(
-                                child: Divider(
-                                    color: Colors.grey, thickness: 1)),
+                          ),
+                          const SizedBox(height: 28),
+                          Text(
+                            'Welcome back',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Sign in to sync chats, tools, and expert settings.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                              prefixIcon: Icon(Icons.mail_outline_rounded),
+                            ),
+                            onChanged: (_) =>
+                                setState(() => _emailLoginError = null),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your email address';
+                              }
+                              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                                  .hasMatch(value)) {
+                                return 'Please enter a valid email address';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16.0),
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: viewModel.obscureText,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              prefixIcon:
+                                  const Icon(Icons.lock_outline_rounded),
+                              suffixIcon: IconButton(
+                                icon: Icon(viewModel.obscureText
+                                    ? Icons.visibility_off
+                                    : Icons.visibility),
+                                onPressed: viewModel.togglePasswordVisibility,
+                              ),
+                            ),
+                            onChanged: (_) =>
+                                setState(() => _emailLoginError = null),
+                          ),
+                          const SizedBox(height: 2.0),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(50, 28),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => ForgetPasswordPage()),
+                              ),
+                              child: const Text(
+                                'Forgot password?',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12.0),
+                          viewModel.isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : ElevatedButton(
+                                  onPressed: _isButtonEnabled
+                                      ? () => _login(viewModel)
+                                      : null,
+                                  child: const SizedBox(
+                                    width: double.infinity,
+                                    child: Text(
+                                      'Sign in',
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                          if (_emailLoginError != null) ...[
+                            const SizedBox(height: 10),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.error_outline,
+                                    color: scheme.error, size: 16),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    _emailLoginError!,
+                                    style: TextStyle(
+                                        color: scheme.error, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
-                        ),
-
-                        const SizedBox(height: 10.0),
-
-                        // Social buttons
-                        _buildSocialButton(
-                          iconPath: 'images/google_logo.png',
-                          text: 'Continue with Google',
-                          onPressed: () => _handleSocialSignIn(
-                              () => viewModel.signInWithGoogle()),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildSocialButtonIcon(
-                          icon: FontAwesomeIcons.github,
-                          text: 'Continue with GitHub',
-                          onPressed: () => _githubSignIn(viewModel),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildSocialButtonIcon(
-                          iconWidget: _microsoftLogo(size: 20),
-                          text: 'Continue with Microsoft',
-                          onPressed: () => _handleSocialSignIn(
-                              () => viewModel.signInWithMicrosoft()),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildSocialButton(
-                          iconPath: 'images/apple_logo.png',
-                          text: 'Continue with Apple',
-                          onPressed: () => _handleSocialSignIn(
-                              () => viewModel.signInWithApple()),
-                        ),
-                        const SizedBox(height: 24.0),
-                      ],
+                          const SizedBox(height: 20.0),
+                          RichText(
+                            textAlign: TextAlign.center,
+                            text: TextSpan(
+                              style: theme.textTheme.bodyMedium,
+                              children: [
+                                const TextSpan(text: 'Not a member yet? '),
+                                TextSpan(
+                                  text: 'Sign up',
+                                  style: TextStyle(
+                                      color: scheme.primary,
+                                      fontWeight: FontWeight.bold),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = _signup,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20.0),
+                          Row(
+                            children: [
+                              const Expanded(child: Divider()),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Text(
+                                  'OR',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: scheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const Expanded(child: Divider()),
+                            ],
+                          ),
+                          const SizedBox(height: 10.0),
+                          _buildSocialButton(
+                            iconPath: 'images/google_logo.png',
+                            text: 'Continue with Google',
+                            onPressed: () => _handleSocialSignIn(
+                                () => viewModel.signInWithGoogle()),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildSocialButtonIcon(
+                            icon: FontAwesomeIcons.github,
+                            text: 'Continue with GitHub',
+                            onPressed: () => _githubSignIn(viewModel),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildSocialButtonIcon(
+                            iconWidget: _microsoftLogo(size: 20),
+                            text: 'Continue with Microsoft',
+                            onPressed: () => _handleSocialSignIn(
+                                () => viewModel.signInWithMicrosoft()),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildSocialButton(
+                            iconPath: 'images/apple_logo.png',
+                            text: 'Continue with Apple',
+                            onPressed: () => _handleSocialSignIn(
+                                () => viewModel.signInWithApple()),
+                          ),
+                          const SizedBox(height: 24.0),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -534,28 +519,31 @@ class _LoginPageState extends State<LoginPage> {
     required String text,
     required VoidCallback onPressed,
   }) {
-    return GestureDetector(
+    return Pressable(
+      haptic: true,
+      borderRadius: BorderRadius.circular(AppRadii.md),
       onTap: onPressed,
       child: Container(
         width: double.infinity,
-        padding:
-            const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300, width: 1),
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 1,
+          ),
         ),
         child: Center(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                  width: 24, height: 24, child: Center(child: leading)),
+              SizedBox(width: 24, height: 24, child: Center(child: leading)),
               const SizedBox(width: 12),
               Text(
                 text,
                 style: const TextStyle(
-                  color: Colors.black,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -573,8 +561,8 @@ class _LoginPageState extends State<LoginPage> {
     required VoidCallback onPressed,
   }) {
     return _buildSocialButtonBase(
-      leading: Image.asset(iconPath, height: 22, width: 22,
-          fit: BoxFit.contain),
+      leading:
+          Image.asset(iconPath, height: 22, width: 22, fit: BoxFit.contain),
       text: text,
       onPressed: onPressed,
     );
@@ -588,7 +576,9 @@ class _LoginPageState extends State<LoginPage> {
   }) {
     assert(icon != null || iconWidget != null);
     return _buildSocialButtonBase(
-      leading: iconWidget ?? FaIcon(icon!, color: Colors.black, size: 22),
+      leading: iconWidget ??
+          FaIcon(icon!,
+              color: Theme.of(context).colorScheme.onSurface, size: 22),
       text: text,
       onPressed: onPressed,
     );
