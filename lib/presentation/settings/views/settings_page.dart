@@ -45,16 +45,19 @@ class _SettingsPageState extends State<SettingsPage> {
         final theme = Theme.of(context);
         final scheme = theme.colorScheme;
         return Scaffold(
-          appBar: AppBar(title: const Text('Settings')),
+          appBar: AppBar(title: const Text('Account & Settings')),
           body: ListView(
             padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 24),
             children: [
-              // ── Profile / Login ──────────────────────────────────────
+              _buildSectionLabel('Account'),
+              const SizedBox(height: 6),
               if (viewModel.isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator()),
-                )
+                _buildSection([
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 28),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ])
               else if (viewModel.isLoggedIn)
                 _buildProfileCard(context, viewModel)
               else
@@ -78,16 +81,42 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                   ),
                 ]),
-
+              if (viewModel.isLoggedIn &&
+                  !viewModel.isExpert &&
+                  !viewModel.isAdmin) ...[
+                const SizedBox(height: 12),
+                _buildSection([
+                  _buildTile(
+                    icon: Icons.workspace_premium_outlined,
+                    title: _expertRequestTitle(viewModel),
+                    subtitle: _expertRequestSubtitle(viewModel),
+                    trailing: viewModel.isLoadingExpertRequestMetadata
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : null,
+                    onTap: _canOpenExpertRequest(viewModel)
+                        ? () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const ApplyExpertPage()),
+                            );
+                            await viewModel.refreshExpertRequestMetadata();
+                          }
+                        : () => _showExpertRequestStatus(context, viewModel),
+                  ),
+                ]),
+              ],
               const SizedBox(height: 24),
-
-              // ── App section ──────────────────────────────────────────
-              _buildSectionLabel('App'),
+              _buildSectionLabel('Tools'),
               const SizedBox(height: 6),
               _buildSection([
                 _buildTile(
-                  icon: Icons.settings_outlined,
-                  title: 'Tools Settings',
+                  icon: Icons.tune_rounded,
+                  title: 'Chat Tool Settings',
+                  subtitle: 'Choose the tools used in chat responses.',
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => ToolSettingPage()),
@@ -97,13 +126,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 _buildTile(
                   icon: Icons.calculate_outlined,
                   title: 'Composite Calculators',
+                  subtitle: 'Open the engineering calculation toolkit.',
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const ToolPage()),
                   ),
                 ),
-                if (viewModel.isAdmin) ...[
-                  _buildDivider(),
+              ]),
+              if (viewModel.isAdmin) ...[
+                const SizedBox(height: 24),
+                _buildSectionLabel('Admin'),
+                const SizedBox(height: 6),
+                _buildSection([
                   _buildTile(
                     icon: Icons.admin_panel_settings_outlined,
                     title: 'Model & Tool Management',
@@ -129,8 +163,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       await viewModel.refreshExpertRequestMetadata();
                     },
                   ),
-                ],
-                _buildDivider(),
+                ]),
+              ],
+              const SizedBox(height: 24),
+              _buildSectionLabel('Support'),
+              const SizedBox(height: 6),
+              _buildSection([
                 _buildTile(
                   icon: Icons.chat_bubble_outline_rounded,
                   title: 'Feedback',
@@ -160,40 +198,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 ),
               ]),
-
-              // ── Account section (expert apply) ───────────────────────
-              if (viewModel.isLoggedIn &&
-                  !viewModel.isExpert &&
-                  !viewModel.isAdmin) ...[
-                const SizedBox(height: 24),
-                _buildSectionLabel('Account'),
-                const SizedBox(height: 6),
-                _buildSection([
-                  _buildTile(
-                    icon: Icons.workspace_premium_outlined,
-                    title: _expertRequestTitle(viewModel),
-                    subtitle: _expertRequestSubtitle(viewModel),
-                    trailing: viewModel.isLoadingExpertRequestMetadata
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : null,
-                    onTap: _canOpenExpertRequest(viewModel)
-                        ? () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const ApplyExpertPage()),
-                            );
-                            await viewModel.refreshExpertRequestMetadata();
-                          }
-                        : () => _showExpertRequestStatus(context, viewModel),
-                  ),
-                ]),
-              ],
-
-              // ── Version ──────────────────────────────────────────────
               const SizedBox(height: 32),
               GestureDetector(
                 onTap: () => viewModel.handleTap(() async {
@@ -233,13 +237,15 @@ class _SettingsPageState extends State<SettingsPage> {
         borderRadius: BorderRadius.circular(14),
         onTap: () async {
           AppHaptics.light();
-          await Navigator.push(
+          final result = await Navigator.push<String>(
             context,
             MaterialPageRoute(
               builder: (_) => UserProfilePage(user: viewModel.user),
             ),
           );
           await _refresh();
+          if (!context.mounted) return;
+          if (result == 'refresh') Navigator.pop(context, 'refresh');
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
-import 'package:swiftcomp/util/app_interactions.dart';
 
 import '../presentation/chat/views/chat_screen.dart';
 import '../presentation/settings/views/settings_page.dart';
@@ -15,12 +14,6 @@ class BottomNavigator extends StatefulWidget {
 }
 
 class _BottomNavigatorState extends State<BottomNavigator> {
-  final PageController _controller = PageController(
-    initialPage: 0,
-  );
-
-  int _currentIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -30,12 +23,6 @@ class _BottomNavigatorState extends State<BottomNavigator> {
     });
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
   /// Handles the redirect back to your app after LinkedIn authentication.
   Future<void> handleRedirectBack() async {
     final Uri uri = Uri.base;
@@ -43,83 +30,21 @@ class _BottomNavigatorState extends State<BottomNavigator> {
     if (uri.queryParameters.containsKey('code')) {
       final String? code = uri.queryParameters['code'];
       if (!mounted) return;
-      changeIndex(1);
       final settingsViewModel =
           Provider.of<SettingsViewModel>(context, listen: false);
       await settingsViewModel.handleAuthorizationCodeFromLinked(code);
+      if (!mounted) return;
+      await context.read<ChatViewModel>().checkAuthStatus();
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SettingsPage()),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final chatViewModel = Provider.of<ChatViewModel>(context);
-    return Scaffold(
-      body: PageView(
-        controller: _controller,
-        physics: const NeverScrollableScrollPhysics(),
-        children: const [
-          ChatScreen(),
-          SettingsPage(),
-        ],
-      ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: Border(
-            top:
-                BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: BottomNavigationBar(
-            showSelectedLabels: true,
-            showUnselectedLabels: true,
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              if (index != _currentIndex) AppHaptics.selection();
-              changeIndex(index);
-              if (_currentIndex == 0) {
-                chatViewModel.checkAuthStatus();
-              }
-            },
-            items: [
-              _bottomItem(Icons.chat_bubble_outline_rounded,
-                  Icons.chat_bubble_rounded, "Chat"),
-              _bottomItem(
-                  Icons.settings_outlined, Icons.settings_rounded, "Settings"),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void changeIndex(int index) {
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduceMotion) {
-      _controller.jumpToPage(index);
-    } else {
-      _controller.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeInOut,
-      );
-    }
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-
-  _bottomItem(IconData defaultIcon, IconData activeIcon, String title) {
-    return BottomNavigationBarItem(
-        icon: Icon(
-          defaultIcon,
-        ),
-        activeIcon: Icon(
-          activeIcon,
-        ),
-        label: title);
+    return const ChatScreen();
   }
 }

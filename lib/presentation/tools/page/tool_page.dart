@@ -92,7 +92,11 @@ class _ToolPageState extends State<ToolPage>
     super.build(context);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-        appBar: AppBar(title: const Text("Tools")),
+        appBar: AppBar(
+          title: const Text("Tools"),
+          foregroundColor: scheme.onSurface,
+          iconTheme: IconThemeData(color: scheme.onSurface),
+        ),
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {

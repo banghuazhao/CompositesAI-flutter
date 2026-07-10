@@ -13,7 +13,7 @@ import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import '../../auth/login_page.dart';
 import '../../conponents/base64-image.dart';
-import '../../settings/views/user_profile_page.dart';
+import '../../settings/views/settings_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'message_list.dart';
 import 'chat_list.dart';
@@ -262,18 +262,23 @@ class _ChatScreenState extends State<ChatScreen>
                         GestureDetector(
                           onTap: () async {
                             AppHaptics.light();
-                            String? result = await Navigator.push(
+                            final result = await Navigator.push<String>(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => UserProfilePage(
-                                  user: viewModel.user,
-                                ),
+                                builder: (context) => const SettingsPage(),
                               ),
                             );
-                            if (result == "refresh") {
-                              await viewModel
-                                  .checkAuthStatus(); // Refresh the authentication status
-                              setState(() {}); // Rebuild the UI
+                            if (!context.mounted) return;
+                            await viewModel.checkAuthStatus();
+                            if (viewModel.isLoggedIn) {
+                              await Future.wait([
+                                viewModel.fetchChats(),
+                                viewModel.fetchTools(),
+                                viewModel.fetchKnowledgeBases(),
+                              ]);
+                            }
+                            if (result == "refresh" && mounted) {
+                              setState(() {});
                             }
                           },
                           child: Stack(
