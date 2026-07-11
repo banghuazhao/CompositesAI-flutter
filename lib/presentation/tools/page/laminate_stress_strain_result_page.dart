@@ -8,7 +8,7 @@ import 'package:linalg/matrix.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart';
-import 'package:swiftcomp/presentation/settings/views/tool_setting_page.dart';
+import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
 class LaminateStressStrainResultPage extends StatefulWidget {
@@ -113,8 +113,7 @@ class _LaminateStressStrainResultPageState
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            const ToolSettingPage(showChatTools: false)));
+                        builder: (context) => const ResultPrecisionPage()));
               },
               icon: const Icon(Icons.settings_rounded),
             ),

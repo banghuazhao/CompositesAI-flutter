@@ -5,7 +5,7 @@ import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/material_model.dart';
 import 'package:swiftcomp/presentation/tools/widget/orthotropic_properties_widget.dart';
 import 'package:swiftcomp/presentation/tools/widget/result_6by6_matrix.dart';
-import 'package:swiftcomp/presentation/settings/views/tool_setting_page.dart';
+import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
 
 class RulesOfMixtureResultPage extends StatefulWidget {
   final UDFRCRulesOfMixtureOutput output;
@@ -35,8 +35,7 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            const ToolSettingPage(showChatTools: false)));
+                        builder: (context) => const ResultPrecisionPage()));
               },
               icon: const Icon(Icons.settings_rounded),
             ),

@@ -16,6 +16,7 @@ import '../viewModels/settings_view_model.dart';
 import 'apply_expert_page.dart';
 import '../../auth/login_page.dart';
 import 'expert_requests_page.dart';
+import 'result_precision_page.dart';
 import 'tool_setting_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -110,19 +111,23 @@ class _SettingsPageState extends State<SettingsPage> {
                 ]),
               ],
               const SizedBox(height: 24),
-              _buildSectionLabel('Tools'),
+              _buildSectionLabel('Chat'),
               const SizedBox(height: 6),
               _buildSection([
                 _buildTile(
                   icon: Icons.tune_rounded,
-                  title: 'Chat Tool Settings',
+                  title: 'Chat Tools',
                   subtitle: 'Choose the tools used in chat responses.',
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => ToolSettingPage()),
+                    MaterialPageRoute(builder: (_) => const ToolSettingPage()),
                   ),
                 ),
-                _buildDivider(),
+              ]),
+              const SizedBox(height: 24),
+              _buildSectionLabel('Composite Calculators'),
+              const SizedBox(height: 6),
+              _buildSection([
                 _buildTile(
                   icon: Icons.calculate_outlined,
                   title: 'Composite Calculators',
@@ -130,6 +135,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const ToolPage()),
+                  ),
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: Icons.pin_outlined,
+                  title: 'Result Precision',
+                  subtitle: 'Set numeric precision for calculator results.',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ResultPrecisionPage()),
                   ),
                 ),
               ]),

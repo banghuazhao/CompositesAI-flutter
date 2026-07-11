@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
-import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 class ToolSettingPage extends StatefulWidget {
-  const ToolSettingPage({super.key, this.showChatTools = true});
-
-  final bool showChatTools;
+  const ToolSettingPage({super.key});
 
   @override
   _ToolSettingPageState createState() => _ToolSettingPageState();
@@ -19,53 +15,16 @@ class _ToolSettingPageState extends State<ToolSettingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.of(context).Settings),
+        title: const Text('Chat Tools'),
       ),
-      body: Consumer2<NumberPrecisionHelper, ChatViewModel>(
-        builder: (context, precision, chat, _) => SafeArea(
+      body: Consumer<ChatViewModel>(
+        builder: (context, chat, _) => SafeArea(
           child: ListView(
             padding: EdgeInsets.symmetric(
                 horizontal: context.horizontalSidePaddingForContentWidth),
             children: [
               const SizedBox(height: 10),
-              ListTile(
-                title: Text(S.of(context).Result_Precision),
-                subtitle:
-                    Text(123456789.toStringAsExponential(precision.precision)),
-                trailing: SizedBox(
-                  width: 140,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.remove),
-                        onPressed: () => setState(() {
-                          if (precision.precision > 1) {
-                            precision.set(precision.precision - 1);
-                          }
-                        }),
-                      ),
-                      SizedBox(
-                        width: 40,
-                        child: Text(
-                          precision.precision.toString(),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () => setState(() {
-                          if (precision.precision < 9) {
-                            precision.set(precision.precision + 1);
-                          }
-                        }),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (widget.showChatTools && chat.tools.isNotEmpty) ...[
-                const Divider(height: 32),
+              if (chat.tools.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
                   child: Row(
@@ -107,10 +66,22 @@ class _ToolSettingPageState extends State<ToolSettingPage> {
                   );
                 }),
               ],
-              if (widget.showChatTools && chat.isLoadingTools)
+              if (chat.isLoadingTools)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(child: CircularProgressIndicator()),
+                ),
+              if (!chat.isLoadingTools && chat.tools.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      'No chat tools available',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),

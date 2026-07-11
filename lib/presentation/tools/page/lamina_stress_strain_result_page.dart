@@ -3,7 +3,7 @@ import 'package:composite_calculator/models/tensor_type.dart';
 import 'package:flutter/material.dart';
 import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:swiftcomp/generated/l10n.dart';
-import 'package:swiftcomp/presentation/settings/views/tool_setting_page.dart';
+import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
 
 import '../widget/result_3by3_matrix.dart';
 
@@ -35,8 +35,7 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            const ToolSettingPage(showChatTools: false)));
+                        builder: (context) => const ResultPrecisionPage()));
               },
               icon: const Icon(Icons.settings_rounded),
             ),
