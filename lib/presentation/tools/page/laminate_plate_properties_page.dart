@@ -40,8 +40,7 @@ class _LaminatePlatePropertiesPageState
     return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon:
-                const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+            icon: const Icon(Icons.arrow_back_ios_outlined),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text(S.of(context).Laminate_plate_properties),

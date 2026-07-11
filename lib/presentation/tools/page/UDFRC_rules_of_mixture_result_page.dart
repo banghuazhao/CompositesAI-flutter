@@ -26,8 +26,7 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
     return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon:
-                const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+            icon: const Icon(Icons.arrow_back_ios_outlined),
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
@@ -36,7 +35,8 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const ToolSettingPage()));
+                        builder: (context) =>
+                            const ToolSettingPage(showChatTools: false)));
               },
               icon: const Icon(Icons.settings_rounded),
             ),

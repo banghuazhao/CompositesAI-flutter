@@ -128,14 +128,14 @@ class _LaminaEngineeringConstantsResultPageState
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const ToolSettingPage()));
+                        builder: (context) =>
+                            const ToolSettingPage(showChatTools: false)));
               },
               icon: const Icon(Icons.settings_rounded),
             ),
           ],
           leading: IconButton(
-            icon:
-                const Icon(Icons.arrow_back_ios_outlined, color: Colors.white),
+            icon: const Icon(Icons.arrow_back_ios_outlined),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text(S.of(context).Results),

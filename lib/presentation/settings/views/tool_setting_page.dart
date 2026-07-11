@@ -6,7 +6,9 @@ import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 class ToolSettingPage extends StatefulWidget {
-  const ToolSettingPage({Key? key}) : super(key: key);
+  const ToolSettingPage({super.key, this.showChatTools = true});
+
+  final bool showChatTools;
 
   @override
   _ToolSettingPageState createState() => _ToolSettingPageState();
@@ -62,7 +64,7 @@ class _ToolSettingPageState extends State<ToolSettingPage> {
                   ),
                 ),
               ),
-              if (chat.tools.isNotEmpty) ...[
+              if (widget.showChatTools && chat.tools.isNotEmpty) ...[
                 const Divider(height: 32),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
@@ -79,8 +81,8 @@ class _ToolSettingPageState extends State<ToolSettingPage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          final enableAll = chat.selectedToolIds.length !=
-                              chat.tools.length;
+                          final enableAll =
+                              chat.selectedToolIds.length != chat.tools.length;
                           chat.setAllToolsEnabled(enableAll);
                         },
                         child: Text(
@@ -105,7 +107,7 @@ class _ToolSettingPageState extends State<ToolSettingPage> {
                   );
                 }),
               ],
-              if (chat.isLoadingTools)
+              if (widget.showChatTools && chat.isLoadingTools)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(child: CircularProgressIndicator()),
