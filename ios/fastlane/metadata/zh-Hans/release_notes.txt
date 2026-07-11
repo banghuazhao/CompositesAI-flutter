@@ -1,5 +1,5 @@
-• Improved expert request flow
-• Better chat drawer search and organisation
-• Improved chat file attachments workflow
-• Knowledge RAG picker for richer AI context
-• Bug fixes and performance improvements
+• 优化专家请求流程
+• 改进聊天抽屉的搜索和整理
+• 优化聊天文件附件处理
+• 知识 RAG 选择器，提供更丰富的 AI 上下文
+• 修复错误并提升性能

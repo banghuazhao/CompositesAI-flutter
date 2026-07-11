@@ -1,5 +1,5 @@
-• Improved expert request flow
-• Better chat drawer search and organisation
-• Improved chat file attachments workflow
-• Knowledge RAG picker for richer AI context
-• Bug fixes and performance improvements
+• Flujo de solicitud de expertos mejorado
+• Búsqueda y organización del panel de chat mejoradas
+• Mejor gestión de archivos adjuntos en el chat
+• Selector de RAG de conocimiento para un mejor contexto de IA
+• Correcciones de errores y mejoras de rendimiento
