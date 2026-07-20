@@ -105,6 +105,7 @@ class _SignupFormState extends State<SignupForm> {
     return Scaffold(
       appBar: AppBar(title: Text('Signup')),
       body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.symmetric(
             horizontal: context.horizontalSidePaddingForContentWidth,
             vertical: 20),

@@ -73,7 +73,6 @@ class ChatViewModel extends ChangeNotifier {
   int _chatFilterRequestId = 0;
   int _selectedChatRequestId = 0;
   Set<String> selectedToolIds = <String>{};
-  bool _hasUserConfiguredTools = false;
   Chat? selectedChat;
   String? errorMessage;
 
@@ -167,23 +166,17 @@ class ChatViewModel extends ChangeNotifier {
     isLoadingTools = true;
     notifyListeners();
     try {
-      final shouldFetchModels = user?.isAdmin == true;
       final toolsFuture = _chatUseCase.fetchTools();
-      final modelsFuture = shouldFetchModels
-          ? _chatUseCase.fetchModels()
-          : Future<List<ChatModel>>.value(<ChatModel>[]);
+      final modelsFuture = _chatUseCase.fetchModels();
       tools = await toolsFuture;
       models = await modelsFuture;
-      selectedModel =
-          shouldFetchModels ? _selectChatModel(models) : ChatModel.fallback();
+      selectedModel = _selectChatModel(models);
 
       final availableIds = tools.map((tool) => tool.id).toSet();
-      selectedToolIds = _hasUserConfiguredTools
-          ? selectedToolIds.intersection(availableIds)
-          : selectedModel?.toolIds
-                  .where((toolId) => availableIds.contains(toolId))
-                  .toSet() ??
-              <String>{};
+      selectedToolIds = selectedModel?.toolIds
+              .where((toolId) => availableIds.contains(toolId))
+              .toSet() ??
+          <String>{};
       if (kDebugMode) {
         debugPrint(
           'fetchTools: available=${tools.length} '
@@ -242,27 +235,9 @@ class ChatViewModel extends ChangeNotifier {
 
   void selectModel(ChatModel model) {
     selectedModel = model;
-    _hasUserConfiguredTools = false;
     final availableIds = tools.map((tool) => tool.id).toSet();
     selectedToolIds =
         model.toolIds.where((toolId) => availableIds.contains(toolId)).toSet();
-    notifyListeners();
-  }
-
-  void toggleToolSelection(String toolId) {
-    _hasUserConfiguredTools = true;
-    if (selectedToolIds.contains(toolId)) {
-      selectedToolIds.remove(toolId);
-    } else {
-      selectedToolIds.add(toolId);
-    }
-    notifyListeners();
-  }
-
-  void setAllToolsEnabled(bool enabled) {
-    _hasUserConfiguredTools = true;
-    selectedToolIds =
-        enabled ? tools.map((tool) => tool.id).toSet() : <String>{};
     notifyListeners();
   }
 
@@ -873,7 +848,6 @@ class ChatViewModel extends ChangeNotifier {
     uploadingFileNames = [];
     pendingImageBytes.clear();
     selectedToolIds = <String>{};
-    _hasUserConfiguredTools = false;
     allChatsLoaded = true;
     _nextChatListPage = 2;
     isLoadingMessages = false;

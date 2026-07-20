@@ -266,6 +266,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
             body: SafeArea(
               child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: Align(
                   alignment: Alignment.topCenter,

@@ -14,6 +14,7 @@ import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import '../../auth/login_page.dart';
 import '../../conponents/base64-image.dart';
 import '../../settings/views/settings_page.dart';
+import '../../tools/page/tool_page.dart';
 import '../viewModels/chat_view_model.dart';
 import 'message_list.dart';
 import 'chat_list.dart';
@@ -231,27 +232,20 @@ class _ChatScreenState extends State<ChatScreen>
               Builder(
                 builder: (context) {
                   if (!viewModel.isLoggedIn) {
-                    // If the user is not logged in, show login icon
-                    return IconButton(
-                      icon: const Icon(Icons.manage_accounts),
-                      tooltip: "Sign In",
-                      onPressed: () async {
-                        User? user = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const LoginPage()),
-                        );
-                        if (user != null) {
-                          await viewModel.checkAuthStatus();
-                          if (viewModel.isLoggedIn) {
-                            await Future.wait([
-                              viewModel.fetchChats(),
-                              viewModel.fetchTools(),
-                              viewModel.fetchKnowledgeBases(),
-                            ]);
-                          }
-                        }
-                      },
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.calculate_outlined),
+                          tooltip: 'Composite Calculators',
+                          onPressed: _openCompositeCalculators,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.manage_accounts),
+                          tooltip: "Sign In",
+                          onPressed: _openLogin,
+                        ),
+                      ],
                     );
                   } else {
                     // If the user is logged in, show profile info
@@ -379,6 +373,7 @@ class _ChatScreenState extends State<ChatScreen>
       duration: const Duration(milliseconds: 220),
       child: SingleChildScrollView(
         key: const ValueKey('defaultQuestionView'),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1368,6 +1363,7 @@ class _ChatScreenState extends State<ChatScreen>
   Widget noLoginView() {
     return Center(
       child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1385,7 +1381,7 @@ class _ChatScreenState extends State<ChatScreen>
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: const Text(
-                "Please sign in to access the chat and continue your learning experience.",
+                "Use the composite calculators without signing in, or sign in to access chat.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
@@ -1394,35 +1390,48 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ),
             const SizedBox(height: 30),
-            ElevatedButton.icon(
-              onPressed: () async {
-                User? user = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginPage(),
-                  ),
-                );
-                if (user != null) {
-                  AppHaptics.light();
-                  await viewModel.checkAuthStatus();
-                  if (viewModel.isLoggedIn) {
-                    await Future.wait([
-                      viewModel.fetchChats(),
-                      viewModel.fetchTools(),
-                    ]);
-                  }
-                  setState(() {}); // Trigger UI rebuild
-                }
-              },
-              icon: const Icon(Icons.manage_accounts, size: 22),
+            FilledButton.icon(
+              onPressed: _openCompositeCalculators,
+              icon: const Icon(Icons.calculate_outlined, size: 22),
               label: const Text(
-                "Login to Chat",
+                "Open Composite Calculators",
                 style: TextStyle(fontSize: 16),
               ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _openLogin,
+              icon: const Icon(Icons.manage_accounts, size: 22),
+              label: const Text('Sign In to Chat'),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _openCompositeCalculators() {
+    AppHaptics.light();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ToolPage()),
+    );
+  }
+
+  Future<void> _openLogin() async {
+    final user = await Navigator.push<User>(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
+    if (user == null || !mounted) return;
+
+    AppHaptics.light();
+    await viewModel.checkAuthStatus();
+    if (!mounted || !viewModel.isLoggedIn) return;
+    await Future.wait([
+      viewModel.fetchChats(),
+      viewModel.fetchTools(),
+      viewModel.fetchKnowledgeBases(),
+    ]);
   }
 }

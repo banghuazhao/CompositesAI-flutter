@@ -14,7 +14,9 @@ class AdminModelToolViewModel extends ChangeNotifier {
   bool isSaving = false;
   String? error;
 
-  Future<void> load() async {
+  Future<void> load() => loadModelsAndTools();
+
+  Future<void> loadModelsAndTools() async {
     isLoading = true;
     error = null;
     notifyListeners();
@@ -34,7 +36,22 @@ class AdminModelToolViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> saveModel({
+  Future<void> loadTools() async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      tools = await chatUseCase.fetchToolList();
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> saveModel({
     ChatModel? existing,
     required String id,
     required String name,
@@ -43,7 +60,7 @@ class AdminModelToolViewModel extends ChangeNotifier {
     required bool isActive,
     required List<String> toolIds,
   }) async {
-    await _saving(() async {
+    return _saving(() async {
       final payload =
           (existing ?? ChatModel.fallback(id: id, name: name)).toAdminJson(
         id: id,
@@ -59,32 +76,32 @@ class AdminModelToolViewModel extends ChangeNotifier {
       } else {
         await chatUseCase.updateModel(existing.id, payload);
       }
-      await load();
+      await loadModelsAndTools();
     });
   }
 
-  Future<void> toggleModel(ChatModel model) async {
-    await _saving(() async {
+  Future<bool> toggleModel(ChatModel model) async {
+    return _saving(() async {
       await chatUseCase.toggleModel(model.id);
-      await load();
+      await loadModelsAndTools();
     });
   }
 
-  Future<void> deleteModel(ChatModel model) async {
-    await _saving(() async {
+  Future<bool> deleteModel(ChatModel model) async {
+    return _saving(() async {
       await chatUseCase.deleteModel(model.id);
-      await load();
+      await loadModelsAndTools();
     });
   }
 
-  Future<void> saveTool({
+  Future<bool> saveTool({
     ChatTool? existing,
     required String id,
     required String name,
     required String description,
     required String content,
   }) async {
-    await _saving(() async {
+    return _saving(() async {
       final payload = (existing ?? ChatTool(id: id, name: name)).toAdminJson(
         id: id,
         name: name,
@@ -97,27 +114,28 @@ class AdminModelToolViewModel extends ChangeNotifier {
       } else {
         await chatUseCase.updateTool(existing.id, payload);
       }
-      await load();
+      await loadTools();
     });
   }
 
-  Future<void> deleteTool(ChatTool tool) async {
-    await _saving(() async {
+  Future<bool> deleteTool(ChatTool tool) async {
+    return _saving(() async {
       await chatUseCase.deleteTool(tool.id);
-      await load();
+      await loadTools();
     });
   }
 
-  Future<void> _saving(Future<void> Function() action) async {
+  Future<bool> _saving(Future<void> Function() action) async {
     isSaving = true;
     error = null;
     notifyListeners();
 
     try {
       await action();
+      return true;
     } catch (e) {
       error = e.toString();
-      rethrow;
+      return false;
     } finally {
       isSaving = false;
       notifyListeners();

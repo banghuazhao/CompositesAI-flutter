@@ -32,7 +32,10 @@ class ChatModel {
     final params = rawParams is Map
         ? Map<String, dynamic>.from(rawParams)
         : <String, dynamic>{};
-    final rawToolIds = meta['toolIds'] ?? meta['tool_ids'];
+    final rawToolIds = meta['toolIds'] ??
+        meta['tool_ids'] ??
+        json['toolIds'] ??
+        json['tool_ids'];
 
     return ChatModel(
       id: json['id']?.toString() ?? '',

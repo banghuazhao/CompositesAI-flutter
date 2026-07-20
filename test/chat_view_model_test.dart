@@ -19,6 +19,8 @@ import 'package:swiftcomp/util/others.dart';
 
 class FakeChatUseCase extends Fake implements ChatUseCase {
   final Map<String, Future<List<Message>>> messageLoads = {};
+  List<ChatTool> toolsToFetch = <ChatTool>[];
+  List<ChatModel> modelsToFetch = <ChatModel>[];
   Future<Chat> Function(Message message)? createChatHandler;
   Future<List<Chat>> Function({int? page})? fetchChatsHandler;
   Stream<ChatStreamEvent> Function(
@@ -86,10 +88,10 @@ class FakeChatUseCase extends Fake implements ChatUseCase {
   Future<void> persistMessages(List<Message> messages, Chat chat) async {}
 
   @override
-  Future<List<ChatTool>> fetchTools() async => <ChatTool>[];
+  Future<List<ChatTool>> fetchTools() async => toolsToFetch;
 
   @override
-  Future<List<ChatModel>> fetchModels() async => <ChatModel>[];
+  Future<List<ChatModel>> fetchModels() async => modelsToFetch;
 
   @override
   Future<List<ChatKnowledge>> fetchKnowledgeBases() async => <ChatKnowledge>[];
@@ -164,6 +166,27 @@ void main() {
       expect(viewModel.errorMessage, 'Daily chat limit reached (50/day)');
       expect(chatUseCase.createChatCalls, 0);
       expect(chatUseCase.sendMessagesCalls, 0);
+    });
+
+    test('fetchTools applies the default model tool assignments', () async {
+      chatUseCase.toolsToFetch = const [
+        ChatTool(id: 'tool-a', name: 'Tool A'),
+        ChatTool(id: 'tool-b', name: 'Tool B'),
+      ];
+      chatUseCase.modelsToFetch = [
+        ChatModel(
+          id: 'composites-ai-2026-02-23',
+          name: 'CompositesAI',
+          rawJson: const {'id': 'composites-ai-2026-02-23'},
+          toolIds: const ['tool-b'],
+        ),
+      ];
+      viewModel.isLoggedIn = true;
+
+      await viewModel.fetchTools();
+
+      expect(viewModel.selectedModel?.id, 'composites-ai-2026-02-23');
+      expect(viewModel.selectedToolIds, {'tool-b'});
     });
 
     test('sendInputMessage keeps new chat selected if refreshed list omits it',

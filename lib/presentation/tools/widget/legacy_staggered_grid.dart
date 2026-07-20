@@ -60,6 +60,7 @@ class StaggeredGridView {
     return SingleChildScrollView(
       key: key,
       physics: physics,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: content,
     );
   }

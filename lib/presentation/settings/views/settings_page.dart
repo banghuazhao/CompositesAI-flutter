@@ -17,7 +17,6 @@ import 'apply_expert_page.dart';
 import '../../auth/login_page.dart';
 import 'expert_requests_page.dart';
 import 'result_precision_page.dart';
-import 'tool_setting_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -48,6 +47,7 @@ class _SettingsPageState extends State<SettingsPage> {
         return Scaffold(
           appBar: AppBar(title: const Text('Account & Settings')),
           body: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 24),
             children: [
               _buildSectionLabel('Account'),
@@ -111,20 +111,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 ]),
               ],
               const SizedBox(height: 24),
-              _buildSectionLabel('Chat'),
-              const SizedBox(height: 6),
-              _buildSection([
-                _buildTile(
-                  icon: Icons.tune_rounded,
-                  title: 'Chat Tools',
-                  subtitle: 'Choose the tools used in chat responses.',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ToolSettingPage()),
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 24),
               _buildSectionLabel('Composite Calculators'),
               const SizedBox(height: 6),
               _buildSection([
@@ -155,12 +141,25 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 6),
                 _buildSection([
                   _buildTile(
-                    icon: Icons.admin_panel_settings_outlined,
-                    title: 'Model & Tool Management',
+                    icon: Icons.memory_rounded,
+                    title: 'Model Management',
+                    subtitle: 'Edit models and choose tools for each model.',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const AdminModelToolPage(),
+                        builder: (_) => const AdminModelManagementPage(),
+                      ),
+                    ),
+                  ),
+                  _buildDivider(),
+                  _buildTile(
+                    icon: Icons.build_outlined,
+                    title: 'Tool Management',
+                    subtitle: 'Create and edit the admin tool catalog.',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AdminToolManagementPage(),
                       ),
                     ),
                   ),

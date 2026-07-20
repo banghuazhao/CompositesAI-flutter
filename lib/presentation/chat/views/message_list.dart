@@ -27,6 +27,7 @@ class _MessageListState extends State<MessageList> {
       children: [
         ListView.separated(
           controller: chatViewModel.scrollController,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.fromLTRB(
               context.horizontalSidePaddingForContentWidth,
               20,
@@ -394,6 +395,8 @@ class _MessageListState extends State<MessageList> {
               child: Padding(
                 padding: EdgeInsets.fromLTRB(20, 0, 20, bottomInset + 20),
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
