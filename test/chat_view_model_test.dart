@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:domain/auth/mocks/auth_use_case_mock.dart';
 import 'package:domain/auth/mocks/user_use_case_mock.dart';
+import 'package:domain/auth/entities/user.dart';
 import 'package:domain/chat/chat_use_case.dart';
 import 'package:domain/chat/entities/chat.dart';
+import 'package:domain/chat/entities/chat_configuration.dart';
 import 'package:domain/chat/entities/chat_file.dart';
 import 'package:domain/chat/entities/chat_folder.dart';
 import 'package:domain/chat/entities/chat_knowledge.dart';
@@ -21,6 +23,7 @@ class FakeChatUseCase extends Fake implements ChatUseCase {
   final Map<String, Future<List<Message>>> messageLoads = {};
   List<ChatTool> toolsToFetch = <ChatTool>[];
   List<ChatModel> modelsToFetch = <ChatModel>[];
+  ChatConfiguration configurationToFetch = const ChatConfiguration();
   Future<Chat> Function(Message message)? createChatHandler;
   Future<List<Chat>> Function({int? page})? fetchChatsHandler;
   Stream<ChatStreamEvent> Function(
@@ -92,6 +95,10 @@ class FakeChatUseCase extends Fake implements ChatUseCase {
 
   @override
   Future<List<ChatModel>> fetchModels() async => modelsToFetch;
+
+  @override
+  Future<ChatConfiguration> fetchChatConfiguration() async =>
+      configurationToFetch;
 
   @override
   Future<List<ChatKnowledge>> fetchKnowledgeBases() async => <ChatKnowledge>[];
@@ -168,25 +175,127 @@ void main() {
       expect(chatUseCase.sendMessagesCalls, 0);
     });
 
-    test('fetchTools applies the default model tool assignments', () async {
+    test('fetchTools uses the CompositesAI workspace model for non-admin users',
+        () async {
       chatUseCase.toolsToFetch = const [
         ChatTool(id: 'tool-a', name: 'Tool A'),
         ChatTool(id: 'tool-b', name: 'Tool B'),
       ];
       chatUseCase.modelsToFetch = [
+        ChatModel.fromJson({
+          'id': 'composites-ai-2026-02-23',
+          'name': 'CompositesAI',
+          'meta': {
+            'toolIds': ['tool-a'],
+            'suggestion_prompts': [
+              {'content': 'Composites workspace prompt'},
+            ],
+          },
+        }),
         ChatModel(
-          id: 'composites-ai-2026-02-23',
-          name: 'CompositesAI',
-          rawJson: const {'id': 'composites-ai-2026-02-23'},
+          id: 'gpt-4.1',
+          name: 'GPT-4.1',
+          rawJson: const {'id': 'gpt-4.1'},
           toolIds: const ['tool-b'],
         ),
       ];
+      chatUseCase.configurationToFetch = const ChatConfiguration(
+        defaultModelIds: ['gpt-4.1'],
+        defaultPrompts: ['Web prompt one', 'Web prompt two'],
+      );
       viewModel.isLoggedIn = true;
 
       await viewModel.fetchTools();
 
       expect(viewModel.selectedModel?.id, 'composites-ai-2026-02-23');
-      expect(viewModel.selectedToolIds, {'tool-b'});
+      expect(viewModel.selectedToolIds, {'tool-a'});
+      expect(viewModel.defaultQuestions, hasLength(5));
+      expect(viewModel.defaultQuestions.first, 'Composites workspace prompt');
+      expect(
+        viewModel.defaultQuestions.skip(1),
+        containsAll(<String>[
+          'What are the main differences between carbon-fiber and glass-fiber composites?',
+          "How do I estimate a unidirectional composite's longitudinal Young's modulus using the rule of mixtures?",
+          'What causes delamination in composite laminates, and how can it be prevented?',
+          'How do fiber orientation and stacking sequence affect laminate performance?',
+        ]),
+      );
+    });
+
+    test('model prompt suggestions override global web prompts', () async {
+      chatUseCase.modelsToFetch = [
+        ChatModel.fromJson({
+          'id': 'composites-ai-2026-02-23',
+          'name': 'CompositesAI',
+          'meta': {
+            'suggestion_prompts': [
+              {'content': 'Model-specific prompt'},
+            ],
+          },
+        }),
+      ];
+      chatUseCase.configurationToFetch = const ChatConfiguration(
+        defaultModelIds: ['gpt-4.1'],
+        defaultPrompts: ['Global prompt'],
+      );
+      viewModel.isLoggedIn = true;
+
+      await viewModel.fetchTools();
+
+      expect(viewModel.defaultQuestions, hasLength(5));
+      expect(viewModel.defaultQuestions.first, 'Model-specific prompt');
+    });
+
+    test('suggested prompts are unique and limited to five', () async {
+      chatUseCase.modelsToFetch = [
+        ChatModel.fromJson({
+          'id': 'composites-ai-2026-02-23',
+          'name': 'CompositesAI',
+          'meta': {
+            'suggestion_prompts': [
+              {'content': 'Prompt one'},
+              {'content': ' prompt one '},
+              {'content': 'Prompt two'},
+              {'content': 'Prompt three'},
+              {'content': 'Prompt four'},
+              {'content': 'Prompt five'},
+              {'content': 'Prompt six'},
+            ],
+          },
+        }),
+      ];
+      viewModel.isLoggedIn = true;
+
+      await viewModel.fetchTools();
+
+      expect(viewModel.defaultQuestions, [
+        'Prompt one',
+        'Prompt two',
+        'Prompt three',
+        'Prompt four',
+        'Prompt five',
+      ]);
+    });
+
+    test('admin users still start with the configured web default model',
+        () async {
+      chatUseCase.modelsToFetch = [
+        ChatModel.fallback(
+          id: 'composites-ai-2026-02-23',
+          name: 'CompositesAI',
+        ),
+        ChatModel.fallback(id: 'gpt-4.1', name: 'GPT-4.1'),
+      ];
+      chatUseCase.configurationToFetch = const ChatConfiguration(
+        defaultModelIds: ['gpt-4.1'],
+      );
+      viewModel
+        ..isLoggedIn = true
+        ..user = User(email: 'admin@example.com', isAdmin: true);
+
+      await viewModel.fetchTools();
+
+      expect(viewModel.selectedModel?.id, 'gpt-4.1');
     });
 
     test('sendInputMessage keeps new chat selected if refreshed list omits it',

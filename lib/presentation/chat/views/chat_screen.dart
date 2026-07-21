@@ -122,6 +122,8 @@ class _ChatScreenState extends State<ChatScreen>
   final TextEditingController textController = TextEditingController();
   final FocusNode focusNode = FocusNode();
   final FocusNode _sendShortcutFocusNode = FocusNode();
+  final GlobalKey _inputBarKey = GlobalKey();
+  double _inputBarHeight = 120;
 
   late ChatViewModel viewModel;
 
@@ -215,6 +217,8 @@ class _ChatScreenState extends State<ChatScreen>
     return Consumer<ChatViewModel>(
       //Consumer widget dynamically rebuilds the UI whenever the ChatViewModel changes
       builder: (context, viewModel, _) {
+        if (viewModel.isLoggedIn) _scheduleInputBarMeasurement();
+
         if (viewModel.errorMessage != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted || viewModel.errorMessage == null) return;
@@ -341,7 +345,9 @@ class _ChatScreenState extends State<ChatScreen>
                           ? const Center(
                               child: CircularProgressIndicator(),
                             )
-                          : MessageList())
+                          : MessageList(
+                              bottomContentPadding: _inputBarHeight + 20,
+                            ))
                       : defaultQuestionView(),
                 ),
                 Positioned(
@@ -374,6 +380,7 @@ class _ChatScreenState extends State<ChatScreen>
       child: SingleChildScrollView(
         key: const ValueKey('defaultQuestionView'),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.only(bottom: _inputBarHeight),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -541,6 +548,7 @@ class _ChatScreenState extends State<ChatScreen>
     final hPad = context.horizontalSidePaddingForContentWidth;
     final bottomInset = MediaQuery.of(context).padding.bottom;
     return Container(
+      key: _inputBarKey,
       color: Colors.transparent,
       padding: EdgeInsets.fromLTRB(
         hPad,
@@ -623,6 +631,32 @@ class _ChatScreenState extends State<ChatScreen>
         ],
       ),
     );
+  }
+
+  void _scheduleInputBarMeasurement() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final renderObject =
+          _inputBarKey.currentContext?.findRenderObject() as RenderBox?;
+      if (renderObject == null || !renderObject.hasSize) return;
+
+      final measuredHeight = renderObject.size.height;
+      if ((measuredHeight - _inputBarHeight).abs() < 0.5) return;
+
+      final shouldKeepLatestMessageVisible =
+          viewModel.scrollController.hasClients &&
+              viewModel.scrollController.position.extentAfter < 80;
+      setState(() => _inputBarHeight = measuredHeight);
+
+      if (shouldKeepLatestMessageVisible) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !viewModel.scrollController.hasClients) return;
+          viewModel.scrollController.jumpTo(
+            viewModel.scrollController.position.maxScrollExtent,
+          );
+        });
+      }
+    });
   }
 
   Future<void> _handleComposerKeyEvent(KeyEvent event) async {

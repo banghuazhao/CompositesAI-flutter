@@ -11,7 +11,12 @@ import '../viewModels/chat_view_model.dart';
 import 'ai_markdown_message.dart';
 
 class MessageList extends StatefulWidget {
-  const MessageList({super.key});
+  final double bottomContentPadding;
+
+  const MessageList({
+    super.key,
+    required this.bottomContentPadding,
+  });
 
   @override
   _MessageListState createState() => _MessageListState();
@@ -29,10 +34,11 @@ class _MessageListState extends State<MessageList> {
           controller: chatViewModel.scrollController,
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.fromLTRB(
-              context.horizontalSidePaddingForContentWidth,
-              20,
-              context.horizontalSidePaddingForContentWidth,
-              20 + 100),
+            context.horizontalSidePaddingForContentWidth,
+            20,
+            context.horizontalSidePaddingForContentWidth,
+            widget.bottomContentPadding,
+          ),
           itemCount: messageWidgets.length,
           itemBuilder: (context, index) {
             return messageWidgets[index];

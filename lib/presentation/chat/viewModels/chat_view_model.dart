@@ -20,6 +20,16 @@ class ChatViewModel extends ChangeNotifier {
   /// Matches backend: skip = (page - 1) * 60, limit 60 when page is set.
   static const int chatListPageSize = 60;
   static const int maxPendingAttachments = 10;
+  static const int suggestedQuestionCount = 5;
+  static const String _nonAdminDefaultModelId = 'composites-ai-2026-02-23';
+  static const String _fallbackDefaultModelId = 'gpt-4.1';
+  static const List<String> _fallbackDefaultQuestions = [
+    'What are the main differences between carbon-fiber and glass-fiber composites?',
+    "How do I estimate a unidirectional composite's longitudinal Young's modulus using the rule of mixtures?",
+    'What causes delamination in composite laminates, and how can it be prevented?',
+    'How do fiber orientation and stacking sequence affect laminate performance?',
+    'Which CompositesAI calculator should I use for my composite analysis?',
+  ];
 
   final ChatUseCase _chatUseCase;
   final AuthUseCase _authUseCase;
@@ -73,6 +83,10 @@ class ChatViewModel extends ChangeNotifier {
   int _chatFilterRequestId = 0;
   int _selectedChatRequestId = 0;
   Set<String> selectedToolIds = <String>{};
+  ChatConfiguration _chatConfiguration = const ChatConfiguration(
+    defaultModelIds: [_fallbackDefaultModelId],
+    defaultPrompts: _fallbackDefaultQuestions,
+  );
   Chat? selectedChat;
   String? errorMessage;
 
@@ -86,15 +100,7 @@ class ChatViewModel extends ChangeNotifier {
 
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
 
-  List<String> defaultQuestions = [
-    "What is CompositesAI?",
-    "What are the challenges for modeling composites?",
-    "Can you tell me the early history of composites?",
-    "What are common misconceptions of rules of mixtures?",
-    // "Calculate laminate stress",
-    // "Calculates the UDFRC properties by rules of mixture",
-    // "Give me some math equations.",
-  ];
+  List<String> defaultQuestions = List.of(_fallbackDefaultQuestions);
 
   ChatViewModel({
     required ChatUseCase chatUseCase,
@@ -166,11 +172,30 @@ class ChatViewModel extends ChangeNotifier {
     isLoadingTools = true;
     notifyListeners();
     try {
+      try {
+        _chatConfiguration = await _chatUseCase.fetchChatConfiguration();
+      } catch (e) {
+        _chatConfiguration = const ChatConfiguration(
+          defaultModelIds: [_fallbackDefaultModelId],
+          defaultPrompts: _fallbackDefaultQuestions,
+        );
+        if (kDebugMode) {
+          debugPrint('fetchChatConfiguration error: $e');
+        }
+      }
+
       final toolsFuture = _chatUseCase.fetchTools();
       final modelsFuture = _chatUseCase.fetchModels();
       tools = await toolsFuture;
       models = await modelsFuture;
-      selectedModel = _selectChatModel(models);
+      selectedModel = _selectChatModel(
+        models,
+        preferredModelIds: isAdmin
+            ? _chatConfiguration.defaultModelIds
+            : const [_nonAdminDefaultModelId],
+        requirePreferredModel: !isAdmin,
+      );
+      _updateDefaultQuestions();
 
       final availableIds = tools.map((tool) => tool.id).toSet();
       selectedToolIds = selectedModel?.toolIds
@@ -217,13 +242,52 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  ChatModel _selectChatModel(List<ChatModel> models) {
-    if (models.isEmpty) return ChatModel.fallback();
+  ChatModel _selectChatModel(
+    List<ChatModel> models, {
+    required List<String> preferredModelIds,
+    bool requirePreferredModel = false,
+  }) {
+    if (models.isEmpty) {
+      final fallbackId = preferredModelIds.isNotEmpty
+          ? preferredModelIds.first
+          : _fallbackDefaultModelId;
+      return ChatModel.fallback(id: fallbackId, name: fallbackId);
+    }
 
-    return models.firstWhere(
-      (model) => model.id == 'composites-ai-2026-02-23',
-      orElse: () => models.first,
-    );
+    for (final modelId in preferredModelIds) {
+      for (final model in models) {
+        if (model.id == modelId) return model;
+      }
+    }
+    if (requirePreferredModel && preferredModelIds.isNotEmpty) {
+      return ChatModel.fallback(
+        id: preferredModelIds.first,
+        name: 'CompositesAI',
+      );
+    }
+    return models.first;
+  }
+
+  void _updateDefaultQuestions() {
+    final configuredQuestions =
+        selectedModel?.suggestionPrompts ?? _chatConfiguration.defaultPrompts;
+    final questions = <String>[];
+    final normalizedQuestions = <String>{};
+
+    for (final question in [
+      ...configuredQuestions,
+      ..._fallbackDefaultQuestions,
+    ]) {
+      final trimmedQuestion = question.trim();
+      if (trimmedQuestion.isEmpty ||
+          !normalizedQuestions.add(trimmedQuestion.toLowerCase())) {
+        continue;
+      }
+      questions.add(trimmedQuestion);
+      if (questions.length == suggestedQuestionCount) break;
+    }
+
+    defaultQuestions = questions;
   }
 
   bool get shouldShowModelSelector =>
@@ -238,6 +302,7 @@ class ChatViewModel extends ChangeNotifier {
     final availableIds = tools.map((tool) => tool.id).toSet();
     selectedToolIds =
         model.toolIds.where((toolId) => availableIds.contains(toolId)).toSet();
+    _updateDefaultQuestions();
     notifyListeners();
   }
 
@@ -848,6 +913,11 @@ class ChatViewModel extends ChangeNotifier {
     uploadingFileNames = [];
     pendingImageBytes.clear();
     selectedToolIds = <String>{};
+    _chatConfiguration = const ChatConfiguration(
+      defaultModelIds: [_fallbackDefaultModelId],
+      defaultPrompts: _fallbackDefaultQuestions,
+    );
+    defaultQuestions = List.of(_fallbackDefaultQuestions);
     allChatsLoaded = true;
     _nextChatListPage = 2;
     isLoadingMessages = false;

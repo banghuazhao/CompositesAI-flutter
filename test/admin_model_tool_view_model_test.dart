@@ -1,5 +1,6 @@
 import 'package:domain/chat/chat_use_case.dart';
 import 'package:domain/chat/entities/chat_model.dart';
+import 'package:domain/chat/entities/chat_configuration.dart';
 import 'package:domain/chat/entities/chat_tool.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/admin_model_tool_view_model.dart';
@@ -86,5 +87,21 @@ void main() {
     });
 
     expect(model.toolIds, ['tool-a']);
+  });
+
+  test('ChatConfiguration parses web model and prompt defaults', () {
+    final configuration = ChatConfiguration.fromJson({
+      'default_models': 'gpt-4.1,composites-ai-2026-02-23',
+      'default_prompt_suggestions': [
+        {'content': 'First prompt'},
+        {'content': 'Second prompt'},
+      ],
+    });
+
+    expect(
+      configuration.defaultModelIds,
+      ['gpt-4.1', 'composites-ai-2026-02-23'],
+    );
+    expect(configuration.defaultPrompts, ['First prompt', 'Second prompt']);
   });
 }

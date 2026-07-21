@@ -52,6 +52,25 @@ class ChatModel {
     );
   }
 
+  List<String>? get suggestionPrompts {
+    final hasPromptConfiguration = meta.containsKey('suggestion_prompts') ||
+        meta.containsKey('suggestionPrompts');
+    if (!hasPromptConfiguration) return null;
+
+    final rawPrompts = meta['suggestion_prompts'] ?? meta['suggestionPrompts'];
+    if (rawPrompts == null) return null;
+    if (rawPrompts is! List) return const [];
+
+    return rawPrompts
+        .map((prompt) {
+          if (prompt is Map) return prompt['content']?.toString().trim();
+          return prompt?.toString().trim();
+        })
+        .whereType<String>()
+        .where((prompt) => prompt.isNotEmpty)
+        .toList();
+  }
+
   Map<String, dynamic> toAdminJson({
     String? id,
     String? name,

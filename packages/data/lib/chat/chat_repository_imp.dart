@@ -6,6 +6,7 @@ import 'package:data/chat/chat_socket_session.dart';
 import 'package:domain/chat/entities/chat.dart';
 import 'package:domain/chat/chat_repository.dart';
 import 'package:domain/chat/entities/chat_model.dart';
+import 'package:domain/chat/entities/chat_configuration.dart';
 import 'package:domain/chat/entities/chat_stream_event.dart';
 import 'package:domain/chat/entities/feedback_response.dart';
 import 'package:domain/chat/entities/chat_folder.dart';
@@ -420,6 +421,26 @@ class ChatRepositoryImpl implements ChatRepository {
     } else {
       throw mapServerErrorToDomainException(response);
     }
+  }
+
+  @override
+  Future<ChatConfiguration> fetchChatConfiguration() async {
+    final webBaseUrl = await apiEnvironment.getWebBaseUrl();
+    final url = Uri.parse('$webBaseUrl/api/config');
+    final token = kIsWeb ? null : await tokenProvider.getToken();
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Cookie': 'token=$token',
+    };
+    final response = await authClient.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      return ChatConfiguration.fromJson(
+        _decodeMapResponse(response, 'GET /api/config'),
+      );
+    }
+    throw mapServerErrorToDomainException(response);
   }
 
   @override
