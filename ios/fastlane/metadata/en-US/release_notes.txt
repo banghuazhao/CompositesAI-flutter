@@ -1,5 +1,4 @@
-• Improved expert request flow
-• Better chat drawer search and organisation
-• Improved chat file attachments workflow
-• Knowledge RAG picker for richer AI context
+• Improved default AI chat experience with refreshed model configuration and suggested questions
+• Fixed camera photo attachments in chat
+• Removed an unnecessary tracking permission prompt
 • Bug fixes and performance improvements

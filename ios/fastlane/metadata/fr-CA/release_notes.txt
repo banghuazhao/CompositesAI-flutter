@@ -1,5 +1,4 @@
-• Flux de demande d'expert amélioré
-• Recherche et organisation du panneau de chat améliorées
-• Gestion des pièces jointes du chat améliorée
-• Sélecteur RAG de connaissances pour un meilleur contexte IA
-• Corrections de bogues et améliorations des performances
+• Expérience de chat IA par défaut améliorée avec une configuration de modèle et des questions suggérées actualisées
+• Correction des pièces jointes photo par appareil photo dans le chat
+• Suppression d'une demande d'autorisation de suivi inutile
+• Corrections de bugs et améliorations des performances

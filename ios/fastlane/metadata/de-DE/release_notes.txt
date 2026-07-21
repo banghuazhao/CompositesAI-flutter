@@ -1,5 +1,4 @@
-• Improved expert request flow
-• Better chat drawer search and organisation
-• Improved chat file attachments workflow
-• Knowledge RAG picker for richer AI context
-• Bug fixes and performance improvements
+• Verbessertes Standard-KI-Chat-Erlebnis mit aktualisierter Modellkonfiguration und Vorschlagsfragen
+• Kamera-Fotoanhänge im Chat repariert
+• Unnötige Aufforderung zur Nachverfolgungserlaubnis entfernt
+• Fehlerbehebungen und Leistungsverbesserungen
