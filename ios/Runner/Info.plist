@@ -57,10 +57,10 @@
 			<key>NSAllowsArbitraryLoads</key>
 			<true/>
 		</dict>
-		<key>NSUserTrackingUsageDescription</key>
-		<string>This identifier will be used to deliver personalized ads to you.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>We use your photo library to let you choose a profile picture.</string>
+		<string>We use your photo library to let you choose a profile picture or attach images to your chat.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>We use your camera to let you take and attach photos to your chat.</string>
 		<key>SKAdNetworkItems</key>
 		<array>
 			<dict>

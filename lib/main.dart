@@ -11,7 +11,6 @@ import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.d
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/util/others.dart';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import 'app/bottom_navigator.dart';
@@ -26,13 +25,6 @@ void main() async {
   } catch (error) {
     debugPrint('Failed to load .env: $error');
   }
-
-  Future.delayed(const Duration(seconds: 1), () {
-    AppTrackingTransparency.requestTrackingAuthorization().catchError((error) {
-      debugPrint('Failed to request tracking authorization: $error');
-      return TrackingStatus.notSupported;
-    });
-  });
 
   InAppReviewHelper.checkAndAskForReview();
 

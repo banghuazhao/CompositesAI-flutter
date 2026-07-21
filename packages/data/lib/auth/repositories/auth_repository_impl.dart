@@ -283,7 +283,9 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        print('Apple OAuth login failed: ${response.body}');
+        if (kDebugMode) {
+          print('Apple OAuth login failed: ${response.body}');
+        }
         throw Exception('Apple OAuth login failed');
       }
 
@@ -294,10 +296,14 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       await tokenProvider.saveToken(session.token);
-      print('Apple OAuth login succeeded');
+      if (kDebugMode) {
+        print('Apple OAuth login succeeded');
+      }
       return session;
     } catch (e) {
-      print('Error during Apple OAuth login: $e');
+      if (kDebugMode) {
+        print('Error during Apple OAuth login: $e');
+      }
       throw Exception('Failed to login with Apple');
     }
   }
@@ -320,7 +326,9 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        print('Token validation failed: ${response.body}');
+        if (kDebugMode) {
+          print('Token validation failed: ${response.body}');
+        }
         throw Exception('Google token validation failed');
       }
 
@@ -331,10 +339,14 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       await tokenProvider.saveToken(session.token);
-      print('Google OAuth login succeeded');
+      if (kDebugMode) {
+        print('Google OAuth login succeeded');
+      }
       return session;
     } catch (e) {
-      print('Error during token validation: $e');
+      if (kDebugMode) {
+        print('Error during token validation: $e');
+      }
       throw Exception('Failed to validate token');
     }
   }
@@ -357,7 +369,9 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        print('GitHub OAuth login failed: ${response.body}');
+        if (kDebugMode) {
+          print('GitHub OAuth login failed: ${response.body}');
+        }
         throw Exception('GitHub OAuth login failed');
       }
 
@@ -368,10 +382,14 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       await tokenProvider.saveToken(session.token);
-      print('GitHub OAuth login succeeded');
+      if (kDebugMode) {
+        print('GitHub OAuth login succeeded');
+      }
       return session;
     } catch (e) {
-      print('Error during GitHub OAuth login: $e');
+      if (kDebugMode) {
+        print('Error during GitHub OAuth login: $e');
+      }
       throw Exception('Failed to login with GitHub');
     }
   }
@@ -394,7 +412,9 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        print('Microsoft OAuth login failed: ${response.body}');
+        if (kDebugMode) {
+          print('Microsoft OAuth login failed: ${response.body}');
+        }
         throw Exception('Microsoft OAuth login failed');
       }
 
@@ -405,10 +425,14 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       await tokenProvider.saveToken(session.token);
-      print('Microsoft OAuth login succeeded');
+      if (kDebugMode) {
+        print('Microsoft OAuth login succeeded');
+      }
       return session;
     } catch (e) {
-      print('Error during Microsoft OAuth login: $e');
+      if (kDebugMode) {
+        print('Error during Microsoft OAuth login: $e');
+      }
       throw Exception('Failed to login with Microsoft');
     }
   }
@@ -422,7 +446,6 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     final baseURL = await apiEnvironment.getBaseUrl();
-    print(baseURL);
     // **Step 3: Send the authorizationCode to the backend handler
     final response = await client.post(
       Uri.parse('$baseURL/auth/handle_authorization'), // Send to backend
@@ -447,7 +470,6 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     final baseURL = await apiEnvironment.getBaseUrl();
-    print("fetchLinkedInUserProfile URL: $baseURL");
 
     final response = await http.post(
       Uri.parse('$baseURL/auth/linkedin-profile'),
@@ -470,7 +492,6 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Uri> getAuthUrl() async {
     final String clientId = dotenv.env['LINKEDIN_CLIENT_ID'] ?? '';
-    print("LinkedIn Client ID: " + clientId);
     const String redirectUrlWeb =
         'https://compositesai.com/auth/linkedin/callback';
     const String redirectUrlMobile = 'https://compositesai.com/linkedin-auth';
