@@ -57,6 +57,8 @@
 			<key>NSAllowsArbitraryLoads</key>
 			<true/>
 		</dict>
+		<key>NSUserTrackingUsageDescription</key>
+		<string>This identifier will be used to analyze app usage, diagnose crashes, and improve app performance across apps and websites you use.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>We use your photo library to let you choose a profile picture or attach images to your chat.</string>
 		<key>NSCameraUsageDescription</key>
