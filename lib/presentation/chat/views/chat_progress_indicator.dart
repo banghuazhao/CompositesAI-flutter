@@ -1,10 +1,200 @@
 import 'package:domain/chat/entities/chat_stream_event.dart';
+import 'package:domain/chat/entities/message.dart';
 import 'package:flutter/material.dart';
 
-/// Presents service-provided activity without exposing model chain-of-thought.
-///
-/// The compact header keeps the conversation calm while the expandable history
-/// gives users enough detail to understand long-running searches and tools.
+/// Web-style response activity: "Thinking…" + latest tool/knowledge status.
+class ChatResponseActivity extends StatelessWidget {
+  const ChatResponseActivity({
+    super.key,
+    required this.message,
+    required this.isStreaming,
+  });
+
+  final Message message;
+  final bool isStreaming;
+
+  bool get _thinkingDone =>
+      message.isDone || message.content.trim().isNotEmpty;
+
+  ToolStatus? get _latestVisibleStatus {
+    for (var i = message.statusHistory.length - 1; i >= 0; i--) {
+      final status = message.statusHistory[i];
+      if (!status.hidden && chatToolStatusDescription(status).isNotEmpty) {
+        return status;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final latest = _latestVisibleStatus;
+    final interrupted = latest?.action == 'response_interrupted';
+    final statusActive = latest != null && latest.done == false;
+    final showThinking =
+        isStreaming && !_thinkingDone && !interrupted && !statusActive;
+    // Keep the latest tool/knowledge line while it's active or just finished
+    // before tokens arrive; hide stale status once the answer is on screen.
+    final showStatus = latest != null &&
+        (interrupted ||
+            (isStreaming && !_thinkingDone) ||
+            (latest.done == false));
+
+    if (!showThinking && !showStatus) {
+      return const SizedBox.shrink();
+    }
+
+    return Semantics(
+      container: true,
+      liveRegion: isStreaming,
+      label: [
+        if (showThinking) 'Thinking',
+        if (showStatus) chatToolStatusDescription(latest!),
+      ].join('. '),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (showThinking)
+            const _StatusLine(
+              text: 'Thinking…',
+              isActive: true,
+              isError: false,
+            ),
+          if (showStatus)
+            _StatusLine(
+              text: chatToolStatusDescription(latest!),
+              isActive: isStreaming && latest.done == false,
+              isError: interrupted,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({
+    required this.text,
+    required this.isActive,
+    required this.isError,
+  });
+
+  final String text;
+  final bool isActive;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = isError ? scheme.error : scheme.onSurfaceVariant;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (isActive) ...[
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: isActive
+                ? _ShimmerText(
+                    text: text,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: color,
+                          height: 1.35,
+                        ),
+                  )
+                : Text(
+                    text,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: color,
+                          height: 1.35,
+                        ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShimmerText extends StatefulWidget {
+  const _ShimmerText({
+    required this.text,
+    required this.style,
+  });
+
+  final String text;
+  final TextStyle? style;
+
+  @override
+  State<_ShimmerText> createState() => _ShimmerTextState();
+}
+
+class _ShimmerTextState extends State<_ShimmerText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final base = widget.style?.color ??
+        Theme.of(context).colorScheme.onSurfaceVariant;
+    final highlight = Color.lerp(base, Colors.white, 0.55) ?? base;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) {
+            final t = _controller.value;
+            return LinearGradient(
+              begin: Alignment(-1.0 - t * 2, 0),
+              end: Alignment(1.0 + t * 2, 0),
+              colors: [base, highlight, base],
+              stops: const [0.25, 0.5, 0.75],
+            ).createShader(bounds);
+          },
+          child: child,
+        );
+      },
+      child: Text(
+        widget.text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: widget.style?.copyWith(color: Colors.white),
+      ),
+    );
+  }
+}
+
+/// Legacy expandable activity card kept for tests and interrupted responses.
 class ChatProgressIndicator extends StatefulWidget {
   const ChatProgressIndicator({
     super.key,
@@ -45,12 +235,11 @@ class _ChatProgressIndicatorState extends State<ChatProgressIndicator> {
         : widget.isStreaming
             ? 'Working'
             : 'Activity complete';
-    final semanticLabel = '$heading. ${latest.description}';
 
     return Semantics(
       container: true,
       liveRegion: widget.isStreaming,
-      label: semanticLabel,
+      label: '$heading. ${latest.description}',
       child: Container(
         constraints: const BoxConstraints(maxWidth: 620),
         decoration: BoxDecoration(
@@ -124,46 +313,6 @@ class _ChatProgressIndicatorState extends State<ChatProgressIndicator> {
                   ? CrossFadeState.showSecond
                   : CrossFadeState.showFirst,
               duration: const Duration(milliseconds: 180),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ChatThinkingIndicator extends StatelessWidget {
-  const ChatThinkingIndicator({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      label: 'Analyzing your request',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: scheme.outlineVariant),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Analyzing your request…',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
             ),
           ],
         ),
@@ -274,8 +423,31 @@ class _ChatActivity {
 }
 
 String chatToolStatusDescription(ToolStatus status) {
-  if (status.action == 'knowledge_search' && status.query.isNotEmpty) {
-    return 'Searching knowledge for “${status.query}”';
+  if (status.action == 'knowledge_search') {
+    if (status.query.isNotEmpty) {
+      return 'Searching Knowledge for “${status.query}”';
+    }
+    return 'Searching Knowledge…';
+  }
+
+  if (status.action == 'web_search') {
+    var description = status.description.trim();
+    if (description.contains('{{count}}')) {
+      return description.replaceAll('{{count}}', '${status.urls.length}');
+    }
+    if (description == 'Generating search query') {
+      return 'Generating search query';
+    }
+    if (description == 'No search query generated') {
+      return 'No search query generated';
+    }
+    if (description.isNotEmpty) return description;
+    if (status.query.isNotEmpty) return 'Searching “${status.query}”';
+    return 'Searching the web…';
+  }
+
+  if (status.action == 'response_interrupted') {
+    return 'Response interrupted';
   }
 
   var description = status.description.trim();

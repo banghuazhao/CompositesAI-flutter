@@ -335,15 +335,22 @@ class _MessageListState extends State<MessageList> {
     final isLast =
         viewModel.messages.isNotEmpty && viewModel.messages.last == message;
     final isStreaming = isLast && viewModel.isSendingMessage;
-    final statusWidget = buildToolStatus(message, isStreaming: isStreaming);
+    final activity = ChatResponseActivity(
+      message: message,
+      isStreaming: isStreaming,
+    );
     final citations = ChatCitationParser.parse(
       markdown: message.content,
       statusHistory: message.statusHistory,
       sources: message.sources,
     );
 
-    if (message.content.isEmpty && statusWidget == null) {
-      return Container();
+    final hasVisibleActivity = isStreaming ||
+        message.statusHistory.any(
+          (status) => !status.hidden && status.action == 'response_interrupted',
+        );
+    if (message.content.isEmpty && !hasVisibleActivity) {
+      return const SizedBox.shrink();
     }
 
     final maxContentWidth = min(MediaQuery.of(context).size.width, 820.0);
@@ -356,7 +363,7 @@ class _MessageListState extends State<MessageList> {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 4,
           children: [
-            if (statusWidget != null) statusWidget,
+            if (hasVisibleActivity) activity,
             if (message.content.isNotEmpty)
               Container(
                 width: double.infinity,
@@ -381,23 +388,6 @@ class _MessageListState extends State<MessageList> {
     );
   }
 
-  Widget? buildToolStatus(
-    Message message, {
-    required bool isStreaming,
-  }) {
-    final visibleStatuses =
-        message.statusHistory.where((status) => !status.hidden).toList();
-    if (visibleStatuses.isEmpty) return null;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: ChatProgressIndicator(
-        statuses: visibleStatuses,
-        isStreaming: isStreaming,
-      ),
-    );
-  }
-
   StreamBuilder<Message> messageStream(ChatViewModel viewModel) {
     return StreamBuilder<Message>(
         stream: viewModel.threadResponseController.stream,
@@ -410,12 +400,8 @@ class _MessageListState extends State<MessageList> {
 
   Widget streamWidget(
       AsyncSnapshot<Message> snapshot, ChatViewModel viewModel) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      if (viewModel.isSendingMessage) {
-        return const ChatThinkingIndicator();
-      }
-      return Container();
-    } else if (snapshot.hasError) {
+    // Thinking/knowledge status is rendered on the assistant message itself.
+    if (snapshot.hasError) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -429,6 +415,6 @@ class _MessageListState extends State<MessageList> {
         ],
       );
     }
-    return Container();
+    return const SizedBox.shrink();
   }
 }
