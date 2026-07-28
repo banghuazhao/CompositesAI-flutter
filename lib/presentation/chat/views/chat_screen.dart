@@ -16,8 +16,10 @@ import '../../conponents/base64-image.dart';
 import '../../settings/views/settings_page.dart';
 import '../../tools/page/tool_page.dart';
 import '../viewModels/chat_view_model.dart';
+import 'chat_error_snack_bar.dart';
 import 'message_list.dart';
 import 'chat_list.dart';
+import 'chat_welcome_view.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -114,9 +116,6 @@ class _ChatScreenState extends State<ChatScreen>
         RouteAware,
         WidgetsBindingObserver,
         TickerProviderStateMixin {
-  /// Empty-state suggestion chips: matches Card shape + InkWell ripple.
-  static const double _kSuggestionChipRadius = 18;
-
   @override
   bool get wantKeepAlive => true;
   final TextEditingController textController = TextEditingController();
@@ -124,6 +123,7 @@ class _ChatScreenState extends State<ChatScreen>
   final FocusNode _sendShortcutFocusNode = FocusNode();
   final GlobalKey _inputBarKey = GlobalKey();
   double _inputBarHeight = 120;
+  int? _lastPresentedErrorId;
 
   late ChatViewModel viewModel;
 
@@ -219,13 +219,27 @@ class _ChatScreenState extends State<ChatScreen>
       builder: (context, viewModel, _) {
         if (viewModel.isLoggedIn) _scheduleInputBarMeasurement();
 
-        if (viewModel.errorMessage != null) {
+        final activeError = viewModel.activeError;
+        if (activeError != null && activeError.id != _lastPresentedErrorId) {
+          _lastPresentedErrorId = activeError.id;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted || viewModel.errorMessage == null) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(viewModel.errorMessage!)),
+            if (!mounted || viewModel.activeError?.id != activeError.id) return;
+            final messenger = ScaffoldMessenger.of(context);
+            messenger.hideCurrentSnackBar();
+            final controller = messenger.showSnackBar(
+              buildChatErrorSnackBar(
+                context: context,
+                notice: activeError,
+                onRetry: activeError.canRetry
+                    ? () {
+                        viewModel.retryError(activeError.id);
+                      }
+                    : null,
+              ),
             );
-            viewModel.errorMessage = null;
+            controller.closed.whenComplete(() {
+              if (mounted) viewModel.dismissError(activeError.id);
+            });
           });
         }
 
@@ -348,7 +362,13 @@ class _ChatScreenState extends State<ChatScreen>
                           : MessageList(
                               bottomContentPadding: _inputBarHeight + 20,
                             ))
-                      : defaultQuestionView(),
+                      : ChatWelcomeView(
+                          user: viewModel.user,
+                          questions: viewModel.defaultQuestions,
+                          bottomPadding: _inputBarHeight,
+                          onQuestionSelected:
+                              viewModel.onDefaultQuestionsTapped,
+                        ),
                 ),
                 Positioned(
                   left: 0,
@@ -362,184 +382,6 @@ class _ChatScreenState extends State<ChatScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget defaultQuestionView() {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final name = (viewModel.user?.name ?? '').trim();
-    final email = (viewModel.user?.email ?? '').trim();
-    final greetingTarget = name.isNotEmpty ? name : email;
-    final greeting = greetingTarget.isNotEmpty
-        ? 'Hi, $greetingTarget'
-        : 'Hi, I am Composites AI';
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      child: SingleChildScrollView(
-        key: const ValueKey('defaultQuestionView'),
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: EdgeInsets.only(bottom: _inputBarHeight),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Logo with rounded corners
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      'images/app_icon.png',
-                      width: 40,
-                      height: 40,
-                    ),
-                  ),
-                  const SizedBox(width: 10), // More spacing for a balanced look
-                  Flexible(
-                    child: Text(
-                      greeting,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.normal,
-                        color: scheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                children: [
-                  Text(
-                    "How can I help you today?",
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontSize: 22,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Choose a topic or ask your own question",
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
-                      height: 1.35,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: context.contentWidth,
-                ),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                  itemCount: viewModel.defaultQuestions.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    return InkWell(
-                      borderRadius:
-                          BorderRadius.circular(_kSuggestionChipRadius),
-                      onTap: () async {
-                        AppHaptics.light();
-                        await viewModel.onDefaultQuestionsTapped(index);
-                      },
-                      child: _buildDefaultQuestionCard(
-                        context,
-                        viewModel.defaultQuestions[index],
-                        index,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Leading icons for the empty-state suggestion chips (aligned with topic tone).
-  IconData _leadingIconForDefaultQuestion(int index) {
-    switch (index) {
-      case 2:
-        return Icons.history_rounded; // early history — clock / timeline
-      case 3:
-        return Icons.help_outline; // misconceptions — questionmark.circle
-      default:
-        return Icons.auto_awesome_outlined; // first & second prompts
-    }
-  }
-
-  Widget _buildDefaultQuestionCard(
-    BuildContext context,
-    String question,
-    int index,
-  ) {
-    final theme = Theme.of(context);
-    final borderColor = theme.colorScheme.outlineVariant;
-    final fillColor =
-        theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.65);
-    final iconColor = theme.colorScheme.onSurface.withValues(alpha: 0.55);
-    final textColor = theme.colorScheme.onSurface.withValues(alpha: 0.92);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      color: fillColor,
-      surfaceTintColor: Colors.transparent,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(_kSuggestionChipRadius),
-        side: BorderSide(color: borderColor, width: 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              _leadingIconForDefaultQuestion(index),
-              size: 20,
-              color: iconColor,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                question,
-                textAlign: TextAlign.start,
-                style:
-                    (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-                  fontSize: 15,
-                  height: 1.35,
-                  color: textColor,
-                ),
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -584,7 +426,7 @@ class _ChatScreenState extends State<ChatScreen>
                     controller: textController,
                     focusNode: focusNode,
                     decoration: InputDecoration(
-                      hintText: 'Message',
+                      hintText: 'Ask about composites engineering…',
                       filled: false,
                       fillColor: Colors.transparent,
                       border: InputBorder.none,
@@ -597,7 +439,10 @@ class _ChatScreenState extends State<ChatScreen>
                     textInputAction: TextInputAction.newline,
                     minLines: 1,
                     maxLines: 8,
-                    onChanged: (_) => setState(() {}),
+                    onChanged: (_) {
+                      setState(() {});
+                      _scheduleInputBarMeasurement();
+                    },
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -681,17 +526,10 @@ class _ChatScreenState extends State<ChatScreen>
     if (!viewModel.isSendingMessage) {
       final text = textController.text.trim();
       if (text.isNotEmpty || viewModel.pendingFiles.isNotEmpty) {
-        if (await viewModel.reachChatLimit()) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Daily chat limit reached (50/day)'),
-            ),
-          );
-          return;
-        }
-        textController.clear();
-        await viewModel.sendInputMessage(text);
+        await viewModel.sendInputMessage(
+          text,
+          onMessageAccepted: textController.clear,
+        );
       }
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -806,12 +644,16 @@ class _ChatScreenState extends State<ChatScreen>
   Widget _buildRightButton() {
     final scheme = Theme.of(context).colorScheme;
     if (viewModel.isSendingMessage) {
-      return const SizedBox(
-        width: 34,
-        height: 34,
-        child: Padding(
-          padding: EdgeInsets.all(5),
-          child: CircularProgressIndicator(strokeWidth: 2),
+      return Semantics(
+        liveRegion: true,
+        label: 'Generating response',
+        child: const SizedBox(
+          width: 34,
+          height: 34,
+          child: Padding(
+            padding: EdgeInsets.all(5),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
         ),
       );
     }
@@ -832,79 +674,105 @@ class _ChatScreenState extends State<ChatScreen>
           child: Icon(Icons.stop_rounded, color: scheme.onError, size: 20),
         ),
       );
-      if (reduceMotion) return stopButton;
+      final accessibleStopButton = Tooltip(
+        message: 'Stop voice input',
+        child: Semantics(
+          button: true,
+          label: 'Stop voice input',
+          child: stopButton,
+        ),
+      );
+      if (reduceMotion) return accessibleStopButton;
       return ScaleTransition(
         scale: _pulseAnimation,
-        child: stopButton,
+        child: accessibleStopButton,
       );
     }
     if (_canSendMessage()) {
-      return Pressable(
-        haptic: true,
-        borderRadius: BorderRadius.circular(17),
-        onTap: () async {
-          if (await viewModel.reachChatLimit()) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Daily chat limit reached (50/day)'),
+      return Tooltip(
+        message: 'Send message',
+        child: Semantics(
+          button: true,
+          label: 'Send message',
+          child: Pressable(
+            haptic: true,
+            borderRadius: BorderRadius.circular(17),
+            onTap: () async {
+              final text = textController.text.trim();
+              await viewModel.sendInputMessage(
+                text,
+                onMessageAccepted: textController.clear,
+              );
+            },
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: scheme.primary,
+                shape: BoxShape.circle,
               ),
-            );
-            return;
-          }
-          final text = textController.text.trim();
-          textController.clear();
-          viewModel.sendInputMessage(text);
-        },
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: scheme.primary,
-            shape: BoxShape.circle,
+              child: Icon(Icons.arrow_upward_rounded,
+                  color: scheme.onPrimary, size: 22),
+            ),
           ),
-          child: Icon(Icons.arrow_upward_rounded,
-              color: scheme.onPrimary, size: 22),
         ),
       );
     }
-    return Pressable(
-      borderRadius: BorderRadius.circular(17),
-      haptic: true,
-      onTap: viewModel.isUploadingFile ? null : _startListening,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: scheme.outline, width: 1.5),
+    return Tooltip(
+      message: 'Start voice input',
+      child: Semantics(
+        button: true,
+        label: 'Start voice input',
+        child: Pressable(
+          borderRadius: BorderRadius.circular(17),
+          haptic: true,
+          onTap: viewModel.isUploadingFile ? null : _startListening,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: scheme.outline, width: 1.5),
+            ),
+            child: Icon(
+              Icons.mic_none,
+              size: 20,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
         ),
-        child: Icon(Icons.mic_none, size: 20, color: scheme.onSurfaceVariant),
       ),
     );
   }
 
   Widget _buildAttachButton() {
     final scheme = Theme.of(context).colorScheme;
-    return Pressable(
-      borderRadius: BorderRadius.circular(17),
-      haptic: true,
-      onTap: viewModel.isUploadingFile || viewModel.isSendingMessage
-          ? null
-          : _showAttachmentSheet,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: scheme.outline, width: 1.5),
+    return Tooltip(
+      message: 'Add attachment',
+      child: Semantics(
+        button: true,
+        label: 'Add attachment',
+        child: Pressable(
+          borderRadius: BorderRadius.circular(17),
+          haptic: true,
+          onTap: viewModel.isUploadingFile || viewModel.isSendingMessage
+              ? null
+              : _showAttachmentSheet,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: scheme.outline, width: 1.5),
+            ),
+            child: viewModel.isUploadingFile
+                ? const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Icons.add, size: 22, color: scheme.onSurfaceVariant),
+          ),
         ),
-        child: viewModel.isUploadingFile
-            ? const Padding(
-                padding: EdgeInsets.all(8),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Icon(Icons.add, size: 22, color: scheme.onSurfaceVariant),
       ),
     );
   }

@@ -218,6 +218,7 @@ class _ChatTagsSheetState extends State<_ChatTagsSheet> {
   List<ChatTag> _tags = const [];
   bool _isLoading = true;
   bool _isSaving = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -232,14 +233,20 @@ class _ChatTagsSheetState extends State<_ChatTagsSheet> {
   }
 
   Future<void> _loadTags() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
     try {
       final tags = await widget.viewModel.fetchTagsForChat(widget.chat);
       if (!mounted) return;
       setState(() => _tags = tags);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _tags = const []);
+      setState(() {
+        _tags = const [];
+        _loadError = 'Tags could not be loaded.';
+      });
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -255,7 +262,8 @@ class _ChatTagsSheetState extends State<_ChatTagsSheet> {
 
     setState(() => _isSaving = true);
     try {
-      await widget.viewModel.addTagToChat(widget.chat, name);
+      final saved = await widget.viewModel.addTagToChat(widget.chat, name);
+      if (!saved) return;
       if (!mounted) return;
       _tagController.clear();
       await _loadTags();
@@ -268,7 +276,9 @@ class _ChatTagsSheetState extends State<_ChatTagsSheet> {
     if (_isSaving) return;
     setState(() => _isSaving = true);
     try {
-      await widget.viewModel.removeTagFromChat(widget.chat, tag);
+      final removed =
+          await widget.viewModel.removeTagFromChat(widget.chat, tag);
+      if (!removed) return;
       if (!mounted) return;
       await _loadTags();
     } finally {
@@ -337,43 +347,89 @@ class _ChatTagsSheetState extends State<_ChatTagsSheet> {
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : ListView(
-                        children: [
-                          _TagSection(
-                            title: 'On this chat',
-                            emptyText: 'No tags yet',
-                            children: _tags
-                                .map(
-                                  (tag) => InputChip(
-                                    avatar: const Icon(Icons.tag, size: 16),
-                                    label: _ChipLabel(tag.name),
-                                    onDeleted: () => _removeTag(tag),
-                                  ),
-                                )
-                                .toList(),
+                    : _loadError != null
+                        ? _ChatTagsLoadError(
+                            message: _loadError!,
+                            onRetry: () => unawaited(_loadTags()),
+                          )
+                        : ListView(
+                            children: [
+                              _TagSection(
+                                title: 'On this chat',
+                                emptyText: 'No tags yet',
+                                children: _tags
+                                    .map(
+                                      (tag) => InputChip(
+                                        avatar: const Icon(Icons.tag, size: 16),
+                                        label: _ChipLabel(tag.name),
+                                        onDeleted: () => _removeTag(tag),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                              const SizedBox(height: 18),
+                              _TagSection(
+                                title: 'Suggested tags',
+                                emptyText: 'No other tags available',
+                                children: suggestions
+                                    .map(
+                                      (tag) => ActionChip(
+                                        avatar: const Icon(
+                                          Icons.add_rounded,
+                                          size: 16,
+                                        ),
+                                        label: _ChipLabel(tag.name),
+                                        onPressed: () => _addTag(tag.name),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 18),
-                          _TagSection(
-                            title: 'Suggested tags',
-                            emptyText: 'No other tags available',
-                            children: suggestions
-                                .map(
-                                  (tag) => ActionChip(
-                                    avatar: const Icon(
-                                      Icons.add_rounded,
-                                      size: 16,
-                                    ),
-                                    label: _ChipLabel(tag.name),
-                                    onPressed: () => _addTag(tag.name),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ],
-                      ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatTagsLoadError extends StatelessWidget {
+  const _ChatTagsLoadError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              color: scheme.error,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          ],
         ),
       ),
     );
@@ -643,16 +699,6 @@ class _ChatListState extends State<ChatList> {
       _lastRequestedSearch = chatViewModel.chatSearchQuery.trim();
       _syncingSearchText = false;
     }
-    if (chatViewModel.errorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted || chatViewModel.errorMessage == null) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(chatViewModel.errorMessage!)),
-        );
-        chatViewModel.errorMessage = null;
-      });
-    }
-
     return Drawer(
       child: RefreshIndicator(
         onRefresh: chatViewModel.fetchChats,

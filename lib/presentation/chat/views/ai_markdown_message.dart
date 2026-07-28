@@ -4,25 +4,31 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../model/chat_citation.dart';
+import 'chat_citation_widgets.dart';
+
 class AiMarkdownMessage extends StatelessWidget {
   const AiMarkdownMessage({
     super.key,
     required this.markdown,
+    this.citations = const [],
   });
 
   final String markdown;
+  final List<ChatCitation> citations;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final baseStyle = theme.textTheme.bodyMedium?.copyWith(
-          color: const Color(0xFF202123),
+          color: scheme.onSurface,
           fontSize: 15,
           height: 1.5,
           letterSpacing: 0,
         ) ??
-        const TextStyle(
-          color: Color(0xFF202123),
+        TextStyle(
+          color: scheme.onSurface,
           fontSize: 15,
           height: 1.5,
           letterSpacing: 0,
@@ -36,44 +42,61 @@ class AiMarkdownMessage extends StatelessWidget {
       h4: baseStyle.copyWith(fontSize: 16, fontWeight: FontWeight.w700),
       h5: baseStyle.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
       h6: baseStyle.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
-      linkColor: const Color(0xFF0B57D0),
-      linkHoverColor: const Color(0xFF0B57D0),
-      hrLineColor: const Color(0xFFE5E7EB),
-      highlightColor: const Color(0xFFFFF3BF),
+      linkColor: scheme.primary,
+      linkHoverColor: scheme.primary,
+      hrLineColor: scheme.outlineVariant,
+      highlightColor: scheme.tertiaryContainer,
     );
 
     return SelectionArea(
       child: GptMarkdownTheme(
         gptThemeData: markdownTheme,
         child: GptMarkdown(
-          _cleanMarkdown(markdown),
+          ChatCitationParser.normalizeMarkdown(markdown),
           style: baseStyle,
           followLinkColor: true,
           useDollarSignsForLatex: true,
           latexBuilder: _buildLatex,
           codeBuilder: _buildCodeBlock,
-          onLinkTap: _openLink,
+          sourceTagBuilder: _buildCitation,
+          onLinkTap: (url, title) => _openLink(context, url, title),
         ),
       ),
     );
   }
 
-  static String _cleanMarkdown(String value) {
-    final toolDetailsRegExp =
-        RegExp(r'<details[^>]*type="tool_calls"[\s\S]*?<\/details>');
-    final citationRegExp = RegExp(r'【.*?】');
-
-    return value
-        .replaceAll('\r\n', '\n')
-        .replaceAll(toolDetailsRegExp, '')
-        .replaceAll(citationRegExp, '')
-        .trimRight();
+  Widget _buildCitation(
+    BuildContext context,
+    String content,
+    TextStyle textStyle,
+  ) {
+    final number = int.tryParse(content);
+    final citation =
+        citations.where((item) => item.number == number).firstOrNull;
+    final resolved = citation ?? ChatCitation(number: number ?? 0);
+    return ChatCitationBadge(
+      citation: resolved,
+      onTap: () => ChatCitationSheets.showCitation(context, resolved),
+    );
   }
 
-  static Future<void> _openLink(String url, String title) async {
+  static Future<void> _openLink(
+    BuildContext context,
+    String url,
+    String title,
+  ) async {
     final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (uri == null ||
+        (uri.scheme != 'https' && uri.scheme != 'http') ||
+        uri.host.isEmpty) {
+      return;
+    }
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open this link.')),
+      );
+    }
   }
 
   static Widget _buildLatex(

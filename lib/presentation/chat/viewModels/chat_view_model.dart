@@ -1,6 +1,5 @@
 import 'dart:async';
-import 'dart:math' as math;
-import 'package:file_picker/file_picker.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:domain/chat/entities/chat.dart';
 import 'package:domain/domain.dart';
@@ -11,15 +10,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:uuid/uuid.dart';
 
-import '../../../util/chat_limiter.dart';
-import '../../../util/feedback_id_cache.dart';
+import '../controllers/chat_attachment_controller.dart';
+import '../controllers/chat_conversation_controller.dart';
+import '../model/chat_error.dart';
 
 class ChatViewModel extends ChangeNotifier {
   /// Matches backend: skip = (page - 1) * 60, limit 60 when page is set.
   static const int chatListPageSize = 60;
-  static const int maxPendingAttachments = 10;
   static const int suggestedQuestionCount = 5;
   static const String _nonAdminDefaultModelId = 'composites-ai-2026-02-23';
   static const String _fallbackDefaultModelId = 'gpt-4.1';
@@ -34,6 +32,8 @@ class ChatViewModel extends ChangeNotifier {
   final ChatUseCase _chatUseCase;
   final AuthUseCase _authUseCase;
   final UserUseCase _userUserCase;
+  late final ChatConversationController _conversation;
+  late final ChatAttachmentController _attachments;
 
   bool isLoggedIn = false;
   User? user;
@@ -43,13 +43,9 @@ class ChatViewModel extends ChangeNotifier {
   /// Sidebar chat history list (separate from message [scrollController]).
   final ScrollController chatListScrollController = ScrollController();
 
-  bool isSendingMessage = false;
-  bool isLoadingMessages = false;
   bool isLoadingChats = false;
   bool isLoadingChatFilters = false;
   bool isLoadingTools = false;
-  bool isLoadingKnowledge = false;
-  bool isUploadingFile = false;
 
   /// Appending next page for GET /chats/?page=n (infinite scroll).
   bool isLoadingMoreChats = false;
@@ -57,9 +53,6 @@ class ChatViewModel extends ChangeNotifier {
   /// After first page: false if last page had [chatListPageSize] items (may have more).
   bool allChatsLoaded = true;
   int _nextChatListPage = 2;
-
-  bool isSubmittingFeedback = false;
-  final Set<String> _submittingFeedbackMessageIds = <String>{};
 
   List<Chat> chats = [];
   List<Chat> pinnedChats = [];
@@ -69,34 +62,21 @@ class ChatViewModel extends ChangeNotifier {
   List<ChatTag> chatTags = [];
   List<ChatTool> tools = [];
   List<ChatModel> models = [];
-  List<ChatKnowledge> knowledgeBases = [];
-  List<ChatFile> pendingFiles = [];
-  List<String> uploadingFileNames = [];
-  // Local bytes cache for image previews; keyed by ChatFile.id.
-  // Kept alive after sending so message bubbles can show thumbnails.
-  Map<String, Uint8List> pendingImageBytes = {};
   ChatModel? selectedModel;
   String chatSearchQuery = '';
   ChatTag? selectedChatTag;
   ChatFolder? selectedChatFolder;
   bool showingArchivedChats = false;
   int _chatFilterRequestId = 0;
-  int _selectedChatRequestId = 0;
   Set<String> selectedToolIds = <String>{};
   ChatConfiguration _chatConfiguration = const ChatConfiguration(
     defaultModelIds: [_fallbackDefaultModelId],
     defaultPrompts: _fallbackDefaultQuestions,
   );
-  Chat? selectedChat;
-  String? errorMessage;
-
-  List<Message> messages = [];
-  StreamController<Message> threadResponseController =
-      StreamController.broadcast();
-
-  String? copyingMessageId;
-
-  final ChatLimiter _chatLimiter = ChatLimiter();
+  ChatErrorNotice? _activeError;
+  AsyncCallback? _activeErrorRetry;
+  int _nextErrorId = 0;
+  bool _isDisposed = false;
 
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
 
@@ -109,7 +89,104 @@ class ChatViewModel extends ChangeNotifier {
   })  : _chatUseCase = chatUseCase,
         _authUseCase = authUseCase,
         _userUserCase = userUserCase {
+    _conversation = ChatConversationController(
+      chatUseCase: chatUseCase,
+      onChatCreated: updateNewChat,
+      onError: _reportError,
+      onScrollRequested: ({required force}) => scrollToBottom(force: force),
+    )..addListener(_forwardConversationChange);
+    _attachments = ChatAttachmentController(
+      chatUseCase: chatUseCase,
+      canUseChat: () => isLoggedIn,
+      onError: _reportError,
+    )..addListener(_forwardAttachmentChange);
     chatListScrollController.addListener(_onChatListScroll);
+  }
+
+  bool get isSendingMessage => _conversation.isSendingMessage;
+  bool get isLoadingMessages => _conversation.isLoadingMessages;
+  bool get isSubmittingFeedback => _conversation.isSubmittingFeedback;
+  Chat? get selectedChat => _conversation.selectedChat;
+  set selectedChat(Chat? value) => _conversation.selectedChat = value;
+  List<Message> get messages => _conversation.messages;
+  set messages(List<Message> value) => _conversation.messages = value;
+  StreamController<Message> get threadResponseController =>
+      _conversation.threadResponseController;
+  String? get copyingMessageId => _conversation.copyingMessageId;
+  bool get isLoadingKnowledge => _attachments.isLoadingKnowledge;
+  bool get isUploadingFile => _attachments.isUploadingFile;
+  List<ChatKnowledge> get knowledgeBases => _attachments.knowledgeBases;
+  List<ChatFile> get pendingFiles => _attachments.pendingFiles;
+  List<String> get uploadingFileNames => _attachments.uploadingFileNames;
+  Map<String, Uint8List> get pendingImageBytes =>
+      _attachments.imagePreviewBytes;
+  ChatErrorNotice? get activeError => _activeError;
+  String? get errorMessage => _activeError?.message;
+
+  void _forwardConversationChange() => notifyListeners();
+  void _forwardAttachmentChange() => notifyListeners();
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) super.notifyListeners();
+  }
+
+  void _reportError(
+    ChatFailure failure, {
+    AsyncCallback? retry,
+  }) {
+    if (_isDisposed) return;
+    final current = _activeError;
+    if (current?.failure.type == failure.type &&
+        current?.failure.operation == failure.operation &&
+        current?.message == failure.message) {
+      _activeErrorRetry = retry ?? _activeErrorRetry;
+      return;
+    }
+
+    _activeErrorRetry = retry;
+    _activeError = ChatErrorNotice(
+      id: ++_nextErrorId,
+      failure: failure,
+      hasRetry: retry != null,
+    );
+    notifyListeners();
+  }
+
+  void clearErrorMessage(String displayedMessage) {
+    final error = _activeError;
+    if (error == null || error.message != displayedMessage) return;
+    dismissError(error.id);
+  }
+
+  void dismissError(int errorId) {
+    if (_activeError?.id != errorId) return;
+    _activeError = null;
+    _activeErrorRetry = null;
+    notifyListeners();
+  }
+
+  Future<void> retryError(int errorId) async {
+    if (_isDisposed) return;
+    final notice = _activeError;
+    final retry = _activeErrorRetry;
+    if (notice?.id != errorId || retry == null) return;
+
+    _activeError = null;
+    _activeErrorRetry = null;
+    notifyListeners();
+    try {
+      await retry();
+    } catch (error) {
+      _reportError(
+        ChatErrorMapper.from(
+          error,
+          operation: notice!.failure.operation,
+          fallbackMessage: notice.message,
+        ),
+        retry: retry,
+      );
+    }
   }
 
   void _onChatListScroll() {
@@ -133,6 +210,13 @@ class ChatViewModel extends ChangeNotifier {
       }
       isLoggedIn = false;
       user = null; // Ensure proper reset
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.authenticate,
+        ),
+        retry: fetchAuthSessionNew,
+      );
     }
     notifyListeners();
   }
@@ -147,16 +231,28 @@ class ChatViewModel extends ChangeNotifier {
       }
       isLoggedIn = false; // Handle fetch user failure
       user = null;
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.authenticate,
+        ),
+        retry: fetchUser,
+      );
     }
     notifyListeners();
   }
 
   @override
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     chatListScrollController.removeListener(_onChatListScroll);
+    _conversation.removeListener(_forwardConversationChange);
+    _attachments.removeListener(_forwardAttachmentChange);
+    _conversation.dispose();
+    _attachments.dispose();
     chatListScrollController.dispose();
     scrollController.dispose();
-    threadResponseController.close();
     super.dispose();
   }
 
@@ -218,6 +314,13 @@ class ChatViewModel extends ChangeNotifier {
       models = [];
       selectedModel = null;
       selectedToolIds = <String>{};
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.loadTools,
+        ),
+        retry: fetchTools,
+      );
     } finally {
       isLoadingTools = false;
       notifyListeners();
@@ -225,21 +328,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> fetchKnowledgeBases() async {
-    if (!isLoggedIn) return;
-
-    isLoadingKnowledge = true;
-    notifyListeners();
-    try {
-      knowledgeBases = await _chatUseCase.fetchKnowledgeBases();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('fetchKnowledgeBases error: $e');
-      }
-      knowledgeBases = [];
-    } finally {
-      isLoadingKnowledge = false;
-      notifyListeners();
-    }
+    await _attachments.fetchKnowledgeBases();
   }
 
   ChatModel _selectChatModel(
@@ -307,174 +396,31 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> pickAndUploadFiles() async {
-    if (!isLoggedIn || isUploadingFile) return;
-
-    try {
-      final result = await FilePicker.pickFiles(
-        allowMultiple: true,
-        withData: kIsWeb,
-      );
-      if (result == null || result.files.isEmpty) return;
-
-      isUploadingFile = true;
-      notifyListeners();
-
-      var skipped = 0;
-      for (final file in result.files) {
-        if (pendingFiles.length >= maxPendingAttachments) {
-          skipped++;
-          break;
-        }
-        if (file.size <= 0) {
-          skipped++;
-          continue;
-        }
-
-        uploadingFileNames.add(file.name);
-        notifyListeners();
-        try {
-          final uploaded = await _chatUseCase.uploadChatFile(
-            name: file.name,
-            size: file.size,
-            path: file.path,
-            bytes: file.bytes,
-          );
-          _addPendingAttachment(uploaded);
-        } finally {
-          uploadingFileNames.remove(file.name);
-          notifyListeners();
-        }
-      }
-      if (skipped > 0) {
-        errorMessage = pendingFiles.length >= maxPendingAttachments
-            ? 'Attachment limit reached ($maxPendingAttachments).'
-            : 'Some empty files were skipped.';
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('pickAndUploadFiles error: $e');
-      }
-      errorMessage = 'Failed to upload file. Please try again.';
-    } finally {
-      isUploadingFile = false;
-      notifyListeners();
-    }
+    await _attachments.pickAndUploadFiles();
   }
 
   Future<void> pickAndUploadImages(ImageSource source) async {
-    if (!isLoggedIn || isUploadingFile) return;
-
-    try {
-      final picker = ImagePicker();
-      final List<XFile> images = source == ImageSource.camera
-          ? await picker
-              .pickImage(source: ImageSource.camera, imageQuality: 85)
-              .then((f) => f != null ? [f] : <XFile>[])
-          : await picker.pickMultiImage(imageQuality: 85);
-
-      if (images.isEmpty) return;
-
-      isUploadingFile = true;
-      notifyListeners();
-
-      var skipped = 0;
-      for (final image in images) {
-        if (pendingFiles.length >= maxPendingAttachments) {
-          skipped++;
-          break;
-        }
-        final bytes = await image.readAsBytes();
-        if (bytes.isEmpty) {
-          skipped++;
-          continue;
-        }
-        uploadingFileNames.add(image.name);
-        notifyListeners();
-        try {
-          final uploaded = await _chatUseCase.uploadChatFile(
-            name: image.name,
-            size: bytes.length,
-            bytes: bytes,
-          );
-          _addPendingAttachment(uploaded);
-          pendingImageBytes[uploaded.id] = bytes;
-        } finally {
-          uploadingFileNames.remove(image.name);
-          notifyListeners();
-        }
-      }
-      if (skipped > 0) {
-        errorMessage = pendingFiles.length >= maxPendingAttachments
-            ? 'Attachment limit reached ($maxPendingAttachments).'
-            : 'Some empty images were skipped.';
-      }
-    } catch (e) {
-      debugPrint('pickAndUploadImages error: $e');
-      errorMessage = 'Failed to upload image. Please try again.';
-    } finally {
-      isUploadingFile = false;
-      notifyListeners();
-    }
-  }
-
-  void _addPendingAttachment(ChatFile attachment) {
-    final key = _attachmentKey(attachment);
-    final existingIndex =
-        pendingFiles.indexWhere((file) => _attachmentKey(file) == key);
-    if (existingIndex >= 0) {
-      pendingImageBytes.remove(pendingFiles[existingIndex].id);
-      pendingFiles[existingIndex] = attachment;
-      return;
-    }
-    pendingFiles.add(attachment);
-  }
-
-  String _attachmentKey(ChatFile file) {
-    if (file.isKnowledgeCollection) return 'collection:${file.id}';
-    if (file.isKnowledgeFile) return 'knowledge-file:${file.id}';
-    return 'upload:${file.name}:${file.size}';
+    await _attachments.pickAndUploadImages(source);
   }
 
   void clearPendingFiles() {
-    pendingFiles = [];
-    pendingImageBytes.clear();
-    notifyListeners();
+    _attachments.clearPendingFiles();
   }
 
   void removePendingFile(ChatFile file) {
-    pendingFiles.removeWhere((item) => item.id == file.id);
-    pendingImageBytes.remove(file.id);
-    notifyListeners();
+    _attachments.removePendingFile(file);
   }
 
   void toggleKnowledgeCollection(ChatKnowledge knowledge) {
-    _togglePendingAttachment(knowledge.toCollectionAttachment());
+    _attachments.toggleKnowledgeCollection(knowledge);
   }
 
   void toggleKnowledgeFile(ChatFile file) {
-    _togglePendingAttachment(file);
+    _attachments.toggleKnowledgeFile(file);
   }
 
   bool isKnowledgeSelected(String id) {
-    return pendingFiles.any((file) => file.id == id);
-  }
-
-  void _togglePendingAttachment(ChatFile attachment) {
-    final key = _attachmentKey(attachment);
-    final index =
-        pendingFiles.indexWhere((file) => _attachmentKey(file) == key);
-    if (index >= 0) {
-      final removed = pendingFiles.removeAt(index);
-      pendingImageBytes.remove(removed.id);
-    } else {
-      if (pendingFiles.length >= maxPendingAttachments) {
-        errorMessage = 'Attachment limit reached ($maxPendingAttachments).';
-        notifyListeners();
-        return;
-      }
-      _addPendingAttachment(attachment);
-    }
-    notifyListeners();
+    return _attachments.isKnowledgeSelected(id);
   }
 
   /// GET /chats/{chatId}/pinned — use when you need server truth for Pin vs Unpin.
@@ -516,7 +462,13 @@ class ChatViewModel extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('loadMoreChats error: $e');
       }
-      errorMessage = 'Failed to load more chats.';
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.loadMoreChats,
+        ),
+        retry: loadMoreChats,
+      );
     } finally {
       isLoadingMoreChats = false;
       notifyListeners();
@@ -588,7 +540,14 @@ class ChatViewModel extends ChangeNotifier {
     } catch (e) {
       if (requestId != _chatFilterRequestId) return;
       if (kDebugMode) debugPrint('filterChatsByTag error: $e');
-      errorMessage = 'Failed to load tagged chats.';
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.loadFilters,
+          fallbackMessage: 'Tagged chats could not be loaded.',
+        ),
+        retry: () => filterChatsByTag(tag),
+      );
       filteredChats = [];
     } finally {
       if (requestId == _chatFilterRequestId) {
@@ -613,7 +572,14 @@ class ChatViewModel extends ChangeNotifier {
     } catch (e) {
       if (requestId != _chatFilterRequestId) return;
       if (kDebugMode) debugPrint('filterChatsByFolder error: $e');
-      errorMessage = 'Failed to load folder chats.';
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.loadFilters,
+          fallbackMessage: 'Folder chats could not be loaded.',
+        ),
+        retry: () => filterChatsByFolder(folder),
+      );
       filteredChats = [];
     } finally {
       if (requestId == _chatFilterRequestId) {
@@ -639,7 +605,14 @@ class ChatViewModel extends ChangeNotifier {
     } catch (e) {
       if (requestId != _chatFilterRequestId) return;
       if (kDebugMode) debugPrint('showArchivedChats error: $e');
-      errorMessage = 'Failed to load archived chats.';
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.loadFilters,
+          fallbackMessage: 'Archived chats could not be loaded.',
+        ),
+        retry: showArchivedChats,
+      );
       filteredChats = [];
     } finally {
       if (requestId == _chatFilterRequestId) {
@@ -708,6 +681,13 @@ class ChatViewModel extends ChangeNotifier {
       }
       chats = [];
       allChatsLoaded = true;
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.loadChats,
+        ),
+        retry: fetchChats,
+      );
     }
     try {
       pinnedChats = await _chatUseCase.fetchPinnedChats();
@@ -720,6 +700,14 @@ class ChatViewModel extends ChangeNotifier {
         debugPrint('fetchPinnedChats error: $e');
       }
       pinnedChats = [];
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.loadChats,
+          fallbackMessage: 'Pinned chats could not be loaded.',
+        ),
+        retry: fetchChats,
+      );
     } finally {
       if (showLoading) {
         isLoadingChats = false;
@@ -741,10 +729,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   void onTapNewChat() {
-    _selectedChatRequestId++;
-    selectedChat = null;
-    messages = [];
-    notifyListeners();
+    _conversation.startNewChat();
   }
 
   Future<void> deleteChat(Chat chat) async {
@@ -756,8 +741,13 @@ class ChatViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Delete error: $e');
-      errorMessage = 'Failed to delete chat. Please try again.';
-      notifyListeners();
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.updateChat,
+          fallbackMessage: 'The chat could not be deleted. Please try again.',
+        ),
+      );
     }
   }
 
@@ -767,8 +757,13 @@ class ChatViewModel extends ChangeNotifier {
       _replaceChatInLists(updated);
     } catch (e) {
       if (kDebugMode) debugPrint('Update error: $e');
-      errorMessage = 'Failed to rename chat. Please try again.';
-      notifyListeners();
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.updateChat,
+          fallbackMessage: 'The chat could not be renamed. Please try again.',
+        ),
+      );
     }
   }
 
@@ -780,8 +775,14 @@ class ChatViewModel extends ChangeNotifier {
       await _loadChatLists(showLoading: false);
     } catch (e) {
       if (kDebugMode) debugPrint('Pin/Unpin error: $e');
-      errorMessage = 'Failed to operate. Please try again.';
-      notifyListeners();
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.updateChat,
+          fallbackMessage:
+              'The pin status could not be changed. Refresh and try again.',
+        ),
+      );
     }
   }
 
@@ -794,8 +795,13 @@ class ChatViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (kDebugMode) debugPrint('Archive error: $e');
-      errorMessage = 'Failed to archive chat. Please try again.';
-      notifyListeners();
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.updateChat,
+          fallbackMessage: 'The chat could not be archived. Please try again.',
+        ),
+      );
     }
   }
 
@@ -806,8 +812,13 @@ class ChatViewModel extends ChangeNotifier {
       await refreshChatOrganization();
     } catch (e) {
       if (kDebugMode) debugPrint('Move chat error: $e');
-      errorMessage = 'Failed to move chat. Please try again.';
-      notifyListeners();
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.updateChat,
+          fallbackMessage: 'The chat could not be moved. Please try again.',
+        ),
+      );
     }
   }
 
@@ -819,21 +830,33 @@ class ChatViewModel extends ChangeNotifier {
       await moveChatToFolder(chat, folder.id);
     } catch (e) {
       if (kDebugMode) debugPrint('Create folder error: $e');
-      errorMessage = 'Failed to create folder. Please try again.';
-      notifyListeners();
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.updateChat,
+          fallbackMessage: 'The folder could not be created. Please try again.',
+        ),
+      );
     }
   }
 
-  Future<void> addTagToChat(Chat chat, String tagName) async {
+  Future<bool> addTagToChat(Chat chat, String tagName) async {
     final trimmed = tagName.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty) return false;
     try {
       await _chatUseCase.addChatTag(chat.id, trimmed);
       await refreshChatOrganization();
+      return true;
     } catch (e) {
       if (kDebugMode) debugPrint('Add tag error: $e');
-      errorMessage = 'Failed to add tag. Please try again.';
-      notifyListeners();
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.updateChat,
+          fallbackMessage: 'The tag could not be added. Please try again.',
+        ),
+      );
+      return false;
     }
   }
 
@@ -841,17 +864,24 @@ class ChatViewModel extends ChangeNotifier {
     return _chatUseCase.fetchChatTags(chat.id);
   }
 
-  Future<void> removeTagFromChat(Chat chat, ChatTag tag) async {
+  Future<bool> removeTagFromChat(Chat chat, ChatTag tag) async {
     try {
       await _chatUseCase.removeChatTag(chat.id, tag.name);
       await refreshChatOrganization();
       if (selectedChatTag?.id == tag.id) {
         clearChatFilters();
       }
+      return true;
     } catch (e) {
       if (kDebugMode) debugPrint('Remove tag error: $e');
-      errorMessage = 'Failed to remove tag. Please try again.';
-      notifyListeners();
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.updateChat,
+          fallbackMessage: 'The tag could not be removed. Please try again.',
+        ),
+      );
+      return false;
     }
   }
 
@@ -877,28 +907,49 @@ class ChatViewModel extends ChangeNotifier {
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('Share error: $e');
-      errorMessage = 'Failed to create share link. Please try again.';
-      notifyListeners();
+      _reportError(
+        ChatErrorMapper.from(
+          e,
+          operation: ChatOperation.shareChat,
+        ),
+        retry: () async {
+          await copyShareLink(chat);
+        },
+      );
       return false;
     }
   }
 
   Future<void> checkAuthStatus() async {
-    isLoggedIn = await _authUseCase.isLoggedIn();
-    debugPrint("isLoggedIn: $isLoggedIn");
-    if (isLoggedIn) {
-      await fetchUser();
-    } else {
-      user = null; // Ensure user is null if not logged in
+    try {
+      isLoggedIn = await _authUseCase.isLoggedIn();
+      if (kDebugMode) debugPrint('isLoggedIn: $isLoggedIn');
+      if (isLoggedIn) {
+        await fetchUser();
+      } else {
+        user = null;
+      }
+    } catch (error) {
+      isLoggedIn = false;
+      user = null;
+      if (kDebugMode) debugPrint('checkAuthStatus error: $error');
+      _reportError(
+        ChatErrorMapper.from(
+          error,
+          operation: ChatOperation.authenticate,
+        ),
+        retry: checkAuthStatus,
+      );
+    } finally {
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   /// Clears chat UI state when the session ends (logout, account deletion, QA env switch).
   /// Call after auth token is invalidated so the next login does not see another user's thread.
   Future<void> clearChatStateOnLogout() async {
-    selectedChat = null;
-    messages = [];
+    await _conversation.reset();
+    _attachments.reset();
     chats = [];
     pinnedChats = [];
     filteredChats = [];
@@ -907,11 +958,7 @@ class ChatViewModel extends ChangeNotifier {
     chatTags = [];
     tools = [];
     models = [];
-    knowledgeBases = [];
     selectedModel = null;
-    pendingFiles = [];
-    uploadingFileNames = [];
-    pendingImageBytes.clear();
     selectedToolIds = <String>{};
     _chatConfiguration = const ChatConfiguration(
       defaultModelIds: [_fallbackDefaultModelId],
@@ -920,25 +967,15 @@ class ChatViewModel extends ChangeNotifier {
     defaultQuestions = List.of(_fallbackDefaultQuestions);
     allChatsLoaded = true;
     _nextChatListPage = 2;
-    isLoadingMessages = false;
     isLoadingChats = false;
     isLoadingChatFilters = false;
-    isLoadingKnowledge = false;
     isLoadingMoreChats = false;
-    isSendingMessage = false;
-    errorMessage = null;
-    copyingMessageId = null;
+    _activeError = null;
+    _activeErrorRetry = null;
     chatSearchQuery = '';
     selectedChatTag = null;
     selectedChatFolder = null;
     showingArchivedChats = false;
-    _submittingFeedbackMessageIds.clear();
-    isSubmittingFeedback = false;
-
-    if (!threadResponseController.isClosed) {
-      await threadResponseController.close();
-    }
-    threadResponseController = StreamController<Message>.broadcast();
 
     if (scrollController.hasClients) {
       scrollController.jumpTo(0);
@@ -950,198 +987,48 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSendingMessage(bool value) {
-    isSendingMessage = value;
-    notifyListeners();
-  }
+  void scrollToBottom({bool force = false}) {
+    final shouldScroll = force ||
+        !scrollController.hasClients ||
+        scrollController.position.extentAfter < 180;
+    if (!shouldScroll) return;
 
-  void scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (scrollController.hasClients) {
-        scrollController.jumpTo(scrollController.position.maxScrollExtent);
+        final target = scrollController.position.maxScrollExtent;
+        if (force) {
+          scrollController.jumpTo(target);
+        } else {
+          scrollController.animateTo(
+            target,
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOut,
+          );
+        }
       }
     });
   }
 
   Future<void> selectChat(Chat chat) async {
-    final requestId = ++_selectedChatRequestId;
-    selectedChat = chat;
-    isLoadingMessages = true;
-    notifyListeners();
-    try {
-      final loadedMessages = await _chatUseCase.fetchMessages(chat);
-      if (requestId != _selectedChatRequestId) return;
-
-      // Restore feedbackId from local cache so update calls are reliable
-      // even after page rebuild / app restart.
-      for (final m in loadedMessages) {
-        final cached = FeedbackIdCache.getFeedbackId(chat.id, m.id);
-        if (cached != null) {
-          m.feedbackId = cached;
-        }
-      }
-      messages = loadedMessages;
-    } catch (e) {
-      if (requestId != _selectedChatRequestId) return;
-      if (kDebugMode) debugPrint('selectChat error: $e');
-      messages = [];
-      errorMessage = 'Failed to load chat messages. Please try again.';
-    } finally {
-      if (requestId == _selectedChatRequestId) {
-        isLoadingMessages = false;
-        notifyListeners();
-        scrollToBottom();
-      }
-    }
+    await _conversation.selectChat(chat);
   }
 
-  Future<bool> reachChatLimit() async {
-    return _chatLimiter.reachChatLimit();
-  }
-
-  Future<void> sendInputMessage(String text) async {
+  Future<void> sendInputMessage(
+    String text, {
+    VoidCallback? onMessageAccepted,
+  }) async {
     if (isUploadingFile || isSendingMessage) return;
-    if (await _chatLimiter.reachChatLimit()) {
-      errorMessage = 'Daily chat limit reached (50/day)';
-      notifyListeners();
-      return;
-    }
-
     final attachments = List<ChatFile>.from(pendingFiles);
-    final prompt =
-        text.trim().isEmpty ? _attachmentOnlyPrompt(attachments) : text.trim();
-    if (prompt.isEmpty) return;
-
-    final userMessage = Message(
-      role: 'user',
-      content: prompt,
-      files: attachments,
+    await _conversation.sendMessage(
+      text: text,
+      attachments: attachments,
+      toolIds: selectedToolIds.toList(growable: false),
+      model: selectedModel,
+      onMessageAccepted: () {
+        _attachments.markPendingFilesSent();
+        onMessageAccepted?.call();
+      },
     );
-    pendingFiles = [];
-
-    if (selectedChat != null && messages.isNotEmpty) {
-      userMessage.parentId = messages.last.id;
-      messages.last.childrenIds = [userMessage.id];
-    }
-    messages.add(userMessage);
-    setSendingMessage(true);
-    scrollToBottom();
-
-    try {
-      if (selectedChat == null) {
-        final newChat = await _chatUseCase.createChat(userMessage);
-        selectedChat = newChat;
-        await updateNewChat(newChat);
-      }
-
-      final messagesForRequest = List<Message>.from(messages);
-      final toolIdsForRequest = selectedToolIds.toList(growable: false);
-      final sendId = Uuid().v4();
-
-      streamBuilder() => _chatUseCase.sendMessages(
-            messagesForRequest,
-            selectedChat!,
-            sendId,
-            toolIds: toolIdsForRequest,
-            model: selectedModel,
-          );
-
-      await _processResponseStream(streamBuilder, sendId);
-    } catch (e) {
-      if (kDebugMode) debugPrint('sendInputMessage error: $e');
-      setSendingMessage(false);
-      errorMessage = 'Failed to send message. Please try again.';
-      notifyListeners();
-    }
-  }
-
-  String _attachmentOnlyPrompt(List<ChatFile> attachments) {
-    if (attachments.isEmpty) return '';
-    final names = attachments
-        .map((file) => file.name.trim())
-        .where((name) => name.isNotEmpty)
-        .toList();
-    if (names.isEmpty) return 'Please review the attached file(s).';
-    return 'Please review the attached file(s): ${names.join(', ')}.';
-  }
-
-  Future<void> _processResponseStream(
-      Stream<ChatStreamEvent> Function() streamBuilder, String sendId) async {
-    threadResponseController = StreamController<Message>.broadcast();
-    Message assistantMessage = Message(role: 'assistant', content: '');
-    if (selectedModel != null) {
-      assistantMessage.model = selectedModel!.id;
-      assistantMessage.modelName = selectedModel!.name;
-    }
-    if (messages.isNotEmpty) {
-      assistantMessage.parentId = messages.last.id;
-      messages.last.childrenIds = [assistantMessage.id];
-    }
-    messages.add(assistantMessage);
-
-    selectedChat?.updatedAt = DateTime.now().microsecondsSinceEpoch ~/ 1000;
-    try {
-      final stream = streamBuilder();
-
-      await for (final response in stream) {
-        if (response.error != null) {
-          throw Exception(response.error);
-        }
-
-        if (response.status != null && !response.status!.hidden) {
-          assistantMessage.statusHistory.add(response.status!);
-        }
-
-        if (response.hasContent) {
-          if (response.replacesContent) {
-            assistantMessage.content = response.content;
-          } else {
-            assistantMessage.content += response.content;
-          }
-          threadResponseController.add(Message(
-            role: 'assistant',
-            content: response.content,
-            parentId: messages.last.id,
-          ));
-        }
-        notifyListeners();
-        scrollToBottom();
-      }
-      if (assistantMessage.content.trim().isEmpty &&
-          assistantMessage.statusHistory.isEmpty) {
-        throw Exception('No response received from the chat service.');
-      }
-      await _chatLimiter.incrementChatCount();
-      assistantMessage.thinkingElapsed = math.max(
-          0,
-          (DateTime.now().millisecondsSinceEpoch -
-                  assistantMessage.timestamp) ~/
-              1000);
-      assistantMessage.isDone = true;
-      selectedChat?.updatedAt = DateTime.now().microsecondsSinceEpoch ~/ 1000;
-      await _chatUseCase.updateChatMessage(assistantMessage, selectedChat!);
-      await _chatUseCase.persistMessages(messages, selectedChat!);
-    } catch (error) {
-      if (assistantMessage.content.trim().isEmpty &&
-          assistantMessage.statusHistory.isEmpty) {
-        messages.removeWhere((message) => message.id == assistantMessage.id);
-        final parentId = assistantMessage.parentId;
-        if (parentId != null) {
-          final parentIndex =
-              messages.indexWhere((message) => message.id == parentId);
-          if (parentIndex >= 0) {
-            messages[parentIndex].childrenIds = [];
-          }
-        }
-      }
-      errorMessage = 'Failed to receive response. Please try again.';
-      threadResponseController.addError(error);
-      if (kDebugMode) debugPrint('Error receiving messages: $error');
-      notifyListeners();
-    } finally {
-      await threadResponseController.close();
-      setSendingMessage(false);
-    }
   }
 
   Future<void> onDefaultQuestionsTapped(int index) async {
@@ -1151,20 +1038,20 @@ class ChatViewModel extends ChangeNotifier {
 
   void copyMessage(Message message) async {
     await Clipboard.setData(ClipboardData(text: message.content));
-    copyingMessageId = message.id;
-    notifyListeners();
-    Future.delayed(Duration(seconds: 1), () {
-      copyingMessageId = null;
-      notifyListeners();
+    _conversation.setCopyingMessage(message.id);
+    Future<void>.delayed(const Duration(seconds: 1), () {
+      if (_conversation.copyingMessageId == message.id) {
+        _conversation.setCopyingMessage(null);
+      }
     });
   }
 
   bool isMessageCopying(Message message) {
-    return copyingMessageId == message.id;
+    return _conversation.isMessageCopying(message);
   }
 
   bool isSubmittingFeedbackFor(Message message) {
-    return _submittingFeedbackMessageIds.contains(message.id);
+    return _conversation.isSubmittingFeedbackFor(message);
   }
 
   Future<bool> submitMessageFeedback({
@@ -1175,45 +1062,13 @@ class ChatViewModel extends ChangeNotifier {
     String? comment,
     required int messageIndex,
   }) async {
-    if (selectedChat == null) return false;
-    if (_submittingFeedbackMessageIds.contains(message.id)) return false;
-
-    _submittingFeedbackMessageIds.add(message.id);
-
-    isSubmittingFeedback = true;
-    notifyListeners();
-    try {
-      final feedbackId = await _chatUseCase.submitMessageFeedback(
-        chat: selectedChat!,
-        message: message,
-        goodBadRating: goodBadRating,
-        detailsRating: detailsRating,
-        reasons: reasons,
-        comment: comment,
-        messageIndex: messageIndex,
-      );
-      message.feedbackId = feedbackId;
-      message.feedbackRating = goodBadRating;
-      message.feedbackDetailsRating = detailsRating;
-      message.feedbackReasons = List<String>.from(reasons);
-      message.feedbackComment = comment;
-      await FeedbackIdCache.setFeedbackId(
-        selectedChat!.id,
-        message.id,
-        feedbackId,
-      );
-      await _chatUseCase.persistMessages(messages, selectedChat!);
-      notifyListeners();
-      return true;
-    } catch (e) {
-      if (kDebugMode) debugPrint('submitMessageFeedback error: $e');
-      errorMessage = 'Failed to submit feedback. Please try again.';
-      notifyListeners();
-      return false;
-    } finally {
-      _submittingFeedbackMessageIds.remove(message.id);
-      isSubmittingFeedback = _submittingFeedbackMessageIds.isEmpty;
-      notifyListeners();
-    }
+    return _conversation.submitMessageFeedback(
+      message: message,
+      goodBadRating: goodBadRating,
+      detailsRating: detailsRating,
+      reasons: reasons,
+      comment: comment,
+      messageIndex: messageIndex,
+    );
   }
 }

@@ -23,6 +23,9 @@ import 'package:infrastructure/token_provider.dart';
 
 import '../mappers/domain_exception_mapper.dart';
 
+const Duration _chatConnectionTimeout = Duration(seconds: 30);
+const Duration _chatInactivityTimeout = Duration(minutes: 3);
+
 /// Main chat list: `GET {base}/chats/` (trailing slash matters on some servers).
 String _unpinnedChatsListUri(String baseURL, {int? page}) {
   final base = baseURL.endsWith('/')
@@ -78,7 +81,9 @@ List<ChatTag> _decodeTagList(
         .where((tag) => tag.name.isNotEmpty)
         .toList();
   }
-  throw Exception('$label failed ($statusCode): $body');
+  throw mapServerErrorToDomainException(
+    http.Response(body, statusCode, headers: headers),
+  );
 }
 
 Map<String, dynamic> _decodeMapResponse(http.Response response, String label) {
@@ -960,7 +965,12 @@ class ChatRepositoryImpl implements ChatRepository {
 
     final client = http.Client();
     try {
-      final response = await client.send(request);
+      final response = await client.send(request).timeout(
+            _chatConnectionTimeout,
+            onTimeout: () => throw TimeoutException(
+              'Timed out while connecting to the chat service.',
+            ),
+          );
       if (kDebugMode) {
         debugPrint(
           'sendMessages response: status=${response.statusCode} '
@@ -974,8 +984,14 @@ class ChatRepositoryImpl implements ChatRepository {
         if (kDebugMode) {
           debugPrint('sendMessages error body: $responseBody');
         }
-        throw Exception(
-          'Chat completion failed (${response.statusCode}): $responseBody',
+        throw mapServerErrorToDomainException(
+          http.Response(
+            responseBody,
+            response.statusCode,
+            headers: response.headers,
+            reasonPhrase: response.reasonPhrase,
+            request: request,
+          ),
         );
       }
 
@@ -997,6 +1013,18 @@ class ChatRepositoryImpl implements ChatRepository {
       }
 
       await for (final line in response.stream
+          .timeout(
+            _chatInactivityTimeout,
+            onTimeout: (sink) {
+              sink
+                ..addError(
+                  TimeoutException(
+                    'Timed out waiting for the next chat response event.',
+                  ),
+                )
+                ..close();
+            },
+          )
           .transform(utf8.decoder)
           .transform(const LineSplitter())) {
         final jsonString = _jsonStringFromStreamLine(line);
@@ -1087,7 +1115,7 @@ class ChatRepositoryImpl implements ChatRepository {
     var sawContent = false;
 
     await for (final envelope in socketSession.events.timeout(
-      const Duration(minutes: 3),
+      _chatInactivityTimeout,
       onTimeout: (sink) {
         sink.addError(
           TimeoutException('Timed out waiting for chat socket response.'),

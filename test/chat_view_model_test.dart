@@ -17,10 +17,12 @@ import 'package:domain/chat/entities/message.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
+import 'package:swiftcomp/presentation/chat/model/chat_error.dart';
 import 'package:swiftcomp/util/others.dart';
 
 class FakeChatUseCase extends Fake implements ChatUseCase {
   final Map<String, Future<List<Message>>> messageLoads = {};
+  Future<List<Message>> Function(Chat chat)? fetchMessagesHandler;
   List<ChatTool> toolsToFetch = <ChatTool>[];
   List<ChatModel> modelsToFetch = <ChatModel>[];
   ChatConfiguration configurationToFetch = const ChatConfiguration();
@@ -33,12 +35,15 @@ class FakeChatUseCase extends Fake implements ChatUseCase {
     List<String> toolIds,
     ChatModel? model,
   })? sendMessagesHandler;
+  Object? persistMessagesError;
 
   int createChatCalls = 0;
   int sendMessagesCalls = 0;
 
   @override
   Future<List<Message>> fetchMessages(Chat chat) {
+    final handler = fetchMessagesHandler;
+    if (handler != null) return handler(chat);
     return messageLoads[chat.id] ?? Future.value(<Message>[]);
   }
 
@@ -88,7 +93,10 @@ class FakeChatUseCase extends Fake implements ChatUseCase {
   Future<void> updateChatMessage(Message message, Chat chat) async {}
 
   @override
-  Future<void> persistMessages(List<Message> messages, Chat chat) async {}
+  Future<void> persistMessages(List<Message> messages, Chat chat) async {
+    final error = persistMessagesError;
+    if (error != null) throw error;
+  }
 
   @override
   Future<List<ChatTool>> fetchTools() async => toolsToFetch;
@@ -160,6 +168,36 @@ void main() {
       expect(viewModel.isLoadingMessages, false);
     });
 
+    test('selectChat exposes a typed network error and retries safely',
+        () async {
+      final chat = Chat(id: 'retry-chat', title: 'Retry chat');
+      var attempts = 0;
+      chatUseCase.fetchMessagesHandler = (_) async {
+        attempts++;
+        if (attempts == 1) {
+          throw Exception('SocketException: connection reset');
+        }
+        return <Message>[
+          Message(role: 'assistant', content: 'Recovered conversation'),
+        ];
+      };
+
+      await viewModel.selectChat(chat);
+
+      final error = viewModel.activeError;
+      expect(error, isNotNull);
+      expect(error!.failure.type, ChatErrorType.network);
+      expect(error.canRetry, true);
+      expect(viewModel.messages, isEmpty);
+
+      await viewModel.retryError(error.id);
+
+      expect(attempts, 2);
+      expect(viewModel.activeError, isNull);
+      expect(viewModel.messages.single.content, 'Recovered conversation');
+      expect(viewModel.isLoadingMessages, false);
+    });
+
     test('sendInputMessage blocks when the daily limit is reached', () async {
       final today = DateTime.now().toIso8601String().substring(0, 10);
       SharedPreferences.setMockInitialValues({
@@ -171,8 +209,36 @@ void main() {
 
       expect(viewModel.messages, isEmpty);
       expect(viewModel.errorMessage, 'Daily chat limit reached (50/day)');
+      expect(
+        viewModel.activeError?.failure.type,
+        ChatErrorType.limitReached,
+      );
       expect(chatUseCase.createChatCalls, 0);
       expect(chatUseCase.sendMessagesCalls, 0);
+    });
+
+    test('attachment state is bounded and exposed as read-only', () {
+      viewModel.isLoggedIn = true;
+      for (var index = 0; index < 11; index++) {
+        viewModel.toggleKnowledgeCollection(
+          ChatKnowledge(id: 'source-$index', name: 'Source $index'),
+        );
+      }
+
+      expect(viewModel.pendingFiles, hasLength(10));
+      expect(
+        viewModel.errorMessage,
+        'Attachment limit reached (10).',
+      );
+      expect(
+        () => viewModel.pendingFiles.add(
+          const ChatFile(id: 'extra', name: 'Extra', url: ''),
+        ),
+        throwsUnsupportedError,
+      );
+
+      viewModel.clearPendingFiles();
+      expect(viewModel.pendingFiles, isEmpty);
     });
 
     test('fetchTools uses the CompositesAI workspace model for non-admin users',
@@ -321,6 +387,130 @@ void main() {
       expect(viewModel.selectedChat?.id, 'new-chat');
       expect(viewModel.chats.map((chat) => chat.id), contains('new-chat'));
       expect(viewModel.messages.last.content, 'response');
+    });
+
+    test('keeps a partial answer when the response stream is interrupted',
+        () async {
+      final chat = Chat(id: 'chat-id', title: 'Question');
+      chatUseCase.createChatHandler = (_) async => chat;
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) async* {
+        yield const ChatStreamEvent(content: 'Partial engineering answer');
+        throw StateError('socket closed');
+      };
+
+      await viewModel.sendInputMessage('question');
+
+      final assistant = viewModel.messages.last;
+      expect(assistant.content, 'Partial engineering answer');
+      expect(assistant.isDone, true);
+      expect(assistant.statusHistory.last.action, 'response_interrupted');
+      expect(
+        viewModel.errorMessage,
+        'The response was interrupted. Please try again.',
+      );
+      expect(viewModel.isSendingMessage, false);
+    });
+
+    test('classifies an empty network failure without leaving a ghost response',
+        () async {
+      final chat = Chat(id: 'network-chat', title: 'Question');
+      chatUseCase.createChatHandler = (_) async => chat;
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) async* {
+        throw Exception('SocketException: network is unreachable');
+      };
+
+      await viewModel.sendInputMessage('question');
+
+      expect(viewModel.messages, hasLength(1));
+      expect(viewModel.messages.single.role, 'user');
+      expect(
+        viewModel.activeError?.failure.type,
+        ChatErrorType.network,
+      );
+      expect(viewModel.activeError?.title, 'Connection problem');
+      expect(viewModel.isSendingMessage, false);
+    });
+
+    test('switching chats retires an in-flight response', () async {
+      final firstChat = Chat(id: 'first-chat', title: 'First');
+      final secondChat = Chat(id: 'second-chat', title: 'Second');
+      final secondChatMessage =
+          Message(role: 'user', content: 'Existing second-chat message');
+      final responseController = StreamController<ChatStreamEvent>();
+
+      chatUseCase.messageLoads[firstChat.id] =
+          Future<List<Message>>.value(<Message>[]);
+      chatUseCase.messageLoads[secondChat.id] =
+          Future<List<Message>>.value(<Message>[secondChatMessage]);
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) =>
+          responseController.stream;
+
+      await viewModel.selectChat(firstChat);
+      final sendFuture = viewModel.sendInputMessage('Question for first chat');
+      while (chatUseCase.sendMessagesCalls == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      await viewModel.selectChat(secondChat);
+      responseController.add(
+        const ChatStreamEvent(content: 'Stale response from first chat'),
+      );
+      await responseController.close();
+      await sendFuture;
+
+      expect(viewModel.selectedChat?.id, secondChat.id);
+      expect(viewModel.messages, <Message>[secondChatMessage]);
+      expect(
+        viewModel.messages.map((message) => message.content),
+        isNot(contains('Stale response from first chat')),
+      );
+      expect(viewModel.isSendingMessage, false);
+      expect(viewModel.errorMessage, isNull);
+    });
+
+    test('reports history sync failure without discarding a completed answer',
+        () async {
+      final chat = Chat(id: 'chat-id', title: 'Question');
+      chatUseCase.createChatHandler = (_) async => chat;
+      chatUseCase.persistMessagesError = StateError('persistence unavailable');
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) =>
+          Stream<ChatStreamEvent>.value(
+            const ChatStreamEvent(content: 'Complete engineering answer'),
+          );
+
+      await viewModel.sendInputMessage('question');
+
+      final assistant = viewModel.messages.last;
+      expect(assistant.content, 'Complete engineering answer');
+      expect(assistant.isDone, true);
+      expect(
+        viewModel.errorMessage,
+        'Response received, but chat history could not be synchronized.',
+      );
     });
   });
 }
