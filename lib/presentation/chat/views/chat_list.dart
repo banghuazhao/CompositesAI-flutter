@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:domain/chat/entities/chat.dart';
-import 'package:domain/chat/entities/chat_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../viewModels/chat_view_model.dart';
 
 /// Shows Share Chat dialog. Copy Link button calls [viewModel].copyShareLink([chat]).
@@ -15,32 +15,27 @@ Future<void> showShareChatDialog(
   await showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: const Text('Share Chat'),
+      title: const Text('Share chat'),
       content: const Text(
-        'Messages you send after creating your link won\'t be shared. '
-        'Users with the URL will be able to view the shared chat.',
+        'Messages you send after creating your link won’t be shared. '
+        'Anyone with the URL can view this chat.',
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(),
           child: const Text('Cancel'),
         ),
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey.shade200,
-            foregroundColor: Colors.grey.shade800,
-          ),
-          icon: const Icon(Icons.link, size: 20),
-          label: const Text('Copy Link'),
+        FilledButton.icon(
+          icon: const Icon(Icons.link, size: 18),
+          label: const Text('Copy link'),
           onPressed: () async {
             final success = await viewModel.copyShareLink(chat);
             if (!dialogContext.mounted) return;
             Navigator.of(dialogContext).pop();
-            if (success) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Link copied to clipboard')),
-              );
-            }
+            if (!context.mounted || !success) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Link copied to clipboard')),
+            );
           },
         ),
       ],
@@ -48,13 +43,15 @@ Future<void> showShareChatDialog(
   );
 }
 
-/// Returns the new title if user confirms, null if cancelled.
+/// Returns the new title if the user confirms, or null if cancelled.
 Future<String?> showRenameDialog(
-    BuildContext context, String currentTitle) async {
+  BuildContext context,
+  String currentTitle,
+) async {
   final controller = TextEditingController(text: currentTitle);
   return showDialog<String>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (dialogContext) => AlertDialog(
       title: const Text('Rename chat'),
       content: TextField(
         controller: controller,
@@ -63,20 +60,51 @@ Future<String?> showRenameDialog(
           border: OutlineInputBorder(),
         ),
         autofocus: true,
-        onSubmitted: (_) => Navigator.of(context).pop(controller.text.trim()),
+        textCapitalization: TextCapitalization.sentences,
+        onSubmitted: (_) =>
+            Navigator.of(dialogContext).pop(controller.text.trim()),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(dialogContext).pop(),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+        FilledButton(
+          onPressed: () =>
+              Navigator.of(dialogContext).pop(controller.text.trim()),
           child: const Text('Save'),
         ),
       ],
     ),
   );
+}
+
+Future<bool> _confirmDeleteChat(BuildContext context, Chat chat) async {
+  final title = chat.title.trim().isEmpty ? 'this chat' : '“${chat.title}”';
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Delete chat?'),
+      content: Text(
+        'Delete $title? This cannot be undone.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(dialogContext).colorScheme.error,
+            foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+          ),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+  return confirmed == true;
 }
 
 Future<String?> _showTextInputDialog(
@@ -88,24 +116,27 @@ Future<String?> _showTextInputDialog(
   final controller = TextEditingController(text: initialValue);
   return showDialog<String>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (dialogContext) => AlertDialog(
       title: Text(title),
       content: TextField(
         controller: controller,
         autofocus: true,
+        textCapitalization: TextCapitalization.sentences,
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
         ),
-        onSubmitted: (_) => Navigator.of(context).pop(controller.text.trim()),
+        onSubmitted: (_) =>
+            Navigator.of(dialogContext).pop(controller.text.trim()),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(dialogContext).pop(),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+        FilledButton(
+          onPressed: () =>
+              Navigator.of(dialogContext).pop(controller.text.trim()),
           child: const Text('Save'),
         ),
       ],
@@ -121,509 +152,245 @@ Future<void> _showMoveToFolderSheet(
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
-    builder: (sheetContext) => SafeArea(
-      child: ListView(
-        shrinkWrap: true,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [
-          const ListTile(
-            title: Text(
-              'Move to folder',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.create_new_folder_outlined),
-            title: const Text('New folder'),
-            onTap: () async {
-              Navigator.pop(sheetContext);
-              final name = await _showTextInputDialog(
-                context,
-                title: 'New folder',
-                label: 'Folder name',
-              );
-              if (name != null && name.trim().isNotEmpty) {
-                await viewModel.createFolderAndMoveChat(chat, name);
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.drive_file_move_outline),
-            title: const Text('No folder'),
-            onTap: () {
-              Navigator.pop(sheetContext);
-              viewModel.moveChatToFolder(chat, null);
-            },
-          ),
-          const Divider(),
-          if (viewModel.chatFolders.isEmpty)
-            ListTile(
-              enabled: false,
+    builder: (sheetContext) {
+      final folders = viewModel.chatFolders;
+      return SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+          children: [
+            const ListTile(
               title: Text(
-                'No folders yet',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-            )
-          else
-            ...viewModel.chatFolders.map(
-              (folder) => ListTile(
-                leading: const Icon(Icons.folder_outlined),
-                title: Text(folder.name, overflow: TextOverflow.ellipsis),
-                trailing: chat.folderId == folder.id
-                    ? const Icon(Icons.check_rounded)
-                    : null,
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  viewModel.moveChatToFolder(chat, folder.id);
-                },
+                'Move to folder',
+                style: TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
-        ],
-      ),
-    ),
-  );
-}
-
-Future<void> _showTagsSheet(
-  BuildContext context,
-  ChatViewModel viewModel,
-  Chat chat,
-) async {
-  await showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
-    builder: (sheetContext) => _ChatTagsSheet(
-      viewModel: viewModel,
-      chat: chat,
-    ),
-  );
-}
-
-class _ChatTagsSheet extends StatefulWidget {
-  const _ChatTagsSheet({
-    required this.viewModel,
-    required this.chat,
-  });
-
-  final ChatViewModel viewModel;
-  final Chat chat;
-
-  @override
-  State<_ChatTagsSheet> createState() => _ChatTagsSheetState();
-}
-
-class _ChatTagsSheetState extends State<_ChatTagsSheet> {
-  final TextEditingController _tagController = TextEditingController();
-  List<ChatTag> _tags = const [];
-  bool _isLoading = true;
-  bool _isSaving = false;
-  String? _loadError;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTags();
-  }
-
-  @override
-  void dispose() {
-    _tagController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadTags() async {
-    setState(() {
-      _isLoading = true;
-      _loadError = null;
-    });
-    try {
-      final tags = await widget.viewModel.fetchTagsForChat(widget.chat);
-      if (!mounted) return;
-      setState(() => _tags = tags);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _tags = const [];
-        _loadError = 'Tags could not be loaded.';
-      });
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _addTag(String value) async {
-    final name = value.trim();
-    if (name.isEmpty || _isSaving) return;
-    if (_tags.any((tag) => tag.name.toLowerCase() == name.toLowerCase())) {
-      _tagController.clear();
-      return;
-    }
-
-    setState(() => _isSaving = true);
-    try {
-      final saved = await widget.viewModel.addTagToChat(widget.chat, name);
-      if (!saved) return;
-      if (!mounted) return;
-      _tagController.clear();
-      await _loadTags();
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _removeTag(ChatTag tag) async {
-    if (_isSaving) return;
-    setState(() => _isSaving = true);
-    try {
-      final removed =
-          await widget.viewModel.removeTagFromChat(widget.chat, tag);
-      if (!removed) return;
-      if (!mounted) return;
-      await _loadTags();
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currentNames = _tags.map((tag) => tag.name.toLowerCase()).toSet();
-    final suggestions = widget.viewModel.chatTags
-        .where((tag) => !currentNames.contains(tag.name.toLowerCase()))
-        .toList();
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 0, 20, bottomInset + 20),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 540),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Manage tags',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  if (_isSaving)
-                    const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _tagController,
-                textInputAction: TextInputAction.done,
-                decoration: InputDecoration(
-                  hintText: 'Add a tag',
-                  prefixIcon: const Icon(Icons.sell_outlined),
-                  suffixIcon: IconButton(
-                    tooltip: 'Add tag',
-                    icon: const Icon(Icons.add_rounded),
-                    onPressed: () => _addTag(_tagController.text),
-                  ),
-                  isDense: true,
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+            ListTile(
+              leading: const Icon(Icons.create_new_folder_outlined),
+              title: const Text('New folder'),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                final name = await _showTextInputDialog(
+                  context,
+                  title: 'New folder',
+                  label: 'Folder name',
+                );
+                if (name != null && name.trim().isNotEmpty) {
+                  await viewModel.createFolderAndMoveChat(chat, name);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_off_outlined),
+              title: const Text('Remove from folder'),
+              enabled: chat.folderId != null && chat.folderId!.isNotEmpty,
+              onTap: () {
+                Navigator.pop(sheetContext);
+                viewModel.moveChatToFolder(chat, null);
+              },
+            ),
+            const Divider(height: 24),
+            if (folders.isEmpty)
+              ListTile(
+                enabled: false,
+                title: Text(
+                  'No folders yet',
+                  style: TextStyle(
+                    color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                onSubmitted: _addTag,
+              )
+            else
+              ...folders.map(
+                (folder) => ListTile(
+                  leading: Icon(
+                    chat.folderId == folder.id
+                        ? Icons.folder
+                        : Icons.folder_outlined,
+                  ),
+                  title: Text(folder.name, overflow: TextOverflow.ellipsis),
+                  trailing: chat.folderId == folder.id
+                      ? Icon(
+                          Icons.check_rounded,
+                          color: Theme.of(sheetContext).colorScheme.primary,
+                        )
+                      : null,
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    viewModel.moveChatToFolder(chat, folder.id);
+                  },
+                ),
               ),
-              const SizedBox(height: 18),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _loadError != null
-                        ? _ChatTagsLoadError(
-                            message: _loadError!,
-                            onRetry: () => unawaited(_loadTags()),
-                          )
-                        : ListView(
-                            children: [
-                              _TagSection(
-                                title: 'On this chat',
-                                emptyText: 'No tags yet',
-                                children: _tags
-                                    .map(
-                                      (tag) => InputChip(
-                                        avatar: const Icon(Icons.tag, size: 16),
-                                        label: _ChipLabel(tag.name),
-                                        onDeleted: () => _removeTag(tag),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                              const SizedBox(height: 18),
-                              _TagSection(
-                                title: 'Suggested tags',
-                                emptyText: 'No other tags available',
-                                children: suggestions
-                                    .map(
-                                      (tag) => ActionChip(
-                                        avatar: const Icon(
-                                          Icons.add_rounded,
-                                          size: 16,
-                                        ),
-                                        label: _ChipLabel(tag.name),
-                                        onPressed: () => _addTag(tag.name),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            ],
-                          ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ChatTagsLoadError extends StatelessWidget {
-  const _ChatTagsLoadError({
-    required this.message,
-    required this.onRetry,
-  });
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              color: scheme.error,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
-            ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _TagSection extends StatelessWidget {
-  const _TagSection({
-    required this.title,
-    required this.emptyText,
-    required this.children,
-  });
-
-  final String title;
-  final String emptyText;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (children.isEmpty)
-          Text(
-            emptyText,
-            style: TextStyle(color: Colors.grey.shade500),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: children,
-          ),
-      ],
-    );
-  }
-}
-
-Widget _chatListTile(
-  BuildContext context,
-  ChatViewModel chatViewModel,
-  Chat chat, {
-  required bool pinMenuAsUnpin,
-}) {
-  return ListTile(
-    contentPadding: const EdgeInsets.only(left: 16, right: 8),
-    trailing: PopupMenuButton<String>(
-      padding: EdgeInsets.zero,
-      onSelected: (value) async {
-        switch (value) {
-          case 'delete':
-            chatViewModel.deleteChat(chat);
-            break;
-          case 'rename':
-            final newTitle = await showRenameDialog(context, chat.title);
-            if (newTitle != null && newTitle.isNotEmpty) {
-              await chatViewModel.updateChatTitle(chat, newTitle);
-            }
-            break;
-          case 'pin':
-            chatViewModel.togglePin(chat);
-            break;
-          case 'share':
-            await showShareChatDialog(context, chatViewModel, chat);
-            break;
-          case 'tags':
-            await _showTagsSheet(context, chatViewModel, chat);
-            break;
-          case 'folder':
-            await _showMoveToFolderSheet(context, chatViewModel, chat);
-            break;
-          case 'archive':
-            chatViewModel.archiveChat(chat);
-            break;
-        }
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'pin',
-          child: Row(
-            children: [
-              const Icon(Icons.push_pin, size: 20),
-              const SizedBox(width: 8),
-              Text(pinMenuAsUnpin ? 'Unpin' : 'Pin'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'rename',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 20),
-              SizedBox(width: 8),
-              Text('Rename'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'tags',
-          child: Row(
-            children: [
-              Icon(Icons.sell_outlined, size: 20),
-              SizedBox(width: 8),
-              Text('Tags'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'folder',
-          child: Row(
-            children: [
-              Icon(Icons.folder_outlined, size: 20),
-              SizedBox(width: 8),
-              Text('Move to folder'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'archive',
-          child: Row(
-            children: [
-              Icon(Icons.archive_outlined, size: 20),
-              SizedBox(width: 8),
-              Text('Archive'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 20),
-              SizedBox(width: 8),
-              Text('Delete'),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'share',
-          child: Row(
-            children: [
-              Icon(Icons.share, size: 20),
-              SizedBox(width: 8),
-              Text('Share'),
-            ],
-          ),
-        ),
-      ],
-    ),
-    title: Text(
-      chat.title,
-      overflow: TextOverflow.ellipsis,
-      maxLines: 1,
-    ),
-    onTap: () {
-      chatViewModel.selectChat(chat);
-      Navigator.pop(context);
+      );
     },
   );
 }
 
-/// Collapsible section (chevron + grey title), matching Pinned / Previous chats.
-Widget _chatSectionExpansionTile({
+class _ChatListTile extends StatelessWidget {
+  const _ChatListTile({
+    required this.chat,
+    required this.isSelected,
+    required this.isPinned,
+    required this.onSelect,
+    required this.onAction,
+  });
+
+  final Chat chat;
+  final bool isSelected;
+  final bool isPinned;
+  final VoidCallback onSelect;
+  final Future<void> Function(String action) onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return ListTile(
+      selected: isSelected,
+      selectedTileColor: scheme.primaryContainer.withValues(alpha: 0.45),
+      contentPadding: const EdgeInsets.only(left: 16, right: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      leading: isPinned
+          ? Icon(
+              Icons.push_pin_rounded,
+              size: 16,
+              color: isSelected
+                  ? scheme.onPrimaryContainer
+                  : scheme.onSurfaceVariant,
+            )
+          : null,
+      horizontalTitleGap: isPinned ? 8 : null,
+      title: Text(
+        chat.title.trim().isEmpty ? 'Untitled chat' : chat.title,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+      trailing: PopupMenuButton<String>(
+        tooltip: 'Chat options',
+        padding: EdgeInsets.zero,
+        icon: Icon(
+          Icons.more_vert_rounded,
+          color: scheme.onSurfaceVariant,
+        ),
+        onSelected: onAction,
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'pin',
+            child: _MenuRow(
+              icon: Icons.push_pin_outlined,
+              label: isPinned ? 'Unpin' : 'Pin',
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'rename',
+            child: _MenuRow(
+              icon: Icons.edit_outlined,
+              label: 'Rename',
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'share',
+            child: _MenuRow(
+              icon: Icons.ios_share_outlined,
+              label: 'Share',
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'folder',
+            child: _MenuRow(
+              icon: Icons.drive_file_move_outline,
+              label: 'Move to folder',
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'archive',
+            child: _MenuRow(
+              icon: Icons.archive_outlined,
+              label: 'Archive',
+            ),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'delete',
+            child: _MenuRow(
+              icon: Icons.delete_outline_rounded,
+              label: 'Delete',
+              color: scheme.error,
+            ),
+          ),
+        ],
+      ),
+      onTap: onSelect,
+    );
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({
+    required this.icon,
+    required this.label,
+    this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 12),
+        Text(label, style: TextStyle(color: color)),
+      ],
+    );
+  }
+}
+
+Widget _chatSection({
   required BuildContext context,
   required String title,
   required List<Widget> children,
   bool initiallyExpanded = false,
 }) {
+  final scheme = Theme.of(context).colorScheme;
   return Theme(
     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
     child: ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-      childrenPadding: EdgeInsets.zero,
-      collapsedIconColor: Colors.grey.shade500,
-      iconColor: Colors.grey.shade500,
+      childrenPadding: const EdgeInsets.symmetric(horizontal: 8),
+      collapsedIconColor: scheme.onSurfaceVariant,
+      iconColor: scheme.onSurfaceVariant,
       title: Text(
         title,
         style: TextStyle(
-          color: Colors.grey.shade700,
-          fontWeight: FontWeight.w500,
-          fontSize: 15,
+          color: scheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          letterSpacing: 0.2,
         ),
       ),
       initiallyExpanded: initiallyExpanded,
       children: children,
+    ),
+  );
+}
+
+Widget _emptySectionLabel(BuildContext context, String text) {
+  return ListTile(
+    dense: true,
+    title: Text(
+      text,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        fontSize: 13,
+      ),
     ),
   );
 }
@@ -687,10 +454,11 @@ class _ChatListState extends State<ChatList> {
     chatViewModel.clearChatFilters();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final chatViewModel = Provider.of<ChatViewModel>(context);
-    if (_searchController.text != chatViewModel.chatSearchQuery) {
+  void _syncSearchFromViewModel(ChatViewModel chatViewModel) {
+    if (_searchController.text == chatViewModel.chatSearchQuery) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_searchController.text == chatViewModel.chatSearchQuery) return;
       _syncingSearchText = true;
       _searchController.text = chatViewModel.chatSearchQuery;
       _searchController.selection = TextSelection.collapsed(
@@ -698,197 +466,237 @@ class _ChatListState extends State<ChatList> {
       );
       _lastRequestedSearch = chatViewModel.chatSearchQuery.trim();
       _syncingSearchText = false;
-    }
-    return Drawer(
-      child: RefreshIndicator(
-        onRefresh: chatViewModel.fetchChats,
-        child: ListView(
-          controller: chatViewModel.chatListScrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            _ChatDrawerHeader(
-              onNewChat: () {
-                chatViewModel.onTapNewChat();
-                Navigator.pop(context);
-              },
-            ),
-            _ChatSearchField(
-              controller: _searchController,
-              isSearching: chatViewModel.chatSearchQuery.trim().isNotEmpty &&
-                  chatViewModel.isLoadingChatFilters,
-              onSearch: _submitSearch,
-              onClear: () => _clearSearch(chatViewModel),
-            ),
-            _ChatFilterChips(viewModel: chatViewModel),
-            if (!chatViewModel.isLoadingChats)
-              Builder(
-                builder: (context) {
-                  // Pinned titles only appear under Pinned; exclude those ids from Previous.
-                  final pinnedIds =
-                      chatViewModel.pinnedChats.map((c) => c.id).toSet();
-                  final previousChats = chatViewModel.chats
-                      .where((c) => !pinnedIds.contains(c.id))
-                      .where((c) => c.folderId == null || c.folderId!.isEmpty)
-                      .toList();
-                  final folderChatIds = chatViewModel.chatFolders
-                      .expand((folder) => folder.chats)
-                      .map((chat) => chat.id)
-                      .toSet();
-                  final loosePreviousChats = previousChats
-                      .where((chat) => !folderChatIds.contains(chat.id))
-                      .toList();
+    });
+  }
 
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (chatViewModel.hasActiveChatFilter)
-                        _chatSectionExpansionTile(
-                          context: context,
-                          title: chatViewModel.activeChatFilterLabel,
-                          initiallyExpanded: true,
-                          children: [
-                            if (chatViewModel.isLoadingChatFilters)
-                              const Padding(
-                                padding: EdgeInsets.all(16),
-                                child:
-                                    Center(child: CircularProgressIndicator()),
-                              )
-                            else if (chatViewModel.filteredChats.isEmpty)
-                              ListTile(
-                                dense: true,
-                                title: Text(
-                                  chatViewModel.chatSearchQuery.trim().isEmpty
-                                      ? 'No chats found'
-                                      : 'No loaded chats found',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              )
-                            else
-                              ...chatViewModel.filteredChats.map(
-                                (chat) => _chatListTile(
-                                  context,
-                                  chatViewModel,
-                                  chat,
-                                  pinMenuAsUnpin: pinnedIds.contains(chat.id),
-                                ),
-                              ),
-                          ],
-                        )
-                      else ...[
-                        _chatSectionExpansionTile(
-                          context: context,
-                          title: 'Pinned',
-                          initiallyExpanded: false,
-                          children: [
-                            if (chatViewModel.pinnedChats.isEmpty)
-                              ListTile(
-                                dense: true,
-                                title: Text(
-                                  'No pinned chats',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              )
-                            else
-                              ...chatViewModel.pinnedChats.map(
-                                (chat) => _chatListTile(
-                                  context,
-                                  chatViewModel,
-                                  chat,
-                                  pinMenuAsUnpin: true,
-                                ),
-                              ),
-                          ],
-                        ),
-                        if (chatViewModel.chatFolders.isNotEmpty)
-                          ...chatViewModel.chatFolders.map(
-                            (folder) => _chatSectionExpansionTile(
-                              context: context,
-                              title: folder.name,
-                              initiallyExpanded: folder.isExpanded,
-                              children: [
-                                if (folder.chats.isEmpty)
-                                  ListTile(
-                                    dense: true,
-                                    title: Text(
-                                      'No chats in folder',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade500,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  ...folder.chats.map(
-                                    (chat) => _chatListTile(
-                                      context,
-                                      chatViewModel,
-                                      chat,
-                                      pinMenuAsUnpin:
-                                          pinnedIds.contains(chat.id),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        _chatSectionExpansionTile(
-                          context: context,
-                          title: 'Previous chats',
-                          initiallyExpanded: true,
-                          children: [
-                            if (loosePreviousChats.isEmpty)
-                              ListTile(
-                                dense: true,
-                                title: Text(
-                                  'No previous chats',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              )
-                            else
-                              ...loosePreviousChats.map(
-                                (chat) => _chatListTile(
-                                  context,
-                                  chatViewModel,
-                                  chat,
-                                  pinMenuAsUnpin: false,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  );
+  Future<void> _handleChatAction(
+    BuildContext context,
+    ChatViewModel viewModel,
+    Chat chat,
+    String action,
+  ) async {
+    switch (action) {
+      case 'delete':
+        final confirmed = await _confirmDeleteChat(context, chat);
+        if (!confirmed || !context.mounted) return;
+        await viewModel.deleteChat(chat);
+        break;
+      case 'rename':
+        final newTitle = await showRenameDialog(context, chat.title);
+        if (newTitle != null && newTitle.isNotEmpty) {
+          await viewModel.updateChatTitle(chat, newTitle);
+        }
+        break;
+      case 'pin':
+        await viewModel.togglePin(chat);
+        break;
+      case 'share':
+        await showShareChatDialog(context, viewModel, chat);
+        break;
+      case 'folder':
+        await _showMoveToFolderSheet(context, viewModel, chat);
+        break;
+      case 'archive':
+        await viewModel.archiveChat(chat);
+        break;
+    }
+  }
+
+  Widget _buildChatTile(
+    BuildContext context,
+    ChatViewModel viewModel,
+    Chat chat, {
+    required bool isPinned,
+  }) {
+    return _ChatListTile(
+      chat: chat,
+      isSelected: viewModel.selectedChat?.id == chat.id,
+      isPinned: isPinned,
+      onSelect: () {
+        viewModel.selectChat(chat);
+        Navigator.pop(context);
+      },
+      onAction: (action) => _handleChatAction(context, viewModel, chat, action),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chatViewModel = context.watch<ChatViewModel>();
+    _syncSearchFromViewModel(chatViewModel);
+
+    final scheme = Theme.of(context).colorScheme;
+    final pinnedIds = chatViewModel.pinnedChats.map((c) => c.id).toSet();
+    final previousChats = chatViewModel.chats
+        .where((c) => !pinnedIds.contains(c.id))
+        .where((c) => c.folderId == null || c.folderId!.isEmpty)
+        .toList();
+    final folderChatIds = chatViewModel.chatFolders
+        .expand((folder) => folder.chats)
+        .map((chat) => chat.id)
+        .toSet();
+    final loosePreviousChats = previousChats
+        .where((chat) => !folderChatIds.contains(chat.id))
+        .toList();
+    final hasAnyChats = chatViewModel.pinnedChats.isNotEmpty ||
+        loosePreviousChats.isNotEmpty ||
+        chatViewModel.chatFolders.any((folder) => folder.chats.isNotEmpty);
+
+    return Drawer(
+      backgroundColor: scheme.surface,
+      child: SafeArea(
+        top: false,
+        child: RefreshIndicator(
+          onRefresh: chatViewModel.fetchChats,
+          child: ListView(
+            controller: chatViewModel.chatListScrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              _ChatDrawerHeader(
+                onNewChat: () {
+                  chatViewModel.onTapNewChat();
+                  Navigator.pop(context);
                 },
               ),
-            if (chatViewModel.isLoadingChats)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: CircularProgressIndicator(),
-                ),
+              _ChatSearchField(
+                controller: _searchController,
+                isSearching: chatViewModel.chatSearchQuery.trim().isNotEmpty &&
+                    chatViewModel.isLoadingChatFilters,
+                onSearch: _submitSearch,
+                onClear: () => _clearSearch(chatViewModel),
               ),
-            if (chatViewModel.isLoadingMoreChats)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12.0),
-                child: Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+              _ChatFilterBar(viewModel: chatViewModel),
+              if (chatViewModel.isLoadingChats)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (chatViewModel.hasActiveChatFilter)
+                _chatSection(
+                  context: context,
+                  title: chatViewModel.activeChatFilterLabel,
+                  initiallyExpanded: true,
+                  children: [
+                    if (chatViewModel.isLoadingChatFilters)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (chatViewModel.filteredChats.isEmpty)
+                      _emptySectionLabel(
+                        context,
+                        chatViewModel.chatSearchQuery.trim().isEmpty
+                            ? 'No chats found'
+                            : 'No matching chats',
+                      )
+                    else
+                      ...chatViewModel.filteredChats.map(
+                        (chat) => _buildChatTile(
+                          context,
+                          chatViewModel,
+                          chat,
+                          isPinned: pinnedIds.contains(chat.id),
+                        ),
+                      ),
+                  ],
+                )
+              else if (!hasAnyChats)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        size: 36,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No chats yet',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Start a new chat to begin a conversation.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                if (chatViewModel.pinnedChats.isNotEmpty)
+                  _chatSection(
+                    context: context,
+                    title: 'Pinned',
+                    initiallyExpanded: true,
+                    children: chatViewModel.pinnedChats
+                        .map(
+                          (chat) => _buildChatTile(
+                            context,
+                            chatViewModel,
+                            chat,
+                            isPinned: true,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                if (chatViewModel.chatFolders.isNotEmpty)
+                  ...chatViewModel.chatFolders.map(
+                    (folder) => _chatSection(
+                      context: context,
+                      title: folder.name,
+                      initiallyExpanded: folder.isExpanded,
+                      children: [
+                        if (folder.chats.isEmpty)
+                          _emptySectionLabel(context, 'No chats in folder')
+                        else
+                          ...folder.chats.map(
+                            (chat) => _buildChatTile(
+                              context,
+                              chatViewModel,
+                              chat,
+                              isPinned: pinnedIds.contains(chat.id),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                _chatSection(
+                  context: context,
+                  title: 'Chats',
+                  initiallyExpanded: true,
+                  children: [
+                    if (loosePreviousChats.isEmpty)
+                      _emptySectionLabel(context, 'No chats yet')
+                    else
+                      ...loosePreviousChats.map(
+                        (chat) => _buildChatTile(
+                          context,
+                          chatViewModel,
+                          chat,
+                          isPinned: false,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+              if (chatViewModel.isLoadingMoreChats)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: SizedBox.square(
+                      dimension: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   ),
                 ),
-              ),
-          ],
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );
@@ -910,8 +718,9 @@ class _ChatSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
       child: TextField(
         controller: controller,
         textInputAction: TextInputAction.search,
@@ -935,7 +744,7 @@ class _ChatSearchField extends StatelessWidget {
                     ),
           isDense: true,
           filled: true,
-          fillColor: Colors.grey.shade100,
+          fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.65),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -947,24 +756,26 @@ class _ChatSearchField extends StatelessWidget {
   }
 }
 
-class _ChatFilterChips extends StatelessWidget {
-  const _ChatFilterChips({required this.viewModel});
+class _ChatFilterBar extends StatelessWidget {
+  const _ChatFilterBar({required this.viewModel});
 
   final ChatViewModel viewModel;
 
   @override
   Widget build(BuildContext context) {
-    final hasFilters =
-        viewModel.chatTags.isNotEmpty || viewModel.chatFolders.isNotEmpty;
-    if (!hasFilters && !viewModel.hasActiveChatFilter) {
-      return const SizedBox.shrink();
+    final folders = viewModel.chatFolders;
+    final showBar = folders.isNotEmpty ||
+        viewModel.hasActiveChatFilter ||
+        viewModel.showingArchivedChats;
+    if (!showBar) {
+      return const SizedBox(height: 4);
     }
 
     return SizedBox(
       height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
         children: [
           if (viewModel.hasActiveChatFilter)
             Padding(
@@ -977,57 +788,44 @@ class _ChatFilterChips extends StatelessWidget {
             ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: ActionChip(
+            child: FilterChip(
               avatar: const Icon(Icons.archive_outlined, size: 18),
               label: const Text('Archived'),
-              onPressed: viewModel.showArchivedChats,
+              selected: viewModel.showingArchivedChats,
+              onSelected: (selected) {
+                if (selected) {
+                  viewModel.showArchivedChats();
+                } else {
+                  viewModel.clearChatFilters();
+                }
+              },
             ),
           ),
-          ...viewModel.chatFolders.map(
+          ...folders.map(
             (folder) => Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
                 avatar: const Icon(Icons.folder_outlined, size: 18),
-                label: _ChipLabel(folder.name),
+                label: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 140),
+                  child: Text(
+                    folder.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 selected: viewModel.selectedChatFolder?.id == folder.id,
-                onSelected: (selected) => selected
-                    ? viewModel.filterChatsByFolder(folder)
-                    : viewModel.clearChatFilters(),
-              ),
-            ),
-          ),
-          ...viewModel.chatTags.map(
-            (tag) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                avatar: const Icon(Icons.tag, size: 18),
-                label: _ChipLabel(tag.name),
-                selected: viewModel.selectedChatTag?.id == tag.id,
-                onSelected: (selected) => selected
-                    ? viewModel.filterChatsByTag(tag)
-                    : viewModel.clearChatFilters(),
+                onSelected: (selected) {
+                  if (selected) {
+                    viewModel.filterChatsByFolder(folder);
+                  } else {
+                    viewModel.clearChatFilters();
+                  }
+                },
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ChipLabel extends StatelessWidget {
-  const _ChipLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 140),
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -1041,37 +839,36 @@ class _ChatDrawerHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
+    final scheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(16, topInset + 10, 8, 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade800,
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Text(
-              'Chats',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+    return Material(
+      color: scheme.surfaceContainerHighest,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, topInset + 10, 8, 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Chats',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
               ),
             ),
-          ),
-          IconButton(
-            tooltip: 'New Chat',
-            onPressed: onNewChat,
-            icon: const Icon(Icons.add, color: Colors.white, size: 20),
-            style: IconButton.styleFrom(
-              minimumSize: const Size.square(36),
-              padding: EdgeInsets.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            IconButton.filledTonal(
+              tooltip: 'New chat',
+              onPressed: onNewChat,
+              icon: const Icon(Icons.add_rounded, size: 20),
+              style: IconButton.styleFrom(
+                minimumSize: const Size.square(36),
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

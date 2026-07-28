@@ -59,12 +59,10 @@ class ChatViewModel extends ChangeNotifier {
   List<Chat> filteredChats = [];
   List<Chat> archivedChats = [];
   List<ChatFolder> chatFolders = [];
-  List<ChatTag> chatTags = [];
   List<ChatTool> tools = [];
   List<ChatModel> models = [];
   ChatModel? selectedModel;
   String chatSearchQuery = '';
-  ChatTag? selectedChatTag;
   ChatFolder? selectedChatFolder;
   bool showingArchivedChats = false;
   int _chatFilterRequestId = 0;
@@ -477,7 +475,6 @@ class ChatViewModel extends ChangeNotifier {
 
   bool get hasActiveChatFilter =>
       chatSearchQuery.trim().isNotEmpty ||
-      selectedChatTag != null ||
       selectedChatFolder != null ||
       showingArchivedChats;
 
@@ -485,19 +482,15 @@ class ChatViewModel extends ChangeNotifier {
     if (chatSearchQuery.trim().isNotEmpty) {
       return 'Search "${chatSearchQuery.trim()}"';
     }
-    if (selectedChatTag != null) return '#${selectedChatTag!.name}';
     if (selectedChatFolder != null) return selectedChatFolder!.name;
     if (showingArchivedChats) return 'Archived';
-    return 'Previous chats';
+    return 'Chats';
   }
 
   Future<void> refreshChatOrganization() async {
     if (!isLoggedIn) return;
     try {
-      final tagsFuture = _chatUseCase.fetchAllTags();
-      final foldersFuture = _chatUseCase.fetchFolders();
-      chatTags = await tagsFuture;
-      chatFolders = await foldersFuture;
+      chatFolders = await _chatUseCase.fetchFolders();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('refreshChatOrganization error: $e');
@@ -511,7 +504,6 @@ class ChatViewModel extends ChangeNotifier {
     final trimmed = query.trim();
     _chatFilterRequestId++;
     chatSearchQuery = trimmed;
-    selectedChatTag = null;
     selectedChatFolder = null;
     showingArchivedChats = false;
     isLoadingChatFilters = false;
@@ -525,42 +517,9 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> filterChatsByTag(ChatTag tag) async {
-    final requestId = ++_chatFilterRequestId;
-    chatSearchQuery = '';
-    selectedChatTag = tag;
-    selectedChatFolder = null;
-    showingArchivedChats = false;
-    isLoadingChatFilters = true;
-    notifyListeners();
-    try {
-      final chats = await _chatUseCase.fetchChatsByTag(tag.name);
-      if (requestId != _chatFilterRequestId) return;
-      filteredChats = chats;
-    } catch (e) {
-      if (requestId != _chatFilterRequestId) return;
-      if (kDebugMode) debugPrint('filterChatsByTag error: $e');
-      _reportError(
-        ChatErrorMapper.from(
-          e,
-          operation: ChatOperation.loadFilters,
-          fallbackMessage: 'Tagged chats could not be loaded.',
-        ),
-        retry: () => filterChatsByTag(tag),
-      );
-      filteredChats = [];
-    } finally {
-      if (requestId == _chatFilterRequestId) {
-        isLoadingChatFilters = false;
-        notifyListeners();
-      }
-    }
-  }
-
   Future<void> filterChatsByFolder(ChatFolder folder) async {
     final requestId = ++_chatFilterRequestId;
     chatSearchQuery = '';
-    selectedChatTag = null;
     selectedChatFolder = folder;
     showingArchivedChats = false;
     isLoadingChatFilters = true;
@@ -592,7 +551,6 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> showArchivedChats() async {
     final requestId = ++_chatFilterRequestId;
     chatSearchQuery = '';
-    selectedChatTag = null;
     selectedChatFolder = null;
     showingArchivedChats = true;
     isLoadingChatFilters = true;
@@ -625,7 +583,6 @@ class ChatViewModel extends ChangeNotifier {
   void clearChatFilters() {
     _chatFilterRequestId++;
     chatSearchQuery = '';
-    selectedChatTag = null;
     selectedChatFolder = null;
     showingArchivedChats = false;
     filteredChats = [];
@@ -735,10 +692,12 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> deleteChat(Chat chat) async {
     try {
       await _chatUseCase.deleteChat(chat);
-      chats.removeWhere((c) => c.id == chat.id);
-      pinnedChats.removeWhere((c) => c.id == chat.id);
-      filteredChats.removeWhere((c) => c.id == chat.id);
-      notifyListeners();
+      _removeChatFromLists(chat.id);
+      if (selectedChat?.id == chat.id) {
+        onTapNewChat();
+      } else {
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('Delete error: $e');
       _reportError(
@@ -789,10 +748,12 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> archiveChat(Chat chat) async {
     try {
       await _chatUseCase.archiveChat(chat);
-      chats.removeWhere((c) => c.id == chat.id);
-      pinnedChats.removeWhere((c) => c.id == chat.id);
-      filteredChats.removeWhere((c) => c.id == chat.id);
-      notifyListeners();
+      _removeChatFromLists(chat.id);
+      if (selectedChat?.id == chat.id) {
+        onTapNewChat();
+      } else {
+        notifyListeners();
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('Archive error: $e');
       _reportError(
@@ -840,49 +801,24 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> addTagToChat(Chat chat, String tagName) async {
-    final trimmed = tagName.trim();
-    if (trimmed.isEmpty) return false;
-    try {
-      await _chatUseCase.addChatTag(chat.id, trimmed);
-      await refreshChatOrganization();
-      return true;
-    } catch (e) {
-      if (kDebugMode) debugPrint('Add tag error: $e');
-      _reportError(
-        ChatErrorMapper.from(
-          e,
-          operation: ChatOperation.updateChat,
-          fallbackMessage: 'The tag could not be added. Please try again.',
+  void _removeChatFromLists(String chatId) {
+    chats.removeWhere((c) => c.id == chatId);
+    pinnedChats.removeWhere((c) => c.id == chatId);
+    filteredChats.removeWhere((c) => c.id == chatId);
+    archivedChats.removeWhere((c) => c.id == chatId);
+    chatFolders = [
+      for (final folder in chatFolders)
+        ChatFolder(
+          id: folder.id,
+          name: folder.name,
+          parentId: folder.parentId,
+          isExpanded: folder.isExpanded,
+          chats: [
+            for (final chat in folder.chats)
+              if (chat.id != chatId) chat,
+          ],
         ),
-      );
-      return false;
-    }
-  }
-
-  Future<List<ChatTag>> fetchTagsForChat(Chat chat) {
-    return _chatUseCase.fetchChatTags(chat.id);
-  }
-
-  Future<bool> removeTagFromChat(Chat chat, ChatTag tag) async {
-    try {
-      await _chatUseCase.removeChatTag(chat.id, tag.name);
-      await refreshChatOrganization();
-      if (selectedChatTag?.id == tag.id) {
-        clearChatFilters();
-      }
-      return true;
-    } catch (e) {
-      if (kDebugMode) debugPrint('Remove tag error: $e');
-      _reportError(
-        ChatErrorMapper.from(
-          e,
-          operation: ChatOperation.updateChat,
-          fallbackMessage: 'The tag could not be removed. Please try again.',
-        ),
-      );
-      return false;
-    }
+    ];
   }
 
   void _replaceChatInLists(Chat updated) {
@@ -955,7 +891,6 @@ class ChatViewModel extends ChangeNotifier {
     filteredChats = [];
     archivedChats = [];
     chatFolders = [];
-    chatTags = [];
     tools = [];
     models = [];
     selectedModel = null;
@@ -973,7 +908,6 @@ class ChatViewModel extends ChangeNotifier {
     _activeError = null;
     _activeErrorRetry = null;
     chatSearchQuery = '';
-    selectedChatTag = null;
     selectedChatFolder = null;
     showingArchivedChats = false;
 
