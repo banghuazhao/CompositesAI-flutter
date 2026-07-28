@@ -11,7 +11,6 @@ import 'package:domain/chat/entities/chat_folder.dart';
 import 'package:domain/chat/entities/chat_knowledge.dart';
 import 'package:domain/chat/entities/chat_model.dart';
 import 'package:domain/chat/entities/chat_stream_event.dart';
-import 'package:domain/chat/entities/chat_tag.dart';
 import 'package:domain/chat/entities/chat_tool.dart';
 import 'package:domain/chat/entities/message.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -62,9 +61,6 @@ class FakeChatUseCase extends Fake implements ChatUseCase {
 
   @override
   Future<List<Chat>> fetchPinnedChats() async => <Chat>[];
-
-  @override
-  Future<List<ChatTag>> fetchAllTags() async => <ChatTag>[];
 
   @override
   Future<List<ChatFolder>> fetchFolders() async => <ChatFolder>[];
@@ -249,7 +245,7 @@ void main() {
       ];
       chatUseCase.modelsToFetch = [
         ChatModel.fromJson({
-          'id': 'composites-ai-2026-02-23',
+          'id': ChatModel.defaultModelId,
           'name': 'CompositesAI',
           'meta': {
             'toolIds': ['tool-a'],
@@ -273,7 +269,7 @@ void main() {
 
       await viewModel.fetchTools();
 
-      expect(viewModel.selectedModel?.id, 'composites-ai-2026-02-23');
+      expect(viewModel.selectedModel?.id, ChatModel.defaultModelId);
       expect(viewModel.selectedToolIds, {'tool-a'});
       expect(viewModel.defaultQuestions, hasLength(5));
       expect(viewModel.defaultQuestions.first, 'Composites workspace prompt');
@@ -291,7 +287,7 @@ void main() {
     test('model prompt suggestions override global web prompts', () async {
       chatUseCase.modelsToFetch = [
         ChatModel.fromJson({
-          'id': 'composites-ai-2026-02-23',
+          'id': ChatModel.defaultModelId,
           'name': 'CompositesAI',
           'meta': {
             'suggestion_prompts': [
@@ -315,7 +311,7 @@ void main() {
     test('suggested prompts are unique and limited to five', () async {
       chatUseCase.modelsToFetch = [
         ChatModel.fromJson({
-          'id': 'composites-ai-2026-02-23',
+          'id': ChatModel.defaultModelId,
           'name': 'CompositesAI',
           'meta': {
             'suggestion_prompts': [
@@ -347,7 +343,7 @@ void main() {
         () async {
       chatUseCase.modelsToFetch = [
         ChatModel.fallback(
-          id: 'composites-ai-2026-02-23',
+          id: ChatModel.defaultModelId,
           name: 'CompositesAI',
         ),
         ChatModel.fallback(id: 'gpt-4.1', name: 'GPT-4.1'),

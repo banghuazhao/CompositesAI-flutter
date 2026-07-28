@@ -9,7 +9,6 @@ import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import '../model/chat_citation.dart';
 import '../viewModels/chat_view_model.dart';
 import 'ai_markdown_message.dart';
-import 'chat_citation_widgets.dart';
 import 'chat_progress_indicator.dart';
 import 'response_feedback_sheet.dart';
 
@@ -367,8 +366,6 @@ class _MessageListState extends State<MessageList> {
                   citations: citations,
                 ),
               ),
-            if (!isStreaming && citations.isNotEmpty)
-              ChatSourcesButton(citations: citations),
             if (!isStreaming)
               Padding(
                 padding: const EdgeInsets.only(top: 2),

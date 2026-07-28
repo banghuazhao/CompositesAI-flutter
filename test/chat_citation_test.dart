@@ -44,9 +44,20 @@ void main() {
                 'name': 'NASA Technical Reports',
                 'source': 'https://ntrs.nasa.gov/citations/example',
                 'citation_id': 1,
+                'bibliographic': {
+                  'author_full_name': 'Wenbin Yu',
+                  'title':
+                      'Inertial and elastic properties of general composite beams',
+                  'journal': 'Composite Structures',
+                  'publisher': 'Elsevier',
+                  'publication_year': '2025',
+                  'doi': '10.1016/j.compstruct.2024.118690',
+                },
               },
             ],
-            'document': ['Composite rotor blades exhibit...'],
+            'document': [
+              'Composite rotor blades exhibit orthotropic stiffness...',
+            ],
           }),
           ChatSource.fromJson({
             'citation_id': 2,
@@ -64,7 +75,16 @@ void main() {
       expect(citations, hasLength(2));
       expect(citations[0].uri?.host, 'ntrs.nasa.gov');
       expect(citations[0].displayTitle, 'NASA Technical Reports');
-      expect(citations[0].context, contains('Composite rotor blades'));
+      expect(citations[0].bibliographicText, contains('Wenbin Yu'));
+      expect(citations[0].bibliographicText, contains('Elsevier'));
+      expect(
+        citations[0].bibliographicText,
+        contains('https://doi.org/10.1016/j.compstruct.2024.118690'),
+      );
+      expect(
+        citations[0].excerpts.single,
+        contains('Composite rotor blades exhibit'),
+      );
       expect(citations[1].uri, Uri.parse('https://example.com/paper'));
       expect(citations[1].displayTitle, 'Example Paper');
     });
@@ -89,22 +109,71 @@ void main() {
       expect(citations, hasLength(1));
       expect(citations.single.canOpen, false);
     });
+
+    test('fills paper names by citation_id and positional fallback', () {
+      final citations = ChatCitationParser.parse(
+        markdown: 'See [10] and [3].',
+        sources: [
+          ChatSource.fromJson({
+            'citation_id': 3,
+            'source': {'name': 'Classical%20Lamination%20Theory.pdf'},
+            'document': ['CLT assumes each ply is orthotropic...'],
+          }),
+          ChatSource.fromJson({
+            'source': {
+              'name': 'Inertial and elastic properties of general composite beams',
+            },
+            'metadata': [
+              {
+                'bibliographic': {
+                  'author_full_name': 'Wenbin Yu',
+                  'title':
+                      'Inertial and elastic properties of general composite beams',
+                  'journal': 'Composite Structures',
+                  'publication_year': '2025',
+                },
+              },
+            ],
+            'document': ['Beam properties depend on the cross section...'],
+          }),
+        ],
+      );
+
+      final byNumber = {
+        for (final citation in citations) citation.number: citation,
+      };
+
+      expect(byNumber[3]?.displayTitle, 'Classical Lamination Theory.pdf');
+      expect(
+        byNumber[3]?.bibliographicText,
+        contains('Classical Lamination Theory.pdf'),
+      );
+      expect(byNumber[10]?.displayTitle, contains('Inertial and elastic'));
+      expect(byNumber[10]?.bibliographicText, contains('Wenbin Yu'));
+      expect(byNumber[10]?.bibliographicText, contains('Composite Structures'));
+    });
   });
 
-  testWidgets('tapping an inline citation shows source information',
+  testWidgets('tapping an inline citation shows the source card',
       (tester) async {
     final citation = ChatCitation(
-      number: 1,
-      label: 'NASA Technical Reports',
-      context: 'Referenced while researching rotor blade analysis.',
-      uri: Uri.parse('https://ntrs.nasa.gov/citations/example'),
+      number: 5,
+      label: 'Composite Structures',
+      bibliographicText:
+          'Wenbin Yu. Inertial and elastic properties of general composite beams. '
+          'Composite Structures, Elsevier, 2025. '
+          'https://doi.org/10.1016/j.compstruct.2024.118690.',
+      excerpts: const [
+        'Materials, by their nature, are anisotropic...',
+      ],
+      uri: Uri.parse('https://doi.org/10.1016/j.compstruct.2024.118690'),
     );
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: AiMarkdownMessage(
-            markdown: 'A referenced result [1].',
+            markdown: 'A referenced result [5].',
             citations: [citation],
           ),
         ),
@@ -115,12 +184,15 @@ void main() {
     await tester.tap(find.byType(ChatCitationBadge));
     await tester.pumpAndSettle();
 
-    expect(find.text('NASA Technical Reports'), findsOneWidget);
+    expect(find.text('Source [5]'), findsOneWidget);
+    expect(find.text('CITATION'), findsOneWidget);
+    expect(find.text('EXCERPT 1'), findsOneWidget);
+    expect(find.text('Copy'), findsOneWidget);
+    expect(find.textContaining('Wenbin Yu'), findsOneWidget);
     expect(
-      find.text('https://ntrs.nasa.gov/citations/example'),
+      find.textContaining('Materials, by their nature, are anisotropic'),
       findsOneWidget,
     );
     expect(find.text('Open source'), findsOneWidget);
-    expect(find.text('Copy link'), findsOneWidget);
   });
 }

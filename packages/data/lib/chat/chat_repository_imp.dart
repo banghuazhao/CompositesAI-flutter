@@ -13,7 +13,6 @@ import 'package:domain/chat/entities/chat_folder.dart';
 import 'package:domain/chat/entities/chat_knowledge.dart';
 import 'package:domain/chat/entities/message.dart';
 import 'package:domain/chat/entities/chat_source.dart';
-import 'package:domain/chat/entities/chat_tag.dart';
 import 'package:domain/chat/entities/chat_tool.dart';
 import 'package:domain/chat/entities/chat_file.dart';
 import 'package:flutter/foundation.dart';
@@ -51,40 +50,6 @@ List<Chat> _decodeChatListResponse(http.Response response, String label) {
         .toList();
   }
   throw mapServerErrorToDomainException(response);
-}
-
-List<ChatTag> _decodeTagListResponse(http.Response response, String label) {
-  if (response.statusCode == 200) {
-    return _decodeTagList(
-      response.statusCode,
-      utf8.decode(response.bodyBytes),
-      response.headers,
-      label,
-    );
-  }
-  throw mapServerErrorToDomainException(response);
-}
-
-List<ChatTag> _decodeTagList(
-  int statusCode,
-  String body,
-  Map<String, String> headers,
-  String label,
-) {
-  if (statusCode == 200) {
-    final data = jsonDecode(body);
-    if (data is! List) {
-      throw FormatException('$label: expected JSON array');
-    }
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(ChatTag.fromJson)
-        .where((tag) => tag.name.isNotEmpty)
-        .toList();
-  }
-  throw mapServerErrorToDomainException(
-    http.Response(body, statusCode, headers: headers),
-  );
 }
 
 Map<String, dynamic> _decodeMapResponse(http.Response response, String label) {
@@ -238,18 +203,6 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<List<Chat>> fetchChatsByTag(String tagName) async {
-    final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/chats/tags');
-    final response = await authClient.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': tagName}),
-    );
-    return _decodeChatListResponse(response, 'POST /chats/tags');
-  }
-
-  @override
   Future<List<Chat>> fetchChatsByFolder(String folderId) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/chats/folder/$folderId');
@@ -258,60 +211,6 @@ class ChatRepositoryImpl implements ChatRepository {
       headers: {'Accept': 'application/json'},
     );
     return _decodeChatListResponse(response, 'GET /chats/folder/:id');
-  }
-
-  @override
-  Future<List<ChatTag>> fetchAllTags() async {
-    final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/chats/all/tags');
-    final response = await authClient.get(
-      url,
-      headers: {'Accept': 'application/json'},
-    );
-    return _decodeTagListResponse(response, 'GET /chats/all/tags');
-  }
-
-  @override
-  Future<List<ChatTag>> fetchChatTags(String chatId) async {
-    final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/chats/$chatId/tags');
-    final response = await authClient.get(
-      url,
-      headers: {'Accept': 'application/json'},
-    );
-    return _decodeTagListResponse(response, 'GET /chats/:id/tags');
-  }
-
-  @override
-  Future<List<ChatTag>> addChatTag(String chatId, String tagName) async {
-    final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/chats/$chatId/tags');
-    final response = await authClient.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': tagName}),
-    );
-    return _decodeTagListResponse(response, 'POST /chats/:id/tags');
-  }
-
-  @override
-  Future<List<ChatTag>> removeChatTag(String chatId, String tagName) async {
-    final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/chats/$chatId/tags');
-    final request = http.Request('DELETE', url)
-      ..headers.addAll({
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      })
-      ..body = jsonEncode({'name': tagName});
-    final response = await authClient.send(request);
-    final body = await response.stream.bytesToString();
-    return _decodeTagList(
-      response.statusCode,
-      body,
-      response.headers,
-      'DELETE /chats/:id/tags',
-    );
   }
 
   @override
@@ -354,21 +253,102 @@ class ChatRepositoryImpl implements ChatRepository {
     if (response.statusCode == 200) {
       final decoded = utf8.decode(response.bodyBytes);
       final Map<String, dynamic> data = jsonDecode(decoded);
-      final chat = data['chat'];
-      if (chat is! Map<String, dynamic>) {
+      final chatPayload = data['chat'];
+      if (chatPayload is! Map<String, dynamic>) {
         throw const FormatException(
             'GET /chats/:id: missing or invalid "chat"');
       }
-      final messagesRaw = chat['messages'];
-      if (messagesRaw is! List) {
-        return <Message>[];
-      }
-      final messages = messagesRaw
-          .map((json) => Message.fromJson(json as Map<String, dynamic>))
-          .toList();
-      return messages;
+      return _messagesFromChatPayload(chatPayload);
     } else {
       throw mapServerErrorToDomainException(response);
+    }
+  }
+
+  /// Prefer `history.messages` (where CompositesAI stores sources/citations),
+  /// falling back to the flat `messages` array and hydrating missing fields.
+  List<Message> _messagesFromChatPayload(Map<String, dynamic> chatPayload) {
+    final history = chatPayload['history'];
+    final historyMessagesRaw =
+        history is Map ? history['messages'] : null;
+    final currentId =
+        history is Map ? history['currentId']?.toString() : null;
+
+    final historyById = <String, Map<String, dynamic>>{};
+    if (historyMessagesRaw is Map) {
+      historyMessagesRaw.forEach((key, value) {
+        if (value is Map) {
+          final json = Map<String, dynamic>.from(value);
+          json['id'] ??= key.toString();
+          historyById[key.toString()] = json;
+        }
+      });
+    }
+
+    if (historyById.isNotEmpty &&
+        currentId != null &&
+        currentId.isNotEmpty &&
+        historyById.containsKey(currentId)) {
+      final ordered = _createMessagesList(historyById, currentId);
+      if (ordered.isNotEmpty) {
+        return ordered.map(Message.fromJson).toList(growable: false);
+      }
+    }
+
+    final messagesRaw = chatPayload['messages'];
+    if (messagesRaw is! List) return <Message>[];
+
+    return messagesRaw.whereType<Map>().map((raw) {
+      final json = Map<String, dynamic>.from(raw);
+      final id = json['id']?.toString() ?? '';
+      final historyJson = historyById[id];
+      if (historyJson != null) {
+        _hydrateMessageJson(json, historyJson);
+      }
+      return Message.fromJson(json);
+    }).toList(growable: false);
+  }
+
+  List<Map<String, dynamic>> _createMessagesList(
+    Map<String, Map<String, dynamic>> historyMessages,
+    String messageId,
+  ) {
+    final message = historyMessages[messageId];
+    if (message == null) return const [];
+
+    final parentId = message['parentId']?.toString();
+    if (parentId != null &&
+        parentId.isNotEmpty &&
+        historyMessages.containsKey(parentId)) {
+      return [
+        ..._createMessagesList(historyMessages, parentId),
+        message,
+      ];
+    }
+    return [message];
+  }
+
+  void _hydrateMessageJson(
+    Map<String, dynamic> target,
+    Map<String, dynamic> historyJson,
+  ) {
+    bool missingList(String key) {
+      final value = target[key];
+      return value is! List || value.isEmpty;
+    }
+
+    if (missingList('sources') && historyJson['sources'] is List) {
+      target['sources'] = historyJson['sources'];
+    }
+    if (missingList('citations') && historyJson['citations'] is List) {
+      target['citations'] = historyJson['citations'];
+    }
+    if (missingList('statusHistory') &&
+        historyJson['statusHistory'] is List) {
+      target['statusHistory'] = historyJson['statusHistory'];
+    }
+    if (missingList('status_history') &&
+        historyJson['status_history'] is List) {
+      target['status_history'] = historyJson['status_history'];
     }
   }
 
@@ -741,7 +721,9 @@ class ChatRepositoryImpl implements ChatRepository {
         'chat': {
           'id': "",
           'title': message.content,
-          'models': ["composites-ai-2026-02-23"],
+          'models': [
+            message.model.isNotEmpty ? message.model : ChatModel.defaultModelId,
+          ],
           'history': {'messages': message.toHistoryJson()},
           'messages': [message.toJson()]
         }
@@ -1210,7 +1192,7 @@ class ChatRepositoryImpl implements ChatRepository {
       body: jsonEncode({
         'chat_id': chat.id,
         'id': id,
-        'model': modelItem['id'] ?? "composites-ai-2026-02-23",
+        'model': modelItem['id'] ?? ChatModel.defaultModelId,
         'messages': messages.map((m) => m.toCompletedJson()).toList(),
         'model_item': modelItem,
       }),
@@ -1309,11 +1291,20 @@ class ChatRepositoryImpl implements ChatRepository {
         return ChatModel.fallback(
           id: message.model,
           name:
-              message.modelName.isNotEmpty ? message.modelName : 'CompositesAI',
+              message.modelName.isNotEmpty ? message.modelName : ChatModel.defaultModelName,
         ).rawJson;
       }
     }
     return ChatModel.fallback().rawJson;
+  }
+
+  List<String> _modelIdsForPersist(List<Message> messages) {
+    for (final message in messages.reversed) {
+      if (message.model.isNotEmpty) {
+        return [message.model];
+      }
+    }
+    return const [ChatModel.defaultModelId];
   }
 
   @override
@@ -1326,7 +1317,7 @@ class ChatRepositoryImpl implements ChatRepository {
           'chat': {
             'id': chat.id,
             'title': chat.title,
-            'models': ["composites-ai-2026-02-23"],
+            'models': [_modelIdsForPersist(messages)],
             'files': [],
             'params': {},
             'history': {

@@ -91,7 +91,7 @@ void main() {
 
   test('ChatConfiguration parses web model and prompt defaults', () {
     final configuration = ChatConfiguration.fromJson({
-      'default_models': 'gpt-4.1,composites-ai-2026-02-23',
+      'default_models': 'gpt-4.1,' + ChatModel.defaultModelId,
       'default_prompt_suggestions': [
         {'content': 'First prompt'},
         {'content': 'Second prompt'},
@@ -100,7 +100,7 @@ void main() {
 
     expect(
       configuration.defaultModelIds,
-      ['gpt-4.1', 'composites-ai-2026-02-23'],
+      ['gpt-4.1', ChatModel.defaultModelId],
     );
     expect(configuration.defaultPrompts, ['First prompt', 'Second prompt']);
   });

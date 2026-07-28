@@ -21,7 +21,7 @@ class ChatCitationBadge extends StatelessWidget {
       button: true,
       label: 'View citation ${citation.number}, ${citation.displayTitle}',
       child: Tooltip(
-        message: 'View ${citation.displayTitle}',
+        message: 'Source [${citation.number}]',
         child: Material(
           color: scheme.primaryContainer,
           shape: const StadiumBorder(),
@@ -49,43 +49,6 @@ class ChatCitationBadge extends StatelessWidget {
   }
 }
 
-class ChatSourcesButton extends StatelessWidget {
-  const ChatSourcesButton({
-    super.key,
-    required this.citations,
-  });
-
-  final List<ChatCitation> citations;
-
-  @override
-  Widget build(BuildContext context) {
-    if (citations.isEmpty) return const SizedBox.shrink();
-    final availableCount =
-        citations.where((citation) => citation.canOpen).length;
-    final countLabel =
-        '${citations.length} source${citations.length == 1 ? '' : 's'}';
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: OutlinedButton.icon(
-        key: const ValueKey('chat-sources-button'),
-        onPressed: () => ChatCitationSheets.showSources(context, citations),
-        icon: const Icon(Icons.library_books_outlined, size: 17),
-        label: Text(
-          availableCount == citations.length
-              ? countLabel
-              : '$countLabel · $availableCount links',
-        ),
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(44, 36),
-          visualDensity: VisualDensity.compact,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        ),
-      ),
-    );
-  }
-}
-
 class ChatCitationSheets {
   const ChatCitationSheets._();
 
@@ -97,77 +60,11 @@ class ChatCitationSheets {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (sheetContext) => _CitationDetails(citation: citation),
-    );
-  }
-
-  static Future<void> showSources(
-    BuildContext context,
-    List<ChatCitation> citations,
-  ) {
-    final pageContext = context;
-    return showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.72,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: Text(
-                  'Sources',
-                  style: Theme.of(sheetContext).textTheme.titleLarge,
-                ),
-              ),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
-                  itemCount: citations.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final citation = citations[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        radius: 16,
-                        child: Text('${citation.number}'),
-                      ),
-                      title: Text(
-                        citation.displayTitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: citation.uri == null
-                          ? const Text('Link information unavailable')
-                          : Text(
-                              citation.uri.toString(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (pageContext.mounted) {
-                            showCitation(pageContext, citation);
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (sheetContext) => _CitationDetails(citation: citation),
     );
   }
 }
@@ -177,9 +74,16 @@ class _CitationDetails extends StatelessWidget {
 
   final ChatCitation citation;
 
-  Future<void> _openSource(BuildContext context) async {
-    final uri = citation.uri;
-    if (uri == null) return;
+  Future<void> _copyCitation(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: citation.copyText));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Citation copied.')),
+      );
+    }
+  }
+
+  Future<void> _openUri(BuildContext context, Uri uri) async {
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -188,106 +92,187 @@ class _CitationDetails extends StatelessWidget {
     }
   }
 
-  Future<void> _copySource(BuildContext context) async {
-    final uri = citation.uri;
-    if (uri == null) return;
-    await Clipboard.setData(ClipboardData(text: uri.toString()));
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Source link copied.')),
-      );
+  String get _citationBody {
+    final bibliographic = citation.bibliographicText?.trim() ?? '';
+    final isWeakBibliographic = bibliographic.isEmpty ||
+        RegExp(r'^Source\s*\[?\d+\]?$', caseSensitive: false)
+            .hasMatch(bibliographic);
+
+    if (!isWeakBibliographic) return bibliographic;
+
+    final title = citation.displayTitle.trim();
+    final hasUsefulTitle = title.isNotEmpty &&
+        !RegExp(r'^Source\s*\[?\d+\]?$', caseSensitive: false).hasMatch(title);
+    if (citation.uri != null) {
+      if (hasUsefulTitle && title != citation.uri.toString()) {
+        return '$title\n${citation.uri}';
+      }
+      return citation.uri.toString();
     }
+    if (hasUsefulTitle) return title;
+    return 'Source details were not included for citation ${citation.number}.';
+  }
+
+  List<String> get _excerpts {
+    if (citation.excerpts.isNotEmpty) return citation.excerpts;
+    final context = citation.context?.trim() ?? '';
+    if (context.isEmpty) return const [];
+    // Avoid showing research-status fluff as an "excerpt".
+    if (context.startsWith('Referenced while researching')) return const [];
+    return [context];
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final excerpts = _excerpts;
+    final citationBody = _citationBody;
+    final linkMatches = RegExp(r'https?://[^\s]+').allMatches(citationBody);
+
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          0,
-          20,
-          MediaQuery.viewInsetsOf(context).bottom + 24,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.78,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: scheme.primaryContainer,
-                  foregroundColor: scheme.onPrimaryContainer,
-                  child: Text(
-                    '${citation.number}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    citation.displayTitle,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-              ],
-            ),
-            if (citation.context?.isNotEmpty == true) ...[
-              const SizedBox(height: 16),
-              Text(
-                citation.context!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Text(
-              'Source link',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: 6),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: SelectableText(
-                citation.uri?.toString() ??
-                    (citation.label?.isNotEmpty == true
-                        ? 'No external link is available for “${citation.label}”.'
-                        : 'The response did not include a link for this citation.'),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-            if (citation.uri != null) ...[
-              const SizedBox(height: 20),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            4,
+            20,
+            MediaQuery.viewInsetsOf(context).bottom + 24,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _copySource(context),
-                      icon: const Icon(Icons.copy_rounded),
-                      label: const Text('Copy link'),
+                    child: Text(
+                      'Source [${citation.number}]',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => _openSource(context),
-                      icon: const Icon(Icons.open_in_new_rounded),
-                      label: const Text('Open source'),
+                  OutlinedButton.icon(
+                    onPressed: () => _copyCitation(context),
+                    icon: const Icon(Icons.copy_rounded, size: 16),
+                    label: const Text('Copy'),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      shape: const StadiumBorder(),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CITATION',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SelectableText.rich(
+                      TextSpan(
+                        style: textTheme.bodyMedium?.copyWith(height: 1.45),
+                        children: _linkifiedSpans(
+                          citationBody,
+                          linkMatches,
+                          scheme.primary,
+                        ),
+                      ),
+                      onTap: () {
+                        final uri = citation.uri;
+                        if (uri != null) _openUri(context, uri);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              for (var index = 0; index < excerpts.length; index++) ...[
+                const SizedBox(height: 18),
+                Text(
+                  'EXCERPT ${index + 1}',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SelectableText(
+                  excerpts[index],
+                  style: textTheme.bodyMedium?.copyWith(
+                    height: 1.5,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ],
+              if (citation.uri != null) ...[
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => _openUri(context, citation.uri!),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                    label: const Text('Open source'),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  List<InlineSpan> _linkifiedSpans(
+    String text,
+    Iterable<RegExpMatch> matches,
+    Color linkColor,
+  ) {
+    if (matches.isEmpty) return [TextSpan(text: text)];
+
+    final spans = <InlineSpan>[];
+    var cursor = 0;
+    for (final match in matches) {
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: text.substring(cursor, match.start)));
+      }
+      final url = match.group(0)!;
+      spans.add(
+        TextSpan(
+          text: url,
+          style: TextStyle(
+            color: linkColor,
+            decoration: TextDecoration.underline,
+            decorationColor: linkColor,
+          ),
+        ),
+      );
+      cursor = match.end;
+    }
+    if (cursor < text.length) {
+      spans.add(TextSpan(text: text.substring(cursor)));
+    }
+    return spans;
   }
 }

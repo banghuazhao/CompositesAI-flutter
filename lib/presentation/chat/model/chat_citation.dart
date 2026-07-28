@@ -9,12 +9,16 @@ class ChatCitation {
     this.uri,
     this.label,
     this.context,
+    this.bibliographicText,
+    this.excerpts = const [],
   });
 
   final int number;
   final Uri? uri;
   final String? label;
   final String? context;
+  final String? bibliographicText;
+  final List<String> excerpts;
 
   String get host {
     final value = uri?.host ?? '';
@@ -29,6 +33,17 @@ class ChatCitation {
   }
 
   bool get canOpen => uri != null;
+
+  String get copyText {
+    final parts = <String>[
+      if (bibliographicText?.trim().isNotEmpty == true) bibliographicText!.trim(),
+      if (uri != null &&
+          !(bibliographicText?.contains(uri.toString()) ?? false))
+        uri.toString(),
+    ];
+    if (parts.isNotEmpty) return parts.join('\n');
+    return displayTitle;
+  }
 }
 
 class ChatCitationParser {
@@ -102,7 +117,11 @@ class ChatCitationParser {
           final number = source.citationId ?? builders.length + 1;
           builders.putIfAbsent(number, () => _CitationBuilder(number))
             ..uri ??= source.uri
-            ..label ??= _cleanLabel(source.name);
+            ..label ??= _cleanLabel(source.name)
+            ..bibliographicText ??= source.bibliographicText
+            ..excerpts = source.excerpts.isNotEmpty
+                ? source.excerpts
+                : (source.excerpt == null ? const [] : [source.excerpt!]);
         }
       }
     } else {
@@ -131,6 +150,8 @@ class ChatCitationParser {
             uri: builder.uri,
             label: builder.label,
             context: builder.context ?? context,
+            bibliographicText: builder.bibliographicText,
+            excerpts: List<String>.unmodifiable(builder.excerpts),
           ),
         )
         .toList(growable: false);
@@ -159,6 +180,8 @@ class ChatCitationParser {
     Map<int, _CitationBuilder> builders,
     List<ChatSource> sources,
   ) {
+    if (sources.isEmpty) return;
+
     final orderedWithoutId = <ChatSource>[];
 
     for (final source in sources) {
@@ -169,30 +192,72 @@ class ChatCitationParser {
       }
       final builder =
           builders.putIfAbsent(citationId, () => _CitationBuilder(citationId));
-      builder.uri ??= source.uri;
-      builder.label ??= _cleanLabel(source.name);
-      builder.context ??= _excerptContext(source.excerpt);
+      _fillFromSource(builder, source);
     }
 
-    if (orderedWithoutId.isEmpty) return;
-
+    // Positional fallback for markers that still lack document details.
     final unresolved = builders.values
-        .where((builder) => builder.uri == null)
+        .where(_needsSourceDetails)
         .toList()
       ..sort((a, b) => a.number.compareTo(b.number));
 
-    for (var index = 0; index < orderedWithoutId.length; index++) {
-      final source = orderedWithoutId[index];
-      final builder = index < unresolved.length
-          ? unresolved[index]
-          : builders.putIfAbsent(
-              builders.length + 1,
-              () => _CitationBuilder(builders.length + 1),
-            );
-      builder.uri ??= source.uri;
-      builder.label ??= _cleanLabel(source.name);
-      builder.context ??= _excerptContext(source.excerpt);
+    if (unresolved.isEmpty) return;
+
+    final leftoverSources = List<ChatSource>.from(orderedWithoutId);
+
+    for (final builder in unresolved) {
+      ChatSource? source;
+      if (builder.number >= 1 && builder.number <= sources.length) {
+        final candidate = sources[builder.number - 1];
+        final candidateId = candidate.citationId;
+        if (candidateId == null || candidateId == builder.number) {
+          source = candidate;
+        }
+      }
+      if (source == null && leftoverSources.isNotEmpty) {
+        source = leftoverSources.removeAt(0);
+      }
+      if (source == null) continue;
+      _fillFromSource(builder, source);
     }
+  }
+
+  static bool _needsSourceDetails(_CitationBuilder builder) {
+    return builder.label == null &&
+        builder.bibliographicText == null &&
+        builder.excerpts.isEmpty;
+  }
+
+  static void _fillFromSource(_CitationBuilder builder, ChatSource source) {
+    builder.uri ??= source.uri;
+    builder.label ??= _cleanLabel(source.name) ??
+        _titleFromBibliographic(source.bibliographicText);
+    builder.bibliographicText ??= source.bibliographicText ??
+        _fallbackBibliographic(source);
+    if (builder.excerpts.isEmpty) {
+      builder.excerpts = source.excerpts.isNotEmpty
+          ? source.excerpts
+          : (source.excerpt == null ? const [] : [source.excerpt!]);
+    }
+    builder.context ??= _excerptContext(source.excerpt);
+  }
+
+  static String? _titleFromBibliographic(String? bibliographic) {
+    final text = bibliographic?.trim() ?? '';
+    if (text.isEmpty) return null;
+    final firstSentence = text.split(RegExp(r'(?<=\.)\s+')).first.trim();
+    if (firstSentence.isEmpty || _safeHttpUri(firstSentence) != null) {
+      return null;
+    }
+    return firstSentence.replaceAll(RegExp(r'\.$'), '');
+  }
+
+  static String? _fallbackBibliographic(ChatSource source) {
+    final name = _cleanLabel(source.name);
+    if (name != null && source.uri != null) {
+      return '$name\n${source.uri}';
+    }
+    return name ?? source.uri?.toString();
   }
 
   static List<Uri> _sourceUris(List<ToolStatus> statusHistory) {
@@ -254,4 +319,6 @@ class _CitationBuilder {
   Uri? uri;
   String? label;
   String? context;
+  String? bibliographicText;
+  List<String> excerpts = const [];
 }

@@ -7,7 +7,6 @@ import 'entities/chat_tool.dart';
 import 'entities/chat_file.dart';
 import 'entities/chat_folder.dart';
 import 'entities/chat_knowledge.dart';
-import 'entities/chat_tag.dart';
 import 'chat_repository.dart';
 
 abstract class ChatUseCase {
@@ -23,17 +22,7 @@ abstract class ChatUseCase {
 
   Future<List<Chat>> fetchArchivedChats();
 
-  Future<List<Chat>> fetchChatsByTag(String tagName);
-
   Future<List<Chat>> fetchChatsByFolder(String folderId);
-
-  Future<List<ChatTag>> fetchAllTags();
-
-  Future<List<ChatTag>> fetchChatTags(String chatId);
-
-  Future<List<ChatTag>> addChatTag(String chatId, String tagName);
-
-  Future<List<ChatTag>> removeChatTag(String chatId, String tagName);
 
   Future<List<ChatFolder>> fetchFolders();
 
@@ -147,33 +136,8 @@ class ChatUseCaseImpl implements ChatUseCase {
   }
 
   @override
-  Future<List<Chat>> fetchChatsByTag(String tagName) {
-    return repository.fetchChatsByTag(tagName);
-  }
-
-  @override
   Future<List<Chat>> fetchChatsByFolder(String folderId) {
     return repository.fetchChatsByFolder(folderId);
-  }
-
-  @override
-  Future<List<ChatTag>> fetchAllTags() {
-    return repository.fetchAllTags();
-  }
-
-  @override
-  Future<List<ChatTag>> fetchChatTags(String chatId) {
-    return repository.fetchChatTags(chatId);
-  }
-
-  @override
-  Future<List<ChatTag>> addChatTag(String chatId, String tagName) {
-    return repository.addChatTag(chatId, tagName);
-  }
-
-  @override
-  Future<List<ChatTag>> removeChatTag(String chatId, String tagName) {
-    return repository.removeChatTag(chatId, tagName);
   }
 
   @override

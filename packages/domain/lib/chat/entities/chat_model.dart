@@ -94,9 +94,12 @@ class ChatModel {
     };
   }
 
+  static const String defaultModelId = 'composites-ai-2026-02-23';
+  static const String defaultModelName = 'CompositesAI';
+
   static ChatModel fallback({
-    String id = 'composites-ai-2026-02-23',
-    String name = 'CompositesAI',
+    String id = defaultModelId,
+    String name = defaultModelName,
   }) {
     return ChatModel(
       id: id,

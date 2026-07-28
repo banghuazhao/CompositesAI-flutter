@@ -8,5 +8,4 @@ export 'chat/entities/chat_tool.dart';
 export 'chat/entities/chat_file.dart';
 export 'chat/entities/chat_folder.dart';
 export 'chat/entities/chat_knowledge.dart';
-export 'chat/entities/chat_tag.dart';
 export 'chat/chat_use_case.dart';

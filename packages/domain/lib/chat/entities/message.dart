@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import 'chat_file.dart';
+import 'chat_model.dart';
 import 'chat_source.dart';
 import 'chat_stream_event.dart';
 
@@ -40,9 +41,9 @@ class Message {
         statusHistory = List<ToolStatus>.from(statusHistory),
         sources = List<ChatSource>.from(sources),
         files = List<ChatFile>.from(files),
-        models = ["composites-ai-2026-02-23"],
-        model = "composites-ai-2026-02-23",
-        modelName = role == 'assistant' ? 'CompositeAI' : '';
+        models = [ChatModel.defaultModelId],
+        model = ChatModel.defaultModelId,
+        modelName = role == 'assistant' ? ChatModel.defaultModelName : '';
 
   Message.fromJson(Map<String, dynamic> json)
       : id = json['id'] ?? '',

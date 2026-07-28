@@ -19,7 +19,7 @@ class ChatViewModel extends ChangeNotifier {
   /// Matches backend: skip = (page - 1) * 60, limit 60 when page is set.
   static const int chatListPageSize = 60;
   static const int suggestedQuestionCount = 5;
-  static const String _nonAdminDefaultModelId = 'composites-ai-2026-02-23';
+  static const String _nonAdminDefaultModelId = ChatModel.defaultModelId;
   static const String _fallbackDefaultModelId = 'gpt-4.1';
   static const List<String> _fallbackDefaultQuestions = [
     'What are the main differences between carbon-fiber and glass-fiber composites?',

@@ -8,7 +8,6 @@ import 'entities/chat_file.dart';
 import 'entities/feedback_response.dart';
 import 'entities/chat_folder.dart';
 import 'entities/chat_knowledge.dart';
-import 'entities/chat_tag.dart';
 
 abstract class ChatRepository {
   /// GET /api/v1/chats/ — unpinned chats, ordered by `updated_at` (optional `?page=`).
@@ -26,17 +25,7 @@ abstract class ChatRepository {
 
   Future<List<Chat>> fetchArchivedChats();
 
-  Future<List<Chat>> fetchChatsByTag(String tagName);
-
   Future<List<Chat>> fetchChatsByFolder(String folderId);
-
-  Future<List<ChatTag>> fetchAllTags();
-
-  Future<List<ChatTag>> fetchChatTags(String chatId);
-
-  Future<List<ChatTag>> addChatTag(String chatId, String tagName);
-
-  Future<List<ChatTag>> removeChatTag(String chatId, String tagName);
 
   Future<List<ChatFolder>> fetchFolders();
 
