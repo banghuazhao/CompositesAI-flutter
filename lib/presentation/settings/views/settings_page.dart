@@ -214,15 +214,26 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ]),
               const SizedBox(height: 32),
-              GestureDetector(
-                onTap: () => viewModel.handleTap(() async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => QASettingsPage()),
-                  );
-                  viewModel.fetchAuthSessionNew();
-                }),
-                child: Center(
+              if (kDebugMode)
+                GestureDetector(
+                  onTap: () => viewModel.handleTap(() async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => QASettingsPage()),
+                    );
+                    viewModel.fetchAuthSessionNew();
+                  }),
+                  child: Center(
+                    child: Text(
+                      'Version ${viewModel.version}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Center(
                   child: Text(
                     'Version ${viewModel.version}',
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -230,7 +241,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                 ),
-              ),
               const SizedBox(height: 24),
             ],
           ),

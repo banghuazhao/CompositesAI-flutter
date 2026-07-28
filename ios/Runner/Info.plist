@@ -58,11 +58,11 @@
 			<true/>
 		</dict>
 		<key>NSUserTrackingUsageDescription</key>
-		<string>This identifier will be used to analyze app usage, diagnose crashes, and improve app performance across apps and websites you use.</string>
+		<string>CompositesAI uses your device's advertising identifier to measure which features people open after installing the app — for example, whether new users start with Chat or the laminate calculators — so we can improve onboarding and feature discovery.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>We use your photo library to let you choose a profile picture or attach images to your chat.</string>
+		<string>CompositesAI needs access to your photo library so you can attach images in Chat — for example, a photo of a laminate layup sketch when asking about stacking sequence.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>We use your camera to let you take and attach photos to your chat.</string>
+		<string>CompositesAI needs camera access so you can take photos to attach in Chat — for example, capturing a material data sheet to ask about fiber volume fraction.</string>
 		<key>SKAdNetworkItems</key>
 		<array>
 			<dict>
@@ -237,11 +237,13 @@
 		<false/>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>NSMicrophoneUsageDescription</key>
-		<string>Microphone access is needed for voice input in the chat.</string>
+		<string>CompositesAI needs microphone access for voice input in Chat — for example, so you can dictate a question about lamina stiffness instead of typing it.</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
-		<string>Speech recognition is used to convert your voice to text in the chat.</string>
+		<string>CompositesAI uses speech recognition to turn your spoken questions into text in Chat — for example, converting “calculate ABD matrix for a cross-ply laminate” into a chat message.</string>
 	</dict>
 </plist>
