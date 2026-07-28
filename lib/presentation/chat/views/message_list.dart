@@ -340,6 +340,7 @@ class _MessageListState extends State<MessageList> {
     final citations = ChatCitationParser.parse(
       markdown: message.content,
       statusHistory: message.statusHistory,
+      sources: message.sources,
     );
 
     if (message.content.isEmpty && statusWidget == null) {

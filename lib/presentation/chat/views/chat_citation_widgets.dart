@@ -257,7 +257,9 @@ class _CitationDetails extends StatelessWidget {
               ),
               child: SelectableText(
                 citation.uri?.toString() ??
-                    'The response did not include a link for this citation.',
+                    (citation.label?.isNotEmpty == true
+                        ? 'No external link is available for “${citation.label}”.'
+                        : 'The response did not include a link for this citation.'),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

@@ -1,17 +1,22 @@
+import 'chat_source.dart';
+
 class ChatStreamEvent {
   final String content;
   final bool replacesContent;
   final ToolStatus? status;
+  final List<ChatSource> sources;
   final String? error;
 
   const ChatStreamEvent({
     this.content = '',
     this.replacesContent = false,
     this.status,
+    this.sources = const [],
     this.error,
   });
 
   bool get hasContent => content.isNotEmpty;
+  bool get hasSources => sources.isNotEmpty;
 }
 
 class ToolStatus {

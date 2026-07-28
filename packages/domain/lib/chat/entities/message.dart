@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import 'chat_file.dart';
+import 'chat_source.dart';
 import 'chat_stream_event.dart';
 
 class Message {
@@ -16,6 +17,7 @@ class Message {
   int thinkingElapsed = 0;
   bool isDone = false;
   List<ToolStatus> statusHistory = [];
+  List<ChatSource> sources = [];
   List<ChatFile> files = [];
   // Client-side cache for evaluation update.
   // Filled after first POST /evaluations/feedback returns FeedbackModel.id.
@@ -31,10 +33,12 @@ class Message {
       this.parentId,
       this.childrenIds = const [],
       List<ChatFile> files = const [],
-      List<ToolStatus> statusHistory = const []})
+      List<ToolStatus> statusHistory = const [],
+      List<ChatSource> sources = const []})
       : id = const Uuid().v4(),
         timestamp = DateTime.now().microsecondsSinceEpoch ~/ 1000,
         statusHistory = List<ToolStatus>.from(statusHistory),
+        sources = List<ChatSource>.from(sources),
         files = List<ChatFile>.from(files),
         models = ["composites-ai-2026-02-23"],
         model = "composites-ai-2026-02-23",
@@ -54,6 +58,7 @@ class Message {
         isDone = json['done'] ?? false,
         files = _parseFiles(json),
         statusHistory = _parseStatusHistory(json),
+        sources = _parseSources(json),
         feedbackId = json['feedbackId'] ?? json['feedback_id'],
         feedbackRating = json['feedbackRating'] ?? json['feedback_rating'],
         feedbackDetailsRating =
@@ -87,6 +92,9 @@ class Message {
       if (statusHistory.isNotEmpty) {
         data['statusHistory'] =
             statusHistory.map((status) => status.toJson()).toList();
+      }
+      if (sources.isNotEmpty) {
+        data['sources'] = sources.map((source) => source.toJson()).toList();
       }
       if (feedbackId != null) {
         data['feedbackId'] = feedbackId;
@@ -136,14 +144,24 @@ class Message {
       for (final raw in rawStatuses) {
         if (raw is Map<String, dynamic>) {
           statuses.add(ToolStatus.fromJson(raw));
+        } else if (raw is Map) {
+          statuses.add(ToolStatus.fromJson(Map<String, dynamic>.from(raw)));
         }
       }
     }
     if (rawStatus is Map<String, dynamic>) {
       statuses.add(ToolStatus.fromJson(rawStatus));
+    } else if (rawStatus is Map) {
+      statuses.add(ToolStatus.fromJson(Map<String, dynamic>.from(rawStatus)));
     }
 
     return statuses;
+  }
+
+  static List<ChatSource> _parseSources(Map<String, dynamic> json) {
+    final fromSources = ChatSource.listFromPayload(json['sources']);
+    final fromCitations = ChatSource.listFromPayload(json['citations']);
+    return ChatSource.merge(fromSources, fromCitations);
   }
 
   static List<ChatFile> _parseFiles(Map<String, dynamic> json) {
@@ -151,8 +169,8 @@ class Message {
     if (rawFiles is! List) return <ChatFile>[];
 
     return rawFiles
-        .whereType<Map<String, dynamic>>()
-        .map(ChatFile.fromJson)
+        .whereType<Map>()
+        .map((raw) => ChatFile.fromJson(Map<String, dynamic>.from(raw)))
         .where((file) => file.id.isNotEmpty || file.url.isNotEmpty)
         .toList();
   }

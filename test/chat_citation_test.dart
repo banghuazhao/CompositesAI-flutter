@@ -1,3 +1,4 @@
+import 'package:domain/chat/entities/chat_source.dart';
 import 'package:domain/chat/entities/chat_stream_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +30,43 @@ void main() {
       expect(citations[1].number, 2);
       expect(citations[1].uri, Uri.parse('https://example.com/paper'));
       expect(citations[0].context, contains('composite rotor blades'));
+    });
+
+    test('maps citation markers to message source URLs by citation_id', () {
+      final citations = ChatCitationParser.parse(
+        markdown: 'Laminate stiffness is orthotropic [1] and [2].',
+        sources: [
+          ChatSource.fromJson({
+            'citation_id': 1,
+            'source': {'name': 'NASA Technical Reports'},
+            'metadata': [
+              {
+                'name': 'NASA Technical Reports',
+                'source': 'https://ntrs.nasa.gov/citations/example',
+                'citation_id': 1,
+              },
+            ],
+            'document': ['Composite rotor blades exhibit...'],
+          }),
+          ChatSource.fromJson({
+            'citation_id': 2,
+            'source': {
+              'name': 'Example Paper',
+              'url': 'https://example.com/paper',
+            },
+            'metadata': [
+              {'name': 'Example Paper', 'citation_id': 2},
+            ],
+          }),
+        ],
+      );
+
+      expect(citations, hasLength(2));
+      expect(citations[0].uri?.host, 'ntrs.nasa.gov');
+      expect(citations[0].displayTitle, 'NASA Technical Reports');
+      expect(citations[0].context, contains('Composite rotor blades'));
+      expect(citations[1].uri, Uri.parse('https://example.com/paper'));
+      expect(citations[1].displayTitle, 'Example Paper');
     });
 
     test('normalizes supported citation formats without deleting markers', () {

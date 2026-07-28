@@ -5,6 +5,7 @@ import 'package:domain/chat/chat_use_case.dart';
 import 'package:domain/chat/entities/chat.dart';
 import 'package:domain/chat/entities/chat_file.dart';
 import 'package:domain/chat/entities/chat_model.dart';
+import 'package:domain/chat/entities/chat_source.dart';
 import 'package:domain/chat/entities/chat_stream_event.dart';
 import 'package:domain/chat/entities/message.dart';
 import 'package:flutter/foundation.dart';
@@ -264,6 +265,13 @@ class ChatConversationController extends ChangeNotifier {
           final status = response.status;
           if (status != null && !status.hidden) {
             assistantMessage.statusHistory.add(status);
+          }
+
+          if (response.hasSources) {
+            assistantMessage.sources = ChatSource.merge(
+              assistantMessage.sources,
+              response.sources,
+            );
           }
 
           if (response.hasContent) {

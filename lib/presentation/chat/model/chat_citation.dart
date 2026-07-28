@@ -1,3 +1,4 @@
+import 'package:domain/chat/entities/chat_source.dart';
 import 'package:domain/chat/entities/chat_stream_event.dart';
 import 'package:flutter/foundation.dart';
 
@@ -51,6 +52,7 @@ class ChatCitationParser {
   static List<ChatCitation> parse({
     required String markdown,
     List<ToolStatus> statusHistory = const [],
+    List<ChatSource> sources = const [],
   }) {
     final builders = <int, _CitationBuilder>{};
 
@@ -86,12 +88,22 @@ class ChatCitationParser {
       }
     });
 
+    _applyMessageSources(builders, sources);
+
     final sourceUris = _sourceUris(statusHistory);
-    final context = _sourceContext(statusHistory);
+    final context = _sourceContext(statusHistory, sources);
     if (builders.isEmpty) {
       for (var index = 0; index < sourceUris.length; index++) {
         builders[index + 1] = _CitationBuilder(index + 1)
           ..uri = sourceUris[index];
+      }
+      if (builders.isEmpty) {
+        for (final source in sources) {
+          final number = source.citationId ?? builders.length + 1;
+          builders.putIfAbsent(number, () => _CitationBuilder(number))
+            ..uri ??= source.uri
+            ..label ??= _cleanLabel(source.name);
+        }
       }
     } else {
       final assignedUris = builders.values
@@ -118,7 +130,7 @@ class ChatCitationParser {
             number: builder.number,
             uri: builder.uri,
             label: builder.label,
-            context: context,
+            context: builder.context ?? context,
           ),
         )
         .toList(growable: false);
@@ -143,6 +155,46 @@ class ChatCitationParser {
         .trimRight();
   }
 
+  static void _applyMessageSources(
+    Map<int, _CitationBuilder> builders,
+    List<ChatSource> sources,
+  ) {
+    final orderedWithoutId = <ChatSource>[];
+
+    for (final source in sources) {
+      final citationId = source.citationId;
+      if (citationId == null) {
+        orderedWithoutId.add(source);
+        continue;
+      }
+      final builder =
+          builders.putIfAbsent(citationId, () => _CitationBuilder(citationId));
+      builder.uri ??= source.uri;
+      builder.label ??= _cleanLabel(source.name);
+      builder.context ??= _excerptContext(source.excerpt);
+    }
+
+    if (orderedWithoutId.isEmpty) return;
+
+    final unresolved = builders.values
+        .where((builder) => builder.uri == null)
+        .toList()
+      ..sort((a, b) => a.number.compareTo(b.number));
+
+    for (var index = 0; index < orderedWithoutId.length; index++) {
+      final source = orderedWithoutId[index];
+      final builder = index < unresolved.length
+          ? unresolved[index]
+          : builders.putIfAbsent(
+              builders.length + 1,
+              () => _CitationBuilder(builders.length + 1),
+            );
+      builder.uri ??= source.uri;
+      builder.label ??= _cleanLabel(source.name);
+      builder.context ??= _excerptContext(source.excerpt);
+    }
+  }
+
   static List<Uri> _sourceUris(List<ToolStatus> statusHistory) {
     final seen = <String>{};
     final uris = <Uri>[];
@@ -155,14 +207,26 @@ class ChatCitationParser {
     return uris;
   }
 
-  static String? _sourceContext(List<ToolStatus> statusHistory) {
+  static String? _sourceContext(
+    List<ToolStatus> statusHistory,
+    List<ChatSource> sources,
+  ) {
     for (final status in statusHistory.reversed) {
       final query = status.query.trim();
       if (query.isNotEmpty) return 'Referenced while researching “$query”.';
       final description = status.description.trim();
       if (description.isNotEmpty) return description;
     }
+    for (final source in sources) {
+      final excerpt = _excerptContext(source.excerpt);
+      if (excerpt != null) return excerpt;
+    }
     return null;
+  }
+
+  static String? _excerptContext(String? excerpt) {
+    final text = excerpt?.trim() ?? '';
+    return text.isEmpty ? null : text;
   }
 
   static Uri? _safeHttpUri(String? value) {
@@ -189,4 +253,5 @@ class _CitationBuilder {
   final int number;
   Uri? uri;
   String? label;
+  String? context;
 }

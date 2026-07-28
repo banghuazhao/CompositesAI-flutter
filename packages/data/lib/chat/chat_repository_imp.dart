@@ -12,6 +12,7 @@ import 'package:domain/chat/entities/feedback_response.dart';
 import 'package:domain/chat/entities/chat_folder.dart';
 import 'package:domain/chat/entities/chat_knowledge.dart';
 import 'package:domain/chat/entities/message.dart';
+import 'package:domain/chat/entities/chat_source.dart';
 import 'package:domain/chat/entities/chat_tag.dart';
 import 'package:domain/chat/entities/chat_tool.dart';
 import 'package:domain/chat/entities/chat_file.dart';
@@ -1229,6 +1230,10 @@ class ChatRepositoryImpl implements ChatRepository {
     if (type == 'status' && eventData is Map<String, dynamic>) {
       return ChatStreamEvent(status: ToolStatus.fromJson(eventData));
     }
+    if ((type == 'source' || type == 'citation') && eventData != null) {
+      final sources = ChatSource.listFromPayload(eventData);
+      return sources.isEmpty ? null : ChatStreamEvent(sources: sources);
+    }
     if ((type == 'chat:message:delta' || type == 'message') &&
         eventData is Map<String, dynamic>) {
       final content = eventData['content']?.toString() ?? '';
@@ -1254,15 +1259,24 @@ class ChatRepositoryImpl implements ChatRepository {
       return ChatStreamEvent(error: error.toString());
     }
 
+    final sources = ChatSource.merge(
+      ChatSource.listFromPayload(data['sources']),
+      ChatSource.listFromPayload(data['citations']),
+    );
+
     final content = data['content'];
     if (content is String && content.isNotEmpty) {
-      return ChatStreamEvent(content: content, replacesContent: true);
+      return ChatStreamEvent(
+        content: content,
+        replacesContent: true,
+        sources: sources,
+      );
     }
 
     final messageDelta = MessageDeltaDTO.fromJson(data);
     final deltaContent = messageDelta.choice.delta.content;
     if (deltaContent != null && deltaContent.isNotEmpty) {
-      return ChatStreamEvent(content: deltaContent);
+      return ChatStreamEvent(content: deltaContent, sources: sources);
     }
 
     final choices = data['choices'];
@@ -1273,10 +1287,17 @@ class ChatRepositoryImpl implements ChatRepository {
         if (message is Map<String, dynamic>) {
           final messageContent = message['content'];
           if (messageContent is String && messageContent.isNotEmpty) {
-            return ChatStreamEvent(content: messageContent);
+            return ChatStreamEvent(
+              content: messageContent,
+              sources: sources,
+            );
           }
         }
       }
+    }
+
+    if (sources.isNotEmpty) {
+      return ChatStreamEvent(sources: sources);
     }
 
     return null;
