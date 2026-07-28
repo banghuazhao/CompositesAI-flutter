@@ -254,14 +254,14 @@ class _ChatScreenState extends State<ChatScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.calculate_outlined),
-                          tooltip: 'Composite Calculators',
-                          onPressed: _openCompositeCalculators,
-                        ),
-                        IconButton(
                           icon: const Icon(Icons.manage_accounts),
                           tooltip: "Sign In",
                           onPressed: _openLogin,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.calculate_outlined),
+                          tooltip: 'Composite Calculators',
+                          onPressed: _openCompositeCalculators,
                         ),
                       ],
                     );
@@ -1283,7 +1283,7 @@ class _ChatScreenState extends State<ChatScreen>
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: const Text(
-                "Use the composite calculators without signing in, or sign in to access chat.",
+                "Sign in to access chat, or use the composite calculators without signing in.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
@@ -1293,18 +1293,18 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             const SizedBox(height: 30),
             FilledButton.icon(
-              onPressed: _openCompositeCalculators,
-              icon: const Icon(Icons.calculate_outlined, size: 22),
+              onPressed: _openLogin,
+              icon: const Icon(Icons.manage_accounts, size: 22),
               label: const Text(
-                "Open Composite Calculators",
+                'Sign In to Chat',
                 style: TextStyle(fontSize: 16),
               ),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: _openLogin,
-              icon: const Icon(Icons.manage_accounts, size: 22),
-              label: const Text('Sign In to Chat'),
+              onPressed: _openCompositeCalculators,
+              icon: const Icon(Icons.calculate_outlined, size: 22),
+              label: const Text('Open Composite Calculators'),
             ),
           ],
         ),
