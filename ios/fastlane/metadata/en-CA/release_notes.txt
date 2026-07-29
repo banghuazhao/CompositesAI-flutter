@@ -1,4 +1,5 @@
-• Improved default AI chat experience with refreshed model configuration and suggested questions
-• Fixed camera photo attachments in chat
-• Removed an unnecessary tracking permission prompt
-• Bug fixes and performance improvements
+• See cited paper names on chat citation cards
+• Follow Thinking and knowledge-search progress while waiting for answers
+• Clearer sign-in prompt for guests, plus a simpler chat drawer
+• More reliable chat error handling
+• Bug fixes and polish

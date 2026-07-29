@@ -47,7 +47,7 @@ The app is available for iOS, Android, and the web at [compositesai.com](https:/
 
 ## Requirements
 
-- Flutter stable. CI currently uses Flutter `3.41.7`.
+- Flutter stable. CI currently uses Flutter `3.44.8`.
 - Dart `>=3.3.0 <4.0.0`.
 - Xcode and CocoaPods for iOS builds.
 - Android Studio or Android SDK tooling for Android builds.

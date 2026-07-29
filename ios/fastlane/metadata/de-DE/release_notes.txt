@@ -1,4 +1,5 @@
-• Verbessertes Standard-KI-Chat-Erlebnis mit aktualisierter Modellkonfiguration und Vorschlagsfragen
-• Kamera-Fotoanhänge im Chat repariert
-• Unnötige Aufforderung zur Nachverfolgungserlaubnis entfernt
-• Fehlerbehebungen und Leistungsverbesserungen
+• Namen zitierter Papers auf Chat-Zitationskarten anzeigen
+• Thinking- und Wissenssuche-Fortschritt während des Wartens verfolgen
+• Klarerer Anmeldehinweis für Gäste und einfachere Chat-Seitenleiste
+• Zuverlässigere Fehlerbehandlung im Chat
+• Fehlerbehebungen und Verbesserungen

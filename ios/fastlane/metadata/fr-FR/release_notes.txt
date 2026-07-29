@@ -1,4 +1,5 @@
-• Expérience de chat IA par défaut améliorée avec une configuration de modèle et des questions suggérées actualisées
-• Correction des pièces jointes photo par appareil photo dans le chat
-• Suppression d'une demande d'autorisation de suivi inutile
-• Corrections de bugs et améliorations des performances
+• Affichez les noms des articles cités sur les cartes de citation
+• Suivez la progression Thinking et de recherche de connaissances pendant l’attente
+• Invitation à la connexion plus claire pour les invités et tiroir de chat simplifié
+• Gestion des erreurs de chat plus fiable
+• Corrections de bugs et améliorations

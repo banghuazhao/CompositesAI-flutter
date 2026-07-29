@@ -28,8 +28,8 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          # Keep in sync with local / team Flutter (Dart 3.11.x SDK).
-          flutter-version: '3.41.7'
+          # Keep in sync with local / team Flutter (meta ^1.18 via flutter_test).
+          flutter-version: '3.44.8'
           cache: true
 
       - name: Install dependencies

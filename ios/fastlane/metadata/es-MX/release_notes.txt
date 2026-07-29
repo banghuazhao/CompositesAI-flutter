@@ -1,4 +1,5 @@
-• Experiencia de chat con IA predeterminada mejorada, con configuración de modelo y preguntas sugeridas actualizadas
-• Se corrigieron los archivos adjuntos de fotos de la cámara en el chat
-• Se eliminó una solicitud de permiso de seguimiento innecesaria
-• Corrección de errores y mejoras de rendimiento
+• Consulta los nombres de los artículos citados en las tarjetas de citas
+• Sigue el progreso de Thinking y de búsqueda de conocimiento mientras esperas
+• Inicio de sesión más claro para invitados y panel de chat más simple
+• Manejo de errores del chat más confiable
+• Correcciones de errores y mejoras
