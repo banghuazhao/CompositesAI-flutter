@@ -2,7 +2,12 @@
 
 ## Download CompositesAI
 
-[Download CompositesAI from the App Store](https://apps.apple.com/us/app/compositesai-ai-for-engineers/id1297825946) · [Download CompositesAI from Google Play](https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&hl=en_US) · [Use CompositesAI on the web](https://compositesai.com/)
+<p>
+  <a href="https://apps.apple.com/us/app/compositesai-ai-for-engineers/id1297825946"><img src="https://img.shields.io/badge/Download_on_the_App_Store-000000?style=for-the-badge&amp;logo=apple&amp;logoColor=white" alt="Download CompositesAI from the App Store"></a>
+  <a href="https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp&amp;hl=en_US"><img src="https://img.shields.io/badge/Get_it_on_Google_Play-000000?style=for-the-badge&amp;logo=googleplay&amp;logoColor=white" alt="Download CompositesAI from Google Play"></a>
+</p>
+
+[Use CompositesAI on the web](https://compositesai.com/)
 
 [![Version](https://img.shields.io/github/v/release/banghuazhao/CompositesAI-flutter)](https://github.com/banghuazhao/CompositesAI-flutter/releases)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web-blue)](#)
