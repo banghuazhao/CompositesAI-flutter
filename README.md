@@ -16,8 +16,6 @@
 
 CompositesAI is an AI-powered platform designed specifically for the composites engineering industry. Ask questions about material design, calculations, and process optimization in natural language — and get instant, expert-level answers.
 
-The app is available for iOS, Android, and the web at [compositesai.com](https://compositesai.com/).
-
 ## Features
 
 - AI chat assistant for composites engineering — ask anything and get domain-specific answers instantly.
