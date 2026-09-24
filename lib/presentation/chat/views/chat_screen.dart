@@ -2,6 +2,7 @@ import 'package:domain/auth/entities/user.dart';
 import 'package:domain/chat/entities/chat_file.dart';
 import 'package:domain/chat/entities/chat_knowledge.dart';
 import 'package:domain/chat/entities/chat_model.dart';
+import 'package:domain/chat/entities/message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,6 +16,8 @@ import '../../auth/login_page.dart';
 import '../../conponents/base64-image.dart';
 import '../../settings/views/settings_page.dart';
 import '../../tools/page/tool_page.dart';
+import '../../../util/export/file_share.dart';
+import '../model/chat_export.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_error_snack_bar.dart';
 import 'message_list.dart';
@@ -110,6 +113,8 @@ class _KnowledgePickerCard extends StatelessWidget {
   }
 }
 
+enum _ExportFormat { markdown, pdf }
+
 class _ChatScreenState extends State<ChatScreen>
     with
         AutomaticKeepAliveClientMixin,
@@ -130,6 +135,7 @@ class _ChatScreenState extends State<ChatScreen>
   // Voice input
   final SpeechToText _speech = SpeechToText();
   bool _isListening = false;
+  bool _isExporting = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -270,6 +276,9 @@ class _ChatScreenState extends State<ChatScreen>
                     return Row(
                       mainAxisSize: MainAxisSize.min, // Keep it compact
                       children: [
+                        if (viewModel.selectedChat != null &&
+                            viewModel.messages.isNotEmpty)
+                          _buildExportMenu(),
                         // Avatar or Profile Button
                         GestureDetector(
                           onTap: () async {
@@ -383,6 +392,77 @@ class _ChatScreenState extends State<ChatScreen>
         );
       },
     );
+  }
+
+  Widget _buildExportMenu() {
+    return PopupMenuButton<_ExportFormat>(
+      tooltip: 'Export conversation',
+      icon: _isExporting
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.ios_share_rounded),
+      enabled: !_isExporting && !viewModel.isSendingMessage,
+      onSelected: _exportConversation,
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: _ExportFormat.markdown,
+          child: ListTile(
+            leading: Icon(Icons.notes_rounded),
+            title: Text('Share as Markdown'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: _ExportFormat.pdf,
+          child: ListTile(
+            leading: Icon(Icons.picture_as_pdf_outlined),
+            title: Text('Share as PDF'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _exportConversation(_ExportFormat format) async {
+    final chat = viewModel.selectedChat;
+    if (chat == null || _isExporting) return;
+    final messages = List<Message>.from(viewModel.messages);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isExporting = true);
+    try {
+      switch (format) {
+        case _ExportFormat.markdown:
+          await FileShare.shareText(
+            context,
+            text: ChatExport.toMarkdown(title: chat.title, messages: messages),
+            fileName: FileShare.safeFileName(chat.title, 'md'),
+            mimeType: 'text/markdown',
+            subject: chat.title,
+          );
+        case _ExportFormat.pdf:
+          final bytes =
+              await ChatExport.toPdf(title: chat.title, messages: messages);
+          if (!mounted) return;
+          await FileShare.shareBytes(
+            context,
+            bytes: bytes,
+            fileName: FileShare.safeFileName(chat.title, 'pdf'),
+            mimeType: 'application/pdf',
+            subject: chat.title,
+          );
+      }
+    } catch (error) {
+      debugPrint('Export conversation failed: $error');
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not export this conversation.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   Widget inputBar() {

@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:infrastructure/in_app_reviewer_helper.dart';
@@ -37,6 +39,12 @@ void main() async {
   InAppReviewHelper.checkAndAskForReview();
 
   await SharedPreferencesHelper.init();
+
+  LicenseRegistry.addLicense(() async* {
+    final license =
+        await rootBundle.loadString('assets/fonts/DejaVu-LICENSE.txt');
+    yield LicenseEntryWithLineBreaks(const ['DejaVu fonts'], license);
+  });
 
   initInjection();
 
