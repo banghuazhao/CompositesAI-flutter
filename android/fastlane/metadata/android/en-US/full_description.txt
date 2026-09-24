@@ -1,23 +1,3 @@
-CompositesAI is an AI-powered platform designed specifically for the composites engineering industry. Ask questions about material design, calculations, and process optimization in natural language — and get instant, expert-level answers.
+CompositesAI is an AI-powered expert system for composite materials and structures. It brings together trusted engineering knowledge, expert insight, and advanced simulation tools in an easy-to-use conversational interface.
 
-AI Chat Assistant:
-• Ask anything about composites engineering and get domain-specific answers instantly
-• Voice input — dictate your questions hands-free
-• Attach images and files to your conversations for deeper analysis
-• Use integrated tools for more accurate, context-aware answers
-• Share, pin, and manage your chat history
-
-Composite Material Calculators:
-1. Calculate effective beam stiffness matrix for beam model
-2. Calculate A, B, D matrices, transverse shear stiffness matrix, in-plane properties, and flexural properties for the plate model
-3. Calculate effective solid stiffness matrix and engineering constants for the solid model
-4. Calculate the coefficient of thermal expansion (CTE) for thermoelastic analysis
-5. Use Gmsh as a mesh generator to generate mesh and images
-
-Supported Composite Models:
-• Laminate
-• Unidirectional fibre-reinforced composite
-• Honeycomb sandwich structure
-• Particle reinforced composite
-
-We are constantly adding more functionalities to this app.
+Users can ask technical questions in natural language, receive sourced and traceable answers, and connect directly with physics-based and machine-learning simulation tools. CompositesAI helps engineers, researchers, educators, and students access composite knowledge more efficiently and make better-informed engineering decisions.

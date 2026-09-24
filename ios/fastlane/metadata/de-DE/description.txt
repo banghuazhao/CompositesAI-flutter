@@ -1,16 +1,3 @@
-CompositesAI ist eine KI-gestützte Plattform, die speziell für die Verbundwerkstoffindustrie entwickelt wurde. Stellen Sie Fragen zu Materialdesign, Berechnungen und Prozessoptimierung in natürlicher Sprache — und erhalten Sie sofort Antworten auf Expertenebene.
+CompositesAI ist ein KI-gestütztes Expertensystem für Verbundwerkstoffe und -strukturen. Es vereint verlässliches Ingenieurwissen, Expertenkenntnisse und fortschrittliche Simulationswerkzeuge in einer einfach nutzbaren Konversationsoberfläche.
 
-KI-Chat-Assistent:
-• Fragen Sie alles rund um Verbundwerkstoffe und erhalten Sie domänenspezifische Antworten
-• Spracheingabe — Fragen freihändig diktieren
-• Bilder und Dateien an Gespräche anhängen
-• Chatverlauf teilen, anheften und verwalten
-
-Verbundwerkstoff-Rechner:
-1. Effektive Balkensteifigkeitsmatrix für das Balkenmodell
-2. A-, B-, D-Matrizen, Querschubsteifigkeitsmatrix, ebene Eigenschaften und Biegeeigenschaften für das Plattenmodell
-3. Effektive Vollsteifigkeitsmatrix und Ingenieurkonstanten für das Festkörpermodell
-4. Thermische Ausdehnungskoeffizienten (CTE) für die thermoelastische Analyse
-5. Netz- und Bilderzeugung mit Gmsh
-
-Wir fügen dieser App ständig neue Funktionen hinzu.
+Nutzerinnen und Nutzer können technische Fragen in natürlicher Sprache stellen, quellenbasierte und nachvollziehbare Antworten erhalten und direkt mit physikbasierten sowie maschinell lernenden Simulationswerkzeugen arbeiten. CompositesAI hilft Ingenieurinnen und Ingenieuren, Forschenden, Lehrenden und Studierenden, Wissen über Verbundwerkstoffe effizienter zu nutzen und fundiertere technische Entscheidungen zu treffen.
