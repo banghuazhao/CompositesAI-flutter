@@ -11,18 +11,24 @@ import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart'
 import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
+import '../model/calc_report.dart';
+import '../model/unit_system.dart';
+import '../widget/report_export_button.dart';
+
 class LaminateStressStrainResultPage extends StatefulWidget {
   final MechanicalTensor inputTensor;
   final LaminarStressStrainOutput output;
   final double thickness;
   final List<Matrix> Q;
+  final List<ReportSection> inputs;
 
   const LaminateStressStrainResultPage(
       {Key? key,
       required this.inputTensor,
       required this.output,
       required this.thickness,
-      required this.Q})
+      required this.Q,
+      this.inputs = const []})
       : super(key: key);
 
   @override
@@ -60,7 +66,6 @@ class _LaminateStressStrainResultPageState
 
     double totalThickness = widget.Q.length * widget.thickness;
     for (var i = 0; i < widget.Q.length; i++) {
-      print(i);
       double x3Start = widget.thickness * i - totalThickness / 2;
       double x3End = widget.thickness * (i + 1) - totalThickness / 2;
 
@@ -87,7 +92,6 @@ class _LaminateStressStrainResultPageState
       sigma12_datas.add(FlSpot(x3Start, sigma_e_Start[2][0]));
       sigma12_datas.add(FlSpot(x3End, sigma_e_End[2][0]));
     }
-    print(epsilon11_datas);
   }
 
   @override
@@ -108,6 +112,7 @@ class _LaminateStressStrainResultPageState
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
+            ReportExportButton(buildReport: _buildReport),
             IconButton(
               onPressed: () {
                 Navigator.push(
@@ -135,10 +140,93 @@ class _LaminateStressStrainResultPageState
         ));
   }
 
+  CalcReport _buildReport() {
+    final units = context.read<UnitSettings>().units;
+    final tensor = resultTensor;
+    List<(double, double)> points(List<FlSpot> spots) =>
+        [for (final spot in spots) (spot.x, spot.y)];
+    final plyRows = <List<Object?>>[
+      for (var i = 0; i < sigma11_datas.length; i++)
+        [
+          i ~/ 2 + 1,
+          i.isEven ? 'Bottom' : 'Top',
+          sigma11_datas[i].x,
+          epsilon11_datas[i].y,
+          epsilon22_datas[i].y,
+          epsilon12_datas[i].y,
+          sigma11_datas[i].y,
+          sigma22_datas[i].y,
+          sigma12_datas[i].y,
+        ],
+    ];
+    return CalcReport(
+      title: S.of(context).Laminar_stressstrain,
+      units: units,
+      inputs: widget.inputs,
+      results: [
+        tensor is LaminateStress
+            ? ValuesSection('Stress resultants', [
+                ReportEntry('N11', tensor.N11, units.forceResultant),
+                ReportEntry('N22', tensor.N22, units.forceResultant),
+                ReportEntry('N12', tensor.N12, units.forceResultant),
+                ReportEntry('M11', tensor.M11, units.momentResultant),
+                ReportEntry('M22', tensor.M22, units.momentResultant),
+                ReportEntry('M12', tensor.M12, units.momentResultant),
+              ])
+            : ValuesSection('Midplane strains and curvatures', [
+                ReportEntry('ε11', (tensor as LaminateStrain).epsilon11),
+                ReportEntry('ε22', tensor.epsilon22),
+                ReportEntry('ε12', tensor.epsilon12),
+                ReportEntry('κ11', tensor.kappa11, units.curvature),
+                ReportEntry('κ22', tensor.kappa22, units.curvature),
+                ReportEntry('κ12', tensor.kappa12, units.curvature),
+              ]),
+        TableSection(
+          'Ply strains and stresses (laminate axes)',
+          headers: [
+            'Ply',
+            'Surface',
+            'z (${units.length})',
+            'ε11',
+            'ε22',
+            'ε12',
+            'σ11 (${units.stress})',
+            'σ22 (${units.stress})',
+            'σ12 (${units.stress})',
+          ],
+          rows: plyRows,
+        ),
+        ChartSection(
+          'Strains through the thickness',
+          xLabel: 'z (${units.length})',
+          yLabel: 'Strain',
+          series: [
+            ChartSeries('ε11', points(epsilon11_datas)),
+            ChartSeries('ε22', points(epsilon22_datas)),
+            ChartSeries('ε12', points(epsilon12_datas)),
+          ],
+        ),
+        ChartSection(
+          'Stresses through the thickness',
+          xLabel: 'z (${units.length})',
+          yLabel: 'Stress (${units.stress})',
+          series: [
+            ChartSeries('σ11', points(sigma11_datas)),
+            ChartSeries('σ22', points(sigma22_datas)),
+            ChartSeries('σ12', points(sigma12_datas)),
+          ],
+        ),
+      ],
+    );
+  }
+
   List<Widget> get resultItems {
+    final units = context.watch<UnitSettings>().units;
+    final stress = units.stress;
     return [
       ResultStressStrainWidget(
         mechanicalTensor: resultTensor,
+        units: units,
       ),
       LaminarStressStrainLineChat(
         title: "ε11 through the thickness",
@@ -153,15 +241,15 @@ class _LaminateStressStrainResultPageState
         data: epsilon12_datas,
       ),
       LaminarStressStrainLineChat(
-        title: "σ11 through the thickness",
+        title: "σ11 ($stress) through the thickness",
         data: sigma11_datas,
       ),
       LaminarStressStrainLineChat(
-        title: "σ22 through the thickness",
+        title: "σ22 ($stress) through the thickness",
         data: sigma22_datas,
       ),
       LaminarStressStrainLineChat(
-        title: "σ12 through the thickness",
+        title: "σ12 ($stress) through the thickness",
         data: sigma12_datas,
       )
     ];
@@ -192,8 +280,10 @@ class _LaminateStressStrainResultPageState
 
 class ResultStressStrainWidget extends StatelessWidget {
   final MechanicalTensor mechanicalTensor;
+  final Units units;
 
-  const ResultStressStrainWidget({Key? key, required this.mechanicalTensor})
+  const ResultStressStrainWidget(
+      {Key? key, required this.mechanicalTensor, this.units = Units.si})
       : super(key: key);
 
   _propertyRow(BuildContext context, String title, double? value) {
@@ -247,42 +337,48 @@ class ResultStressStrainWidget extends StatelessWidget {
               children: [
                 _propertyRow(
                     context,
-                    isStress ? "N11" : "ϵ11",
+                    isStress ? withUnit("N11", units.forceResultant) : "ϵ11",
                     isStress
                         ? (mechanicalTensor as LaminateStress).N11
                         : (mechanicalTensor as LaminateStrain).epsilon11),
                 const Divider(height: 1),
                 _propertyRow(
                     context,
-                    isStress ? "N22" : "ϵ22",
+                    isStress ? withUnit("N22", units.forceResultant) : "ϵ22",
                     isStress
                         ? (mechanicalTensor as LaminateStress).N22
                         : (mechanicalTensor as LaminateStrain).epsilon22),
                 const Divider(height: 1),
                 _propertyRow(
                     context,
-                    isStress ? "N12" : "ϵ12",
+                    isStress ? withUnit("N12", units.forceResultant) : "ϵ12",
                     isStress
                         ? (mechanicalTensor as LaminateStress).N12
                         : (mechanicalTensor as LaminateStrain).epsilon12),
                 const Divider(height: 1),
                 _propertyRow(
                     context,
-                    isStress ? "M11" : "𝞳11",
+                    isStress
+                        ? withUnit("M11", units.momentResultant)
+                        : withUnit("𝞳11", units.curvature),
                     isStress
                         ? (mechanicalTensor as LaminateStress).M11
                         : (mechanicalTensor as LaminateStrain).kappa11),
                 const Divider(height: 1),
                 _propertyRow(
                     context,
-                    isStress ? "M22" : "𝞳22",
+                    isStress
+                        ? withUnit("M22", units.momentResultant)
+                        : withUnit("𝞳22", units.curvature),
                     isStress
                         ? (mechanicalTensor as LaminateStress).M22
                         : (mechanicalTensor as LaminateStrain).kappa22),
                 const Divider(height: 1),
                 _propertyRow(
                     context,
-                    isStress ? "M12" : "𝞳12",
+                    isStress
+                        ? withUnit("M12", units.momentResultant)
+                        : withUnit("𝞳12", units.curvature),
                     isStress
                         ? (mechanicalTensor as LaminateStress).M12
                         : (mechanicalTensor as LaminateStrain).kappa12),

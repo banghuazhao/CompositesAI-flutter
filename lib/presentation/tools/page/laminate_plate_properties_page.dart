@@ -1,5 +1,8 @@
 import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/material.dart';
+import 'package:swiftcomp/presentation/tools/model/calc_report.dart';
+import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
+import 'package:swiftcomp/presentation/tools/widget/lamina_inputs_mixin.dart';
 import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/layer_thickness.dart';
@@ -25,7 +28,7 @@ class LaminatePlatePropertiesPage extends StatefulWidget {
 }
 
 class _LaminatePlatePropertiesPageState
-    extends State<LaminatePlatePropertiesPage> {
+    extends State<LaminatePlatePropertiesPage> with LaminaInputsMixin {
   AnalysisType analysisType = AnalysisType.elastic;
   TransverselyIsotropicMaterial transverselyIsotropicMaterial =
       TransverselyIsotropicMaterial();
@@ -34,6 +37,13 @@ class _LaminatePlatePropertiesPageState
   TransverselyIsotropicCTE transverselyIsotropicCTE =
       TransverselyIsotropicCTE();
   bool validate = false;
+
+  @override
+  TransverselyIsotropicMaterial get laminaMaterial =>
+      transverselyIsotropicMaterial;
+
+  @override
+  TransverselyIsotropicCTE? get laminaCte => transverselyIsotropicCTE;
 
   @override
   Widget build(BuildContext context) {
@@ -88,11 +98,15 @@ class _LaminatePlatePropertiesPageState
         material: transverselyIsotropicMaterial,
         validate: validate,
         isPlaneStress: true,
+        revision: inputRevision,
+        onMaterialSelected: applyLibraryMaterial,
+        saveCurrent: saveCurrentMaterial,
       ),
       if (analysisType == AnalysisType.thermalElastic)
         TransverselyThermalConstantsRow(
           material: transverselyIsotropicCTE,
           validate: validate,
+          revision: inputRevision,
         ),
       LayupSequenceRow(layupSequence: layupSequence, validate: validate),
       LayerThicknessPage(layerThickness: layerThickness, validate: validate),
@@ -104,6 +118,7 @@ class _LaminatePlatePropertiesPageState
 
   void _calculate() {
     if (!transverselyIsotropicMaterial.isValidInPlane() ||
+        !laminaModuliPlausible() ||
         !layupSequence.isValid() ||
         !layerThickness.isValid()) {
       return;
@@ -113,11 +128,15 @@ class _LaminatePlatePropertiesPageState
       return;
     }
 
+    final units = this.units;
+    // Scale moduli into the stress unit so A, B and D come out in N/mm, N and
+    // N·mm (kip/in, kip, kip·in); effective moduli are scaled back below.
+    const toStress = Units.modulusToStress;
     LaminatePlatePropertiesInput input = LaminatePlatePropertiesInput(
       analysisType: analysisType,
-      E1: transverselyIsotropicMaterial.e1 ?? 0,
-      E2: transverselyIsotropicMaterial.e2 ?? 0,
-      G12: transverselyIsotropicMaterial.g12 ?? 0,
+      E1: (transverselyIsotropicMaterial.e1 ?? 0) * toStress,
+      E2: (transverselyIsotropicMaterial.e2 ?? 0) * toStress,
+      G12: (transverselyIsotropicMaterial.g12 ?? 0) * toStress,
       nu12: transverselyIsotropicMaterial.nu12 ?? 0,
       layupSequence: layupSequence.stringValue,
       layerThickness: layerThickness.value ?? 0,
@@ -128,12 +147,28 @@ class _LaminatePlatePropertiesPageState
 
     LaminatePlatePropertiesOutput output =
         LaminatePlatePropertiesCalculator.calculate(input);
+    for (final properties in [
+      output.inPlaneProperties,
+      output.flexuralProperties,
+    ]) {
+      properties
+        ..E1 /= toStress
+        ..E2 /= toStress
+        ..G12 /= toStress;
+    }
 
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => LaminatePlatePropertiesResultPage(
                   output: output,
+                  inputs: [
+                    ReportInputs.lamina(transverselyIsotropicMaterial, units),
+                    if (analysisType == AnalysisType.thermalElastic)
+                      ReportInputs.cte(transverselyIsotropicCTE, units),
+                    ReportInputs.layup(layupSequence.stringValue,
+                        layerThickness.value, units),
+                  ],
                 )));
   }
 }

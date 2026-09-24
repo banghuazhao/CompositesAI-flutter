@@ -1,14 +1,18 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
 class Result6By6Matrix extends StatelessWidget {
   final String title;
+
+  /// Unit shown after the title, e.g. "A Matrix (N/mm)".
+  final String unit;
   final List<List<double>> matrix;
 
-  const Result6By6Matrix({Key? key, required this.matrix, required this.title})
+  const Result6By6Matrix({Key? key, required this.matrix, required this.title, this.unit = ''})
       : super(key: key);
 
   @override
@@ -21,7 +25,7 @@ class Result6By6Matrix extends StatelessWidget {
         children: [
           ListTile(
             title: AutoSizeText(
-              title,
+              withUnit(title, unit),
               style: Theme.of(context).textTheme.titleMedium,
               maxLines: 1,
             ),

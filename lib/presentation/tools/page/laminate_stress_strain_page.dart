@@ -1,5 +1,8 @@
 import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/material.dart';
+import 'package:swiftcomp/presentation/tools/model/calc_report.dart';
+import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
+import 'package:swiftcomp/presentation/tools/widget/lamina_inputs_mixin.dart';
 import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:linalg/linalg.dart';
 import 'package:swiftcomp/generated/l10n.dart';
@@ -24,13 +27,18 @@ class LaminateStressStrainPage extends StatefulWidget {
       _LaminateStressStrainPageState();
 }
 
-class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
+class _LaminateStressStrainPageState extends State<LaminateStressStrainPage>
+    with LaminaInputsMixin {
   TransverselyIsotropicMaterial transverselyIsotropicMaterial =
       TransverselyIsotropicMaterial();
   LayupSequence layupSequence = LayupSequence();
   LayerThickness layerThickness = LayerThickness();
   MechanicalTensor mechanicalTensor = LaminateStress();
   bool validate = false;
+
+  @override
+  TransverselyIsotropicMaterial get laminaMaterial =>
+      transverselyIsotropicMaterial;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +85,9 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
         material: transverselyIsotropicMaterial,
         validate: validate,
         isPlaneStress: true,
+        revision: inputRevision,
+        onMaterialSelected: applyLibraryMaterial,
+        saveCurrent: saveCurrentMaterial,
       ),
       LayupSequenceRow(layupSequence: layupSequence, validate: validate),
       LayerThicknessPage(layerThickness: layerThickness, validate: validate),
@@ -101,15 +112,19 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
 
   void _calculate() {
     if (!transverselyIsotropicMaterial.isValidInPlane() ||
+        !laminaModuliPlausible() ||
         !layupSequence.isValid() ||
         !layerThickness.isValid() ||
         !mechanicalTensor.isValid()) {
       return;
     }
+    final units = this.units;
+    // Moduli are entered in GPa/Msi; loads use MPa-mm or ksi-in.
+    const toStress = Units.modulusToStress;
     LaminarStressStrainInput input = LaminarStressStrainInput(
-      E1: transverselyIsotropicMaterial.e1 ?? 0,
-      E2: transverselyIsotropicMaterial.e2 ?? 0,
-      G12: transverselyIsotropicMaterial.g12 ?? 0,
+      E1: (transverselyIsotropicMaterial.e1 ?? 0) * toStress,
+      E2: (transverselyIsotropicMaterial.e2 ?? 0) * toStress,
+      G12: (transverselyIsotropicMaterial.g12 ?? 0) * toStress,
       nu12: transverselyIsotropicMaterial.nu12 ?? 0,
       layupSequence: layupSequence.stringValue,
       layerThickness: layerThickness.value ?? 0,
@@ -124,6 +139,7 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
       input.M22 = (mechanicalTensor as LaminateStress).M22 ?? 0;
       input.M12 = (mechanicalTensor as LaminateStress).M12 ?? 0;
     } else {
+      input.tensorType = TensorType.strain;
       input.epsilon11 = (mechanicalTensor as LaminateStrain).epsilon11 ?? 0;
       input.epsilon22 = (mechanicalTensor as LaminateStrain).epsilon22 ?? 0;
       input.epsilon12 = (mechanicalTensor as LaminateStrain).epsilon12 ?? 0;
@@ -144,6 +160,31 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage> {
                   output: output,
                   thickness: input.layerThickness,
                   Q: QMatrices,
+                  inputs: [
+                    ReportInputs.lamina(transverselyIsotropicMaterial, units),
+                    ReportInputs.layup(layupSequence.stringValue,
+                        layerThickness.value, units),
+                    input.tensorType == TensorType.stress
+                        ? ValuesSection('Applied stress resultants', [
+                            ReportEntry('N11', input.N11, units.forceResultant),
+                            ReportEntry('N22', input.N22, units.forceResultant),
+                            ReportEntry('N12', input.N12, units.forceResultant),
+                            ReportEntry(
+                                'M11', input.M11, units.momentResultant),
+                            ReportEntry(
+                                'M22', input.M22, units.momentResultant),
+                            ReportEntry(
+                                'M12', input.M12, units.momentResultant),
+                          ])
+                        : ValuesSection('Applied midplane strains', [
+                            ReportEntry('ε11', input.epsilon11),
+                            ReportEntry('ε22', input.epsilon22),
+                            ReportEntry('ε12', input.epsilon12),
+                            ReportEntry('κ11', input.kappa11, units.curvature),
+                            ReportEntry('κ22', input.kappa22, units.curvature),
+                            ReportEntry('κ12', input.kappa12, units.curvature),
+                          ]),
+                  ],
                 )));
   }
 }

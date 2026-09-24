@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/model/layer_thickness.dart';
 
 class LayerThicknessPage extends StatefulWidget {
@@ -24,6 +26,7 @@ class _LayerThicknessPageState extends State<LayerThicknessPage> {
 
   @override
   Widget build(BuildContext context) {
+    final units = context.watch<UnitSettings>().units;
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
@@ -45,7 +48,7 @@ class _LayerThicknessPageState extends State<LayerThicknessPage> {
                   isDense: true,
                   contentPadding: const EdgeInsets.all(12),
                   border: const OutlineInputBorder(),
-                  labelText: "Thickness",
+                  labelText: withUnit("Thickness", units.length),
                   errorText: widget.validate
                       ? validate(widget.layerThickness.value)
                       : null),

@@ -15,6 +15,9 @@ import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/number.dart';
 
 import '../../tools/model/thermal_model.dart';
+import '../model/calc_report.dart';
+import '../model/unit_system.dart';
+import '../widget/report_export_button.dart';
 
 class LaminaEngineeringConstantsResultPage extends StatefulWidget {
   final AnalysisType analysisType;
@@ -123,6 +126,7 @@ class _LaminaEngineeringConstantsResultPageState
     return Scaffold(
         appBar: AppBar(
           actions: [
+            ReportExportButton(buildReport: _buildReport),
             IconButton(
               onPressed: () {
                 Navigator.push(
@@ -153,13 +157,83 @@ class _LaminaEngineeringConstantsResultPageState
                 })));
   }
 
+  CalcReport _buildReport() {
+    final units = context.read<UnitSettings>().units;
+    final isThermal = widget.analysisType == AnalysisType.thermalElastic;
+    List<(double, double)> points(List<FlSpot> spots) =>
+        [for (final spot in spots) (spot.x, spot.y)];
+    return CalcReport(
+      title: S.of(context).Lamina_engineering_constants,
+      units: units,
+      inputs: [
+        ReportInputs.lamina(widget.transverselyIsotropicMaterial, units),
+        if (isThermal) ReportInputs.cte(widget.transverselyIsotropicCTE, units),
+        ValuesSection('Layup', [ReportEntry('Layup angle', layupAngle, '°')]),
+      ],
+      results: [
+        ValuesSection('Engineering constants at ${layupAngle.round()}°', [
+          ReportEntry('Ex', output.E1, units.modulus),
+          ReportEntry('Ey', output.E2, units.modulus),
+          ReportEntry('Gxy', output.G12, units.modulus),
+          ReportEntry('νxy', output.nu12),
+          ReportEntry('ηx,xy', output.eta1_12),
+          ReportEntry('ηy,xy', output.eta2_12),
+          if (isThermal) ...[
+            ReportEntry('ɑxx', output.alpha_11, units.cte),
+            ReportEntry('ɑyy', output.alpha_22, units.cte),
+            ReportEntry('ɑxy', output.alpha_12, units.cte),
+          ],
+        ]),
+        MatrixSection(S.of(context).Stiffness_Matrix_Q, output.Q,
+            unit: units.modulus),
+        MatrixSection(S.of(context).Compliance_Matrix_S, output.S,
+            unit: units.compliance),
+        ChartSection(
+          'Moduli vs. layup angle',
+          xLabel: 'Layup angle (°)',
+          yLabel: 'Modulus (${units.modulus})',
+          series: [
+            ChartSeries('Ex', points(E_x_datas)),
+            ChartSeries('Ey', points(E_y_datas)),
+            ChartSeries('Gxy', points(G_xy_datas)),
+          ],
+        ),
+        ChartSection(
+          'Poisson and coupling ratios vs. layup angle',
+          xLabel: 'Layup angle (°)',
+          yLabel: 'Ratio',
+          series: [
+            ChartSeries('νxy', points(nu_xy_datas)),
+            ChartSeries('ηx,xy', points(eta_x_xy_datas)),
+            ChartSeries('ηy,xy', points(eta_y_xy_datas)),
+          ],
+        ),
+        if (isThermal)
+          ChartSection(
+            'CTEs vs. layup angle',
+            xLabel: 'Layup angle (°)',
+            yLabel: 'CTE (${units.cte})',
+            series: [
+              ChartSeries('ɑxx', points(alpha_xx_datas)),
+              ChartSeries('ɑyy', points(alpha_yy_datas)),
+              ChartSeries('ɑxy', points(alpha_xy_datas)),
+            ],
+          ),
+      ],
+    );
+  }
+
   List<Widget> get resultItem {
+    final units = context.watch<UnitSettings>().units;
     List<Widget> children = [
-      _engineeringConstantsRow("Ex", output.E1, E_x_datas),
+      _engineeringConstantsRow(
+          withUnit("Ex", units.modulus), output.E1, E_x_datas),
       const Divider(),
-      _engineeringConstantsRow("Ey", output.E2, E_y_datas),
+      _engineeringConstantsRow(
+          withUnit("Ey", units.modulus), output.E2, E_y_datas),
       const Divider(),
-      _engineeringConstantsRow("Gxy", output.G12, G_xy_datas),
+      _engineeringConstantsRow(
+          withUnit("Gxy", units.modulus), output.G12, G_xy_datas),
       const Divider(),
       _engineeringConstantsRow("νxy", output.nu12, nu_xy_datas),
       const Divider(),
@@ -170,11 +244,11 @@ class _LaminaEngineeringConstantsResultPageState
     if (widget.analysisType == AnalysisType.thermalElastic) {
       List<Widget> moreChildren = [
         const Divider(),
-        _engineeringConstantsRow("ɑxx", output.alpha_11, alpha_xx_datas),
+        _engineeringConstantsRow(withUnit("ɑxx", units.cte), output.alpha_11, alpha_xx_datas),
         const Divider(),
-        _engineeringConstantsRow("ɑyy", output.alpha_22, alpha_yy_datas),
+        _engineeringConstantsRow(withUnit("ɑyy", units.cte), output.alpha_22, alpha_yy_datas),
         const Divider(),
-        _engineeringConstantsRow("ɑxy", output.alpha_12, alpha_xy_datas)
+        _engineeringConstantsRow(withUnit("ɑxy", units.cte), output.alpha_12, alpha_xy_datas)
       ];
       children.addAll(moreChildren);
     }
@@ -192,10 +266,12 @@ class _LaminaEngineeringConstantsResultPageState
       Result3By3Matrix(
         title: S.of(context).Stiffness_Matrix_Q,
         matrixList: output.Q,
+        unit: units.modulus,
       ),
       Result3By3Matrix(
         title: S.of(context).Compliance_Matrix_S,
         matrixList: output.S,
+        unit: units.compliance,
       ),
     ];
   }

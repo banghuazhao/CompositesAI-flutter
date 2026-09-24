@@ -6,11 +6,18 @@ import 'package:swiftcomp/presentation/tools/model/material_model.dart';
 import 'package:swiftcomp/presentation/tools/widget/orthotropic_properties_widget.dart';
 import 'package:swiftcomp/presentation/tools/widget/result_6by6_matrix.dart';
 import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
+import 'package:provider/provider.dart';
+
+import '../model/calc_report.dart';
+import '../model/unit_system.dart';
+import '../widget/report_export_button.dart';
 
 class RulesOfMixtureResultPage extends StatefulWidget {
   final UDFRCRulesOfMixtureOutput output;
+  final List<ReportSection> inputs;
 
-  const RulesOfMixtureResultPage({Key? key, required this.output})
+  const RulesOfMixtureResultPage(
+      {Key? key, required this.output, this.inputs = const []})
       : super(key: key);
 
   @override
@@ -30,6 +37,7 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
+            ReportExportButton(buildReport: _buildReport),
             IconButton(
               onPressed: () {
                 Navigator.push(
@@ -57,7 +65,32 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
         ));
   }
 
+  CalcReport _buildReport() {
+    final units = context.read<UnitSettings>().units;
+    final output = widget.output;
+    return CalcReport(
+      title: S.of(context).UDFRC_Properties,
+      units: units,
+      inputs: widget.inputs,
+      results: [
+        for (final (name, result) in [
+          ('Voigt', output.voigtRulesOfMixture),
+          ('Reuss', output.reussRulesOfMixture),
+          ('Hybrid', output.hybirdRulesOfMixture),
+        ])
+          ...ReportResults.threeDimensional(
+            stiffness: result.stiffness,
+            compliance: result.compliance,
+            constants: result.engineeringConstants,
+            units: units,
+            prefix: '$name rules of mixture',
+          ),
+      ],
+    );
+  }
+
   List<Widget> get resultList {
+    final units = context.watch<UnitSettings>().units;
     return [
       Text(
         "Voigt Rules of Mixture",
@@ -66,10 +99,12 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
       Result6By6Matrix(
         matrix: widget.output.voigtRulesOfMixture.stiffness,
         title: "Effective 3D Stiffness Matrix",
+        unit: units.modulus,
       ),
       Result6By6Matrix(
         matrix: widget.output.voigtRulesOfMixture.compliance,
         title: "Effective 3D Compliance Matrix",
+        unit: units.compliance,
       ),
       OrthotropicPropertiesWidget(
         title: S.of(context).Engineering_Constants,
@@ -83,10 +118,12 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
       Result6By6Matrix(
         matrix: widget.output.reussRulesOfMixture.stiffness,
         title: "Effective 3D Stiffness Matrix",
+        unit: units.modulus,
       ),
       Result6By6Matrix(
         matrix: widget.output.reussRulesOfMixture.compliance,
         title: "Effective 3D Compliance Matrix",
+        unit: units.compliance,
       ),
       OrthotropicPropertiesWidget(
         title: S.of(context).Engineering_Constants,
@@ -100,10 +137,12 @@ class _RulesOfMixtureResultPageState extends State<RulesOfMixtureResultPage> {
       Result6By6Matrix(
         matrix: widget.output.hybirdRulesOfMixture.stiffness,
         title: "Effective 3D Stiffness Matrix",
+        unit: units.modulus,
       ),
       Result6By6Matrix(
         matrix: widget.output.hybirdRulesOfMixture.compliance,
         title: "Effective 3D Compliance Matrix",
+        unit: units.compliance,
       ),
       OrthotropicPropertiesWidget(
         title: S.of(context).Engineering_Constants,

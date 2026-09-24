@@ -1,144 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/tools/model/explain.dart';
 import 'package:swiftcomp/presentation/tools/model/validate.dart';
 
 import '../../tools/model/thermal_model.dart';
+import '../model/unit_system.dart';
+import 'number_field.dart';
 
-class TransverselyThermalConstantsRow extends StatefulWidget {
+class TransverselyThermalConstantsRow extends StatelessWidget {
   final TransverselyIsotropicCTE material;
   final String title;
   final bool shouldConsider12;
   final bool validate;
+  final int revision;
 
   const TransverselyThermalConstantsRow(
       {Key? key,
       required this.material,
       this.title = "CTEs",
       this.shouldConsider12 = true,
-      required this.validate})
+      required this.validate,
+      this.revision = 0})
       : super(key: key);
 
   @override
-  _TransverselyThermalConstantsRowState createState() =>
-      _TransverselyThermalConstantsRowState();
-}
-
-class _TransverselyThermalConstantsRowState
-    extends State<TransverselyThermalConstantsRow> {
-  @override
   Widget build(BuildContext context) {
-    return Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ListTile(
-              title: Row(
-                children: [
-                  Text(
-                    widget.title,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Dialog dialog = Dialog(
-                        insetPadding: EdgeInsets.fromLTRB(20, 20, 20, 20),
-                        shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(12.0)), //this right here
-                        child: Container(
-                            padding: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                            child: Explain.getExplain(
-                                ExplainType.material, context)),
-                      );
-                      showDialog(
-                          context: context,
-                          builder: (BuildContext context) => dialog);
-                    },
-                    icon: Icon(
-                      Icons.help_outline_rounded,
-                      color: Colors.grey,
-                    ),
-                  )
-                ],
-              ),
+    final units = context.watch<UnitSettings>().units;
+    return InputCard(
+      title: title,
+      help: Explain.getExplain(ExplainType.material, context),
+      children: [
+        FieldGrid(fields: [
+          NumberField(
+            label: 'ɑ11',
+            unit: units.cte,
+            value: material.alpha11,
+            revision: revision,
+            signed: true,
+            errorText: validate ? validateCTEs(material.alpha11) : null,
+            onChanged: (value) => material.alpha11 = value,
+          ),
+          NumberField(
+            label: 'ɑ22',
+            unit: units.cte,
+            value: material.alpha22,
+            revision: revision,
+            signed: true,
+            errorText: validate ? validateCTEs(material.alpha22) : null,
+            onChanged: (value) => material.alpha22 = value,
+          ),
+          if (shouldConsider12)
+            NumberField(
+              label: 'ɑ12',
+              unit: units.cte,
+              value: material.alpha12,
+              revision: revision,
+              signed: true,
+              errorText: validate ? validateCTEs(material.alpha12) : null,
+              onChanged: (value) => material.alpha12 = value,
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.all(12),
-                              border: const OutlineInputBorder(),
-                              labelText: "ɑ11",
-                              errorText: widget.validate
-                                  ? validateCTEs(widget.material.alpha11)
-                                  : null),
-                          onChanged: (value) {
-                            widget.material.alpha11 = double.tryParse(value);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.all(12),
-                              border: const OutlineInputBorder(),
-                              labelText: "ɑ22",
-                              errorText: widget.validate
-                                  ? validateCTEs(widget.material.alpha22)
-                                  : null),
-                          onChanged: (value) {
-                            widget.material.alpha22 = double.tryParse(value);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (widget.shouldConsider12)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration: InputDecoration(
-                                isDense: true,
-                                contentPadding: const EdgeInsets.all(12),
-                                border: const OutlineInputBorder(),
-                                labelText: "ɑ12",
-                                errorText: widget.validate
-                                    ? validateCTEs(widget.material.alpha12)
-                                    : null),
-                            onChanged: (value) {
-                              widget.material.alpha12 = double.tryParse(value);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(child: Container()),
-                      ],
-                    ),
-                  if (widget.shouldConsider12) const SizedBox(height: 12)
-                ],
-              ),
-            ),
-          ],
-        ));
+        ]),
+      ],
+    );
   }
 }

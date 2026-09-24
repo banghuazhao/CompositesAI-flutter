@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/model/delta_t.dart';
 
 class DeltaTemperatureRow extends StatefulWidget {
@@ -24,6 +26,7 @@ class _DeltaTemperatureRowState extends State<DeltaTemperatureRow> {
 
   @override
   Widget build(BuildContext context) {
+    final units = context.watch<UnitSettings>().units;
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
@@ -45,7 +48,7 @@ class _DeltaTemperatureRowState extends State<DeltaTemperatureRow> {
                   isDense: true,
                   contentPadding: EdgeInsets.all(12),
                   border: OutlineInputBorder(),
-                  labelText: "ΔT",
+                  labelText: withUnit("ΔT", units.temperature),
                   errorText: widget.validate
                       ? validateLayupAngle(widget.deltaTemperature.value)
                       : null),

@@ -6,11 +6,18 @@ import 'package:swiftcomp/presentation/tools/model/material_model.dart';
 import 'package:swiftcomp/presentation/tools/widget/orthotropic_properties_widget.dart';
 import 'package:swiftcomp/presentation/tools/widget/result_6by6_matrix.dart';
 import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
+import 'package:provider/provider.dart';
+
+import '../model/calc_report.dart';
+import '../model/unit_system.dart';
+import '../widget/report_export_button.dart';
 
 class Laminate3DPropertiesResultPage extends StatefulWidget {
   final Laminate3DPropertiesOutput output;
+  final List<ReportSection> inputs;
 
-  const Laminate3DPropertiesResultPage({Key? key, required this.output})
+  const Laminate3DPropertiesResultPage(
+      {Key? key, required this.output, this.inputs = const []})
       : super(key: key);
 
   @override
@@ -31,6 +38,7 @@ class _Laminate3DPropertiesResultPageState
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
+            ReportExportButton(buildReport: _buildReport),
             IconButton(
               onPressed: () {
                 Navigator.push(
@@ -58,15 +66,33 @@ class _Laminate3DPropertiesResultPageState
         ));
   }
 
+  CalcReport _buildReport() {
+    final units = context.read<UnitSettings>().units;
+    return CalcReport(
+      title: S.of(context).Laminate_3D_properties,
+      units: units,
+      inputs: widget.inputs,
+      results: ReportResults.threeDimensional(
+        stiffness: widget.output.stiffness,
+        compliance: widget.output.compliance,
+        constants: widget.output.engineeringConstants,
+        units: units,
+      ),
+    );
+  }
+
   List<Widget> get resultList {
+    final units = context.watch<UnitSettings>().units;
     return [
       Result6By6Matrix(
         matrix: widget.output.stiffness,
         title: "Effective 3D Stiffness Matrix",
+        unit: units.modulus,
       ),
       Result6By6Matrix(
         matrix: widget.output.compliance,
         title: "Effective 3D Compliance Matrix",
+        unit: units.compliance,
       ),
       OrthotropicPropertiesWidget(
         title: S.of(context).Engineering_Constants,

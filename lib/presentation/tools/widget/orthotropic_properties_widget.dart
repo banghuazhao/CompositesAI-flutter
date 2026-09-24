@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/tools/model/material_model.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
+import '../model/unit_system.dart';
+
 class OrthotropicPropertiesWidget extends StatelessWidget {
   final String title;
   final OrthotropicMaterial orthotropicMaterial;
@@ -47,18 +49,21 @@ class OrthotropicPropertiesWidget extends StatelessWidget {
   }
 
   List<Widget> chidren(BuildContext context) {
+    final units = context.watch<UnitSettings>().units;
+    String modulus(String label) => withUnit(label, units.modulus);
+    String cte(String label) => withUnit(label, units.cte);
     List<Widget> result = [
-      _propertyRow(context, "E1", orthotropicMaterial.e1),
+      _propertyRow(context, modulus("E1"), orthotropicMaterial.e1),
       const Divider(height: 1),
-      _propertyRow(context, "E2", orthotropicMaterial.e2),
+      _propertyRow(context, modulus("E2"), orthotropicMaterial.e2),
       const Divider(height: 1),
-      _propertyRow(context, "E3", orthotropicMaterial.e3),
+      _propertyRow(context, modulus("E3"), orthotropicMaterial.e3),
       const Divider(height: 1),
-      _propertyRow(context, "G12", orthotropicMaterial.g12),
+      _propertyRow(context, modulus("G12"), orthotropicMaterial.g12),
       const Divider(height: 1),
-      _propertyRow(context, "G13", orthotropicMaterial.g13),
+      _propertyRow(context, modulus("G13"), orthotropicMaterial.g13),
       const Divider(height: 1),
-      _propertyRow(context, "G23", orthotropicMaterial.g23),
+      _propertyRow(context, modulus("G23"), orthotropicMaterial.g23),
       const Divider(height: 1),
       _propertyRow(context, "ν12", orthotropicMaterial.nu12),
       const Divider(height: 1),
@@ -70,22 +75,22 @@ class OrthotropicPropertiesWidget extends StatelessWidget {
         orthotropicMaterial.alpha33 == null) {
       result += [
         const Divider(height: 1),
-        _propertyRow(context, "ɑ11", orthotropicMaterial.alpha11),
+        _propertyRow(context, cte("ɑ11"), orthotropicMaterial.alpha11),
         const Divider(height: 1),
-        _propertyRow(context, "ɑ22", orthotropicMaterial.alpha22),
+        _propertyRow(context, cte("ɑ22"), orthotropicMaterial.alpha22),
         const Divider(height: 1),
-        _propertyRow(context, "ɑ12", orthotropicMaterial.alpha12),
+        _propertyRow(context, cte("ɑ12"), orthotropicMaterial.alpha12),
       ];
     }
     if (orthotropicMaterial.alpha11 != null &&
         orthotropicMaterial.alpha33 != null) {
       result += [
         const Divider(height: 1),
-        _propertyRow(context, "ɑ11", orthotropicMaterial.alpha11),
+        _propertyRow(context, cte("ɑ11"), orthotropicMaterial.alpha11),
         const Divider(height: 1),
-        _propertyRow(context, "ɑ22", orthotropicMaterial.alpha22),
+        _propertyRow(context, cte("ɑ22"), orthotropicMaterial.alpha22),
         const Divider(height: 1),
-        _propertyRow(context, "ɑ33", orthotropicMaterial.alpha33),
+        _propertyRow(context, cte("ɑ33"), orthotropicMaterial.alpha33),
       ];
     }
     return result;

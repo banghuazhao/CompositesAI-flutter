@@ -1,5 +1,6 @@
 import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/material.dart';
+import 'package:swiftcomp/presentation/tools/widget/lamina_inputs_mixin.dart';
 import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/material_model.dart';
@@ -21,13 +22,20 @@ class LaminaEngineeringConstantsPage extends StatefulWidget {
 }
 
 class _LaminaEngineeringConstantsPageState
-    extends State<LaminaEngineeringConstantsPage> {
+    extends State<LaminaEngineeringConstantsPage> with LaminaInputsMixin {
   TransverselyIsotropicMaterial transverselyIsotropicMaterial =
       TransverselyIsotropicMaterial();
   TransverselyIsotropicCTE transverselyIsotropicCTE =
       TransverselyIsotropicCTE();
   AnalysisType analysisType = AnalysisType.elastic;
   bool validate = false;
+
+  @override
+  TransverselyIsotropicMaterial get laminaMaterial =>
+      transverselyIsotropicMaterial;
+
+  @override
+  TransverselyIsotropicCTE? get laminaCte => transverselyIsotropicCTE;
 
   @override
   Widget build(BuildContext context) {
@@ -81,11 +89,15 @@ class _LaminaEngineeringConstantsPageState
       LaminaConstantsRow(
           material: transverselyIsotropicMaterial,
           validate: validate,
-          isPlaneStress: true),
+          isPlaneStress: true,
+          revision: inputRevision,
+          onMaterialSelected: applyLibraryMaterial,
+          saveCurrent: saveCurrentMaterial),
       if (analysisType == AnalysisType.thermalElastic)
         TransverselyThermalConstantsRow(
           material: transverselyIsotropicCTE,
           validate: validate,
+          revision: inputRevision,
         ),
       DescriptionItem(
           content: DescriptionModels.getDescription(
@@ -94,7 +106,8 @@ class _LaminaEngineeringConstantsPageState
   }
 
   void _calculate() {
-    if (transverselyIsotropicMaterial.isValidInPlane()) {
+    if (transverselyIsotropicMaterial.isValidInPlane() &&
+        laminaModuliPlausible()) {
       if (analysisType == AnalysisType.thermalElastic &&
           !transverselyIsotropicCTE.isValid()) {
         return;

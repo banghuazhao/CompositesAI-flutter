@@ -10,6 +10,7 @@ import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:infrastructure/feature_flag_provider.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/settings_view_model.dart';
+import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/util/others.dart';
@@ -72,6 +73,7 @@ class _MyAppState extends State<MyApp> {
     return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (context) => NumberPrecisionHelper()),
+          ChangeNotifierProvider(create: (context) => UnitSettings()),
           ChangeNotifierProvider(
               create: (context) => sl<FeatureFlagProvider>()),
           ChangeNotifierProvider(create: (context) => sl<SettingsViewModel>()),

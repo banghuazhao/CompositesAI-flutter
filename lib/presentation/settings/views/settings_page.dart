@@ -1,3 +1,5 @@
+import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
+import 'package:swiftcomp/presentation/tools/widget/unit_system_picker.dart';
 import 'package:domain/auth/entities/user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -133,6 +135,16 @@ class _SettingsPageState extends State<SettingsPage> {
                     MaterialPageRoute(
                         builder: (_) => const ResultPrecisionPage()),
                   ),
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: Icons.straighten_rounded,
+                  title: 'Calculator Units',
+                  subtitle: () {
+                    final units = context.watch<UnitSettings>().units;
+                    return '${units.name} (${units.summary})';
+                  }(),
+                  onTap: () => showUnitSystemPicker(context),
                 ),
               ]),
               if (viewModel.isAdmin) ...[
