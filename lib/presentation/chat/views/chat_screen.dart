@@ -644,15 +644,43 @@ class _ChatScreenState extends State<ChatScreen>
   Widget _buildRightButton() {
     final scheme = Theme.of(context).colorScheme;
     if (viewModel.isSendingMessage) {
-      return Semantics(
-        liveRegion: true,
-        label: 'Generating response',
-        child: const SizedBox(
-          width: 34,
-          height: 34,
-          child: Padding(
-            padding: EdgeInsets.all(5),
-            child: CircularProgressIndicator(strokeWidth: 2),
+      return Tooltip(
+        message: 'Stop generating',
+        child: Semantics(
+          button: true,
+          liveRegion: true,
+          label: 'Generating response. Stop generating',
+          child: Pressable(
+            haptic: true,
+            borderRadius: BorderRadius.circular(22),
+            onTap: viewModel.stopGenerating,
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: scheme.onSurface,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.stop_rounded,
+                      color: scheme.surface,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       );

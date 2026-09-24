@@ -225,9 +225,43 @@ class _MessageListState extends State<MessageList> {
   }
 
   Widget buildMessageActions(ChatViewModel viewModel, Message message) {
+    final isUnansweredLast = viewModel.messages.isNotEmpty &&
+        viewModel.messages.last == message &&
+        viewModel.canRegenerate;
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [buildCopyIconButton(viewModel, message)],
+      children: [
+        if (isUnansweredLast)
+          buildRegenerateButton(viewModel, label: 'Get response'),
+        buildCopyIconButton(viewModel, message),
+      ],
+    );
+  }
+
+  Widget buildRegenerateButton(ChatViewModel viewModel, {String? label}) {
+    const tooltip = 'Regenerate response';
+    final onPressed = viewModel.canRegenerate
+        ? () => viewModel.regenerateLastResponse()
+        : null;
+    if (label != null) {
+      return TextButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.refresh_rounded, size: 16),
+        label: Text(label),
+        style: TextButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+      );
+    }
+    return IconButton(
+      tooltip: tooltip,
+      icon: const Icon(Icons.refresh_rounded, size: 18),
+      onPressed: onPressed,
+      style: ButtonStyle(
+        padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
+        minimumSize: WidgetStateProperty.all(Size.zero),
+      ),
     );
   }
 
@@ -254,11 +288,14 @@ class _MessageListState extends State<MessageList> {
     final isSubmitting = viewModel.isSubmittingFeedbackFor(message);
     final liked = message.feedbackRating == 1;
     final disliked = message.feedbackRating == -1;
+    final isLast =
+        viewModel.messages.isNotEmpty && viewModel.messages.last == message;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         buildCopyIconButton(viewModel, message),
+        if (isLast && viewModel.canRegenerate) buildRegenerateButton(viewModel),
         if (isSubmitting)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8),
@@ -347,7 +384,10 @@ class _MessageListState extends State<MessageList> {
 
     final hasVisibleActivity = isStreaming ||
         message.statusHistory.any(
-          (status) => !status.hidden && status.action == 'response_interrupted',
+          (status) =>
+              !status.hidden &&
+              (status.action == 'response_interrupted' ||
+                  status.action == 'response_stopped'),
         );
     if (message.content.isEmpty && !hasVisibleActivity) {
       return const SizedBox.shrink();
