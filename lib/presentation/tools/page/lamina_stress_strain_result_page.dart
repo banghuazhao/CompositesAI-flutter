@@ -5,12 +5,19 @@ import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
 
+import 'package:provider/provider.dart';
+
+import '../model/calc_report.dart';
+import '../model/unit_system.dart';
+import '../widget/report_export_button.dart';
 import '../widget/result_3by3_matrix.dart';
 
 class LaminaStressStrainResult extends StatefulWidget {
   final LaminaStressStrainOutput output;
+  final List<ReportSection> inputs;
 
-  const LaminaStressStrainResult({Key? key, required this.output})
+  const LaminaStressStrainResult(
+      {Key? key, required this.output, this.inputs = const []})
       : super(key: key);
 
   @override
@@ -30,6 +37,7 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
+            ReportExportButton(buildReport: _buildReport),
             IconButton(
               onPressed: () {
                 Navigator.push(
@@ -57,18 +65,53 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
         ));
   }
 
+  CalcReport _buildReport() {
+    final units = context.read<UnitSettings>().units;
+    final output = widget.output;
+    final isStress = output.tensorType == TensorType.stress;
+    return CalcReport(
+      title: S.of(context).Lamina_stressstrain,
+      units: units,
+      inputs: widget.inputs,
+      results: [
+        ValuesSection(
+          isStress ? 'Stresses' : 'Strains',
+          isStress
+              ? [
+                  ReportEntry('σ11', output.sigma11, units.stress),
+                  ReportEntry('σ22', output.sigma22, units.stress),
+                  ReportEntry('σ12', output.sigma12, units.stress),
+                ]
+              : [
+                  ReportEntry('ε11', output.epsilon11),
+                  ReportEntry('ε22', output.epsilon22),
+                  ReportEntry('γ12', output.gamma12),
+                ],
+        ),
+        MatrixSection(S.of(context).Stiffness_Matrix_Q, output.Q,
+            unit: units.stress),
+        MatrixSection(S.of(context).Compliance_Matrix_S, output.S,
+            unit: units.stressCompliance),
+      ],
+    );
+  }
+
   List<Widget> get resultList {
+    final units = context.watch<UnitSettings>().units;
     return [
       ResultPlaneStressStrainRow(
         output: widget.output,
+        stressUnit: units.stress,
       ),
       Result3By3Matrix(
         title: S.of(context).Stiffness_Matrix_Q,
         matrixList: widget.output.Q,
+        unit: units.stress,
       ),
       Result3By3Matrix(
         title: S.of(context).Compliance_Matrix_S,
         matrixList: widget.output.S,
+        unit: units.stressCompliance,
       ),
     ];
   }
@@ -76,10 +119,12 @@ class _LaminaStressStrainResultState extends State<LaminaStressStrainResult> {
 
 class ResultPlaneStressStrainRow extends StatelessWidget {
   final LaminaStressStrainOutput output;
+  final String stressUnit;
 
   const ResultPlaneStressStrainRow({
     Key? key,
     required this.output,
+    this.stressUnit = '',
   }) : super(key: key);
 
   bool get isStress {
@@ -117,7 +162,7 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
         children: [
           ListTile(
             title: Text(
-              "Result",
+              isStress ? withUnit("Result", stressUnit) : "Result",
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),

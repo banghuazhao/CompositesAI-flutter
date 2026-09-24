@@ -8,10 +8,16 @@ import 'package:swiftcomp/presentation/tools/widget/result_3by3_matrix.dart';
 import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
+import '../model/calc_report.dart';
+import '../model/unit_system.dart';
+import '../widget/report_export_button.dart';
+
 class LaminatePlatePropertiesResultPage extends StatefulWidget {
   final LaminatePlatePropertiesOutput output;
+  final List<ReportSection> inputs;
 
-  const LaminatePlatePropertiesResultPage({Key? key, required this.output})
+  const LaminatePlatePropertiesResultPage(
+      {Key? key, required this.output, this.inputs = const []})
       : super(key: key);
 
   @override
@@ -32,6 +38,7 @@ class _LaminatePlatePropertiesResultPageState
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
+            ReportExportButton(buildReport: _buildReport),
             IconButton(
               onPressed: () {
                 Navigator.push(
@@ -59,19 +66,58 @@ class _LaminatePlatePropertiesResultPageState
         ));
   }
 
+  CalcReport _buildReport() {
+    final units = context.read<UnitSettings>().units;
+    ValuesSection properties(String title, InPlaneProperties p) {
+      return ValuesSection(title, [
+        ReportEntry('E1', p.E1, units.modulus),
+        ReportEntry('E2', p.E2, units.modulus),
+        ReportEntry('G12', p.G12, units.modulus),
+        ReportEntry('ν12', p.nu12),
+        ReportEntry('η12,1', p.eta121),
+        ReportEntry('η12,2', p.eta122),
+        if (p.analysisType == AnalysisType.thermalElastic) ...[
+          ReportEntry('ɑ11', p.alpha11, units.cte),
+          ReportEntry('ɑ22', p.alpha22, units.cte),
+          ReportEntry('ɑ12', p.alpha12, units.cte),
+        ],
+      ]);
+    }
+
+    return CalcReport(
+      title: S.of(context).Laminate_plate_properties,
+      units: units,
+      inputs: widget.inputs,
+      results: [
+        MatrixSection('A Matrix', widget.output.A, unit: units.aMatrix),
+        MatrixSection('B Matrix', widget.output.B, unit: units.bMatrix),
+        MatrixSection('D Matrix', widget.output.D, unit: units.dMatrix),
+        properties('In-plane properties', widget.output.inPlaneProperties),
+        properties('Flexural properties', widget.output.flexuralProperties),
+      ],
+      notes: const [
+        'In-plane and flexural properties are valid for symmetric laminates only.',
+      ],
+    );
+  }
+
   List<Widget> get resultList {
+    final units = context.watch<UnitSettings>().units;
     return [
       Result3By3Matrix(
         title: "A Matrix",
         matrixList: widget.output.A,
+        unit: units.aMatrix,
       ),
       Result3By3Matrix(
         title: "B Matrix",
         matrixList: widget.output.B,
+        unit: units.bMatrix,
       ),
       Result3By3Matrix(
         title: "D Matrix",
         matrixList: widget.output.D,
+        unit: units.dMatrix,
       ),
       InPlanePropertiesWidget(
         title: "In-Plane Properties",
@@ -139,12 +185,15 @@ class InPlanePropertiesWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final units = context.watch<UnitSettings>().units;
+    String modulus(String label) => withUnit(label, units.modulus);
+    String cte(String label) => withUnit(label, units.cte);
     List<Widget> list = [
-      _propertyRow(context, "E1", inPlaneProperties.E1),
+      _propertyRow(context, modulus("E1"), inPlaneProperties.E1),
       const Divider(height: 1),
-      _propertyRow(context, "E2", inPlaneProperties.E2),
+      _propertyRow(context, modulus("E2"), inPlaneProperties.E2),
       const Divider(height: 1),
-      _propertyRow(context, "G12", inPlaneProperties.G12),
+      _propertyRow(context, modulus("G12"), inPlaneProperties.G12),
       const Divider(height: 1),
       _propertyRow(context, "ν12", inPlaneProperties.nu12),
       const Divider(height: 1),
@@ -156,11 +205,11 @@ class InPlanePropertiesWidget extends StatelessWidget {
     if (inPlaneProperties.analysisType == AnalysisType.thermalElastic) {
       list.addAll([
         const Divider(height: 1),
-        _propertyRow(context, "ɑ11", inPlaneProperties.alpha11),
+        _propertyRow(context, cte("ɑ11"), inPlaneProperties.alpha11),
         const Divider(height: 1),
-        _propertyRow(context, "ɑ22", inPlaneProperties.alpha22),
+        _propertyRow(context, cte("ɑ22"), inPlaneProperties.alpha22),
         const Divider(height: 1),
-        _propertyRow(context, "ɑ12", inPlaneProperties.alpha12),
+        _propertyRow(context, cte("ɑ12"), inPlaneProperties.alpha12),
       ]);
     }
 

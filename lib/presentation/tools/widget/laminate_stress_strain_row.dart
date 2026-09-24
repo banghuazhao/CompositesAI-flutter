@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart';
 
 class LaminateStressStrainRow extends StatefulWidget {
@@ -38,6 +40,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
 
   @override
   Widget build(BuildContext context) {
+    final units = context.watch<UnitSettings>().units;
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
@@ -103,7 +106,9 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
                         labelText:
-                            dropValue == "Stress Resultants" ? "N11" : "ϵ11",
+                            dropValue == "Stress Resultants"
+                            ? withUnit("N11", units.forceResultant)
+                            : "ϵ11",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
                                 ? (widget.mechanicalTensor as LaminateStress)
@@ -136,7 +141,9 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
                         labelText:
-                            dropValue == "Stress Resultants" ? "N22" : "ϵ22",
+                            dropValue == "Stress Resultants"
+                            ? withUnit("N22", units.forceResultant)
+                            : "ϵ22",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
                                 ? (widget.mechanicalTensor as LaminateStress)
@@ -176,7 +183,9 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
                         labelText:
-                            dropValue == "Stress Resultants" ? "N12" : "ϵ12",
+                            dropValue == "Stress Resultants"
+                            ? withUnit("N12", units.forceResultant)
+                            : "ϵ12",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
                                 ? (widget.mechanicalTensor as LaminateStress)
@@ -209,7 +218,9 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
                         labelText:
-                            dropValue == "Stress Resultants" ? "M11" : "𝞳11",
+                            dropValue == "Stress Resultants"
+                            ? withUnit("M11", units.momentResultant)
+                            : withUnit("𝞳11", units.curvature),
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
                                 ? (widget.mechanicalTensor as LaminateStress)
@@ -249,7 +260,9 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
                         labelText:
-                            dropValue == "Stress Resultants" ? "M22" : "𝞳22",
+                            dropValue == "Stress Resultants"
+                            ? withUnit("M22", units.momentResultant)
+                            : withUnit("𝞳22", units.curvature),
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
                                 ? (widget.mechanicalTensor as LaminateStress)
@@ -282,7 +295,9 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
                         labelText:
-                            dropValue == "Stress Resultants" ? "M12" : "𝞳12",
+                            dropValue == "Stress Resultants"
+                            ? withUnit("M12", units.momentResultant)
+                            : withUnit("𝞳12", units.curvature),
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress Resultants"
                                 ? (widget.mechanicalTensor as LaminateStress)

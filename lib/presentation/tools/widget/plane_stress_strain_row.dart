@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart';
 
 class PlaneStressStrainRow extends StatefulWidget {
@@ -34,6 +36,7 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
 
   @override
   Widget build(BuildContext context) {
+    final units = context.watch<UnitSettings>().units;
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
@@ -93,7 +96,7 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress" ? "σ11" : "ε11",
+                        labelText: dropValue == "Stress" ? withUnit("σ11", units.stress) : "ε11",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress"
                                 ? (widget.mechanicalTensor as PlaneStress)
@@ -125,7 +128,7 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress" ? "σ22" : "ε22",
+                        labelText: dropValue == "Stress" ? withUnit("σ22", units.stress) : "ε22",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress"
                                 ? (widget.mechanicalTensor as PlaneStress)
@@ -164,7 +167,7 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress" ? "σ12" : "γ12 (2ε12)",
+                        labelText: dropValue == "Stress" ? withUnit("σ12", units.stress) : "γ12 (2ε12)",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress"
                                 ? (widget.mechanicalTensor as PlaneStress)

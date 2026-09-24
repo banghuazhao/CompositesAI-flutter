@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 
 class Result3By3Matrix extends StatelessWidget {
   final String title;
+
+  /// Unit shown after the title, e.g. "A Matrix (N/mm)".
+  final String unit;
   final List<List<double>> matrixList;
 
   const Result3By3Matrix(
-      {Key? key, required this.matrixList, required this.title})
+      {Key? key, required this.matrixList, required this.title, this.unit = ''})
       : super(key: key);
 
   @override
@@ -21,7 +25,7 @@ class Result3By3Matrix extends StatelessWidget {
         children: [
           ListTile(
             title: Text(
-              title,
+              withUnit(title, unit),
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),

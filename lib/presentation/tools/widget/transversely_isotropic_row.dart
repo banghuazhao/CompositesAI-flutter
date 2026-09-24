@@ -1,175 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:swiftcomp/presentation/tools/model/material_model.dart';
 import 'package:swiftcomp/presentation/tools/model/explain.dart';
 import 'package:swiftcomp/presentation/tools/model/validate.dart';
 
-class TransverselyIsotropicRow extends StatefulWidget {
+import '../model/material_library.dart';
+import '../model/unit_system.dart';
+import 'material_library_sheet.dart';
+import 'number_field.dart';
+
+class TransverselyIsotropicRow extends StatelessWidget {
   final TransverselyIsotropicMaterial material;
   final bool validate;
+  final int revision;
+  final ValueChanged<LibraryMaterial>? onMaterialSelected;
+  final MaterialFromInputs? saveCurrent;
 
   const TransverselyIsotropicRow(
-      {Key? key, required this.material, required this.validate})
+      {Key? key,
+      required this.material,
+      required this.validate,
+      this.revision = 0,
+      this.onMaterialSelected,
+      this.saveCurrent})
       : super(key: key);
 
   @override
-  _TransverselyIsotropicRowState createState() =>
-      _TransverselyIsotropicRowState();
-}
-
-class _TransverselyIsotropicRowState extends State<TransverselyIsotropicRow> {
-  @override
   Widget build(BuildContext context) {
-    return Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ListTile(
-              title: Row(
-                children: [
-                  Text(
-                    "Fiber Properties",
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Dialog dialog = Dialog(
-                        insetPadding: EdgeInsets.fromLTRB(20, 20, 20, 20),
-                        shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(12.0)), //this right here
-                        child: Container(
-                            padding: EdgeInsets.fromLTRB(12, 20, 12, 20),
-                            child: Explain.getExplain(
-                                ExplainType.material, context)),
-                      );
-                      showDialog(
-                          context: context,
-                          builder: (BuildContext context) => dialog);
-                    },
-                    icon: Icon(
-                      Icons.help_outline_rounded,
-                      color: Colors.grey,
-                    ),
-                  )
-                ],
-              ),
+    final units = context.watch<UnitSettings>().units;
+    final onSelected = onMaterialSelected;
+    return InputCard(
+      title: 'Fiber Properties',
+      help: Explain.getExplain(ExplainType.material, context),
+      action: onSelected == null
+          ? null
+          : MaterialLibraryButton(
+              kind: MaterialKind.fiber,
+              onSelected: onSelected,
+              saveCurrent: saveCurrent,
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.all(12),
-                              border: const OutlineInputBorder(),
-                              labelText: "E1",
-                              errorText: widget.validate
-                                  ? validateModulus(widget.material.e1)
-                                  : null),
-                          onChanged: (value) {
-                            widget.material.e1 = double.tryParse(value);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.all(12),
-                              border: const OutlineInputBorder(),
-                              labelText: "E2",
-                              errorText: widget.validate
-                                  ? validateModulus(widget.material.e2)
-                                  : null),
-                          onChanged: (value) {
-                            widget.material.e2 = double.tryParse(value);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.all(12),
-                              border: const OutlineInputBorder(),
-                              labelText: "G12",
-                              errorText: widget.validate
-                                  ? validateModulus(widget.material.g12)
-                                  : null),
-                          onChanged: (value) {
-                            widget.material.g12 = double.tryParse(value);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true, signed: true),
-                          decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.all(12),
-                              border: const OutlineInputBorder(),
-                              labelText: "ν12",
-                              errorText: widget.validate
-                                  ? validatePoissonRatio(widget.material.nu12)
-                                  : null),
-                          onChanged: (value) {
-                            widget.material.nu12 = double.tryParse(value);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.all(12),
-                              border: const OutlineInputBorder(),
-                              labelText: "ν23",
-                              errorText: widget.validate
-                                  ? validatePoissonRatio(widget.material.nu23)
-                                  : null),
-                          onChanged: (value) {
-                            widget.material.nu23 = double.tryParse(value);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(child: Container()),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ],
-        ));
+      children: [
+        FieldGrid(fields: [
+          NumberField(
+            label: 'E1',
+            unit: units.modulus,
+            value: material.e1,
+            revision: revision,
+            errorText: validate ? validateModulusIn(material.e1, units) : null,
+            onChanged: (value) => material.e1 = value,
+          ),
+          NumberField(
+            label: 'E2',
+            unit: units.modulus,
+            value: material.e2,
+            revision: revision,
+            errorText: validate ? validateModulusIn(material.e2, units) : null,
+            onChanged: (value) => material.e2 = value,
+          ),
+          NumberField(
+            label: 'G12',
+            unit: units.modulus,
+            value: material.g12,
+            revision: revision,
+            errorText:
+                validate ? validateModulusIn(material.g12, units) : null,
+            onChanged: (value) => material.g12 = value,
+          ),
+          NumberField(
+            label: 'ν12',
+            value: material.nu12,
+            revision: revision,
+            signed: true,
+            errorText: validate ? validatePoissonRatio(material.nu12) : null,
+            onChanged: (value) => material.nu12 = value,
+          ),
+          NumberField(
+            label: 'ν23',
+            value: material.nu23,
+            revision: revision,
+            signed: true,
+            errorText: validate ? validatePoissonRatio(material.nu23) : null,
+            onChanged: (value) => material.nu23 = value,
+          ),
+        ]),
+      ],
+    );
   }
 }

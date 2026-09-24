@@ -16,6 +16,9 @@ import 'package:swiftcomp/presentation/tools/widget/layup_angle_row.dart';
 import 'package:swiftcomp/presentation/tools/widget/plane_stress_strain_row.dart';
 
 import '../../tools/widget/delta_temperature_row.dart';
+import '../model/calc_report.dart';
+import '../model/unit_system.dart';
+import '../widget/lamina_inputs_mixin.dart';
 import '../widget/transversely_thermal_constants_row.dart';
 
 class LaminaStressStrainPage extends StatefulWidget {
@@ -25,7 +28,8 @@ class LaminaStressStrainPage extends StatefulWidget {
   _LaminaStressStrainPageState createState() => _LaminaStressStrainPageState();
 }
 
-class _LaminaStressStrainPageState extends State<LaminaStressStrainPage> {
+class _LaminaStressStrainPageState extends State<LaminaStressStrainPage>
+    with LaminaInputsMixin {
   AnalysisType analysisType = AnalysisType.elastic;
   TransverselyIsotropicMaterial transverselyIsotropicMaterial =
       TransverselyIsotropicMaterial();
@@ -35,6 +39,13 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage> {
   DeltaTemperature deltaTemperature = DeltaTemperature();
   MechanicalTensor mechanicalTensor = PlaneStress();
   bool validate = false;
+
+  @override
+  TransverselyIsotropicMaterial get laminaMaterial =>
+      transverselyIsotropicMaterial;
+
+  @override
+  TransverselyIsotropicCTE? get laminaCte => transverselyIsotropicCTE;
 
   @override
   Widget build(BuildContext context) {
@@ -92,11 +103,15 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage> {
         material: transverselyIsotropicMaterial,
         validate: validate,
         isPlaneStress: true,
+        revision: inputRevision,
+        onMaterialSelected: applyLibraryMaterial,
+        saveCurrent: saveCurrentMaterial,
       ),
       if (analysisType == AnalysisType.thermalElastic)
         TransverselyThermalConstantsRow(
           material: transverselyIsotropicCTE,
           validate: validate,
+          revision: inputRevision,
         ),
       if (analysisType == AnalysisType.thermalElastic)
         DeltaTemperatureRow(
@@ -128,6 +143,7 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage> {
 
   void _calculate() {
     if (transverselyIsotropicMaterial.isValidInPlane() &&
+        laminaModuliPlausible() &&
         layupAngle.isValid() &&
         mechanicalTensor.isValid()) {
       if (analysisType == AnalysisType.thermalElastic &&
@@ -135,11 +151,14 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage> {
         return;
       }
 
+      final units = this.units;
+      // Moduli are entered in GPa/Msi; stresses in MPa/ksi.
+      const toStress = Units.modulusToStress;
       LaminaStressStrainInput input = LaminaStressStrainInput(
         analysisType: analysisType,
-        E1: transverselyIsotropicMaterial.e1 ?? 0,
-        E2: transverselyIsotropicMaterial.e2 ?? 0,
-        G12: transverselyIsotropicMaterial.g12 ?? 0,
+        E1: (transverselyIsotropicMaterial.e1 ?? 0) * toStress,
+        E2: (transverselyIsotropicMaterial.e2 ?? 0) * toStress,
+        G12: (transverselyIsotropicMaterial.g12 ?? 0) * toStress,
         nu12: transverselyIsotropicMaterial.nu12 ?? 0,
         layupAngle: layupAngle.value ?? 0,
         alpha11: transverselyIsotropicCTE.alpha11 ?? 0,
@@ -169,10 +188,34 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage> {
       LaminaStressStrainOutput output =
           LaminaStressStrainCalculator.calculate(input);
 
+      final isThermal = analysisType == AnalysisType.thermalElastic;
+      final applied = input.tensorType == TensorType.stress
+          ? ValuesSection('Applied stress', [
+              ReportEntry('σ11', input.sigma11, units.stress),
+              ReportEntry('σ22', input.sigma22, units.stress),
+              ReportEntry('σ12', input.sigma12, units.stress),
+            ])
+          : ValuesSection('Applied strain', [
+              ReportEntry('ε11', input.epsilon11),
+              ReportEntry('ε22', input.epsilon22),
+              ReportEntry('γ12', input.gamma12),
+            ]);
+      final inputs = <ReportSection>[
+        ReportInputs.lamina(transverselyIsotropicMaterial, units),
+        if (isThermal) ReportInputs.cte(transverselyIsotropicCTE, units),
+        ValuesSection('Loading', [
+          ReportEntry('Layup angle', input.layupAngle, '°'),
+          if (isThermal)
+            ReportEntry('ΔT', input.deltaT, units.temperature),
+        ]),
+        applied,
+      ];
+
       Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) => LaminaStressStrainResult(output: output)));
+              builder: (context) =>
+                  LaminaStressStrainResult(output: output, inputs: inputs)));
     }
   }
 }

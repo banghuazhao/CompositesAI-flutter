@@ -8,8 +8,10 @@ import 'package:swiftcomp/util/app_interactions.dart';
 import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
+import '../widget/unit_system_picker.dart';
 import 'lamina_engineering_constants_page.dart';
 import 'laminate_3d_properties_page.dart';
+import 'laminate_failure_page.dart';
 import 'laminate_plate_properties_page.dart';
 import 'laminate_stress_strain_page.dart';
 
@@ -83,7 +85,15 @@ class _ToolPageState extends State<ToolPage>
           (context) => Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => const RulesOfMixturePage())))
+                  builder: (context) => const RulesOfMixturePage()))),
+      Tool(
+          const AssetImage("images/laminate.png"),
+          laminateFailureTitle,
+          laminateFailureDescription(context),
+          (context) => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const LaminateFailurePage()))),
     ];
   }
 
@@ -94,6 +104,7 @@ class _ToolPageState extends State<ToolPage>
     return Scaffold(
         appBar: AppBar(
           title: const Text("Tools"),
+          actions: const [UnitSystemButton(), SizedBox(width: 8)],
           foregroundColor: scheme.onSurface,
           iconTheme: IconThemeData(color: scheme.onSurface),
         ),

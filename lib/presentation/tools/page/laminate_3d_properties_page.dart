@@ -1,5 +1,7 @@
 import 'package:composite_calculator/composite_calculator.dart';
 import 'package:flutter/material.dart';
+import 'package:swiftcomp/presentation/tools/model/calc_report.dart';
+import 'package:swiftcomp/presentation/tools/widget/lamina_inputs_mixin.dart';
 import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/layer_thickness.dart';
@@ -24,7 +26,8 @@ class Laminate3DPropertiesPage extends StatefulWidget {
       _Laminate3DPropertiesPageState();
 }
 
-class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
+class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage>
+    with LaminaInputsMixin {
   AnalysisType analysisType = AnalysisType.elastic;
   TransverselyIsotropicMaterial transverselyIsotropicMaterial =
       TransverselyIsotropicMaterial();
@@ -35,6 +38,13 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
   LayupSequence layupSequence = LayupSequence();
   LayerThickness layerThickness = LayerThickness();
   bool validate = false;
+
+  @override
+  TransverselyIsotropicMaterial get laminaMaterial =>
+      transverselyIsotropicMaterial;
+
+  @override
+  TransverselyIsotropicCTE? get laminaCte => transverselyIsotropicCTE;
 
   @override
   Widget build(BuildContext context) {
@@ -89,10 +99,15 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
         material: transverselyIsotropicMaterial,
         validate: validate,
         isPlaneStress: false,
+        revision: inputRevision,
+        onMaterialSelected: applyLibraryMaterial,
+        saveCurrent: saveCurrentMaterial,
       ),
       if (analysisType == AnalysisType.thermalElastic)
         TransverselyThermalConstantsRow(
-            material: transverselyIsotropicCTE, validate: validate),
+            material: transverselyIsotropicCTE,
+            validate: validate,
+            revision: inputRevision),
       LayupSequenceRow(layupSequence: layupSequence, validate: validate),
       LayerThicknessPage(layerThickness: layerThickness, validate: validate),
       DescriptionItem(
@@ -103,6 +118,7 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
 
   void _calculate() {
     if (!transverselyIsotropicMaterial.isValid() ||
+        !laminaModuliPlausible() ||
         !layupSequence.isValid() ||
         !layerThickness.isValid()) {
       return;
@@ -133,7 +149,16 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage> {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) =>
-                Laminate3DPropertiesResultPage(output: output)));
+            builder: (context) => Laminate3DPropertiesResultPage(
+                  output: output,
+                  inputs: [
+                    ReportInputs.lamina(transverselyIsotropicMaterial, units,
+                        includeNu23: true),
+                    if (analysisType == AnalysisType.thermalElastic)
+                      ReportInputs.cte(transverselyIsotropicCTE, units),
+                    ReportInputs.layup(layupSequence.stringValue,
+                        layerThickness.value, units),
+                  ],
+                )));
   }
 }
