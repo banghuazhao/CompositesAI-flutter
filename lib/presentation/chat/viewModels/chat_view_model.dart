@@ -965,6 +965,18 @@ class ChatViewModel extends ChangeNotifier {
     );
   }
 
+  bool get canRegenerate => _conversation.canRegenerate;
+
+  void stopGenerating() => _conversation.stopGenerating();
+
+  Future<void> regenerateLastResponse() async {
+    if (isUploadingFile) return;
+    await _conversation.regenerateLastResponse(
+      toolIds: selectedToolIds.toList(growable: false),
+      model: selectedModel,
+    );
+  }
+
   Future<void> onDefaultQuestionsTapped(int index) async {
     final question = defaultQuestions[index];
     await sendInputMessage(question);

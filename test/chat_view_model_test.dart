@@ -35,6 +35,7 @@ class FakeChatUseCase extends Fake implements ChatUseCase {
     ChatModel? model,
   })? sendMessagesHandler;
   Object? persistMessagesError;
+  final List<List<Message>> persistedSnapshots = <List<Message>>[];
 
   int createChatCalls = 0;
   int sendMessagesCalls = 0;
@@ -90,6 +91,7 @@ class FakeChatUseCase extends Fake implements ChatUseCase {
 
   @override
   Future<void> persistMessages(List<Message> messages, Chat chat) async {
+    persistedSnapshots.add(List<Message>.from(messages));
     final error = persistMessagesError;
     if (error != null) throw error;
   }
@@ -507,6 +509,106 @@ void main() {
         viewModel.errorMessage,
         'Response received, but chat history could not be synchronized.',
       );
+    });
+
+    test('stopGenerating keeps and saves the partial answer', () async {
+      final chat = Chat(id: 'stop-chat', title: 'Question');
+      final responseController = StreamController<ChatStreamEvent>();
+      chatUseCase.createChatHandler = (_) async => chat;
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) =>
+          responseController.stream;
+
+      final sendFuture = viewModel.sendInputMessage('question');
+      while (chatUseCase.sendMessagesCalls == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      responseController.add(const ChatStreamEvent(content: 'Partial answer'));
+      await Future<void>.delayed(Duration.zero);
+
+      viewModel.stopGenerating();
+      await sendFuture;
+
+      final assistant = viewModel.messages.last;
+      expect(assistant.role, 'assistant');
+      expect(assistant.content, 'Partial answer');
+      expect(assistant.isDone, true);
+      expect(assistant.statusHistory.last.action, 'response_stopped');
+      expect(viewModel.isSendingMessage, false);
+      expect(viewModel.errorMessage, isNull);
+      expect(chatUseCase.persistedSnapshots, isNotEmpty);
+      await responseController.close();
+    });
+
+    test('stopGenerating before any content leaves the prompt answerable',
+        () async {
+      final chat = Chat(id: 'stop-empty-chat', title: 'Question');
+      final responseController = StreamController<ChatStreamEvent>();
+      chatUseCase.createChatHandler = (_) async => chat;
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) =>
+          responseController.stream;
+
+      final sendFuture = viewModel.sendInputMessage('question');
+      while (chatUseCase.sendMessagesCalls == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      viewModel.stopGenerating();
+      await sendFuture;
+
+      expect(viewModel.messages, hasLength(1));
+      expect(viewModel.messages.single.role, 'user');
+      expect(viewModel.messages.single.childrenIds, isEmpty);
+      expect(viewModel.canRegenerate, true);
+      expect(viewModel.errorMessage, isNull);
+      await responseController.close();
+    });
+
+    test('regenerateLastResponse replaces the last answer', () async {
+      final chat = Chat(id: 'regen-chat', title: 'Question');
+      var reply = 0;
+      final requestSizes = <int>[];
+      chatUseCase.createChatHandler = (_) async => chat;
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) {
+        requestSizes.add(messages.length);
+        reply++;
+        return Stream<ChatStreamEvent>.value(
+          ChatStreamEvent(content: 'Answer $reply'),
+        );
+      };
+
+      await viewModel.sendInputMessage('question');
+      expect(viewModel.messages.last.content, 'Answer 1');
+      expect(viewModel.canRegenerate, true);
+
+      await viewModel.regenerateLastResponse();
+
+      expect(viewModel.messages, hasLength(2));
+      expect(viewModel.messages.first.role, 'user');
+      expect(viewModel.messages.last.content, 'Answer 2');
+      expect(
+        viewModel.messages.first.childrenIds,
+        <String>[viewModel.messages.last.id],
+      );
+      // The regenerate request must not include the replaced answer.
+      expect(requestSizes, <int>[1, 1]);
+      expect(viewModel.isSendingMessage, false);
     });
   });
 }

@@ -58,6 +58,7 @@ class ChatConversationController extends ChangeNotifier {
   final Set<String> _submittingFeedbackMessageIds = <String>{};
   int _selectedChatRequestId = 0;
   int _operationId = 0;
+  int? _stopRequestedOperationId;
   bool _sendAdmissionInProgress = false;
   bool _isDisposed = false;
   Timer? _streamUpdateTimer;
@@ -185,20 +186,10 @@ class ChatConversationController extends ChangeNotifier {
 
       final chat = selectedChat;
       if (chat == null || operationId != _operationId) return;
-      final messagesForRequest = List<Message>.from(messages);
-      final sendId = const Uuid().v4();
-      final stream = _chatUseCase.sendMessages(
-        messagesForRequest,
-        chat,
-        sendId,
-        toolIds: List<String>.from(toolIds),
-        model: model,
-      );
-
-      await _processResponseStream(
-        stream: stream,
+      await _requestResponse(
         chat: chat,
-        selectedModel: model,
+        toolIds: toolIds,
+        model: model,
         operationId: operationId,
       );
     } catch (error) {
@@ -212,6 +203,114 @@ class ChatConversationController extends ChangeNotifier {
         ),
       );
     }
+  }
+
+  /// Whether the last assistant reply (or an unanswered last prompt) can be
+  /// requested again.
+  bool get canRegenerate {
+    if (isSendingMessage || selectedChat == null || messages.isEmpty) {
+      return false;
+    }
+    final last = messages.last;
+    if (last.role == 'user') return true;
+    return last.role == 'assistant' &&
+        messages.length >= 2 &&
+        messages[messages.length - 2].role == 'user';
+  }
+
+  /// Stops the response that is currently streaming. Content received so far
+  /// is kept and saved; an empty reply is discarded so it can be regenerated.
+  void stopGenerating() {
+    if (_isDisposed || !isSendingMessage) return;
+    _stopRequestedOperationId = _operationId;
+    final completer = _activeResponseCompleter;
+    if (completer != null && !completer.isCompleted) completer.complete();
+  }
+
+  /// Replaces the last assistant reply with a freshly generated one, or
+  /// answers the last user prompt if its reply was stopped or failed.
+  Future<void> regenerateLastResponse({
+    required List<String> toolIds,
+    ChatModel? model,
+  }) async {
+    if (_isDisposed || !canRegenerate || _sendAdmissionInProgress) return;
+    final chat = selectedChat!;
+
+    _sendAdmissionInProgress = true;
+    try {
+      if (await _chatLimiter.reachChatLimit()) {
+        _onError(ChatFailure.dailyLimit());
+        return;
+      }
+    } catch (error) {
+      if (kDebugMode) debugPrint('chat limit check error: $error');
+      _onError(
+        ChatErrorMapper.from(
+          error,
+          operation: ChatOperation.sendMessage,
+          fallbackMessage:
+              'Unable to regenerate the response right now. Please try again.',
+        ),
+        retry: () => regenerateLastResponse(toolIds: toolIds, model: model),
+      );
+      return;
+    } finally {
+      _sendAdmissionInProgress = false;
+    }
+    if (_isDisposed || !canRegenerate || selectedChat?.id != chat.id) return;
+
+    if (messages.last.role == 'assistant') {
+      messages.removeLast();
+    }
+    messages.last.childrenIds = <String>[];
+
+    final operationId = ++_operationId;
+    _setSendingMessage(true);
+    _onScrollRequested(force: false);
+
+    try {
+      await _requestResponse(
+        chat: chat,
+        toolIds: toolIds,
+        model: model,
+        operationId: operationId,
+      );
+    } catch (error) {
+      if (operationId != _operationId) return;
+      if (kDebugMode) debugPrint('regenerate error: $error');
+      _setSendingMessage(false);
+      _onError(
+        ChatErrorMapper.from(
+          error,
+          operation: ChatOperation.sendMessage,
+        ),
+        retry: () => regenerateLastResponse(toolIds: toolIds, model: model),
+      );
+    }
+  }
+
+  Future<void> _requestResponse({
+    required Chat chat,
+    required List<String> toolIds,
+    required ChatModel? model,
+    required int operationId,
+  }) async {
+    final messagesForRequest = List<Message>.from(messages);
+    final sendId = const Uuid().v4();
+    final stream = _chatUseCase.sendMessages(
+      messagesForRequest,
+      chat,
+      sendId,
+      toolIds: List<String>.from(toolIds),
+      model: model,
+    );
+
+    await _processResponseStream(
+      stream: stream,
+      chat: chat,
+      selectedModel: model,
+      operationId: operationId,
+    );
   }
 
   String _attachmentOnlyPrompt(List<ChatFile> attachments) {
@@ -303,10 +402,18 @@ class ChatConversationController extends ChangeNotifier {
     );
     _activeResponseSubscription = responseSubscription;
     _activeResponseCompleter = responseCompleter;
+    if (_stopRequestedOperationId == operationId) {
+      responseCompleter.complete();
+    }
 
     try {
       await responseCompleter.future;
       if (operationId != _operationId) return;
+
+      if (_stopRequestedOperationId == operationId) {
+        await _finishStoppedResponse(assistantMessage, chat, operationId);
+        return;
+      }
 
       if (assistantMessage.content.trim().isEmpty &&
           assistantMessage.statusHistory.isEmpty) {
@@ -377,6 +484,66 @@ class ChatConversationController extends ChangeNotifier {
     }
   }
 
+  Future<void> _finishStoppedResponse(
+    Message assistantMessage,
+    Chat chat,
+    int operationId,
+  ) async {
+    final hasContent = assistantMessage.content.trim().isNotEmpty;
+    if (hasContent) {
+      assistantMessage
+        ..statusHistory.add(
+          const ToolStatus(
+            action: 'response_stopped',
+            description: 'Response stopped',
+            done: true,
+          ),
+        )
+        ..thinkingElapsed = math.max(
+          0,
+          (DateTime.now().millisecondsSinceEpoch -
+                  assistantMessage.timestamp) ~/
+              1000,
+        )
+        ..isDone = true;
+      chat.updatedAt = _nowTimestamp();
+    } else {
+      _removeAssistantMessage(assistantMessage);
+    }
+    _flushStreamUpdate(operationId);
+
+    try {
+      if (hasContent) {
+        await _chatLimiter.incrementChatCount();
+        await _chatUseCase.updateChatMessage(assistantMessage, chat);
+      }
+      if (operationId != _operationId || messages.isEmpty) return;
+      await _chatUseCase.persistMessages(List<Message>.from(messages), chat);
+    } catch (error) {
+      if (operationId != _operationId) return;
+      if (kDebugMode) debugPrint('persist stopped response error: $error');
+      final snapshot = List<Message>.from(messages);
+      _onError(
+        ChatFailure.persistence(),
+        retry: () async {
+          if (hasContent) {
+            await _chatUseCase.updateChatMessage(assistantMessage, chat);
+          }
+          await _chatUseCase.persistMessages(snapshot, chat);
+        },
+      );
+    }
+  }
+
+  void _removeAssistantMessage(Message assistantMessage) {
+    messages.removeWhere((message) => message.id == assistantMessage.id);
+    final parentId = assistantMessage.parentId;
+    if (parentId == null) return;
+    final parentIndex =
+        messages.indexWhere((message) => message.id == parentId);
+    if (parentIndex >= 0) messages[parentIndex].childrenIds = <String>[];
+  }
+
   void _handleInterruptedResponse(Message assistantMessage) {
     if (assistantMessage.content.trim().isNotEmpty ||
         assistantMessage.statusHistory.isNotEmpty) {
@@ -391,12 +558,7 @@ class ChatConversationController extends ChangeNotifier {
       return;
     }
 
-    messages.removeWhere((message) => message.id == assistantMessage.id);
-    final parentId = assistantMessage.parentId;
-    if (parentId == null) return;
-    final parentIndex =
-        messages.indexWhere((message) => message.id == parentId);
-    if (parentIndex >= 0) messages[parentIndex].childrenIds = <String>[];
+    _removeAssistantMessage(assistantMessage);
   }
 
   Future<StreamController<Message>?> _replaceResponseController({

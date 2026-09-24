@@ -30,6 +30,7 @@ class ChatResponseActivity extends StatelessWidget {
   Widget build(BuildContext context) {
     final latest = _latestVisibleStatus;
     final interrupted = latest?.action == 'response_interrupted';
+    final stopped = latest?.action == 'response_stopped';
     final statusActive = latest != null && latest.done == false;
     final showThinking =
         isStreaming && !_thinkingDone && !interrupted && !statusActive;
@@ -37,6 +38,7 @@ class ChatResponseActivity extends StatelessWidget {
     // before tokens arrive; hide stale status once the answer is on screen.
     final showStatus = latest != null &&
         (interrupted ||
+            stopped ||
             (isStreaming && !_thinkingDone) ||
             (latest.done == false));
 
@@ -448,6 +450,10 @@ String chatToolStatusDescription(ToolStatus status) {
 
   if (status.action == 'response_interrupted') {
     return 'Response interrupted';
+  }
+
+  if (status.action == 'response_stopped') {
+    return 'Response stopped';
   }
 
   var description = status.description.trim();
