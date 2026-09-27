@@ -6,6 +6,7 @@ class ChatFile {
   final String collectionName;
   final String status;
   final int size;
+  final String processingError;
   final Map<String, dynamic>? file;
 
   const ChatFile({
@@ -16,6 +17,7 @@ class ChatFile {
     this.collectionName = '',
     this.status = 'uploaded',
     this.size = 0,
+    this.processingError = '',
     this.file,
   });
 
@@ -84,7 +86,10 @@ class ChatFile {
       collectionName: json['collection_name']?.toString() ??
           metaMap['collection_name']?.toString() ??
           knowledgeId,
-      status: json['status']?.toString() ?? 'uploaded',
+      status: metaMap['processing_status']?.toString() ??
+          json['status']?.toString() ??
+          'uploaded',
+      processingError: metaMap['processing_error']?.toString() ?? '',
       size: metaMap.isNotEmpty
           ? _parseInt(metaMap['size'])
           : _parseInt(json['size']),
@@ -102,6 +107,14 @@ class ChatFile {
   bool get isKnowledgeCollection => type == 'collection';
 
   bool get isKnowledgeFile => collectionName.isNotEmpty && type == 'file';
+
+  bool get isProcessing =>
+      status == 'awaiting' || status == 'queued' || status == 'processing';
+
+  bool get hasProcessingFailed => status == 'failed';
+
+  bool get isSelectableKnowledgeFile =>
+      !isKnowledgeFile || (!isProcessing && !hasProcessingFailed);
 
   Map<String, dynamic> toJson() => {
         'type': type,

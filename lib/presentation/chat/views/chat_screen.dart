@@ -1,4 +1,5 @@
 import 'package:domain/auth/entities/user.dart';
+import 'package:domain/chat/chat_use_case.dart';
 import 'package:domain/chat/entities/chat_file.dart';
 import 'package:domain/chat/entities/chat_knowledge.dart';
 import 'package:domain/chat/entities/chat_model.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:swiftcomp/app/injection_container.dart';
 import 'package:swiftcomp/util/app_interactions.dart';
 import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
@@ -23,6 +25,7 @@ import 'chat_error_snack_bar.dart';
 import 'message_list.dart';
 import 'chat_list.dart';
 import 'chat_welcome_view.dart';
+import 'knowledge_document_page.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -84,23 +87,69 @@ class _KnowledgePickerCard extends StatelessWidget {
                   ),
                   ...knowledge.files.map((file) {
                     final selected = chat.isKnowledgeSelected(file.id);
+                    final unavailable = !file.isSelectableKnowledgeFile;
+                    final statusText = file.hasProcessingFailed
+                        ? file.processingError.isNotEmpty
+                            ? 'Processing failed: ${file.processingError}'
+                            : 'Processing failed'
+                        : file.isProcessing
+                            ? 'Processing document…'
+                            : null;
                     return ListTile(
                       dense: true,
                       contentPadding:
                           const EdgeInsets.only(left: 56, right: 16),
-                      leading: const Icon(Icons.description_outlined, size: 20),
+                      leading: Icon(
+                        file.hasProcessingFailed
+                            ? Icons.error_outline_rounded
+                            : file.isProcessing
+                                ? Icons.hourglass_empty_rounded
+                                : Icons.description_outlined,
+                        size: 20,
+                        color: file.hasProcessingFailed ? scheme.error : null,
+                      ),
                       title: Text(
                         file.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      trailing: selected
-                          ? Icon(Icons.check_rounded, color: scheme.primary)
-                          : null,
-                      onTap: () {
-                        AppHaptics.light();
-                        viewModel.toggleKnowledgeFile(file);
-                      },
+                      subtitle: statusText == null
+                          ? null
+                          : Text(
+                              statusText,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: file.hasProcessingFailed
+                                  ? TextStyle(color: scheme.error)
+                                  : null,
+                            ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Read ${file.name}',
+                            icon: const Icon(Icons.menu_book_outlined),
+                            onPressed: () {
+                              Navigator.of(context, rootNavigator: true).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => KnowledgeDocumentPage(
+                                    file: file,
+                                    useCase: sl<ChatUseCase>(),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          if (selected)
+                            Icon(Icons.check_rounded, color: scheme.primary),
+                        ],
+                      ),
+                      onTap: unavailable
+                          ? null
+                          : () {
+                              AppHaptics.light();
+                              viewModel.toggleKnowledgeFile(file);
+                            },
                     );
                   }),
                 ],
@@ -150,7 +199,6 @@ class _ChatScreenState extends State<ChatScreen>
         await Future.wait([
           viewModel.fetchChats(),
           viewModel.fetchTools(),
-          viewModel.fetchKnowledgeBases(),
         ]);
       }
     });
@@ -213,7 +261,9 @@ class _ChatScreenState extends State<ChatScreen>
     if (state == AppLifecycleState.resumed && viewModel.isLoggedIn) {
       viewModel.fetchChats();
       viewModel.fetchTools();
-      viewModel.fetchKnowledgeBases();
+      if (viewModel.knowledgeBases.isNotEmpty) {
+        viewModel.fetchKnowledgeBases();
+      }
     }
   }
 
@@ -295,7 +345,6 @@ class _ChatScreenState extends State<ChatScreen>
                               await Future.wait([
                                 viewModel.fetchChats(),
                                 viewModel.fetchTools(),
-                                viewModel.fetchKnowledgeBases(),
                               ]);
                             }
                             if (result == "refresh" && mounted) {
@@ -1092,7 +1141,17 @@ class _ChatScreenState extends State<ChatScreen>
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton(
+                            tooltip: 'Refresh knowledge',
+                            icon: const Icon(Icons.refresh_rounded),
+                            onPressed: chat.isLoadingKnowledge
+                                ? null
+                                : chat.fetchKnowledgeBases,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
                         TextField(
                           controller: searchController,
                           decoration: InputDecoration(
@@ -1441,7 +1500,6 @@ class _ChatScreenState extends State<ChatScreen>
     await Future.wait([
       viewModel.fetchChats(),
       viewModel.fetchTools(),
-      viewModel.fetchKnowledgeBases(),
     ]);
   }
 }

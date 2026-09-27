@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:data/chat/message_delta_dto.dart';
 import 'package:data/chat/chat_socket_session.dart';
@@ -11,6 +12,7 @@ import 'package:domain/chat/entities/chat_stream_event.dart';
 import 'package:domain/chat/entities/feedback_response.dart';
 import 'package:domain/chat/entities/chat_folder.dart';
 import 'package:domain/chat/entities/chat_knowledge.dart';
+import 'package:domain/chat/entities/knowledge_document.dart';
 import 'package:domain/chat/entities/message.dart';
 import 'package:domain/chat/entities/chat_source.dart';
 import 'package:domain/chat/entities/chat_tool.dart';
@@ -455,6 +457,83 @@ class ChatRepositoryImpl implements ChatRepository {
     } else {
       throw mapServerErrorToDomainException(response);
     }
+  }
+
+  @override
+  Future<KnowledgeDocument> fetchKnowledgeDocument(String fileId) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final id = Uri.encodeComponent(fileId);
+    final response = await authClient.get(
+      Uri.parse('$baseURL/files/$id/markdown'),
+      headers: {'Accept': 'application/json'},
+    );
+    if (response.statusCode != 200) {
+      throw mapServerErrorToDomainException(response);
+    }
+    return KnowledgeDocument.fromJson(
+      _decodeMapResponse(response, 'GET /files/:id/markdown'),
+    );
+  }
+
+  @override
+  Future<String> fetchKnowledgeDocumentVersion(
+    String fileId,
+    int version,
+  ) async {
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final id = Uri.encodeComponent(fileId);
+    final response = await authClient.get(
+      Uri.parse('$baseURL/files/$id/versions/$version'),
+      headers: {'Accept': 'application/json'},
+    );
+    if (response.statusCode != 200) {
+      throw mapServerErrorToDomainException(response);
+    }
+    final data = _decodeMapResponse(response, 'GET /files/:id/versions/:version');
+    final content = data['content'];
+    if (content is! String) {
+      throw const FormatException('Document version has no text content.');
+    }
+    return content;
+  }
+
+  @override
+  Future<Uint8List> fetchKnowledgeDocumentImage(
+    String fileId,
+    String name,
+  ) async {
+    if (name.isEmpty ||
+        name == '.' ||
+        name == '..' ||
+        !RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(name)) {
+      throw ArgumentError.value(name, 'name', 'Invalid document image name');
+    }
+    final baseURL = await apiEnvironment.getBaseUrl();
+    final id = Uri.encodeComponent(fileId);
+    final imageName = Uri.encodeComponent(name);
+    final request = http.Request(
+      'GET',
+      Uri.parse('$baseURL/files/$id/images/$imageName'),
+    )..headers['Accept'] = 'image/*';
+    final response = await authClient.send(request);
+    if (response.statusCode != 200) {
+      throw mapServerErrorToDomainException(
+        await http.Response.fromStream(response),
+      );
+    }
+    const maxImageBytes = 12 * 1024 * 1024;
+    if (response.contentLength != null &&
+        response.contentLength! > maxImageBytes) {
+      throw const FormatException('Document image is too large to display.');
+    }
+    final bytes = BytesBuilder(copy: false);
+    await for (final chunk in response.stream) {
+      if (bytes.length + chunk.length > maxImageBytes) {
+        throw const FormatException('Document image is too large to display.');
+      }
+      bytes.add(chunk);
+    }
+    return bytes.takeBytes();
   }
 
   @override

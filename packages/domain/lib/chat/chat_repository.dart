@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'entities/message.dart';
 import 'entities/chat.dart';
 import 'entities/chat_model.dart';
@@ -8,6 +10,7 @@ import 'entities/chat_file.dart';
 import 'entities/feedback_response.dart';
 import 'entities/chat_folder.dart';
 import 'entities/chat_knowledge.dart';
+import 'entities/knowledge_document.dart';
 
 abstract class ChatRepository {
   /// GET /api/v1/chats/ — unpinned chats, ordered by `updated_at` (optional `?page=`).
@@ -40,6 +43,12 @@ abstract class ChatRepository {
   Future<ChatConfiguration> fetchChatConfiguration();
 
   Future<List<ChatKnowledge>> fetchKnowledgeBases();
+
+  Future<KnowledgeDocument> fetchKnowledgeDocument(String fileId);
+
+  Future<String> fetchKnowledgeDocumentVersion(String fileId, int version);
+
+  Future<Uint8List> fetchKnowledgeDocumentImage(String fileId, String name);
 
   Future<List<ChatModel>> fetchWorkspaceModels();
 

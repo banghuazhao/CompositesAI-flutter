@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'entities/message.dart';
 import 'entities/chat.dart';
 import 'entities/chat_model.dart';
@@ -7,6 +9,7 @@ import 'entities/chat_tool.dart';
 import 'entities/chat_file.dart';
 import 'entities/chat_folder.dart';
 import 'entities/chat_knowledge.dart';
+import 'entities/knowledge_document.dart';
 import 'chat_repository.dart';
 
 abstract class ChatUseCase {
@@ -37,6 +40,12 @@ abstract class ChatUseCase {
   Future<ChatConfiguration> fetchChatConfiguration();
 
   Future<List<ChatKnowledge>> fetchKnowledgeBases();
+
+  Future<KnowledgeDocument> fetchKnowledgeDocument(String fileId);
+
+  Future<String> fetchKnowledgeDocumentVersion(String fileId, int version);
+
+  Future<Uint8List> fetchKnowledgeDocumentImage(String fileId, String name);
 
   Future<List<ChatModel>> fetchWorkspaceModels();
 
@@ -173,6 +182,21 @@ class ChatUseCaseImpl implements ChatUseCase {
   @override
   Future<List<ChatKnowledge>> fetchKnowledgeBases() {
     return repository.fetchKnowledgeBases();
+  }
+
+  @override
+  Future<KnowledgeDocument> fetchKnowledgeDocument(String fileId) {
+    return repository.fetchKnowledgeDocument(fileId);
+  }
+
+  @override
+  Future<String> fetchKnowledgeDocumentVersion(String fileId, int version) {
+    return repository.fetchKnowledgeDocumentVersion(fileId, version);
+  }
+
+  @override
+  Future<Uint8List> fetchKnowledgeDocumentImage(String fileId, String name) {
+    return repository.fetchKnowledgeDocumentImage(fileId, name);
   }
 
   @override

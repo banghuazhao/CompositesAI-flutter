@@ -65,6 +65,20 @@ class ChatAttachmentController extends ChangeNotifier {
       _knowledgeBases
         ..clear()
         ..addAll(knowledge);
+      final currentFiles = <String, ChatFile>{
+        for (final base in knowledge)
+          for (final file in base.files) file.id: file,
+      };
+      for (var index = _pendingFiles.length - 1; index >= 0; index--) {
+        final pending = _pendingFiles[index];
+        if (!pending.isKnowledgeFile) continue;
+        final updated = currentFiles[pending.id];
+        if (updated == null || !updated.isSelectableKnowledgeFile) {
+          _pendingFiles.removeAt(index);
+        } else {
+          _pendingFiles[index] = updated;
+        }
+      }
     } catch (error) {
       if (_isDisposed) return;
       if (kDebugMode) debugPrint('fetchKnowledgeBases error: $error');
@@ -284,6 +298,7 @@ class ChatAttachmentController extends ChangeNotifier {
 
   void toggleKnowledgeFile(ChatFile file) {
     if (_isDisposed) return;
+    if (!file.isSelectableKnowledgeFile) return;
     _togglePendingAttachment(file);
   }
 
