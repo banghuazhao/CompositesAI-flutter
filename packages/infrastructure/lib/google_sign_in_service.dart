@@ -56,9 +56,15 @@ class GoogleSignInServiceImpl implements GoogleSignInService {
     } on GoogleSignInException catch (e) {
       switch (e.code) {
         case GoogleSignInExceptionCode.canceled:
-        case GoogleSignInExceptionCode.interrupted:
-        case GoogleSignInExceptionCode.uiUnavailable:
           return null;
+        case GoogleSignInExceptionCode.interrupted:
+          throw Exception('Google sign-in was interrupted. Please try again.');
+        case GoogleSignInExceptionCode.uiUnavailable:
+          throw Exception('Google sign-in is unavailable. Please try again.');
+        case GoogleSignInExceptionCode.clientConfigurationError:
+        case GoogleSignInExceptionCode.providerConfigurationError:
+          throw Exception(
+              'Google sign-in is not configured correctly. Please contact support.');
         // ignore: no_default_cases
         default:
           rethrow;

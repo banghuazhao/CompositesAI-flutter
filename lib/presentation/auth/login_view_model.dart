@@ -80,7 +80,7 @@ class LoginViewModel extends ChangeNotifier {
       _signedInUser = user;
       return user;
     } catch (e) {
-      _errorMessage = _friendlyError(e);
+      _errorMessage = _friendlyError(e, passwordLogin: true);
       return null;
     } finally {
       _isLoading = false;
@@ -90,20 +90,24 @@ class LoginViewModel extends ChangeNotifier {
 
   // Maps raw exceptions to user-readable strings.
   static String _friendlyError(Object error,
-      {String fallback = 'Something went wrong. Please try again.'}) {
+      {String fallback = 'Something went wrong. Please try again.',
+      bool passwordLogin = false}) {
     // Strip class-name prefixes: "BadRequestException: …", "Exception: …", etc.
     var msg = error.toString()
         .replaceFirst(RegExp(r'^\w*Exception:\s*'), '')
         .trim();
     final lower = msg.toLowerCase();
-    if (lower.contains('401') ||
-        lower.contains('invalid credentials') ||
-        lower.contains('incorrect password') ||
-        lower.contains('wrong password')) {
+    if (passwordLogin &&
+        (lower.contains('401') ||
+            lower.contains('invalid credentials') ||
+            lower.contains('incorrect password') ||
+            lower.contains('wrong password'))) {
       return 'Incorrect email or password.';
     }
-    if (lower.contains('404') || lower.contains('no user') ||
-        lower.contains('not found')) {
+    if (passwordLogin &&
+        (lower.contains('404') ||
+            lower.contains('no user') ||
+            lower.contains('not found'))) {
       return 'No account found with this email.';
     }
     if (lower.contains('429') || lower.contains('too many')) {
@@ -168,6 +172,7 @@ class LoginViewModel extends ChangeNotifier {
   Future<void> signInWithGoogle() async {
     // Initialize as not signing in
     _isSigningIn = false;
+    _errorMessage = null;
     _signedInUser = null;
     notifyListeners();
 
