@@ -3,7 +3,7 @@
 import 'dart:convert';
 
 import 'package:data/mappers/domain_exception_mapper.dart';
-import 'package:domain/common//domain_exceptions.dart';
+import 'package:domain/common/domain_exceptions.dart';
 import 'package:domain/auth/entities/linkedin_user_profile.dart';
 import 'package:domain/auth/entities/auth_session.dart';
 import 'package:domain/auth/entities/user.dart';
@@ -50,22 +50,8 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        // Try to preserve backend error codes/messages for UI mapping.
-        try {
-          final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-          final code = decoded is Map<String, dynamic>
-              ? (decoded['code'] ??
-                      decoded['error_code'] ??
-                      decoded['error'] ??
-                      decoded['message'])
-                  ?.toString()
-              : null;
-          if (response.statusCode == 400) {
-            throw BadRequestException(code ?? 'Bad Request');
-          }
-        } catch (_) {
-          // ignore and fall through to generic mapping below
-        }
+        // FastAPI returns error details under `detail`. Keep the status and
+        // message so the sign-up screen can explain failures such as EMAIL_TAKEN.
         throw mapServerErrorToDomainException(response);
       }
 
@@ -269,43 +255,33 @@ class AuthRepositoryImpl implements AuthRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/oauth/apple');
 
-    try {
-      final response = await client.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'identityToken': identityToken,
-          if (email != null) 'email': email,
-          if (displayName != null) 'displayName': displayName,
-        }),
-      );
+    final response = await client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'identityToken': identityToken,
+        if (email != null) 'email': email,
+        if (displayName != null) 'displayName': displayName,
+      }),
+    );
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        if (kDebugMode) {
-          print('Apple OAuth login failed: ${response.body}');
-        }
-        throw Exception('Apple OAuth login failed');
-      }
-
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      final session = AuthSession.fromJson(data);
-      if (session.token.isEmpty) {
-        throw Exception('Access token missing in response');
-      }
-
-      await tokenProvider.saveToken(session.token);
-      if (kDebugMode) {
-        print('Apple OAuth login succeeded');
-      }
-      return session;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error during Apple OAuth login: $e');
-      }
-      throw Exception('Failed to login with Apple');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw mapServerErrorToDomainException(response);
     }
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    final session = AuthSession.fromJson(data);
+    if (session.token.isEmpty) {
+      throw Exception('Access token missing in response');
+    }
+
+    await tokenProvider.saveToken(session.token);
+    if (kDebugMode) {
+      print('Apple OAuth login succeeded');
+    }
+    return session;
   }
 
   @override
@@ -314,41 +290,31 @@ class AuthRepositoryImpl implements AuthRepository {
     // Backend expects: POST /api/v1/auths/oauth/google with { idToken }
     final url = Uri.parse('$baseURL/auths/oauth/google');
 
-    try {
-      final response = await client.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'idToken': idToken,
-        }),
-      );
+    final response = await client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'idToken': idToken,
+      }),
+    );
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        if (kDebugMode) {
-          print('Token validation failed: ${response.body}');
-        }
-        throw Exception('Google token validation failed');
-      }
-
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      final session = AuthSession.fromJson(data);
-      if (session.token.isEmpty) {
-        throw Exception('Access token missing in response');
-      }
-
-      await tokenProvider.saveToken(session.token);
-      if (kDebugMode) {
-        print('Google OAuth login succeeded');
-      }
-      return session;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error during token validation: $e');
-      }
-      throw Exception('Failed to validate token');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw mapServerErrorToDomainException(response);
     }
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    final session = AuthSession.fromJson(data);
+    if (session.token.isEmpty) {
+      throw Exception('Access token missing in response');
+    }
+
+    await tokenProvider.saveToken(session.token);
+    if (kDebugMode) {
+      print('Google OAuth login succeeded');
+    }
+    return session;
   }
 
   @override
@@ -356,42 +322,32 @@ class AuthRepositoryImpl implements AuthRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/oauth/github');
 
-    try {
-      final response = await client.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'accessToken': accessToken,
-          'access_token': accessToken,
-        }),
-      );
+    final response = await client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'accessToken': accessToken,
+        'access_token': accessToken,
+      }),
+    );
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        if (kDebugMode) {
-          print('GitHub OAuth login failed: ${response.body}');
-        }
-        throw Exception('GitHub OAuth login failed');
-      }
-
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      final session = AuthSession.fromJson(data);
-      if (session.token.isEmpty) {
-        throw Exception('Access token missing in response');
-      }
-
-      await tokenProvider.saveToken(session.token);
-      if (kDebugMode) {
-        print('GitHub OAuth login succeeded');
-      }
-      return session;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error during GitHub OAuth login: $e');
-      }
-      throw Exception('Failed to login with GitHub');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw mapServerErrorToDomainException(response);
     }
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    final session = AuthSession.fromJson(data);
+    if (session.token.isEmpty) {
+      throw Exception('Access token missing in response');
+    }
+
+    await tokenProvider.saveToken(session.token);
+    if (kDebugMode) {
+      print('GitHub OAuth login succeeded');
+    }
+    return session;
   }
 
   @override
@@ -399,42 +355,32 @@ class AuthRepositoryImpl implements AuthRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/oauth/microsoft');
 
-    try {
-      final response = await client.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'accessToken': accessToken,
-          'access_token': accessToken,
-        }),
-      );
+    final response = await client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'accessToken': accessToken,
+        'access_token': accessToken,
+      }),
+    );
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        if (kDebugMode) {
-          print('Microsoft OAuth login failed: ${response.body}');
-        }
-        throw Exception('Microsoft OAuth login failed');
-      }
-
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      final session = AuthSession.fromJson(data);
-      if (session.token.isEmpty) {
-        throw Exception('Access token missing in response');
-      }
-
-      await tokenProvider.saveToken(session.token);
-      if (kDebugMode) {
-        print('Microsoft OAuth login succeeded');
-      }
-      return session;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error during Microsoft OAuth login: $e');
-      }
-      throw Exception('Failed to login with Microsoft');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw mapServerErrorToDomainException(response);
     }
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    final session = AuthSession.fromJson(data);
+    if (session.token.isEmpty) {
+      throw Exception('Access token missing in response');
+    }
+
+    await tokenProvider.saveToken(session.token);
+    if (kDebugMode) {
+      print('Microsoft OAuth login succeeded');
+    }
+    return session;
   }
 
   @override

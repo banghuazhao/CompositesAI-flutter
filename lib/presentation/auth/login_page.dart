@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -139,7 +140,12 @@ class _LoginPageState extends State<LoginPage> {
 
               if (!started) {
                 started = true;
-                viewModel.signInWithGithub().whenComplete(safeClose);
+                // signInWithGithub notifies listeners before its first await.
+                // Start it after this dialog's first build has finished.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted || dialogClosed) return;
+                  viewModel.signInWithGithub().whenComplete(safeClose);
+                });
               }
 
               final code = viewModel.githubUserCode;
@@ -459,13 +465,16 @@ class _LoginPageState extends State<LoginPage> {
                             onPressed: () => _handleSocialSignIn(
                                 () => viewModel.signInWithMicrosoft()),
                           ),
-                          const SizedBox(height: 10),
-                          _buildSocialButton(
-                            iconPath: 'images/apple_logo.png',
-                            text: 'Continue with Apple',
-                            onPressed: () => _handleSocialSignIn(
-                                () => viewModel.signInWithApple()),
-                          ),
+                          if (!kIsWeb &&
+                              defaultTargetPlatform == TargetPlatform.iOS) ...[
+                            const SizedBox(height: 10),
+                            _buildSocialButton(
+                              iconPath: 'images/apple_logo.png',
+                              text: 'Continue with Apple',
+                              onPressed: () => _handleSocialSignIn(
+                                  () => viewModel.signInWithApple()),
+                            ),
+                          ],
                           const SizedBox(height: 24.0),
                         ],
                       ),

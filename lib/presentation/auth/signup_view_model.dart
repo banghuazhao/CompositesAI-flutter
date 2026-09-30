@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 
-import 'package:domain/common//domain_exceptions.dart';
+import 'package:domain/common/domain_exceptions.dart';
 import 'package:domain/auth/entities/user.dart';
 import 'package:domain/auth/use_cases/auth_use_case.dart';
 import 'package:file_picker/file_picker.dart';
