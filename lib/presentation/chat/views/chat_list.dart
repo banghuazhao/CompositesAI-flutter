@@ -407,6 +407,7 @@ class _ChatListState extends State<ChatList> {
   Timer? _searchDebounce;
   bool _syncingSearchText = false;
   String _lastRequestedSearch = '';
+  (String, String?, bool)? _lastObservedFilter;
 
   @override
   void initState() {
@@ -438,34 +439,51 @@ class _ChatListState extends State<ChatList> {
     final trimmed = query.trim();
     if (trimmed == _lastRequestedSearch) return;
     _lastRequestedSearch = trimmed;
+    _lastObservedFilter = (trimmed, null, false);
     context.read<ChatViewModel>().searchChatHistory(query);
   }
 
   void _submitSearch(String query) {
     _searchDebounce?.cancel();
     _lastRequestedSearch = query.trim();
+    _lastObservedFilter = (query.trim(), null, false);
     context.read<ChatViewModel>().searchChatHistory(query);
   }
 
   void _clearSearch(ChatViewModel chatViewModel) {
     _searchDebounce?.cancel();
     _lastRequestedSearch = '';
+    _lastObservedFilter = ('', null, false);
+    _syncingSearchText = true;
     _searchController.clear();
+    _syncingSearchText = false;
     chatViewModel.clearChatFilters();
   }
 
   void _syncSearchFromViewModel(ChatViewModel chatViewModel) {
-    if (_searchController.text == chatViewModel.chatSearchQuery) return;
+    final filter = (
+      chatViewModel.chatSearchQuery,
+      chatViewModel.selectedChatFolder?.id,
+      chatViewModel.showingArchivedChats,
+    );
+    // Local drafts differ from the debounced query. Only an external filter
+    // change should replace the text that the user is currently editing.
+    if (_lastObservedFilter == filter) return;
+    _lastObservedFilter = filter;
+    _searchDebounce?.cancel();
+    _lastRequestedSearch = filter.$1.trim();
+    if (_searchController.text == filter.$1) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (_searchController.text == chatViewModel.chatSearchQuery) return;
-      _syncingSearchText = true;
-      _searchController.text = chatViewModel.chatSearchQuery;
-      _searchController.selection = TextSelection.collapsed(
-        offset: _searchController.text.length,
-      );
-      _lastRequestedSearch = chatViewModel.chatSearchQuery.trim();
-      _syncingSearchText = false;
+      if (!mounted || _lastObservedFilter != filter) return;
+      if (_searchController.text == filter.$1) return;
+      setState(() {
+        _syncingSearchText = true;
+        _searchController.text = filter.$1;
+        _searchController.selection = TextSelection.collapsed(
+          offset: _searchController.text.length,
+        );
+        _syncingSearchText = false;
+      });
     });
   }
 

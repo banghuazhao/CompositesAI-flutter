@@ -49,136 +49,141 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
             Consumer<UpdatePasswordViewModel>(builder: (context, viewModel, _) {
           return Scaffold(
             appBar: AppBar(title: Text('Update Password')),
-            body: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _currentPassWordController,
-                      decoration: InputDecoration(
-                        labelText: 'Current Password',
-                        hintText: "Enter Current Password",
-                        hintStyle: const TextStyle(color: Colors.black54),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            viewModel.obscureCurrentPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: viewModel.toggleCurrentPasswordVisibility,
-                        ),
-                      ),
-                      obscureText: viewModel.obscureCurrentPassword,
-                      onChanged: (text) {
-                        currentPassword = text;
-                        setState(() {
-                          isCurrentPasswordValid = currentPassword!.isNotEmpty;
-                        });
-                        checkConfirmInput();
-                      },
-                    ),
-
-                    SizedBox(height: 16.0),
-                    TextFormField(
-                      controller: _newPasswordController,
-                      decoration: InputDecoration(
-                        labelText: 'New Password',
-                        hintText: "Enter new password",
-                        hintStyle: const TextStyle(color: Colors.black54),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            viewModel.obscureTextNewPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: viewModel.toggleNewPasswordVisibility,
-                        ),
-                      ),
-                      obscureText: viewModel.obscureTextNewPassword,
-                      onChanged: (text) {
-                        newPassword = text;
-                        setState(() {
-                          isNewPasswordValid = newPassword!.length >= 6;
-                        });
-                        checkConfirmInput();
-                      },
-                    ),
-                    SizedBox(height: 4.0),
-
-                    // Message aligned with the New Password input field
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 3.0),
-                        child: Text(
-                          isNewPasswordValid
-                              ? ''
-                              : 'Password must be at least 6 characters long',
-                          style: TextStyle(
-                            color: isNewPasswordValid
-                                ? Colors.transparent
-                                : Colors.black54,
-                            fontSize: 14.0,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 16.0),
-                    TextFormField(
-                      controller: _confirmPasswordController,
-                      decoration: InputDecoration(
-                          labelText: 'Confirm New Password',
-                          hintText: "Re-enter your password",
-                          hintStyle: const TextStyle(color: Colors.black54),
-                          border: UnderlineInputBorder(),
-                          errorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                          ),
-                          focusedErrorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFFB71C1C)),
-                          ),
-                          errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+            body: SafeArea(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _currentPassWordController,
+                        decoration: InputDecoration(
+                          labelText: 'Current Password',
+                          hintText: "Enter Current Password",
                           suffixIcon: IconButton(
                             icon: Icon(
-                              viewModel.obscureTextConfirmPassword
+                              viewModel.obscureCurrentPassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
                             ),
                             onPressed:
-                                viewModel.toggleConfirmPasswordVisibility,
-                          )),
-                      obscureText: viewModel.obscureTextConfirmPassword,
-                      onChanged: (text) {
-                        checkConfirmInput(); // Call this to update button state
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please confirm your password';
-                        }
-                        if (value != _newPasswordController.text) {
-                          return "The passwords do not match";
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: 24.0),
-                    viewModel.isLoading
-                        ? CircularProgressIndicator()
-                        : ElevatedButton(
-                            onPressed: confirmEnable
-                                ? () async {
-                                    if (_formKey.currentState!.validate()) {
-                                      await _updatePassword(viewModel);
-                                    }
-                                  }
-                                : null, // Disable button if confirmEnable is false
-                            child: Text('Update Password'),
+                                viewModel.toggleCurrentPasswordVisibility,
                           ),
-                  ],
+                        ),
+                        obscureText: viewModel.obscureCurrentPassword,
+                        onChanged: (text) {
+                          currentPassword = text;
+                          setState(() {
+                            isCurrentPasswordValid =
+                                currentPassword!.isNotEmpty;
+                          });
+                          checkConfirmInput();
+                        },
+                      ),
+
+                      SizedBox(height: 16.0),
+                      TextFormField(
+                        controller: _newPasswordController,
+                        decoration: InputDecoration(
+                          labelText: 'New Password',
+                          hintText: "Enter new password",
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              viewModel.obscureTextNewPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: viewModel.toggleNewPasswordVisibility,
+                          ),
+                        ),
+                        obscureText: viewModel.obscureTextNewPassword,
+                        onChanged: (text) {
+                          newPassword = text;
+                          setState(() {
+                            isNewPasswordValid = newPassword!.length >= 6;
+                          });
+                          checkConfirmInput();
+                        },
+                      ),
+                      SizedBox(height: 4.0),
+
+                      // Message aligned with the New Password input field
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 3.0),
+                          child: Text(
+                            isNewPasswordValid
+                                ? ''
+                                : 'Password must be at least 6 characters long',
+                            style: TextStyle(
+                              color: isNewPasswordValid
+                                  ? Colors.transparent
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                              fontSize: 14.0,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: 16.0),
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        decoration: InputDecoration(
+                            labelText: 'Confirm New Password',
+                            hintText: "Re-enter your password",
+                            border: UnderlineInputBorder(),
+                            errorBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                            ),
+                            focusedErrorBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                            ),
+                            errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                viewModel.obscureTextConfirmPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed:
+                                  viewModel.toggleConfirmPasswordVisibility,
+                            )),
+                        obscureText: viewModel.obscureTextConfirmPassword,
+                        onChanged: (text) {
+                          checkConfirmInput(); // Call this to update button state
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please confirm your password';
+                          }
+                          if (value != _newPasswordController.text) {
+                            return "The passwords do not match";
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 24.0),
+                      viewModel.isLoading
+                          ? CircularProgressIndicator()
+                          : ElevatedButton(
+                              onPressed: confirmEnable
+                                  ? () async {
+                                      if (_formKey.currentState!.validate()) {
+                                        await _updatePassword(viewModel);
+                                      }
+                                    }
+                                  : null, // Disable button if confirmEnable is false
+                              child: Text('Update Password'),
+                            ),
+                    ],
+                  ),
                 ),
               ),
             ),

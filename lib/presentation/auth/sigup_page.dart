@@ -58,6 +58,13 @@ class _SignupFormState extends State<SignupForm> {
     _nicknameController.addListener(_checkFields);
   }
 
+  @override
+  void dispose() {
+    _nicknameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
   void _validateEmail() {
     email = _emailController.text;
     final isValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
@@ -207,7 +214,6 @@ class _SignupFormState extends State<SignupForm> {
                   labelText: 'Name',
                   hintText: 'Enter your name',
                 ),
-                style: const TextStyle(color: Colors.black),
                 onChanged: (value) {
                   name = value.trim();
                   _checkFields();
@@ -294,7 +300,7 @@ class _SignupFormState extends State<SignupForm> {
                 obscureText: viewModel.obscureTextConfirmPassword,
                 onChanged: (value) {
                   setState(() {
-                    confirmPassword = value.trim();
+                    confirmPassword = value;
                   });
                   _checkFields();
                 },

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:domain/auth/entities/user.dart';
 import 'package:domain/chat/chat_use_case.dart';
 import 'package:domain/chat/entities/chat_file.dart';
@@ -174,7 +176,6 @@ class _ChatScreenState extends State<ChatScreen>
   bool get wantKeepAlive => true;
   final TextEditingController textController = TextEditingController();
   final FocusNode focusNode = FocusNode();
-  final FocusNode _sendShortcutFocusNode = FocusNode();
   final GlobalKey _inputBarKey = GlobalKey();
   double _inputBarHeight = 120;
   int? _lastPresentedErrorId;
@@ -205,7 +206,7 @@ class _ChatScreenState extends State<ChatScreen>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
-    )..repeat(reverse: true);
+    );
     _pulseAnimation = Tween<double>(begin: 0.85, end: 1.15).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -214,46 +215,85 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _sendShortcutFocusNode.dispose();
     focusNode.dispose();
     textController.dispose();
     _pulseController.dispose();
-    _speech.stop();
+    _speech.stop().catchError((Object error) {
+      debugPrint('Stopping voice input failed: $error');
+    });
     super.dispose();
   }
 
   Future<void> _startListening() async {
-    final available = await _speech.initialize(
-      onError: (_) => setState(() => _isListening = false),
-      onStatus: (status) {
-        if (status == SpeechToText.doneStatus ||
-            status == SpeechToText.notListeningStatus) {
-          if (mounted) setState(() => _isListening = false);
-        }
-      },
-    );
-    if (!available || !mounted) return;
-    setState(() => _isListening = true);
-    await _speech.listen(
-      onResult: (result) {
-        if (!mounted) return;
-        textController.text = result.recognizedWords;
-        textController.selection = TextSelection.fromPosition(
-          TextPosition(offset: textController.text.length),
-        );
-        setState(() {});
-      },
-      listenOptions: SpeechListenOptions(
-        listenFor: const Duration(seconds: 60),
-        pauseFor: const Duration(seconds: 3),
-        partialResults: true,
-      ),
-    );
+    try {
+      final available = await _speech.initialize(
+        onError: (_) {
+          _resetVoiceInput();
+          _showVoiceInputError();
+        },
+        onStatus: (status) {
+          if (status == SpeechToText.doneStatus ||
+              status == SpeechToText.notListeningStatus) {
+            _resetVoiceInput();
+          }
+        },
+      );
+      if (!mounted) return;
+      if (!available) {
+        _showVoiceInputError();
+        return;
+      }
+      setState(() => _isListening = true);
+      if (!MediaQuery.disableAnimationsOf(context)) {
+        _pulseController.repeat(reverse: true);
+      }
+      await _speech.listen(
+        onResult: (result) {
+          if (!mounted) return;
+          textController.text = result.recognizedWords;
+          textController.selection = TextSelection.fromPosition(
+            TextPosition(offset: textController.text.length),
+          );
+          setState(() {});
+        },
+        listenOptions: SpeechListenOptions(
+          listenFor: const Duration(seconds: 60),
+          pauseFor: const Duration(seconds: 3),
+          partialResults: true,
+        ),
+      );
+    } catch (error) {
+      debugPrint('Voice input failed: $error');
+      _resetVoiceInput();
+      _showVoiceInputError();
+    }
   }
 
   Future<void> _stopListening() async {
-    await _speech.stop();
-    if (mounted) setState(() => _isListening = false);
+    try {
+      await _speech.stop();
+    } catch (error) {
+      debugPrint('Stopping voice input failed: $error');
+    } finally {
+      _resetVoiceInput();
+    }
+  }
+
+  void _resetVoiceInput() {
+    if (!mounted) return;
+    _pulseController.stop();
+    setState(() => _isListening = false);
+  }
+
+  void _showVoiceInputError() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Voice input is unavailable. Please check microphone permissions.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -302,6 +342,7 @@ class _ChatScreenState extends State<ChatScreen>
         return Scaffold(
           appBar: AppBar(
             title: const Text("Chat"),
+            actionsPadding: const EdgeInsetsDirectional.only(end: 12),
             actions: [
               Builder(
                 builder: (context) {
@@ -330,8 +371,14 @@ class _ChatScreenState extends State<ChatScreen>
                             viewModel.messages.isNotEmpty)
                           _buildExportMenu(),
                         // Avatar or Profile Button
-                        GestureDetector(
-                          onTap: () async {
+                        IconButton(
+                          tooltip: 'Account & settings',
+                          constraints: const BoxConstraints.tightFor(
+                            width: 48,
+                            height: 48,
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          onPressed: () async {
                             AppHaptics.light();
                             final result = await Navigator.push<String>(
                               context,
@@ -351,55 +398,54 @@ class _ChatScreenState extends State<ChatScreen>
                               setState(() {});
                             }
                           },
-                          child: Stack(
-                            alignment: Alignment.topRight,
-                            // Align everything to the top-right corner
-                            children: [
-                              // Avatar or default icon
-                              viewModel.user?.avatarUrl != null
-                                  ? ClipOval(
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: Base64Image(
-                                            viewModel.user!.avatarUrl!),
+                          icon: SizedBox.square(
+                            dimension: 32,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Positioned.fill(
+                                  child: (viewModel.user?.avatarUrl ?? '')
+                                          .trim()
+                                          .isNotEmpty
+                                      ? ClipOval(
+                                          child: Base64Image(
+                                              viewModel.user!.avatarUrl!),
+                                        )
+                                      : const Icon(
+                                          Icons.account_circle,
+                                          size: 32,
+                                        ),
+                                ),
+                                if (viewModel.user?.isCompositeExpert == true)
+                                  PositionedDirectional(
+                                    end: -2,
+                                    bottom: -2,
+                                    child: Semantics(
+                                      label: 'Composite expert',
+                                      child: Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surface,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          Icons.verified,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          size: 14,
+                                        ),
                                       ),
-                                    )
-                                  : const Icon(
-                                      Icons.account_circle,
-                                      size: 20, // Adjusted size for consistency
-                                    ),
-
-                              // Blue verified icon with a white circular background
-                              if (viewModel.user?.isCompositeExpert == true)
-                                Positioned(
-                                  right: 0, // Align to the top-right corner
-                                  top: 0,
-                                  child: Container(
-                                    width: 20,
-                                    // Ensure fixed width
-                                    height: 20,
-                                    // Ensure fixed height
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape
-                                          .circle, // Ensure a perfect circle
-                                    ),
-                                    alignment: Alignment.center,
-                                    // Center the icon
-                                    child: Icon(
-                                      Icons.verified,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                      // Blue verification icon
-                                      size: 16, // Size of the icon itself
                                     ),
                                   ),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 8),
                       ],
                     );
                   }
@@ -520,7 +566,7 @@ class _ChatScreenState extends State<ChatScreen>
     final bottomInset = MediaQuery.of(context).padding.bottom;
     return Container(
       key: _inputBarKey,
-      color: Colors.transparent,
+      color: Theme.of(context).scaffoldBackgroundColor,
       padding: EdgeInsets.fromLTRB(
         hPad,
         0,
@@ -548,8 +594,8 @@ class _ChatScreenState extends State<ChatScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                KeyboardListener(
-                  focusNode: _sendShortcutFocusNode,
+                Focus(
+                  canRequestFocus: false,
                   onKeyEvent: _handleComposerKeyEvent,
                   child: TextField(
                     controller: textController,
@@ -633,37 +679,33 @@ class _ChatScreenState extends State<ChatScreen>
     });
   }
 
-  Future<void> _handleComposerKeyEvent(KeyEvent event) async {
+  KeyEventResult _handleComposerKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent ||
         event.logicalKey != LogicalKeyboardKey.enter) {
-      return;
+      return KeyEventResult.ignored;
     }
 
-    final isShiftPressed = HardwareKeyboard.instance.logicalKeysPressed
-            .contains(LogicalKeyboardKey.shiftLeft) ||
-        HardwareKeyboard.instance.logicalKeysPressed
-            .contains(LogicalKeyboardKey.shiftRight);
-    if (isShiftPressed) {
-      final text = textController.text;
-      textController.text = "$text\n";
-      textController.selection = TextSelection.fromPosition(
-        TextPosition(offset: textController.text.length),
-      );
-      return;
+    final keyboard = HardwareKeyboard.instance;
+    final composing = textController.value.composing;
+    if (keyboard.isShiftPressed ||
+        keyboard.isControlPressed ||
+        keyboard.isAltPressed ||
+        keyboard.isMetaPressed ||
+        (composing.isValid && !composing.isCollapsed)) {
+      return KeyEventResult.ignored;
     }
 
-    if (!viewModel.isSendingMessage) {
-      final text = textController.text.trim();
-      if (text.isNotEmpty || viewModel.pendingFiles.isNotEmpty) {
-        await viewModel.sendInputMessage(
-          text,
-          onMessageAccepted: textController.clear,
-        );
-      }
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      focusNode.requestFocus();
-    });
+    unawaited(_sendComposerMessage());
+    return KeyEventResult.handled;
+  }
+
+  Future<void> _sendComposerMessage() async {
+    if (!_canSendMessage()) return;
+    await viewModel.sendInputMessage(
+      textController.text.trim(),
+      onMessageAccepted: textController.clear,
+    );
+    if (mounted) focusNode.requestFocus();
   }
 
   bool _canSendMessage() {
@@ -854,13 +896,7 @@ class _ChatScreenState extends State<ChatScreen>
           child: Pressable(
             haptic: true,
             borderRadius: BorderRadius.circular(17),
-            onTap: () async {
-              final text = textController.text.trim();
-              await viewModel.sendInputMessage(
-                text,
-                onMessageAccepted: textController.clear,
-              );
-            },
+            onTap: _sendComposerMessage,
             child: Container(
               width: 44,
               height: 44,
@@ -935,11 +971,13 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   void _showModelPickerSheet() {
+    FocusManager.instance.primaryFocus?.unfocus();
     final models = List<ChatModel>.from(viewModel.models);
     final selectedId = viewModel.selectedModel?.id;
 
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       builder: (_) {
         return SafeArea(
@@ -956,19 +994,19 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                 ),
                 const SizedBox(height: 18),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.sizeOf(context).height * 0.55,
-                  ),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest
-                          .withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(24),
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.sizeOf(context).height * 0.55,
                     ),
-                    child: ExcludeFocus(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
                       child: ListView.separated(
                         shrinkWrap: true,
                         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1031,10 +1069,11 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   void _showAttachmentSheet() {
+    FocusManager.instance.primaryFocus?.unfocus();
     showModalBottomSheet(
       context: context,
       builder: (sheetContext) => SafeArea(
-        child: ExcludeFocus(
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1131,93 +1170,113 @@ class _ChatScreenState extends State<ChatScreen>
                       20,
                       MediaQuery.of(sheetContext).viewInsets.bottom + 20,
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Knowledge',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: IconButton(
-                            tooltip: 'Refresh knowledge',
-                            icon: const Icon(Icons.refresh_rounded),
-                            onPressed: chat.isLoadingKnowledge
-                                ? null
-                                : chat.fetchKnowledgeBases,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        TextField(
-                          controller: searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Search knowledge',
-                            prefixIcon: const Icon(Icons.search_rounded),
-                            suffixIcon: query.isEmpty
-                                ? null
-                                : IconButton(
-                                    tooltip: 'Clear search',
-                                    icon: const Icon(Icons.close_rounded),
-                                    onPressed: () {
-                                      searchController.clear();
-                                      setSheetState(() => query = '');
-                                    },
-                                  ),
-                            filled: true,
-                            fillColor: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.55),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                          onChanged: (value) =>
-                              setSheetState(() => query = value),
-                        ),
-                        const SizedBox(height: 14),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: MediaQuery.sizeOf(context).height * 0.58,
-                          ),
-                          child: chat.isLoadingKnowledge
-                              ? const Center(child: CircularProgressIndicator())
-                              : knowledgeItems.isEmpty
-                                  ? Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(24),
-                                        child: Text(
-                                          'No knowledge sources found',
-                                          style: TextStyle(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight:
+                            MediaQuery.sizeOf(sheetContext).height * 0.75,
+                      ),
+                      child: CustomScrollView(
+                        shrinkWrap: true,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Knowledge',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
-                                    )
-                                  : ExcludeFocus(
-                                      child: ListView.separated(
-                                        shrinkWrap: true,
-                                        itemCount: knowledgeItems.length,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(height: 10),
-                                        itemBuilder: (context, index) {
-                                          final knowledge =
-                                              knowledgeItems[index];
-                                          return _KnowledgePickerCard(
-                                            knowledge: knowledge,
-                                            viewModel: chat,
-                                          );
-                                        },
-                                      ),
                                     ),
-                        ),
-                      ],
+                                    IconButton(
+                                      tooltip: 'Refresh knowledge',
+                                      icon: const Icon(Icons.refresh_rounded),
+                                      onPressed: chat.isLoadingKnowledge
+                                          ? null
+                                          : chat.fetchKnowledgeBases,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                TextField(
+                                  controller: searchController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Search knowledge',
+                                    prefixIcon:
+                                        const Icon(Icons.search_rounded),
+                                    suffixIcon: query.isEmpty
+                                        ? null
+                                        : IconButton(
+                                            tooltip: 'Clear search',
+                                            icon:
+                                                const Icon(Icons.close_rounded),
+                                            onPressed: () {
+                                              searchController.clear();
+                                              setSheetState(() => query = '');
+                                            },
+                                          ),
+                                    filled: true,
+                                    fillColor: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest
+                                        .withValues(alpha: 0.55),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  onChanged: (value) =>
+                                      setSheetState(() => query = value),
+                                ),
+                                const SizedBox(height: 14),
+                              ],
+                            ),
+                          ),
+                          if (chat.isLoadingKnowledge)
+                            const SliverToBoxAdapter(
+                              child: SizedBox(
+                                height: 96,
+                                child:
+                                    Center(child: CircularProgressIndicator()),
+                              ),
+                            )
+                          else if (knowledgeItems.isEmpty)
+                            SliverToBoxAdapter(
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Text(
+                                    'No knowledge sources found',
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant),
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            SliverList.separated(
+                              itemCount: knowledgeItems.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final knowledge = knowledgeItems[index];
+                                return _KnowledgePickerCard(
+                                  knowledge: knowledge,
+                                  viewModel: chat,
+                                );
+                              },
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -1408,20 +1467,28 @@ class _ChatScreenState extends State<ChatScreen>
         ),
         if (!viewModel.isSendingMessage)
           Positioned(
-            top: -4,
-            right: -4,
-            child: Pressable(
-              borderRadius: BorderRadius.circular(11),
-              haptic: true,
-              onTap: () => viewModel.removePendingFile(file),
-              child: Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: scheme.inverseSurface,
-                  shape: BoxShape.circle,
+            top: 0,
+            right: 0,
+            child: IconButton(
+              tooltip: 'Remove ${file.name}',
+              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+              padding: const EdgeInsets.all(4),
+              onPressed: () {
+                AppHaptics.light();
+                viewModel.removePendingFile(file);
+              },
+              icon: Align(
+                alignment: Alignment.topRight,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: scheme.inverseSurface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.close,
+                      size: 13, color: scheme.onInverseSurface),
                 ),
-                child: const Icon(Icons.close, size: 13, color: Colors.white),
               ),
             ),
           ),

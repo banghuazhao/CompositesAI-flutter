@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -82,11 +83,17 @@ class _LoginPageState extends State<LoginPage> {
   // Shows a loading spinner while `signIn()` runs, then navigates on success
   // or shows an error snackbar on failure. Cancellations are silent.
 
-  Future<void> _handleSocialSignIn(Future<void> Function() signIn) async {
+  Future<void> _handleSocialSignIn(
+    LoginViewModel viewModel,
+    Future<void> Function() signIn,
+  ) async {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
     );
 
     await signIn();
@@ -94,7 +101,6 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pop(); // dismiss spinner
 
-    final viewModel = context.read<LoginViewModel>();
     if (viewModel.isSigningIn) {
       Navigator.pop(context, viewModel.signedInUser);
       return;
@@ -139,7 +145,12 @@ class _LoginPageState extends State<LoginPage> {
 
               if (!started) {
                 started = true;
-                viewModel.signInWithGithub().whenComplete(safeClose);
+                // signInWithGithub notifies listeners before its first await.
+                // Start it after this dialog's first build has finished.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted || dialogClosed) return;
+                  viewModel.signInWithGithub().whenComplete(safeClose);
+                });
               }
 
               final code = viewModel.githubUserCode;
@@ -444,7 +455,7 @@ class _LoginPageState extends State<LoginPage> {
                             iconPath: 'images/google_logo.png',
                             text: 'Continue with Google',
                             onPressed: () => _handleSocialSignIn(
-                                () => viewModel.signInWithGoogle()),
+                                viewModel, viewModel.signInWithGoogle),
                           ),
                           const SizedBox(height: 10),
                           _buildSocialButtonIcon(
@@ -457,15 +468,18 @@ class _LoginPageState extends State<LoginPage> {
                             iconWidget: _microsoftLogo(size: 20),
                             text: 'Continue with Microsoft',
                             onPressed: () => _handleSocialSignIn(
-                                () => viewModel.signInWithMicrosoft()),
+                                viewModel, viewModel.signInWithMicrosoft),
                           ),
-                          const SizedBox(height: 10),
-                          _buildSocialButton(
-                            iconPath: 'images/apple_logo.png',
-                            text: 'Continue with Apple',
-                            onPressed: () => _handleSocialSignIn(
-                                () => viewModel.signInWithApple()),
-                          ),
+                          if (!kIsWeb &&
+                              defaultTargetPlatform == TargetPlatform.iOS) ...[
+                            const SizedBox(height: 10),
+                            _buildSocialButton(
+                              iconPath: 'images/apple_logo.png',
+                              text: 'Continue with Apple',
+                              onPressed: () => _handleSocialSignIn(
+                                  viewModel, viewModel.signInWithApple),
+                            ),
+                          ],
                           const SizedBox(height: 24.0),
                         ],
                       ),
@@ -543,11 +557,14 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               SizedBox(width: 24, height: 24, child: Center(child: leading)),
               const SizedBox(width: 12),
-              Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
