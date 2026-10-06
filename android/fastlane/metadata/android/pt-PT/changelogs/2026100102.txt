@@ -1,0 +1,4 @@
+- Corrigido o bloqueio após iniciar sessão com Google.
+- Leia documentos da base de conhecimento, imagens e histórico de versões.
+- Melhorias na pesquisa de conversas, nos atalhos de teclado e na seleção de anexos.
+- Formulários de palavra-passe, texto ampliado e modo escuro melhorados.

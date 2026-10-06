@@ -1,5 +1,4 @@
-• See cited paper names on chat citation cards
-• Follow Thinking and knowledge-search progress while waiting for answers
-• Clearer sign-in prompt for guests, plus a simpler chat drawer
-• More reliable chat error handling
-• Bug fixes and polish
+- Fixed Google sign-in getting stuck after login.
+- Read knowledge documents, images and version history.
+- Improved chat search, keyboard shortcuts and attachment pickers.
+- Better password forms, large-text layouts and dark mode.
