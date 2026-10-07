@@ -1,4 +1,4 @@
-- Correction du blocage après la connexion avec Google.
-- Consultez les documents de la base de connaissances, leurs images et leur historique.
-- Recherche de chats, raccourcis clavier et sélection des pièces jointes améliorés.
-- Meilleurs formulaires de mot de passe, affichage en grands caractères et mode sombre.
+- Connexion via un compte tiers et annulation de la connexion GitHub plus fiables.
+- Messages d’inscription et de mot de passe plus clairs, avec un mode sombre amélioré.
+- Stop annule désormais les tâches de chat et d’outils en cours.
+- Les images des documents se chargent correctement si leur nom contient des espaces ou des caractères Unicode.

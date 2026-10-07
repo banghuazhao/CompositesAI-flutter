@@ -1,4 +1,4 @@
-- Fixed Google sign-in getting stuck after login.
-- Read knowledge documents, images and version history.
-- Improved chat search, keyboard shortcuts and attachment pickers.
-- Better password forms, large-text layouts and dark mode.
+- More reliable social sign-in and GitHub cancellation.
+- Clearer sign-up and password messages, with better dark mode.
+- Stop now cancels running chat and tool tasks.
+- Fixed document images with spaces or Unicode in filenames.

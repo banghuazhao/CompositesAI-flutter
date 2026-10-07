@@ -1,0 +1,4 @@
+- Login com outras contas e cancelamento do login GitHub mais confiáveis.
+- Mensagens de cadastro e senha mais claras, com melhorias no modo escuro.
+- Stop agora cancela tarefas de chat e ferramentas em andamento.
+- Corrigido o carregamento de imagens de documentos com espaços ou caracteres Unicode no nome do arquivo.

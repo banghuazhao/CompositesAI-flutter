@@ -1,4 +1,4 @@
-- Corregido el bloqueo después de iniciar sesión con Google.
-- Consulta documentos de conocimiento, imágenes e historial de versiones.
-- Mejoras en la búsqueda de chats, los atajos de teclado y la selección de archivos adjuntos.
-- Mejor experiencia con formularios de contraseña, texto grande y modo oscuro.
+- Inicio de sesión con otras cuentas y cancelación del acceso con GitHub más fiables.
+- Mensajes más claros al registrarse y gestionar contraseñas, con mejoras en el modo oscuro.
+- Stop ahora cancela las tareas de chat y herramientas en curso.
+- Corregida la carga de imágenes de documentos cuyos nombres contienen espacios o caracteres Unicode.

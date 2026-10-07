@@ -1,0 +1,4 @@
+- Início de sessão com outras contas e cancelamento do início de sessão GitHub mais fiáveis.
+- Mensagens de registo e palavra-passe mais claras, com melhorias no modo escuro.
+- Stop cancela agora tarefas de chat e ferramentas em curso.
+- Corrigido o carregamento de imagens de documentos com espaços ou caracteres Unicode no nome do ficheiro.
