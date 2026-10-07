@@ -574,6 +574,92 @@ void main() {
       await responseController.close();
     });
 
+    test('Stop waits for stream cleanup before saving its partial answer',
+        () async {
+      final cancellationStarted = Completer<void>();
+      final cancellationFinished = Completer<void>();
+      final responseController = StreamController<ChatStreamEvent>(
+        onCancel: () {
+          cancellationStarted.complete();
+          return cancellationFinished.future;
+        },
+      );
+      chatUseCase.createChatHandler =
+          (_) async => Chat(id: 'stop-cleanup-chat', title: 'Question');
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) =>
+          responseController.stream;
+      final sendFuture = viewModel.sendInputMessage('question');
+      while (chatUseCase.sendMessagesCalls == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      responseController.add(const ChatStreamEvent(content: 'Partial answer'));
+      await Future<void>.delayed(Duration.zero);
+
+      viewModel.stopGenerating();
+      await cancellationStarted.future;
+      expect(chatUseCase.persistedSnapshots, isEmpty);
+      cancellationFinished.complete();
+      await sendFuture;
+
+      expect(
+          chatUseCase.persistedSnapshots.last.last.content, 'Partial answer');
+      expect(viewModel.isSendingMessage, false);
+      await responseController.close();
+    });
+
+    test('server task cancellation saves content and clears the sending state',
+        () async {
+      chatUseCase.createChatHandler =
+          (_) async => Chat(id: 'cancelled-chat', title: 'Question');
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) =>
+          Stream.fromIterable(const [
+            ChatStreamEvent(content: 'Partial answer'),
+            ChatStreamEvent(cancelled: true),
+          ]);
+
+      await viewModel.sendInputMessage('question');
+
+      expect(viewModel.messages.last.content, 'Partial answer');
+      expect(viewModel.messages.last.statusHistory.last.action,
+          'response_stopped');
+      expect(viewModel.isSendingMessage, false);
+      expect(viewModel.errorMessage, isNull);
+      expect(chatUseCase.persistedSnapshots, isNotEmpty);
+    });
+
+    test('server cancellation before content leaves the prompt answerable',
+        () async {
+      chatUseCase.createChatHandler =
+          (_) async => Chat(id: 'cancelled-empty-chat', title: 'Question');
+      chatUseCase.sendMessagesHandler = (
+        messages,
+        chat,
+        id, {
+        List<String> toolIds = const [],
+        ChatModel? model,
+      }) =>
+          Stream.value(const ChatStreamEvent(cancelled: true));
+
+      await viewModel.sendInputMessage('question');
+
+      expect(viewModel.messages, hasLength(1));
+      expect(viewModel.messages.single.childrenIds, isEmpty);
+      expect(viewModel.canRegenerate, true);
+      expect(viewModel.errorMessage, isNull);
+    });
+
     test('regenerateLastResponse replaces the last answer', () async {
       final chat = Chat(id: 'regen-chat', title: 'Question');
       var reply = 0;

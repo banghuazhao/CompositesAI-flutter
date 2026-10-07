@@ -44,6 +44,21 @@
                     android:scheme="msauth"
                     android:host="com.banghuazhao.swiftcomp"
                     android:path="/dA9fci2wzppcQYLy4VOxftNW8Hk=" />
+                <!-- Google Play app signing certificate. -->
+                <data
+                    android:scheme="msauth"
+                    android:host="com.banghuazhao.swiftcomp"
+                    android:path="/pzpR9AJC9oa2pobIHnmAa9Y2A4A=" />
+                <!-- Direct release installation certificate. -->
+                <data
+                    android:scheme="msauth"
+                    android:host="com.banghuazhao.swiftcomp"
+                    android:path="/xR5XRY6zf9fdhMhZLXo1bOkdvGI=" />
+                <!-- Local Android development certificate. -->
+                <data
+                    android:scheme="msauth"
+                    android:host="com.banghuazhao.swiftcomp"
+                    android:path="/ci/H7EAbskuIgYTVku2/Vy6cC+Y=" />
             </intent-filter>
         </activity>
 

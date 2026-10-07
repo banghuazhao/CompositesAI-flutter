@@ -6,6 +6,7 @@ class ChatStreamEvent {
   final ToolStatus? status;
   final List<ChatSource> sources;
   final String? error;
+  final bool cancelled;
 
   const ChatStreamEvent({
     this.content = '',
@@ -13,6 +14,7 @@ class ChatStreamEvent {
     this.status,
     this.sources = const [],
     this.error,
+    this.cancelled = false,
   });
 
   bool get hasContent => content.isNotEmpty;

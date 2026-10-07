@@ -78,12 +78,15 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           hintText: "Input Email",
                           border: UnderlineInputBorder(),
                           errorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.error),
                           ),
                           focusedErrorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.error),
                           ),
-                          errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                          errorStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.error),
                         ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
@@ -164,12 +167,15 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             hintText: "Re-enter your password",
                             border: UnderlineInputBorder(),
                             errorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.error),
                             ),
                             focusedErrorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.error),
                             ),
-                            errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                            errorStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.error),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 viewModel.obscureTextConfirmPassword
@@ -210,12 +216,15 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             labelText: "Confirmation Code",
                             border: UnderlineInputBorder(),
                             errorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.error),
                             ),
                             focusedErrorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.error),
                             ),
-                            errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                            errorStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.error),
                           ),
                           validator: (value) {
                             if (value == null || value.length != 6) {
@@ -234,7 +243,12 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                         LoginButton(
                           'Reset',
                           enable: confirmEnable,
+                          isLoading: viewModel.isLoading,
                           onPressed: () async {
+                            if (viewModel.isLoading ||
+                                !_formKey.currentState!.validate()) {
+                              return;
+                            }
                             await viewModel.confirmResetPassword(
                                 _emailController.text,
                                 _newPasswordController.text,
@@ -243,8 +257,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             if (viewModel.errorMessage.isNotEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(
-                                      'Failed to reset password: ${viewModel.errorMessage}.'),
+                                  content: Text(viewModel.errorMessage),
                                 ),
                               );
                             } else {

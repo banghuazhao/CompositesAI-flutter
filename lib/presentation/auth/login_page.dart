@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -58,6 +57,7 @@ class _LoginPageState extends State<LoginPage> {
   // ── Email/password login ─────────────────────────────────────────────────
 
   Future<void> _login(LoginViewModel viewModel) async {
+    if (viewModel.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     setState(() => _emailLoginError = null);
 
@@ -86,8 +86,14 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleSocialSignIn(
     LoginViewModel viewModel,
     Future<void> Function() signIn,
+    String providerName,
   ) async {
-    showDialog(
+    if (viewModel.isLoading) return;
+    setState(() => _emailLoginError = null);
+    FocusScope.of(context).unfocus();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final loadingRoute = DialogRoute<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => const PopScope(
@@ -95,23 +101,41 @@ class _LoginPageState extends State<LoginPage> {
         child: Center(child: CircularProgressIndicator()),
       ),
     );
+    navigator.push(loadingRoute);
 
-    await signIn();
+    String? unexpectedError;
+    try {
+      await signIn();
+    } catch (_) {
+      unexpectedError =
+          '$providerName sign-in could not be completed. Please try again.';
+    } finally {
+      // Dismiss this dialog even if the callback throws or the page is removed.
+      // Removing its specific route also avoids popping another screen.
+      if (navigator.mounted && loadingRoute.isActive) {
+        if (loadingRoute.isCurrent) {
+          navigator.pop();
+        } else {
+          navigator.removeRoute(loadingRoute);
+        }
+      }
+    }
 
     if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).pop(); // dismiss spinner
 
-    if (viewModel.isSigningIn) {
+    if (unexpectedError == null && viewModel.isSigningIn) {
       Navigator.pop(context, viewModel.signedInUser);
       return;
     }
 
-    final error = viewModel.errorMessage;
+    final error = unexpectedError ?? viewModel.errorMessage;
     if (error != null && !_isCancellation(error)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error),
-          backgroundColor: Colors.red.shade700,
+          content: Text(error,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer)),
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 4),
         ),
@@ -122,6 +146,10 @@ class _LoginPageState extends State<LoginPage> {
   // ── GitHub device-flow sign-in ───────────────────────────────────────────
 
   Future<void> _githubSignIn(LoginViewModel viewModel) async {
+    if (viewModel.isLoading) return;
+    setState(() => _emailLoginError = null);
+    FocusScope.of(context).unfocus();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     try {
       bool started = false;
       bool dialogClosed = false;
@@ -137,8 +165,13 @@ class _LoginPageState extends State<LoginPage> {
                 if (dialogClosed) return;
                 dialogClosed = true;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (Navigator.of(dialogContext).canPop()) {
-                    Navigator.of(dialogContext).pop();
+                  if (!dialogContext.mounted) return;
+                  final route = ModalRoute.of(dialogContext);
+                  final navigator = Navigator.of(dialogContext);
+                  if (route?.isCurrent == true) {
+                    navigator.pop();
+                  } else if (route?.isActive == true) {
+                    navigator.removeRoute(route!);
                   }
                 });
               }
@@ -156,58 +189,73 @@ class _LoginPageState extends State<LoginPage> {
               final code = viewModel.githubUserCode;
               final uri = viewModel.githubVerificationUri;
 
-              return AlertDialog(
-                title: const Text('GitHub Sign-In'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (code == null || uri == null) ...[
-                      const Text('Preparing GitHub authorization…'),
-                      const SizedBox(height: 12),
-                      const Center(child: CircularProgressIndicator()),
-                    ] else ...[
-                      const Text('Open GitHub and enter this code:'),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        code,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
+              return PopScope(
+                canPop: !viewModel.isGithubFinalizing,
+                onPopInvokedWithResult: (didPop, _) {
+                  if (didPop) {
+                    dialogClosed = true;
+                    if (!viewModel.isSigningIn) {
+                      viewModel.cancelGithubSignIn();
+                    }
+                  }
+                },
+                child: AlertDialog(
+                  title: const Text('GitHub Sign-In'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (code == null || uri == null) ...[
+                        const Text('Preparing GitHub authorization…'),
+                        const SizedBox(height: 12),
+                        const Center(child: CircularProgressIndicator()),
+                      ] else ...[
+                        const Text('Open GitHub and enter this code:'),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          code,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                          "If the browser didn't open automatically, open:"),
-                      const SizedBox(height: 6),
-                      SelectableText(uri),
-                      const SizedBox(height: 12),
-                      const Text('Waiting for authorization…'),
+                        const SizedBox(height: 8),
+                        const Text(
+                            "If the browser didn't open automatically, open:"),
+                        const SizedBox(height: 6),
+                        SelectableText(uri),
+                        const SizedBox(height: 12),
+                        Text(viewModel.isGithubFinalizing
+                            ? 'Finishing sign-in…'
+                            : 'Waiting for authorization…'),
+                      ],
                     ],
+                  ),
+                  actions: [
+                    if (code != null)
+                      TextButton(
+                        onPressed: () async =>
+                            Clipboard.setData(ClipboardData(text: code)),
+                        child: const Text('Copy code'),
+                      ),
+                    if (uri != null)
+                      TextButton(
+                        onPressed: () async => launchUrl(Uri.parse(uri),
+                            mode: LaunchMode.externalApplication),
+                        child: const Text('Open GitHub'),
+                      ),
+                    TextButton(
+                      onPressed: viewModel.isGithubFinalizing
+                          ? null
+                          : () {
+                              viewModel.cancelGithubSignIn();
+                              safeClose();
+                            },
+                      child: const Text('Cancel'),
+                    ),
                   ],
                 ),
-                actions: [
-                  if (code != null)
-                    TextButton(
-                      onPressed: () async =>
-                          Clipboard.setData(ClipboardData(text: code)),
-                      child: const Text('Copy code'),
-                    ),
-                  if (uri != null)
-                    TextButton(
-                      onPressed: () async => launchUrl(Uri.parse(uri),
-                          mode: LaunchMode.externalApplication),
-                      child: const Text('Open GitHub'),
-                    ),
-                  TextButton(
-                    onPressed: () {
-                      viewModel.cancelGithubSignIn();
-                      safeClose();
-                    },
-                    child: const Text('Cancel'),
-                  ),
-                ],
               );
             },
           );
@@ -228,8 +276,10 @@ class _LoginPageState extends State<LoginPage> {
       if (error != null && !_isCancellation(error)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error),
-            backgroundColor: Colors.red.shade700,
+            content: Text(error,
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer)),
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 4),
           ),
@@ -239,17 +289,22 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('GitHub sign-in failed. Please try again.'),
-          backgroundColor: Colors.red.shade700,
+          content: Text('GitHub sign-in failed. Please try again.',
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer)),
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
           behavior: SnackBarBehavior.floating,
         ),
       );
+    } finally {
+      if (!viewModel.isSigningIn) viewModel.cancelGithubSignIn();
     }
   }
 
   // ── Sign-up navigation ───────────────────────────────────────────────────
 
-  Future<void> _signup() async {
+  Future<void> _signup(LoginViewModel viewModel) async {
+    if (viewModel.isLoading) return;
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => SignupPage()),
@@ -367,14 +422,20 @@ class _LoginPageState extends State<LoginPage> {
                             child: TextButton(
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.zero,
-                                minimumSize: const Size(50, 28),
+                                minimumSize: const Size(50, 48),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => ForgetPasswordPage()),
-                              ),
+                              onPressed: viewModel.isLoading
+                                  ? null
+                                  : () {
+                                      if (viewModel.isLoading) return;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) =>
+                                                ForgetPasswordPage()),
+                                      );
+                                    },
                               child: const Text(
                                 'Forgot password?',
                                 style: TextStyle(fontSize: 13),
@@ -415,22 +476,26 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ],
                           const SizedBox(height: 20.0),
-                          RichText(
-                            textAlign: TextAlign.center,
-                            text: TextSpan(
-                              style: theme.textTheme.bodyMedium,
-                              children: [
-                                const TextSpan(text: 'Not a member yet? '),
-                                TextSpan(
-                                  text: 'Sign up',
-                                  style: TextStyle(
-                                      color: scheme.primary,
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 4,
+                            children: [
+                              const Text('Not a member yet?'),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  textStyle: const TextStyle(
                                       fontWeight: FontWeight.bold),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = _signup,
                                 ),
-                              ],
-                            ),
+                                onPressed: viewModel.isLoading
+                                    ? null
+                                    : () => _signup(viewModel),
+                                child: const Text('Sign up'),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 20.0),
                           Row(
@@ -454,21 +519,27 @@ class _LoginPageState extends State<LoginPage> {
                           _buildSocialButton(
                             iconPath: 'images/google_logo.png',
                             text: 'Continue with Google',
-                            onPressed: () => _handleSocialSignIn(
-                                viewModel, viewModel.signInWithGoogle),
+                            onPressed: viewModel.isLoading
+                                ? null
+                                : () => _handleSocialSignIn(viewModel,
+                                    viewModel.signInWithGoogle, 'Google'),
                           ),
                           const SizedBox(height: 10),
                           _buildSocialButtonIcon(
                             icon: FontAwesomeIcons.github,
                             text: 'Continue with GitHub',
-                            onPressed: () => _githubSignIn(viewModel),
+                            onPressed: viewModel.isLoading
+                                ? null
+                                : () => _githubSignIn(viewModel),
                           ),
                           const SizedBox(height: 10),
                           _buildSocialButtonIcon(
                             iconWidget: _microsoftLogo(size: 20),
                             text: 'Continue with Microsoft',
-                            onPressed: () => _handleSocialSignIn(
-                                viewModel, viewModel.signInWithMicrosoft),
+                            onPressed: viewModel.isLoading
+                                ? null
+                                : () => _handleSocialSignIn(viewModel,
+                                    viewModel.signInWithMicrosoft, 'Microsoft'),
                           ),
                           if (!kIsWeb &&
                               defaultTargetPlatform == TargetPlatform.iOS) ...[
@@ -476,8 +547,10 @@ class _LoginPageState extends State<LoginPage> {
                             _buildSocialButton(
                               iconPath: 'images/apple_logo.png',
                               text: 'Continue with Apple',
-                              onPressed: () => _handleSocialSignIn(
-                                  viewModel, viewModel.signInWithApple),
+                              onPressed: viewModel.isLoading
+                                  ? null
+                                  : () => _handleSocialSignIn(viewModel,
+                                      viewModel.signInWithApple, 'Apple'),
                             ),
                           ],
                           const SizedBox(height: 24.0),
@@ -533,7 +606,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildSocialButtonBase({
     required Widget leading,
     required String text,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
   }) {
     return Pressable(
       haptic: true,
@@ -577,7 +650,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildSocialButton({
     required String iconPath,
     required String text,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
   }) {
     return _buildSocialButtonBase(
       leading:
@@ -591,7 +664,7 @@ class _LoginPageState extends State<LoginPage> {
     FaIconData? icon,
     Widget? iconWidget,
     required String text,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
   }) {
     assert(icon != null || iconWidget != null);
     return _buildSocialButtonBase(

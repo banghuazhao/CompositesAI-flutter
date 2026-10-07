@@ -140,12 +140,15 @@ class _UpdatePasswordPageState extends State<UpdatePasswordPage> {
                             hintText: "Re-enter your password",
                             border: UnderlineInputBorder(),
                             errorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.error),
                             ),
                             focusedErrorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                              borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.error),
                             ),
-                            errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                            errorStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.error),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 viewModel.obscureTextConfirmPassword

@@ -359,6 +359,11 @@ class ChatConversationController extends ChangeNotifier {
           return;
         }
         try {
+          if (response.cancelled) {
+            _stopRequestedOperationId = operationId;
+            responseCompleter.complete();
+            return;
+          }
           if (response.error != null) throw Exception(response.error);
 
           final status = response.status;
@@ -411,6 +416,10 @@ class ChatConversationController extends ChangeNotifier {
       if (operationId != _operationId) return;
 
       if (_stopRequestedOperationId == operationId) {
+        // Wait for remote task cancellation before saving our partial answer
+        // to avoid racing the server's final save.
+        await responseSubscription.cancel();
+        if (operationId != _operationId) return;
         await _finishStoppedResponse(assistantMessage, chat, operationId);
         return;
       }

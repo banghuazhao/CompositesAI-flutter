@@ -76,6 +76,7 @@ class _SignupFormState extends State<SignupForm> {
   }
 
   void _signup(SignupViewModel viewModel) async {
+    if (isLoading || viewModel.isLoading) return;
     name = _nicknameController.text.trim();
     if (_formKey.currentState!.validate()) {
       setState(() => isLoading = true);
@@ -183,12 +184,15 @@ class _SignupFormState extends State<SignupForm> {
                   labelText: 'Email',
                   hintText: "Input Email",
                   errorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                    borderSide:
+                        BorderSide(color: Theme.of(context).colorScheme.error),
                   ),
                   focusedErrorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                    borderSide:
+                        BorderSide(color: Theme.of(context).colorScheme.error),
                   ),
-                  errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                  errorStyle:
+                      TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
                 onChanged: (value) {
                   email = value.trim();
@@ -264,7 +268,7 @@ class _SignupFormState extends State<SignupForm> {
                         style: TextStyle(
                           color: isPasswordValid
                               ? Colors.transparent
-                              : Colors.black54,
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 14.0,
                         ),
                       ),
@@ -282,12 +286,15 @@ class _SignupFormState extends State<SignupForm> {
                       ? null
                       : 'Passwords do not match',
                   errorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                    borderSide:
+                        BorderSide(color: Theme.of(context).colorScheme.error),
                   ),
                   focusedErrorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFB71C1C)),
+                    borderSide:
+                        BorderSide(color: Theme.of(context).colorScheme.error),
                   ),
-                  errorStyle: TextStyle(color: Color(0xFFB71C1C)),
+                  errorStyle:
+                      TextStyle(color: Theme.of(context).colorScheme.error),
                   suffixIcon: IconButton(
                     icon: Icon(
                       viewModel.obscureTextConfirmPassword

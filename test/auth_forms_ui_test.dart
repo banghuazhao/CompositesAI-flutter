@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:domain/auth/entities/auth_session.dart';
 import 'package:domain/auth/mocks/auth_use_case_mock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
 import 'package:swiftcomp/app/injection_container.dart';
 import 'package:swiftcomp/presentation/auth/forget_password_page.dart';
 import 'package:swiftcomp/presentation/auth/forget_password_view_model.dart';
@@ -8,13 +12,16 @@ import 'package:swiftcomp/presentation/auth/signup_view_model.dart';
 import 'package:swiftcomp/presentation/auth/sigup_page.dart';
 import 'package:swiftcomp/presentation/auth/update_password.dart';
 import 'package:swiftcomp/presentation/auth/update_password_view_model.dart';
+import 'package:swiftcomp/util/app_theme.dart';
 
 Future<void> _showForm(
   WidgetTester tester,
   Widget page, {
   bool keyboardVisible = false,
+  bool dark = false,
 }) async {
   await tester.pumpWidget(MaterialApp(
+    theme: dark ? AppTheme.dark() : AppTheme.light(),
     builder: (context, child) => MediaQuery(
       data: MediaQuery.of(context).copyWith(
         viewInsets: EdgeInsets.only(bottom: keyboardVisible ? 300 : 0),
@@ -39,9 +46,10 @@ Future<void> _enterField(
 }
 
 void main() {
+  late MockAuthUseCase authUseCase;
   setUp(() async {
     await sl.reset();
-    final authUseCase = MockAuthUseCase();
+    authUseCase = MockAuthUseCase();
     sl.registerFactory<SignupViewModel>(
       () => SignupViewModel(authUseCase: authUseCase),
     );
@@ -56,6 +64,103 @@ void main() {
 
   tearDown(() async {
     await sl.reset();
+  });
+
+  testWidgets('Password reset stays busy and prevents duplicate submissions',
+      (tester) async {
+    final request = Completer<String>();
+    when(authUseCase.resetPassword(
+      'person@example.com',
+      'password123',
+      '123456',
+    )).thenAnswer((_) => request.future);
+
+    await _showForm(tester, const ForgetPasswordPage());
+    await _enterField(tester, 0, 'person@example.com');
+    await _enterField(tester, 1, 'password123');
+    await _enterField(tester, 2, 'password123');
+    await _enterField(tester, 3, '123456');
+    final reset = find.widgetWithText(MaterialButton, 'Reset');
+    await tester.ensureVisible(reset);
+    await tester.pumpAndSettle();
+    final submit = tester.widget<MaterialButton>(reset).onPressed!;
+    submit();
+    submit();
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(tester.widget<MaterialButton>(find.byType(MaterialButton)).onPressed,
+        isNull);
+    verify(authUseCase.resetPassword(
+      'person@example.com',
+      'password123',
+      '123456',
+    )).called(1);
+
+    request.completeError(Exception('Invalid confirmation code'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(tester.widget<MaterialButton>(reset).onPressed, isNotNull);
+    expect(
+      find.text('Failed to reset password. Please check your confirmation code '
+          'and try again.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('send confirmation code'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Signup password guidance stays readable in dark mode',
+      (tester) async {
+    await _showForm(tester, const SignupPage(), dark: true);
+    final hint = find.text('Password must be at least 6 characters long');
+    final text = tester.widget<Text>(hint);
+    final scheme = Theme.of(tester.element(hint)).colorScheme;
+    final textLuminance = text.style!.color!.computeLuminance();
+    final backgroundLuminance = scheme.surface.computeLuminance();
+    final lighter = textLuminance > backgroundLuminance
+        ? textLuminance
+        : backgroundLuminance;
+    final darker = textLuminance < backgroundLuminance
+        ? textLuminance
+        : backgroundLuminance;
+
+    expect((lighter + 0.05) / (darker + 0.05), greaterThanOrEqualTo(4.5));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Signup prevents a duplicate submission before rebuilding',
+      (tester) async {
+    final request = Completer<AuthSession>();
+    when(authUseCase.signUp(
+      'Test Person',
+      'person@example.com',
+      'password123',
+      profileImageUrl: null,
+    )).thenAnswer((_) => request.future);
+    await _showForm(tester, const SignupPage());
+    await _enterField(tester, 0, 'person@example.com');
+    await _enterField(tester, 1, 'Test Person');
+    await _enterField(tester, 2, 'password123');
+    await _enterField(tester, 3, 'password123');
+    final create = find.widgetWithText(MaterialButton, 'Create account');
+    final submit = tester.widget<MaterialButton>(create).onPressed!;
+    submit();
+    submit();
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    verify(authUseCase.signUp(
+      'Test Person',
+      'person@example.com',
+      'password123',
+      profileImageUrl: null,
+    )).called(1);
+
+    request.completeError(Exception('Network unavailable'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(tester.widget<MaterialButton>(create).onPressed, isNotNull);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Reset password action stays reachable above the keyboard',

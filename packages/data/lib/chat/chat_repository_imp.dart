@@ -28,6 +28,16 @@ import '../mappers/domain_exception_mapper.dart';
 const Duration _chatConnectionTimeout = Duration(seconds: 30);
 const Duration _chatInactivityTimeout = Duration(minutes: 3);
 
+class _ChatResponseCancellation {
+  bool requested = false;
+  Future<void> Function()? stopAndClose;
+
+  Future<void> cancel() async {
+    requested = true;
+    await stopAndClose?.call();
+  }
+}
+
 /// Main chat list: `GET {base}/chats/` (trailing slash matters on some servers).
 String _unpinnedChatsListUri(String baseURL, {int? page}) {
   final base = baseURL.endsWith('/')
@@ -86,11 +96,24 @@ class ChatRepositoryImpl implements ChatRepository {
   final AuthenticatedHttpClient authClient;
   final APIEnvironment apiEnvironment;
   final TokenProvider tokenProvider;
+  final http.Client Function() _streamClientFactory;
+  final Future<ChatSocketSession?> Function({
+    required Uri webBaseUri,
+    required String token,
+  }) _connectSocketSession;
 
-  ChatRepositoryImpl(
-      {required this.authClient,
-      required this.apiEnvironment,
-      required this.tokenProvider});
+  ChatRepositoryImpl({
+    required this.authClient,
+    required this.apiEnvironment,
+    required this.tokenProvider,
+    http.Client Function()? streamClientFactory,
+    Future<ChatSocketSession?> Function({
+      required Uri webBaseUri,
+      required String token,
+    })? connectSocketSession,
+  })  : _streamClientFactory = streamClientFactory ?? http.Client.new,
+        _connectSocketSession =
+            connectSocketSession ?? ChatSocketSession.connect;
 
   @override
   Future<List<Chat>> fetchChats({int? page}) async {
@@ -270,10 +293,8 @@ class ChatRepositoryImpl implements ChatRepository {
   /// falling back to the flat `messages` array and hydrating missing fields.
   List<Message> _messagesFromChatPayload(Map<String, dynamic> chatPayload) {
     final history = chatPayload['history'];
-    final historyMessagesRaw =
-        history is Map ? history['messages'] : null;
-    final currentId =
-        history is Map ? history['currentId']?.toString() : null;
+    final historyMessagesRaw = history is Map ? history['messages'] : null;
+    final currentId = history is Map ? history['currentId']?.toString() : null;
 
     final historyById = <String, Map<String, dynamic>>{};
     if (historyMessagesRaw is Map) {
@@ -344,8 +365,7 @@ class ChatRepositoryImpl implements ChatRepository {
     if (missingList('citations') && historyJson['citations'] is List) {
       target['citations'] = historyJson['citations'];
     }
-    if (missingList('statusHistory') &&
-        historyJson['statusHistory'] is List) {
+    if (missingList('statusHistory') && historyJson['statusHistory'] is List) {
       target['statusHistory'] = historyJson['statusHistory'];
     }
     if (missingList('status_history') &&
@@ -489,7 +509,8 @@ class ChatRepositoryImpl implements ChatRepository {
     if (response.statusCode != 200) {
       throw mapServerErrorToDomainException(response);
     }
-    final data = _decodeMapResponse(response, 'GET /files/:id/versions/:version');
+    final data =
+        _decodeMapResponse(response, 'GET /files/:id/versions/:version');
     final content = data['content'];
     if (content is! String) {
       throw const FormatException('Document version has no text content.');
@@ -505,7 +526,9 @@ class ChatRepositoryImpl implements ChatRepository {
     if (name.isEmpty ||
         name == '.' ||
         name == '..' ||
-        !RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(name)) {
+        name.contains('/') ||
+        name.contains('\\') ||
+        name.contains('\u0000')) {
       throw ArgumentError.value(name, 'name', 'Invalid document image name');
     }
     final baseURL = await apiEnvironment.getBaseUrl();
@@ -963,8 +986,48 @@ class ChatRepositoryImpl implements ChatRepository {
     String id, {
     List<String> toolIds = const [],
     ChatModel? model,
+  }) {
+    final cancellation = _ChatResponseCancellation();
+    StreamSubscription<ChatStreamEvent>? subscription;
+    late final StreamController<ChatStreamEvent> controller;
+    controller = StreamController<ChatStreamEvent>(
+      onListen: () {
+        subscription = _sendMessages(
+          messages,
+          chat,
+          id,
+          toolIds: toolIds,
+          model: model,
+          cancellation: cancellation,
+        ).listen(
+          controller.add,
+          onError: controller.addError,
+          onDone: () => unawaited(controller.close()),
+        );
+      },
+      onPause: () => subscription?.pause(),
+      onResume: () => subscription?.resume(),
+      onCancel: () async {
+        // An async* socket loop can wait for another event after cancellation.
+        // Stop and close its transport first, then wait for generator cleanup.
+        subscription?.resume();
+        await cancellation.cancel();
+        await subscription?.cancel();
+      },
+    );
+    return controller.stream;
+  }
+
+  Stream<ChatStreamEvent> _sendMessages(
+    List<Message> messages,
+    Chat chat,
+    String id, {
+    required List<String> toolIds,
+    required ChatModel? model,
+    required _ChatResponseCancellation cancellation,
   }) async* {
     final accessToken = await tokenProvider.getToken();
+    if (cancellation.requested) return;
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception('No active chat session token found.');
     }
@@ -975,9 +1038,10 @@ class ChatRepositoryImpl implements ChatRepository {
     final chatModel = model ?? ChatModel.fallback();
     final attachedFiles = _attachedFilesFromMessages(messages);
     ChatSocketSession? socketSession;
+    if (cancellation.requested) return;
 
     if (toolIds.isNotEmpty) {
-      socketSession = await ChatSocketSession.connect(
+      socketSession = await _connectSocketSession(
         webBaseUri: webBaseUri,
         token: accessToken,
       );
@@ -986,6 +1050,10 @@ class ChatRepositoryImpl implements ChatRepository {
         throw Exception(
           'Unable to connect to the chat socket required for tool execution.',
         );
+      }
+      if (cancellation.requested) {
+        await socketSession.close();
+        return;
       }
     }
 
@@ -1025,7 +1093,23 @@ class ChatRepositoryImpl implements ChatRepository {
       );
     }
 
-    final client = http.Client();
+    final client = _streamClientFactory();
+    String? backendTaskId;
+    var backendTaskFinished = false;
+    Future<void>? backendStop;
+    Future<void> stopAndClose() async {
+      if (backendTaskId != null && !backendTaskFinished) {
+        backendStop ??= _stopBackendTask(webBaseUrl, backendTaskId);
+        await backendStop;
+      }
+      if (socketSession != null) {
+        await socketSession.close();
+      } else {
+        client.close();
+      }
+    }
+
+    cancellation.stopAndClose = stopAndClose;
     try {
       final response = await client.send(request).timeout(
             _chatConnectionTimeout,
@@ -1060,16 +1144,20 @@ class ChatRepositoryImpl implements ChatRepository {
       if (socketSession != null &&
           !contentType.contains('text/event-stream') &&
           !contentType.contains('application/x-ndjson')) {
-        final responseBody = await response.stream.bytesToString();
+        final responseBody = await response.stream
+            .bytesToString()
+            .timeout(_chatConnectionTimeout);
         if (kDebugMode) {
           debugPrint('sendMessages socket kickoff body: $responseBody');
         }
-        _throwIfKickoffFailed(responseBody);
+        backendTaskId = _taskIdFromKickoff(responseBody);
+        if (cancellation.requested) return;
 
         yield* _eventsFromChatSocket(
           socketSession,
           chatId: chat.id,
           messageId: id,
+          onTaskFinished: () => backendTaskFinished = true,
         );
         return;
       }
@@ -1132,7 +1220,9 @@ class ChatRepositoryImpl implements ChatRepository {
       }
     } finally {
       client.close();
-      await socketSession?.close();
+      // A socket-backed response runs independently on the server. Closing
+      // the stream alone does not stop it, including a late kickoff response.
+      await stopAndClose();
     }
   }
 
@@ -1150,8 +1240,8 @@ class ChatRepositoryImpl implements ChatRepository {
     return filesById.values.map((file) => file.toJson()).toList();
   }
 
-  void _throwIfKickoffFailed(String responseBody) {
-    if (responseBody.trim().isEmpty) return;
+  String? _taskIdFromKickoff(String responseBody) {
+    if (responseBody.trim().isEmpty) return null;
 
     try {
       final decoded = jsonDecode(responseBody);
@@ -1163,9 +1253,30 @@ class ChatRepositoryImpl implements ChatRepository {
         if (decoded['status'] == false) {
           throw Exception(responseBody);
         }
+        final taskId = decoded['task_id'];
+        if (taskId is String && taskId.isNotEmpty) return taskId;
       }
     } on FormatException {
-      return;
+      return null;
+    }
+    return null;
+  }
+
+  Future<void> _stopBackendTask(String webBaseUrl, String taskId) async {
+    try {
+      final response = await authClient
+          .post(
+            Uri.parse(
+                '$webBaseUrl/api/tasks/stop/${Uri.encodeComponent(taskId)}'),
+          )
+          .timeout(_chatConnectionTimeout);
+      // A task that finished between Stop and this request is already gone.
+      if (response.statusCode != 200 && response.statusCode != 404) {
+        throw mapServerErrorToDomainException(response);
+      }
+    } catch (_) {
+      // Cleanup must still close the socket and preserve the partial response.
+      if (kDebugMode) debugPrint('Unable to stop the backend chat task.');
     }
   }
 
@@ -1173,6 +1284,7 @@ class ChatRepositoryImpl implements ChatRepository {
     ChatSocketSession socketSession, {
     required String chatId,
     required String messageId,
+    required VoidCallback onTaskFinished,
   }) async* {
     var sawContent = false;
 
@@ -1196,6 +1308,13 @@ class ChatRepositoryImpl implements ChatRepository {
         continue;
       }
 
+      if (data['type'] == 'task-cancelled') {
+        onTaskFinished();
+        yield const ChatStreamEvent(cancelled: true);
+        return;
+      }
+      final taskFinished = _isDoneChatCompletion(data);
+      if (taskFinished) onTaskFinished();
       final event = _chatStreamEventFromJson(data);
       if (event != null) {
         sawContent = sawContent || event.hasContent || event.error != null;
@@ -1214,7 +1333,7 @@ class ChatRepositoryImpl implements ChatRepository {
         debugPrint('sendMessages ignored socket event: $data');
       }
 
-      if (_isDoneChatCompletion(data)) {
+      if (taskFinished) {
         if (!sawContent && kDebugMode) {
           debugPrint('sendMessages socket completed without content.');
         }
@@ -1369,8 +1488,9 @@ class ChatRepositoryImpl implements ChatRepository {
       if (message.role == 'assistant' && message.model.isNotEmpty) {
         return ChatModel.fallback(
           id: message.model,
-          name:
-              message.modelName.isNotEmpty ? message.modelName : ChatModel.defaultModelName,
+          name: message.modelName.isNotEmpty
+              ? message.modelName
+              : ChatModel.defaultModelName,
         ).rawJson;
       }
     }

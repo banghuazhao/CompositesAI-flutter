@@ -115,6 +115,46 @@ flutter run
 
 Select an iOS simulator, Android emulator/device, or supported web target when prompted.
 
+## Google sign-in backend configuration
+
+Android requests its Google ID token using `GOOGLE_SIGNIN_SERVER_CLIENT_ID`,
+which falls back to `GOOGLE_SIGNIN_CLIENT_ID_WEB`. This must be the registered
+Web OAuth client. The backend's `GOOGLE_ID_TOKEN_AUDIENCES` must include that
+client alongside the existing iOS and web audiences. Preserve the existing
+entries when adding a client; an explicit list replaces the backend's
+`GOOGLE_CLIENT_ID` fallback.
+
+The backend's saved `oauth.google.id_token_audiences` configuration overrides
+its environment value. Check both before deploying. If the environment is the
+source, recreate the backend container after changing it so the new value is
+loaded. Keep token audience and issuer validation enabled.
+
+## Android Microsoft sign-in
+
+The Android app derives its Microsoft redirect URI from the installed signing
+certificate, so Google Play app signing and direct installation can use their
+respective callbacks. Keep the supported callback paths in
+`android/app/src/main/AndroidManifest.xml` registered under the Android platform
+of the existing Microsoft Entra app registration, using package name
+`com.banghuazhao.swiftcomp`. The Play signing hash is
+`pzpR9AJC9oa2pobIHnmAa9Y2A4A=`; its redirect URI is
+`msauth://com.banghuazhao.swiftcomp/pzpR9AJC9oa2pobIHnmAa9Y2A4A%3D`.
+Retain existing registered callbacks when adding this one. The bundled
+`MICROSOFT_ANDROID_REDIRECT_URI` no longer selects the Android runtime callback.
+
+## Store reviewer access
+
+Google Play's **App content > Sign in details** must declare that the app requires
+sign-in details and provide a reusable account with an app email and password.
+Use a dedicated ordinary user account with access to the app's reviewable
+features. Store credentials in the console, never in this repository.
+
+Reviewer instructions: Open CompositesAI and tap **Sign In to Chat**. Enter the
+provided username and password in the **Email** and **Password** fields, then tap
+**Sign in**. Use email/password login rather than a social sign-in button. No
+verification code or external account is required. After saving the sign-in
+details, send the changes for review from **Publishing overview**.
+
 ## Quality Checks
 
 Run the same checks used by CI:

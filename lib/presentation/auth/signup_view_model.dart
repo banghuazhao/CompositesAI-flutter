@@ -12,6 +12,18 @@ import 'package:image_picker/image_picker.dart';
 
 class SignupViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   bool obscureTextNewPassword = true;
   bool obscureTextConfirmPassword = true;
@@ -125,13 +137,35 @@ class SignupViewModel extends ChangeNotifier {
   }
 
   String _mapSignupError(Object error) {
-    final msg = error.toString();
-    if (msg.contains('EMAIL_TAKEN')) return '邮箱已被注册';
-    if (msg.contains('INVALID_EMAIL_FORMAT')) return '邮箱格式不对';
-    if (error is BadRequestException) return '注册信息有误，请检查后重试';
-    if (error is InternalServerErrorException) return '服务器错误，请稍后再试';
-    if (msg.contains('SocketException')) return '网络异常，请检查网络后重试';
-    return 'Signup failed: $msg';
+    final message = error.toString().toLowerCase();
+    if (error is ResourceAlreadyExistsException ||
+        message.contains('email_taken') ||
+        message.contains('email is already registered')) {
+      return 'This email is already registered. Please sign in instead.';
+    }
+    if (message.contains('invalid_email_format') ||
+        (message.contains('email format') && message.contains('invalid'))) {
+      return 'Please enter a valid email address.';
+    }
+    if (error is TooManyRequestsException) {
+      return 'Too many attempts. Please try again later.';
+    }
+    if (error is InternalServerErrorException) {
+      return 'Server error. Please try again later.';
+    }
+    if (message.contains('socketexception') ||
+        message.contains('network') ||
+        message.contains('connection') ||
+        message.contains('timeout')) {
+      return 'Network error. Please check your connection.';
+    }
+    if (error is BadRequestException || error is UnprocessableEntityException) {
+      return 'Please check your signup details and try again.';
+    }
+    if (error is ForbiddenException) {
+      return 'Account creation is currently unavailable. Please try again later.';
+    }
+    return 'Could not create your account. Please try again.';
   }
 
   Future<User?> signUp(
@@ -157,9 +191,6 @@ class SignupViewModel extends ChangeNotifier {
       _isSignedUp = true;
       return _signedInUser;
     } catch (e) {
-      if (kDebugMode) {
-        print(e);
-      }
       _errorMessage = _mapSignupError(e);
       return null;
     } finally {

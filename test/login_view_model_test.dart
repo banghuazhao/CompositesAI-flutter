@@ -397,6 +397,36 @@ void main() {
         expect(loginViewModel.errorMessage, 'Google Sign-In failed');
         expect(loginViewModel.isSigningIn, false);
       });
+
+      for (final rejection in [
+        'Invalid credentials',
+        'The email or password provided is incorrect. Please check for typos and try logging in again.',
+        'INVALID_CRED',
+      ]) {
+        test('Google token rejection uses a social sign-in message: $rejection',
+            () async {
+          when(mockGoogleSignInService.signIn(
+                  scopes: ['email', 'openid', 'profile'],
+                  clientId: anyNamed('clientId'),
+                  hostedDomain: anyNamed('hostedDomain'),
+                  serverClientId: anyNamed('serverClientId')))
+              .thenAnswer((_) async => GoogleSignInUser(
+                    email: 'test.user@example.com',
+                    displayName: 'Test User',
+                    photoUrl: 'https://example.com/photo.jpg',
+                    idToken: 'idToken',
+                  ));
+          when(mockAuthUseCase.validateGoogleToken('idToken'))
+              .thenThrow(Exception(rejection));
+
+          await loginViewModel.signInWithGoogle();
+
+          expect(loginViewModel.errorMessage,
+              'Google sign-in could not be completed. Please try again.');
+          expect(loginViewModel.isSigningIn, false);
+          expect(loginViewModel.signedInUser, isNull);
+        });
+      }
     });
   });
 }

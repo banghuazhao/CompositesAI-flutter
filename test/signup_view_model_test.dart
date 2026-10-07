@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:domain/auth/entities/auth_session.dart';
 import 'package:domain/common/domain_exceptions.dart';
 import 'package:domain/auth/entities/user.dart';
@@ -83,9 +85,71 @@ void main() {
 
         final user = await viewModel.signUp(name, email, password);
         expect(user, isNull);
-        expect(viewModel.errorMessage, '邮箱已被注册');
+        expect(viewModel.errorMessage,
+            'This email is already registered. Please sign in instead.');
       });
+
+      test('pending signup can finish after the page is disposed', () async {
+        final authUseCase = MockAuthUseCase();
+        final viewModel = SignupViewModel(authUseCase: authUseCase);
+        final response = Completer<AuthSession>();
+        when(authUseCase.signUp(
+          'Test User',
+          'test@example.com',
+          'password123',
+          profileImageUrl: anyNamed('profileImageUrl'),
+        )).thenAnswer((_) => response.future);
+        var notifications = 0;
+        viewModel.addListener(() => notifications++);
+
+        final signup = viewModel.signUp(
+          'Test User',
+          'test@example.com',
+          'password123',
+        );
+        viewModel.dispose();
+        response.complete(const AuthSession(token: 'session-token'));
+
+        await expectLater(signup, completes);
+        expect(notifications, 1);
+      });
+
+      final errors = <Object, String>{
+        BadRequestException('This email is already registered.'):
+            'This email is already registered. Please sign in instead.',
+        BadRequestException('The email format you entered is invalid.'):
+            'Please enter a valid email address.',
+        InternalServerErrorException('Internal diagnostic'):
+            'Server error. Please try again later.',
+        Exception('SocketException: Connection failed'):
+            'Network error. Please check your connection.',
+        Exception('Private internal diagnostic'):
+            'Could not create your account. Please try again.',
+      };
+      for (final entry in errors.entries) {
+        test('signup failure explains recovery: ${entry.key.runtimeType}',
+            () async {
+          final authUseCase = MockAuthUseCase();
+          final viewModel = SignupViewModel(authUseCase: authUseCase);
+          when(authUseCase.signUp(
+            'Test User',
+            'test@example.com',
+            'password123',
+            profileImageUrl: anyNamed('profileImageUrl'),
+          )).thenThrow(entry.key);
+
+          final user = await viewModel.signUp(
+            'Test User',
+            'test@example.com',
+            'password123',
+          );
+
+          expect(user, isNull);
+          expect(viewModel.errorMessage, entry.value);
+          expect(viewModel.isLoading, isFalse);
+          expect(viewModel.isSignedUp, isFalse);
+        });
+      }
     });
   });
 }
-

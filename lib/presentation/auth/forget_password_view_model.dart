@@ -2,6 +2,19 @@ import 'package:domain/auth/use_cases/auth_use_case.dart';
 import 'package:flutter/material.dart';
 
 class ForgetPasswordViewModel extends ChangeNotifier {
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
   bool isLoading = false;
   String errorMessage = '';
   bool isPasswordResetting = false;
@@ -24,6 +37,7 @@ class ForgetPasswordViewModel extends ChangeNotifier {
   ForgetPasswordViewModel({required this.authUseCase});
 
   Future<void> forgetPassword(String email) async {
+    if (_disposed || isLoading) return;
     _setLoadingState(true);
     errorMessage = '';
 
@@ -38,7 +52,9 @@ class ForgetPasswordViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> confirmResetPassword(email, newPassword, confirmCode) async {
+  Future<void> confirmResetPassword(
+      String email, String newPassword, String confirmCode) async {
+    if (_disposed || isLoading) return;
     _setLoadingState(true);
     errorMessage = '';
 
@@ -46,7 +62,8 @@ class ForgetPasswordViewModel extends ChangeNotifier {
       // Call the auth use case to send the confirmation code to the email
       await authUseCase.resetPassword(email, newPassword, confirmCode);
     } catch (error) {
-      errorMessage = 'Failed to send confirmation code.';
+      errorMessage =
+          'Failed to reset password. Please check your confirmation code and try again.';
     } finally {
       _setLoadingState(false);
     }

@@ -111,6 +111,41 @@ void main() {
     );
   });
 
+  test('document images preserve plain Unicode and punctuation filenames',
+      () async {
+    final requests = <http.Request>[];
+    final token = _TestTokenProvider();
+    final repository = ChatRepositoryImpl(
+      authClient: AuthenticatedHttpClient(MockClient((request) async {
+        requests.add(request);
+        return http.Response.bytes([1, 2, 3], 200);
+      }), token),
+      apiEnvironment: _TestEnvironment(),
+      tokenProvider: token,
+    );
+    const name = '材料 figure (1)?#.png';
+    expect(await repository.fetchKnowledgeDocumentImage('file-1', name),
+        [1, 2, 3]);
+    expect(requests.single.url.pathSegments.last, name);
+    expect(requests.single.url.hasQuery, false);
+    expect(requests.single.url.hasFragment, false);
+    for (final invalid in [
+      '',
+      '.',
+      '..',
+      '../figure.png',
+      'a/b.png',
+      'a\\b.png',
+      'a\u0000.png'
+    ]) {
+      await expectLater(
+        repository.fetchKnowledgeDocumentImage('file-1', invalid),
+        throwsArgumentError,
+      );
+    }
+    expect(requests, hasLength(1));
+  });
+
   testWidgets('reader can inspect an archived version and return to current',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
@@ -150,5 +185,28 @@ void main() {
     await tester.tap(find.byTooltip('Preview Markdown'));
     await tester.pumpAndSettle();
     expect(useCase.requestedImages, ['figure-1.png']);
+  });
+
+  testWidgets('preview accepts encoded plain names and rejects escaping URLs',
+      (tester) async {
+    const name = '材料 figure (1)?#.png';
+    final useCase = _ReaderUseCase(
+      content: '![Figure](images/${Uri.encodeComponent(name)})\n\n'
+          '![Remote](https://other.example/figure.png)\n\n'
+          '![Escape](images/%2E%2E%2Ffigure.png)\n\n'
+          '![Backslash](images/a%5Cb.png)\n\n'
+          '![Nul](images/a%00.png)\n\n'
+          '![Query](images/a.png?secret=1)',
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: KnowledgeDocumentPage(
+        file: const ChatFile(id: 'file-1', name: 'Materials.md', url: ''),
+        useCase: useCase,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Preview Markdown'));
+    await tester.pumpAndSettle();
+    expect(useCase.requestedImages, [name]);
   });
 }

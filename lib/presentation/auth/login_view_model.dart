@@ -11,6 +11,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:infrastructure/apple_sign_in_service.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
+import 'package:infrastructure/microsoft_android_redirect_service.dart';
 import 'package:msal_auth/msal_auth.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -26,6 +27,19 @@ class LoginViewModel extends ChangeNotifier {
       required this.googleSignInService});
 
   bool _isLoading = false;
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _githubAttempt?.cancel();
+    super.dispose();
+  }
 
   bool get isLoading => _isLoading;
 
@@ -52,9 +66,19 @@ class LoginViewModel extends ChangeNotifier {
   String? _githubVerificationUri;
   String? get githubVerificationUri => _githubVerificationUri;
 
-  bool _cancelGithubSignIn = false;
+  _GithubSignInAttempt? _githubAttempt;
+  bool get isGithubFinalizing => _githubAttempt?.isFinalizing ?? false;
+
   void cancelGithubSignIn() {
-    _cancelGithubSignIn = true;
+    // Once the backend exchange starts it commits the session token.
+    // The dialog also disables cancellation while this short step finishes.
+    if (!isGithubFinalizing) _githubAttempt?.cancel();
+  }
+
+  void _checkGithubAttempt(_GithubSignInAttempt attempt) {
+    if (_disposed || attempt.isCancelled || _githubAttempt != attempt) {
+      throw const _GithubSignInCancelledException();
+    }
   }
 
   void togglePasswordVisibility() {
@@ -93,10 +117,13 @@ class LoginViewModel extends ChangeNotifier {
       {String fallback = 'Something went wrong. Please try again.',
       bool passwordLogin = false}) {
     // Strip class-name prefixes: "BadRequestException: …", "Exception: …", etc.
-    var msg = error.toString()
-        .replaceFirst(RegExp(r'^\w*Exception:\s*'), '')
-        .trim();
+    var msg =
+        error.toString().replaceFirst(RegExp(r'^\w*Exception:\s*'), '').trim();
     final lower = msg.toLowerCase();
+    if (error is MsalException &&
+        (lower.contains('redirect_uri') || lower.contains('intent_filter'))) {
+      return MicrosoftSignInConfigurationException.userMessage;
+    }
     if (passwordLogin &&
         (lower.contains('401') ||
             lower.contains('invalid credentials') ||
@@ -113,15 +140,20 @@ class LoginViewModel extends ChangeNotifier {
     if (lower.contains('429') || lower.contains('too many')) {
       return 'Too many attempts. Please try again later.';
     }
-    if (lower.contains('500') || lower.contains('502') ||
-        lower.contains('503') || lower.contains('internal server')) {
+    if (lower.contains('500') ||
+        lower.contains('502') ||
+        lower.contains('503') ||
+        lower.contains('internal server')) {
       return 'Server error. Please try again later.';
     }
-    if (lower.contains('network') || lower.contains('socket') ||
-        lower.contains('connection') || lower.contains('timeout') ||
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('connection') ||
+        lower.contains('timeout') ||
         lower.contains('unreachable')) {
       return 'Network error. Please check your connection.';
     }
+    if (error is MsalException) return fallback;
     return msg.isEmpty ? fallback : msg;
   }
 
@@ -148,7 +180,8 @@ class LoginViewModel extends ChangeNotifier {
   static String get GITHUB_CLIENT_ID => _env('GITHUB_CLIENT_ID') ?? "";
   static String get GITHUB_SCOPE =>
       _env('GITHUB_CLIENT_SCOPE') ?? 'read:user user:email';
-  static const String _githubDeviceCodeUrl = 'https://github.com/login/device/code';
+  static const String _githubDeviceCodeUrl =
+      'https://github.com/login/device/code';
   static const String _githubAccessTokenUrl =
       'https://github.com/login/oauth/access_token';
   static const String _githubDeviceGrantType =
@@ -190,8 +223,6 @@ class LoginViewModel extends ChangeNotifier {
               scopes: <String>['email', 'openid', 'profile'],
             );
 
-      debugPrint('Google sign-in user: $user');
-
       if (user == null) {
         // User cancelled — stay silent, no error shown
         return;
@@ -206,7 +237,8 @@ class LoginViewModel extends ChangeNotifier {
       }
 
       // Validate the ID token with your backend
-      final AuthSession session = await authUseCase.validateGoogleToken(idToken);
+      final AuthSession session =
+          await authUseCase.validateGoogleToken(idToken);
       _signedInUser = session.user ??
           User(
             email: user.email,
@@ -216,8 +248,13 @@ class LoginViewModel extends ChangeNotifier {
       // Mark signing-in as successful
       _isSigningIn = true;
     } catch (error) {
-      debugPrint('Error during Google Sign-In: $error');
-      _errorMessage = _friendlyError(error);
+      debugPrint('Google sign-in failed.');
+      final message = error.toString().toLowerCase();
+      _errorMessage = message.contains('invalid credentials') ||
+              message.contains('email or password provided is incorrect') ||
+              message.contains('invalid_cred')
+          ? 'Google sign-in could not be completed. Please try again.'
+          : _friendlyError(error);
     } finally {
       // Notify listeners regardless of success or failure
       notifyListeners();
@@ -225,16 +262,21 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   Future<void> signInWithGithub() async {
+    if (_disposed || isGithubFinalizing) return;
+    _githubAttempt?.cancel();
+    final attempt = _GithubSignInAttempt();
+    _githubAttempt = attempt;
     _isSigningIn = false;
     _errorMessage = null;
     _signedInUser = null;
     _githubUserCode = null;
     _githubVerificationUri = null;
-    _cancelGithubSignIn = false;
     notifyListeners();
 
     if (GITHUB_CLIENT_ID.isEmpty) {
-      _errorMessage = 'Missing GITHUB_CLIENT_ID in .env';
+      _errorMessage =
+          'GitHub sign-in is temporarily unavailable. Please use email or another sign-in option.';
+      _githubAttempt = null;
       notifyListeners();
       return;
     }
@@ -243,13 +285,15 @@ class LoginViewModel extends ChangeNotifier {
       // Device Flow:
       // 1) Request device_code + user_code
       final deviceResp = await _githubRequestDeviceCode();
+      _checkGithubAttempt(attempt);
       final verificationUri = (deviceResp['verification_uri_complete'] ??
               deviceResp['verification_uri'])
           ?.toString();
       final userCode = deviceResp['user_code']?.toString();
       final deviceCode = deviceResp['device_code']?.toString();
-      final int expiresIn =
-          (deviceResp['expires_in'] is int) ? deviceResp['expires_in'] as int : 900;
+      final int expiresIn = (deviceResp['expires_in'] is int)
+          ? deviceResp['expires_in'] as int
+          : 900;
       int interval =
           (deviceResp['interval'] is int) ? deviceResp['interval'] as int : 5;
 
@@ -259,7 +303,8 @@ class LoginViewModel extends ChangeNotifier {
           verificationUri.isEmpty ||
           userCode.isEmpty ||
           deviceCode.isEmpty) {
-        throw Exception('Invalid GitHub device flow response');
+        throw Exception(
+            'GitHub sign-in could not be completed. Please try again.');
       }
 
       _githubUserCode = userCode;
@@ -271,27 +316,40 @@ class LoginViewModel extends ChangeNotifier {
         Uri.parse(verificationUri),
         mode: LaunchMode.externalApplication,
       );
+      _checkGithubAttempt(attempt);
 
       // 2) Poll until we get access_token or errors.
       final accessToken = await _githubPollAccessToken(
         deviceCode: deviceCode,
         expiresInSeconds: expiresIn,
         intervalSeconds: interval,
+        attempt: attempt,
       );
+      _checkGithubAttempt(attempt);
 
       // 3) Exchange access token with backend to get our session token.
+      attempt.isFinalizing = true;
+      notifyListeners();
       final AuthSession session =
           await authUseCase.validateGithubAccessToken(accessToken);
+      _checkGithubAttempt(attempt);
       _signedInUser = session.user;
 
       _isSigningIn = true;
+    } on _GithubSignInCancelledException {
+      // Closing a dialog or starting another attempt must not complete this one.
     } catch (error) {
-      debugPrint('Error during GitHub OAuth: $error');
-      _errorMessage = _friendlyError(error);
+      if (!_disposed && _githubAttempt == attempt && !attempt.isCancelled) {
+        debugPrint('GitHub sign-in failed.');
+        _errorMessage = _friendlyError(error);
+      }
     } finally {
-      _githubUserCode = null;
-      _githubVerificationUri = null;
-      notifyListeners();
+      if (_githubAttempt == attempt) {
+        _githubAttempt = null;
+        _githubUserCode = null;
+        _githubVerificationUri = null;
+        notifyListeners();
+      }
     }
   }
 
@@ -302,17 +360,21 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
 
     if (MICROSOFT_CLIENT_ID.isEmpty) {
-      _errorMessage = 'Missing MICROSOFT_CLIENT_ID in .env';
+      _errorMessage = MicrosoftSignInConfigurationException.userMessage;
       notifyListeners();
       return;
     }
 
     try {
+      final redirectUri =
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+              ? await MicrosoftAndroidRedirectService().getRedirectUri()
+              : MICROSOFT_ANDROID_REDIRECT_URI;
       final pca = await SingleAccountPca.create(
         clientId: MICROSOFT_CLIENT_ID,
         androidConfig: AndroidConfig(
           configFilePath: MICROSOFT_MSAL_CONFIG_PATH,
-          redirectUri: MICROSOFT_ANDROID_REDIRECT_URI,
+          redirectUri: redirectUri,
         ),
         appleConfig: AppleConfig(
           authorityType: AuthorityType.aad,
@@ -337,12 +399,19 @@ class LoginViewModel extends ChangeNotifier {
           await authUseCase.validateMicrosoftAccessToken(accessToken);
       _signedInUser = session.user;
       _isSigningIn = true;
+    } on MsalUserCancelException {
+      // Closing the Microsoft sign-in window is not an error.
+    } on MicrosoftSignInConfigurationException {
+      _errorMessage = MicrosoftSignInConfigurationException.userMessage;
     } on MsalException catch (e) {
-      debugPrint('MSAL error during Microsoft Sign-In: $e');
-      _errorMessage = _friendlyError(e);
-    } catch (e) {
-      debugPrint('Error during Microsoft Sign-In: $e');
-      _errorMessage = _friendlyError(e);
+      debugPrint('Microsoft sign-in failed.');
+      _errorMessage = _friendlyError(e,
+          fallback:
+              'Microsoft sign-in failed. Please try again or use email and password.');
+    } catch (_) {
+      debugPrint('Microsoft sign-in failed.');
+      _errorMessage =
+          'Microsoft sign-in failed. Please try again or use email and password.';
     } finally {
       notifyListeners();
     }
@@ -362,27 +431,27 @@ class LoginViewModel extends ChangeNotifier {
     required String deviceCode,
     required int expiresInSeconds,
     required int intervalSeconds,
+    required _GithubSignInAttempt attempt,
   }) async {
-    final deadline =
-        DateTime.now().add(Duration(seconds: expiresInSeconds));
+    final deadline = DateTime.now().add(Duration(seconds: expiresInSeconds));
     var interval = intervalSeconds;
 
     while (DateTime.now().isBefore(deadline)) {
-      if (_cancelGithubSignIn) {
-        throw Exception('GitHub sign-in cancelled');
-      }
+      _checkGithubAttempt(attempt);
       final uri = Uri.parse(_githubAccessTokenUrl);
       final resp = await httpPostForm(uri, {
         'client_id': GITHUB_CLIENT_ID,
         'device_code': deviceCode,
         'grant_type': _githubDeviceGrantType,
       });
+      _checkGithubAttempt(attempt);
 
       final error = resp['error']?.toString();
       if (error == null || error.isEmpty) {
         final token = resp['access_token']?.toString();
         if (token != null && token.isNotEmpty) return token;
-        throw Exception('Missing access_token from GitHub');
+        throw Exception(
+            'GitHub sign-in could not be completed. Please try again.');
       }
 
       switch (error) {
@@ -396,12 +465,15 @@ class LoginViewModel extends ChangeNotifier {
         case 'expired_token':
           throw Exception('GitHub device code expired');
         case 'device_flow_disabled':
-          throw Exception('GitHub device flow is disabled for this OAuth app');
+          throw Exception(
+              'GitHub sign-in is temporarily unavailable. Please use another sign-in option.');
         default:
-          throw Exception('GitHub device flow error: $error');
+          throw Exception(
+              'GitHub sign-in could not be completed. Please try again.');
       }
 
-      await Future.delayed(Duration(seconds: interval));
+      await attempt.wait(Duration(seconds: interval));
+      _checkGithubAttempt(attempt);
     }
 
     throw Exception('GitHub device flow timed out');
@@ -424,13 +496,20 @@ class LoginViewModel extends ChangeNotifier {
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      if (response.statusCode == 429) {
+        throw Exception('Too many attempts. Please try again later.');
+      }
       throw Exception(
-          'GitHub request failed: ${response.statusCode} ${response.body}');
+          'GitHub sign-in is temporarily unavailable. Please try again later.');
     }
 
-    final dynamic decoded = jsonDecode(response.body);
-    if (decoded is Map<String, dynamic>) return decoded;
-    throw Exception('Unexpected GitHub response: ${response.body}');
+    try {
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } on FormatException {
+      // A proxy or upstream error response can contain private diagnostics.
+    }
+    throw Exception('GitHub sign-in could not be completed. Please try again.');
   }
 
   // Function to handle Google Sign-Out
@@ -454,7 +533,8 @@ class LoginViewModel extends ChangeNotifier {
         ],
         // Web options are required on web; safe to provide here for parity.
         webAuthenticationOptions: WebAuthenticationOptions(
-          clientId: kIsWeb ? 'com.example.swiftcompsignin' : 'com.cdmHUB.SwiftComp',
+          clientId:
+              kIsWeb ? 'com.example.swiftcompsignin' : 'com.cdmHUB.SwiftComp',
           redirectUri: kIsWeb
               ? Uri.parse('https://compositesai.com')
               : Uri.parse(
@@ -462,8 +542,6 @@ class LoginViewModel extends ChangeNotifier {
                 ),
         ),
       );
-
-      debugPrint('Apple credential: $credential');
 
       final identityToken = credential.identityToken;
       if (identityToken == null || identityToken.isEmpty) {
@@ -474,7 +552,10 @@ class LoginViewModel extends ChangeNotifier {
       final displayName = [
         credential.givenName,
         credential.familyName,
-      ].where((s) => s != null && s.trim().isNotEmpty).map((s) => s!.trim()).join(' ');
+      ]
+          .where((s) => s != null && s.trim().isNotEmpty)
+          .map((s) => s!.trim())
+          .join(' ');
 
       final AuthSession session = await authUseCase.validateAppleToken(
         identityToken,
@@ -515,5 +596,36 @@ class LoginViewModel extends ChangeNotifier {
     } catch (error) {
       throw Exception("LinkedIn Sign-In Failed: $error");
     }
+  }
+}
+
+class _GithubSignInCancelledException implements Exception {
+  const _GithubSignInCancelledException();
+}
+
+class _GithubSignInAttempt {
+  bool isCancelled = false;
+  bool isFinalizing = false;
+  Timer? _timer;
+  Completer<void>? _waiter;
+
+  Future<void> wait(Duration duration) {
+    if (isCancelled) return Future<void>.value();
+    final waiter = Completer<void>();
+    _waiter = waiter;
+    _timer = Timer(duration, () {
+      _timer = null;
+      _waiter = null;
+      waiter.complete();
+    });
+    return waiter.future;
+  }
+
+  void cancel() {
+    isCancelled = true;
+    _timer?.cancel();
+    _timer = null;
+    _waiter?.complete();
+    _waiter = null;
   }
 }

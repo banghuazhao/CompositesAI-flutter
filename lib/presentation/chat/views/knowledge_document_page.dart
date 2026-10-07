@@ -267,9 +267,12 @@ class _KnowledgeDocumentPageState extends State<KnowledgeDocumentPage> {
       return null;
     }
     final name = uri.pathSegments.last;
-    if (name == '.' ||
+    if (name.isEmpty ||
+        name == '.' ||
         name == '..' ||
-        !RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(name)) {
+        name.contains('/') ||
+        name.contains('\\') ||
+        name.contains('\u0000')) {
       return null;
     }
     return name;
