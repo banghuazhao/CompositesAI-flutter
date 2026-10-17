@@ -1,6 +1,6 @@
 {
   "authorization_user_agent": "BROWSER",
-  "account_mode": "SINGLE",
+  "account_mode": "MULTIPLE",
   "authorities": [
     {
       "type": "AAD",

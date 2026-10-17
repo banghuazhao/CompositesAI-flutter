@@ -13,6 +13,8 @@ import 'package:mockito/mockito.dart';
 import 'package:swiftcomp/app/injection_container.dart';
 import 'package:swiftcomp/presentation/auth/login_page.dart';
 import 'package:swiftcomp/presentation/auth/login_view_model.dart';
+import 'package:swiftcomp/presentation/auth/signup_view_model.dart';
+import 'package:swiftcomp/presentation/auth/sigup_page.dart';
 import 'package:swiftcomp/util/app_interactions.dart';
 import 'package:swiftcomp/util/app_theme.dart';
 
@@ -87,6 +89,15 @@ Future<void> _startGoogleSignIn(WidgetTester tester) async {
   expect(find.byType(CircularProgressIndicator), findsOneWidget);
 }
 
+Future<void> _fillFields(WidgetTester tester, List<String> values) async {
+  for (var index = 0; index < values.length; index++) {
+    final field = find.byType(TextFormField).at(index);
+    await tester.ensureVisible(field);
+    await tester.pumpAndSettle();
+    await tester.enterText(field, values[index]);
+  }
+}
+
 void main() {
   late MockAuthUseCase authUseCase;
   late MockGoogleSignInService googleSignInService;
@@ -117,6 +128,107 @@ void main() {
   tearDown(() async {
     await sl.reset();
   });
+
+  for (final succeed in [false, true]) {
+    testWidgets(
+        'Pending email login keeps its route until completion, '
+        'success=$succeed', (tester) async {
+      final request = Completer<User>();
+      final result = Completer<User?>();
+      final user = User(id: 'signed-in-user', email: 'person@example.com');
+      when(authUseCase.login('person@example.com', 'password123'))
+          .thenAnswer((_) => request.future);
+      await _openLogin(tester, result);
+      await _fillFields(tester, ['person@example.com', 'password123']);
+      final signIn = find.widgetWithText(ElevatedButton, 'Sign in');
+      await tester.ensureVisible(signIn);
+      await tester.pumpAndSettle();
+      await tester.tap(signIn);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(LoginPage), findsOneWidget);
+      expect(result.isCompleted, isFalse);
+
+      if (succeed) {
+        request.complete(user);
+        await tester.pumpAndSettle();
+        expect(await result.future, same(user));
+      } else {
+        request.completeError(UnauthorizedException('Invalid credentials'));
+        await tester.pumpAndSettle();
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        expect(await result.future, isNull);
+      }
+      expect(find.byType(LoginPage), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('Pending signup stays on screen and returns through login',
+      (tester) async {
+    final request = Completer<AuthSession>();
+    final result = Completer<User?>();
+    final user = User(id: 'new-user', email: 'person@example.com');
+    sl.registerFactory<SignupViewModel>(
+      () => SignupViewModel(authUseCase: authUseCase),
+    );
+    when(authUseCase.signUp('Test Person', 'person@example.com', 'password123',
+            profileImageUrl: null))
+        .thenAnswer((_) => request.future);
+    await _openLogin(tester, result);
+    await tester.ensureVisible(find.text('Sign up'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign up'));
+    await tester.pumpAndSettle();
+    await _fillFields(tester, [
+      'person@example.com',
+      'Test Person',
+      'password123',
+      'password123',
+    ]);
+    final create = find.widgetWithText(MaterialButton, 'Create account');
+    await tester.ensureVisible(create);
+    await tester.pumpAndSettle();
+    await tester.tap(create);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(SignupPage), findsOneWidget);
+    expect(result.isCompleted, isFalse);
+
+    request.complete(AuthSession(token: 'test-session', user: user));
+    await tester.pumpAndSettle();
+    expect(await result.future, same(user));
+    expect(find.byType(SignupPage), findsNothing);
+    expect(find.byType(LoginPage), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final platform in TargetPlatform.values) {
+    testWidgets('Only supported native login options appear on $platform',
+        (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: LoginPage()));
+      await tester.pumpAndSettle();
+      final nativeSupported = const [
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+        TargetPlatform.macOS,
+      ].contains(platform);
+      expect(find.text('Continue with Google'),
+          nativeSupported ? findsOneWidget : findsNothing);
+      expect(find.text('Continue with Microsoft'),
+          nativeSupported ? findsOneWidget : findsNothing);
+      expect(find.text('Continue with Apple'),
+          platform == TargetPlatform.iOS ? findsOneWidget : findsNothing);
+      expect(find.text('Continue with GitHub'), findsOneWidget);
+      expect(find.text('Continue with LinkedIn'), findsNothing);
+      expect(tester.takeException(), isNull);
+    }, variant: TargetPlatformVariant.only(platform));
+  }
 
   for (final dark in [false, true]) {
     testWidgets('Social sign-in error has readable contrast, dark=$dark',

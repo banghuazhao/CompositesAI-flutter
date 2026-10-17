@@ -55,7 +55,11 @@ class UserProfilePage extends StatelessWidget {
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => UpdatePasswordPage()),
+                        MaterialPageRoute(
+                          builder: (_) => UpdatePasswordPage(
+                            email: viewModel.user?.email,
+                          ),
+                        ),
                       );
                       if (result == 'password_updated') {
                         await viewModel.fetchUser();

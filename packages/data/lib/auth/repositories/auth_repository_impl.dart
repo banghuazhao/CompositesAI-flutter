@@ -1,5 +1,6 @@
 // lib/data/repositories/signup_repository_impl.dart
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:data/mappers/domain_exception_mapper.dart';
@@ -14,18 +15,37 @@ import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:infrastructure/token_provider.dart';
+import 'package:infrastructure/microsoft_sign_in_service.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final http.Client client;
   final AuthenticatedHttpClient authClient;
   final APIEnvironment apiEnvironment;
   final TokenProvider tokenProvider;
+  final Duration requestTimeout;
+  final MicrosoftSignInService? microsoftSignInService;
 
-  AuthRepositoryImpl(
-      {required this.client,
-      required this.authClient,
-      required this.apiEnvironment,
-      required this.tokenProvider});
+  AuthRepositoryImpl({
+    required this.client,
+    required this.authClient,
+    required this.apiEnvironment,
+    required this.tokenProvider,
+    this.microsoftSignInService,
+    this.requestTimeout = const Duration(seconds: 30),
+  });
+
+  Future<http.Response> _request(Future<http.Response> response) {
+    // Time out before processing the response, so a late sign-in response cannot
+    // save a session after the caller has already returned to the login form.
+    return response.timeout(
+      requestTimeout,
+      onTimeout: () {
+        throw TimeoutException(
+          'Authentication request timed out. Please try again.',
+        );
+      },
+    );
+  }
 
   @override
   Future<AuthSession> signUp(
@@ -38,15 +58,17 @@ class AuthRepositoryImpl implements AuthRepository {
     final url = Uri.parse('$baseURL/auths/signup');
 
     try {
-      final response = await client.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-          'profile_image_url': profileImageUrl ?? '/user.png',
-        }),
+      final response = await _request(
+        client.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'name': name,
+            'email': email,
+            'password': password,
+            'profile_image_url': profileImageUrl ?? '/user.png',
+          }),
+        ),
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
@@ -65,7 +87,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return session;
     } catch (e) {
       // Re-throw domain exceptions as-is; wrap unknowns.
-      if (e is DomainException) rethrow;
+      if (e is DomainException || e is TimeoutException) rethrow;
       throw Exception('Failed to sign up: $e');
     }
   }
@@ -74,24 +96,24 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<User> login(String email, String password) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/signin');
-    final response = await client.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-      }),
+    final response = await _request(
+      client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      ),
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final accessToken = data['token']; // Return access token on success
-      await tokenProvider.saveToken(accessToken);
-      final user = User.fromJson(data);
-      if (kDebugMode) {
-        print(user);
+      final Map<String, dynamic> data = jsonDecode(
+        utf8.decode(response.bodyBytes),
+      );
+      final session = AuthSession.fromJson(data);
+      if (session.token.isEmpty) {
+        throw Exception('Access token missing in response');
       }
-      return user;
+      await tokenProvider.saveToken(session.token);
+      return session.user!;
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -102,13 +124,18 @@ class AuthRepositoryImpl implements AuthRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/signout');
 
-    final response = await authClient.get(
-      url,
-      headers: {'Content-Type': 'application/json'},
+    final response = await _request(
+      authClient.get(url, headers: {'Content-Type': 'application/json'}),
     );
 
     if (response.statusCode == 200) {
       await tokenProvider.deleteToken();
+      try {
+        await microsoftSignInService?.clearAppSession().timeout(requestTimeout);
+      } catch (_) {
+        // App logout must finish even if the native cache is unavailable. The
+        // shared service retries scoped cleanup before any later Microsoft login.
+      }
     } else {
       throw mapServerErrorToDomainException(response);
     }
@@ -117,43 +144,60 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<bool> isLoggedIn() async {
     final token = await tokenProvider.getToken();
-    return token != null;
+    return token != null && token.trim().isNotEmpty;
   }
 
   @override
   Future<void> forgetPassword(String email) async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/auth/forget-password');
+    final url = Uri.parse(
+      '$baseURL/auths/send-reset-password-verification-code',
+    );
     try {
-      final response = await client.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email}),
+      final response = await _request(
+        client.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email.trim().toLowerCase(),
+            // The shared backend form requires this field. Password-reset code
+            // requests do not use CAPTCHA; signup verification is a separate flow.
+            'captcha_response': '',
+          }),
+        ),
       );
 
       if (response.statusCode != 200) {
         throw mapServerErrorToDomainException(response);
       }
       // If statusCode is 200, assume the request was successful
-    } catch (error) {
-      // Re-throw network or parsing errors as custom exceptions
+    } on DomainException {
+      rethrow;
+    } on TimeoutException {
+      rethrow;
+    } catch (_) {
       throw Exception('An error occurred. Please try again.');
     }
   }
 
   @override
   Future<String> resetPassword(
-      String email, String newPassword, String confirmationCode) async {
+    String email,
+    String newPassword,
+    String confirmationCode,
+  ) async {
     final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/auth/reset-password');
-    final response = await client.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "email": email,
-        'password': newPassword,
-        "confirmationCode": confirmationCode
-      }),
+    final url = Uri.parse('$baseURL/auths/reset-password');
+    final response = await _request(
+      client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email.trim().toLowerCase(),
+          'password': newPassword,
+          'code': confirmationCode.trim(),
+        }),
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -169,10 +213,12 @@ class AuthRepositoryImpl implements AuthRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/send-verification');
 
-    final response = await client.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
+    final response = await _request(
+      client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -189,14 +235,20 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> updatePassword(
-      String currentPassword, String newPassword) async {
+    String currentPassword,
+    String newPassword,
+  ) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/update/password');
-    final response = await authClient.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(
-          {'password': currentPassword, 'new_password': newPassword}),
+    final response = await _request(
+      authClient.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'password': currentPassword,
+          'new_password': newPassword,
+        }),
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -208,17 +260,22 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> syncUser(
-      String? displayName, String email, String? photoUrl) async {
+    String? displayName,
+    String email,
+    String? photoUrl,
+  ) async {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auth/sync-user');
-    final response = await client.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        if (displayName != null) 'displayName': displayName,
-        'email': email,
-        if (photoUrl != null) 'photoUrl': photoUrl,
-      }),
+    final response = await _request(
+      client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          if (displayName != null) 'displayName': displayName,
+          'email': email,
+          if (photoUrl != null) 'photoUrl': photoUrl,
+        }),
+      ),
     );
 
     final data = jsonDecode(response.body);
@@ -255,16 +312,16 @@ class AuthRepositoryImpl implements AuthRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/oauth/apple');
 
-    final response = await client.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'identityToken': identityToken,
-        if (email != null) 'email': email,
-        if (displayName != null) 'displayName': displayName,
-      }),
+    final response = await _request(
+      client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'identityToken': identityToken,
+          if (email != null) 'email': email,
+          if (displayName != null) 'displayName': displayName,
+        }),
+      ),
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -278,9 +335,6 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     await tokenProvider.saveToken(session.token);
-    if (kDebugMode) {
-      print('Apple OAuth login succeeded');
-    }
     return session;
   }
 
@@ -290,14 +344,12 @@ class AuthRepositoryImpl implements AuthRepository {
     // Backend expects: POST /api/v1/auths/oauth/google with { idToken }
     final url = Uri.parse('$baseURL/auths/oauth/google');
 
-    final response = await client.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'idToken': idToken,
-      }),
+    final response = await _request(
+      client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': idToken}),
+      ),
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -311,9 +363,6 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     await tokenProvider.saveToken(session.token);
-    if (kDebugMode) {
-      print('Google OAuth login succeeded');
-    }
     return session;
   }
 
@@ -322,15 +371,15 @@ class AuthRepositoryImpl implements AuthRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/oauth/github');
 
-    final response = await client.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'accessToken': accessToken,
-        'access_token': accessToken,
-      }),
+    final response = await _request(
+      client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'accessToken': accessToken,
+          'access_token': accessToken,
+        }),
+      ),
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -344,9 +393,6 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     await tokenProvider.saveToken(session.token);
-    if (kDebugMode) {
-      print('GitHub OAuth login succeeded');
-    }
     return session;
   }
 
@@ -355,15 +401,15 @@ class AuthRepositoryImpl implements AuthRepository {
     final baseURL = await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/oauth/microsoft');
 
-    final response = await client.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'accessToken': accessToken,
-        'access_token': accessToken,
-      }),
+    final response = await _request(
+      client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'accessToken': accessToken,
+          'access_token': accessToken,
+        }),
+      ),
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -377,15 +423,13 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     await tokenProvider.saveToken(session.token);
-    if (kDebugMode) {
-      print('Microsoft OAuth login succeeded');
-    }
     return session;
   }
 
   @override
   Future<String> handleAuthorizationCodeFromLinked(
-      String? authorizationCode) async {
+    String? authorizationCode,
+  ) async {
     //Sends the authorizationCode to your backend API. then backend process it and Sends the access token back to the frontend.
     if (authorizationCode == null) {
       throw Exception("Failed to get authorization code from LinkedIn.");
@@ -393,10 +437,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
     final baseURL = await apiEnvironment.getBaseUrl();
     // **Step 3: Send the authorizationCode to the backend handler
-    final response = await client.post(
-      Uri.parse('$baseURL/auth/handle_authorization'), // Send to backend
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'authorizationCode': authorizationCode}),
+    final response = await _request(
+      client.post(
+        Uri.parse('$baseURL/auth/handle_authorization'), // Send to backend
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'authorizationCode': authorizationCode}),
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -404,23 +450,28 @@ class AuthRepositoryImpl implements AuthRepository {
       final accessToken = data["accessToken"];
       return accessToken;
     } else {
-      throw Exception("Failed to get access token: ${response.body}");
+      throw Exception(
+        'LinkedIn sign-in could not be completed. Please try again.',
+      );
     }
   }
 
   @override
   Future<LinkedinUserProfile> fetchLinkedInUserProfile(
-      String? accessToken) async {
+    String? accessToken,
+  ) async {
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("Access token is required to fetch LinkedIn profile.");
     }
 
     final baseURL = await apiEnvironment.getBaseUrl();
 
-    final response = await http.post(
-      Uri.parse('$baseURL/auth/linkedin-profile'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"accessToken": accessToken}),
+    final response = await _request(
+      client.post(
+        Uri.parse('$baseURL/auth/linkedin-profile'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"accessToken": accessToken}),
+      ),
     );
 
     final data = jsonDecode(response.body);
@@ -451,10 +502,12 @@ class AuthRepositoryImpl implements AuthRepository {
     } else {
       redirectUrl = redirectUrlDevelopment;
     }
-    return Uri.parse('https://www.linkedin.com/oauth/v2/authorization'
-        '?response_type=code'
-        '&client_id=$clientId'
-        '&scope=openid%20profile%20email'
-        '&redirect_uri=$redirectUrl');
+    return Uri.parse(
+      'https://www.linkedin.com/oauth/v2/authorization'
+      '?response_type=code'
+      '&client_id=$clientId'
+      '&scope=openid%20profile%20email'
+      '&redirect_uri=$redirectUrl',
+    );
   }
 }

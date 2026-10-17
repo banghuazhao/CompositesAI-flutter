@@ -48,6 +48,10 @@ class ChatAttachmentController extends ChangeNotifier {
   bool isLoadingKnowledge = false;
   bool isUploadingFile = false;
   bool _isDisposed = false;
+  int _sessionGeneration = 0;
+
+  bool _isCurrentSession(int generation) =>
+      !_isDisposed && generation == _sessionGeneration && _canUseChat();
 
   List<ChatKnowledge> get knowledgeBases => _knowledgeBasesView;
   List<ChatFile> get pendingFiles => _pendingFilesView;
@@ -56,12 +60,13 @@ class ChatAttachmentController extends ChangeNotifier {
 
   Future<void> fetchKnowledgeBases() async {
     if (_isDisposed || !_canUseChat()) return;
+    final generation = _sessionGeneration;
 
     isLoadingKnowledge = true;
     _notifyListenersIfActive();
     try {
       final knowledge = await _chatUseCase.fetchKnowledgeBases();
-      if (_isDisposed) return;
+      if (!_isCurrentSession(generation)) return;
       _knowledgeBases
         ..clear()
         ..addAll(knowledge);
@@ -80,7 +85,7 @@ class ChatAttachmentController extends ChangeNotifier {
         }
       }
     } catch (error) {
-      if (_isDisposed) return;
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) debugPrint('fetchKnowledgeBases error: $error');
       _knowledgeBases.clear();
       _onError(
@@ -91,20 +96,27 @@ class ChatAttachmentController extends ChangeNotifier {
         retry: fetchKnowledgeBases,
       );
     } finally {
-      isLoadingKnowledge = false;
-      _notifyListenersIfActive();
+      if (_isCurrentSession(generation)) {
+        isLoadingKnowledge = false;
+        _notifyListenersIfActive();
+      }
     }
   }
 
   Future<void> pickAndUploadFiles() async {
     if (_isDisposed || !_canUseChat() || isUploadingFile) return;
+    final generation = _sessionGeneration;
 
     try {
       final result = await FilePicker.pickFiles(
         allowMultiple: true,
         withData: kIsWeb,
       );
-      if (_isDisposed || result == null || result.files.isEmpty) return;
+      if (!_isCurrentSession(generation) ||
+          result == null ||
+          result.files.isEmpty) {
+        return;
+      }
 
       isUploadingFile = true;
       _notifyListenersIfActive();
@@ -129,16 +141,18 @@ class ChatAttachmentController extends ChangeNotifier {
             path: file.path,
             bytes: file.bytes,
           );
-          if (_isDisposed) return;
+          if (!_isCurrentSession(generation)) return;
           _addPendingAttachment(uploaded);
         } finally {
-          _uploadingFileNames.remove(file.name);
-          _notifyListenersIfActive();
+          if (_isCurrentSession(generation)) {
+            _uploadingFileNames.remove(file.name);
+            _notifyListenersIfActive();
+          }
         }
       }
       _reportSkippedUploads(skipped, emptyType: 'files');
     } catch (error) {
-      if (_isDisposed) return;
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) debugPrint('pickAndUploadFiles error: $error');
       _onError(
         ChatErrorMapper.from(
@@ -148,20 +162,23 @@ class ChatAttachmentController extends ChangeNotifier {
         retry: pickAndUploadFiles,
       );
     } finally {
-      isUploadingFile = false;
-      _notifyListenersIfActive();
+      if (_isCurrentSession(generation)) {
+        isUploadingFile = false;
+        _notifyListenersIfActive();
+      }
     }
   }
 
   Future<void> pickAndUploadImages(ImageSource source) async {
     if (_isDisposed || !_canUseChat() || isUploadingFile) return;
+    final generation = _sessionGeneration;
 
     try {
       final picker = ImagePicker();
       final images = source == ImageSource.camera
           ? await _pickCameraImage(picker)
           : await picker.pickMultiImage(imageQuality: 85);
-      if (_isDisposed || images.isEmpty) return;
+      if (!_isCurrentSession(generation) || images.isEmpty) return;
 
       isUploadingFile = true;
       _notifyListenersIfActive();
@@ -173,7 +190,7 @@ class ChatAttachmentController extends ChangeNotifier {
           break;
         }
         final bytes = await image.readAsBytes();
-        if (_isDisposed) return;
+        if (!_isCurrentSession(generation)) return;
         if (bytes.isEmpty) {
           skipped++;
           continue;
@@ -187,17 +204,19 @@ class ChatAttachmentController extends ChangeNotifier {
             size: bytes.length,
             bytes: bytes,
           );
-          if (_isDisposed) return;
+          if (!_isCurrentSession(generation)) return;
           _addPendingAttachment(uploaded);
           _cacheImagePreview(uploaded.id, bytes);
         } finally {
-          _uploadingFileNames.remove(image.name);
-          _notifyListenersIfActive();
+          if (_isCurrentSession(generation)) {
+            _uploadingFileNames.remove(image.name);
+            _notifyListenersIfActive();
+          }
         }
       }
       _reportSkippedUploads(skipped, emptyType: 'images');
     } catch (error) {
-      if (_isDisposed) return;
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) debugPrint('pickAndUploadImages error: $error');
       _onError(
         ChatErrorMapper.from(
@@ -207,8 +226,10 @@ class ChatAttachmentController extends ChangeNotifier {
         retry: () => pickAndUploadImages(source),
       );
     } finally {
-      isUploadingFile = false;
-      _notifyListenersIfActive();
+      if (_isCurrentSession(generation)) {
+        isUploadingFile = false;
+        _notifyListenersIfActive();
+      }
     }
   }
 
@@ -332,6 +353,7 @@ class ChatAttachmentController extends ChangeNotifier {
 
   void reset() {
     if (_isDisposed) return;
+    _sessionGeneration++;
     _knowledgeBases.clear();
     _pendingFiles.clear();
     _uploadingFileNames.clear();

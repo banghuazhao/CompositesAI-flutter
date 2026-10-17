@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:domain/auth/entities/expert_upgrade_request.dart';
-import 'package:domain/auth/entities/linkedin_user_profile.dart';
 import 'package:domain/auth/entities/user.dart';
 import 'package:domain/auth/use_cases/auth_use_case.dart';
 import 'package:domain/auth/use_cases/user_use_case.dart';
@@ -404,48 +403,5 @@ class SettingsViewModel extends ChangeNotifier {
         notifyListeners();
       }
     });
-  }
-
-  // LinkedIn Credentials
-  Future<void> handleAuthorizationCodeFromLinked(
-      String? authorizationCode) async {
-    isLoading = true;
-    notifyListeners();
-
-    if (authorizationCode == null) {
-      throw Exception("Failed to get authorization code from LinkedIn.");
-    }
-    if (kDebugMode) {
-      debugPrint("authorizationCode: $authorizationCode");
-    }
-
-    // **Step 3: Exchange Code for Access Token**
-    final accessToken =
-        await authUseCase.handleAuthorizationCodeFromLinked(authorizationCode);
-
-    if (kDebugMode) {
-      debugPrint("accessToken: $accessToken");
-    }
-
-    // **Step 4: Fetch LinkedIn User Info**
-    final LinkedinUserProfile userProfile =
-        await authUseCase.fetchLinkedInUserProfile(accessToken);
-
-    if (kDebugMode) {
-      debugPrint('LinkedinUserProfile: $userProfile');
-    }
-    final email = userProfile.email;
-    final String? name = userProfile.name;
-    final String? profile = userProfile.picture;
-
-    await syncUser(name, email, profile);
-    await fetchAuthSessionNew();
-    isLoading = false;
-    notifyListeners();
-  }
-
-  Future<void> syncUser(
-      String? displayName, String email, String? photoUrl) async {
-    await authUseCase.syncUser(displayName, email, photoUrl);
   }
 }

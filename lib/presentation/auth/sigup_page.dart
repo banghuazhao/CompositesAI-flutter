@@ -1,5 +1,6 @@
 import 'package:domain/auth/entities/user.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
@@ -38,6 +39,10 @@ class _SignupFormState extends State<SignupForm> {
   bool isButtonEnabled = false;
   bool isPasswordValid = false;
   bool isEmailValid = false;
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _nameFocus = FocusNode();
+  final FocusNode _passwordFocus = FocusNode();
+  final FocusNode _confirmPasswordFocus = FocusNode();
 
   void _checkFields() {
     setState(() {
@@ -62,6 +67,10 @@ class _SignupFormState extends State<SignupForm> {
   void dispose() {
     _nicknameController.dispose();
     _emailController.dispose();
+    _emailFocus.dispose();
+    _nameFocus.dispose();
+    _passwordFocus.dispose();
+    _confirmPasswordFocus.dispose();
     super.dispose();
   }
 
@@ -76,7 +85,7 @@ class _SignupFormState extends State<SignupForm> {
   }
 
   void _signup(SignupViewModel viewModel) async {
-    if (isLoading || viewModel.isLoading) return;
+    if (isLoading || viewModel.isLoading || !isButtonEnabled) return;
     name = _nicknameController.text.trim();
     if (_formKey.currentState!.validate()) {
       setState(() => isLoading = true);
@@ -90,6 +99,7 @@ class _SignupFormState extends State<SignupForm> {
       setState(() => isLoading = false);
 
       if (user != null) {
+        TextInput.finishAutofillContext(shouldSave: true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Sign-up complete! You have been logged in."),
@@ -99,9 +109,8 @@ class _SignupFormState extends State<SignupForm> {
         Navigator.pop(context, user);
       } else if (viewModel.errorMessage != null) {
         // Sign-up failed
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(viewModel.errorMessage!)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(viewModel.errorMessage!)));
       }
     }
   }
@@ -109,232 +118,291 @@ class _SignupFormState extends State<SignupForm> {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<SignupViewModel>(
-        context); //access an already provided instance of SignupViewModel
-    return Scaffold(
-      appBar: AppBar(title: Text('Signup')),
-      body: SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: EdgeInsets.symmetric(
+      context,
+    ); //access an already provided instance of SignupViewModel
+    final submitting = isLoading || viewModel.isLoading;
+    return PopScope(
+      canPop: !submitting,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Signup'),
+          automaticallyImplyLeading: !submitting,
+        ),
+        body: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.symmetric(
             horizontal: context.horizontalSidePaddingForContentWidth,
-            vertical: 20),
-        child: Form(
-          key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: Column(
-            children: [
-              // Profile image picker (optional)
-              Row(
+            vertical: 20,
+          ),
+          child: AutofillGroup(
+            onDisposeAction: AutofillContextAction.cancel,
+            child: Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: Colors.grey.shade200,
-                    backgroundImage: viewModel.profileImageBytes == null
-                        ? null
-                        : MemoryImage(viewModel.profileImageBytes!),
-                    child: viewModel.profileImageBytes == null
-                        ? const Icon(Icons.person, color: Colors.black54)
-                        : null,
+                  // Profile image picker (optional)
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: Colors.grey.shade200,
+                        backgroundImage: viewModel.profileImageBytes == null
+                            ? null
+                            : MemoryImage(viewModel.profileImageBytes!),
+                        child: viewModel.profileImageBytes == null
+                            ? const Icon(Icons.person, color: Colors.black54)
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextButton(
+                              onPressed: viewModel.isLoading
+                                  ? null
+                                  : () async {
+                                      await viewModel.pickProfileImage();
+                                      if (!context.mounted) return;
+                                      if (viewModel.errorMessage != null &&
+                                          viewModel.errorMessage!.isNotEmpty) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              viewModel.errorMessage!,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              child: Text(
+                                viewModel.profileImageBytes == null
+                                    ? 'Add profile photo'
+                                    : 'Change photo',
+                              ),
+                            ),
+                            if (viewModel.profileImageBytes != null)
+                              TextButton(
+                                onPressed: viewModel.isLoading
+                                    ? null
+                                    : () {
+                                        viewModel.clearProfileImage();
+                                      },
+                                child: const Text('Remove'),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextButton(
-                          onPressed: viewModel.isLoading
-                              ? null
-                              : () async {
-                                  await viewModel.pickProfileImage();
-                                  if (!context.mounted) return;
-                                  if (viewModel.errorMessage != null &&
-                                      viewModel.errorMessage!.isNotEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(viewModel.errorMessage!),
-                                      ),
-                                    );
-                                  }
-                                },
-                          child: Text(
-                            viewModel.profileImageBytes == null
-                                ? 'Add profile photo'
-                                : 'Change photo',
+                  const SizedBox(height: 12),
+
+                  // Username Field
+                  TextFormField(
+                    key: const ValueKey('signup_email'),
+                    controller: _emailController,
+                    focusNode: _emailFocus,
+                    readOnly: submitting,
+                    autofillHints: const [
+                      AutofillHints.username,
+                      AutofillHints.email
+                    ],
+                    autocorrect: false,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) => _nameFocus.requestFocus(),
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      hintText: "Input Email",
+                      errorBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                      focusedErrorBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                      errorStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      email = value.trim();
+                      _checkFields();
+                    },
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                        return 'Enter a valid email';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16.0),
+
+                  // Name Field
+                  TextFormField(
+                    key: const ValueKey('signup_name'),
+                    controller: _nicknameController,
+                    focusNode: _nameFocus,
+                    readOnly: submitting,
+                    autofillHints: const [AutofillHints.name],
+                    keyboardType: TextInputType.name,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                      hintText: 'Enter your name',
+                    ),
+                    onChanged: (value) {
+                      name = value.trim();
+                      _checkFields();
+                    },
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your name';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16.0),
+
+                  // Password Field
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        key: const ValueKey('signup_password'),
+                        focusNode: _passwordFocus,
+                        readOnly: submitting,
+                        autofillHints: const [AutofillHints.newPassword],
+                        keyboardType: TextInputType.visiblePassword,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) =>
+                            _confirmPasswordFocus.requestFocus(),
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              viewModel.obscureTextNewPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: viewModel.toggleNewPasswordVisibility,
                           ),
                         ),
-                        if (viewModel.profileImageBytes != null)
-                          TextButton(
-                            onPressed: viewModel.isLoading
-                                ? null
-                                : () {
-                                    viewModel.clearProfileImage();
-                                  },
-                            child: const Text('Remove'),
+                        obscureText: viewModel.obscureTextNewPassword,
+                        onChanged: (text) {
+                          password = text;
+                          setState(() {
+                            isPasswordValid = password.length >= 6;
+                          });
+                          _checkFields();
+                        },
+                      ),
+                      SizedBox(height: 4.0),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 3.0),
+                          child: Text(
+                            isPasswordValid
+                                ? ''
+                                : 'Password must be at least 6 characters long',
+                            style: TextStyle(
+                              color: isPasswordValid
+                                  ? Colors.transparent
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                              fontSize: 14.0,
+                            ),
                           ),
-                      ],
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                  SizedBox(height: 16.0),
 
-              // Username Field
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: "Input Email",
-                  errorBorder: UnderlineInputBorder(
-                    borderSide:
-                        BorderSide(color: Theme.of(context).colorScheme.error),
-                  ),
-                  focusedErrorBorder: UnderlineInputBorder(
-                    borderSide:
-                        BorderSide(color: Theme.of(context).colorScheme.error),
-                  ),
-                  errorStyle:
-                      TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-                onChanged: (value) {
-                  email = value.trim();
-                  _checkFields();
-                },
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                    return 'Enter a valid email';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16.0),
-
-              // Name Field
-              TextFormField(
-                controller: _nicknameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'Enter your name',
-                ),
-                onChanged: (value) {
-                  name = value.trim();
-                  _checkFields();
-                },
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16.0),
-
-              // Password Field
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                  // Confirm Password Field
                   TextFormField(
+                    key: const ValueKey('signup_password_confirmation'),
+                    focusNode: _confirmPasswordFocus,
+                    readOnly: submitting,
+                    autofillHints: const [AutofillHints.newPassword],
+                    keyboardType: TextInputType.visiblePassword,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _signup(viewModel),
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: 'Confirm Password',
+                      errorText: confirmPassword == password
+                          ? null
+                          : 'Passwords do not match',
+                      errorBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                      focusedErrorBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                      errorStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          viewModel.obscureTextNewPassword
+                          viewModel.obscureTextConfirmPassword
                               ? Icons.visibility_off
                               : Icons.visibility,
                         ),
-                        onPressed: viewModel.toggleNewPasswordVisibility,
+                        onPressed: viewModel.toggleConfirmPasswordVisibility,
                       ),
                     ),
-                    obscureText: viewModel.obscureTextNewPassword,
-                    onChanged: (text) {
-                      password = text;
+                    obscureText: viewModel.obscureTextConfirmPassword,
+                    onChanged: (value) {
                       setState(() {
-                        isPasswordValid = password.length >= 6;
+                        confirmPassword = value;
                       });
                       _checkFields();
                     },
                   ),
-                  SizedBox(height: 4.0),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 3.0),
-                      child: Text(
-                        isPasswordValid
-                            ? ''
-                            : 'Password must be at least 6 characters long',
-                        style: TextStyle(
-                          color: isPasswordValid
-                              ? Colors.transparent
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 14.0,
+                  SizedBox(height: 16.0),
+
+                  // Signup Button
+                  viewModel.isLoading || isLoading
+                      ? CircularProgressIndicator()
+                      : MaterialButton(
+                          onPressed:
+                              isButtonEnabled ? () => _signup(viewModel) : null,
+                          height: 45,
+                          minWidth: double.infinity,
+                          color: isButtonEnabled
+                              ? Color.fromRGBO(51, 66, 78, 1)
+                              : Color.fromRGBO(180, 180, 180, 1),
+                          disabledColor: Color.fromRGBO(140, 150, 153, 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Create account',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
-              SizedBox(height: 16.0),
-
-              // Confirm Password Field
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  errorText: confirmPassword == password
-                      ? null
-                      : 'Passwords do not match',
-                  errorBorder: UnderlineInputBorder(
-                    borderSide:
-                        BorderSide(color: Theme.of(context).colorScheme.error),
-                  ),
-                  focusedErrorBorder: UnderlineInputBorder(
-                    borderSide:
-                        BorderSide(color: Theme.of(context).colorScheme.error),
-                  ),
-                  errorStyle:
-                      TextStyle(color: Theme.of(context).colorScheme.error),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      viewModel.obscureTextConfirmPassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                    ),
-                    onPressed: viewModel.toggleConfirmPasswordVisibility,
-                  ),
-                ),
-                obscureText: viewModel.obscureTextConfirmPassword,
-                onChanged: (value) {
-                  setState(() {
-                    confirmPassword = value;
-                  });
-                  _checkFields();
-                },
-              ),
-              SizedBox(height: 16.0),
-
-              // Signup Button
-              viewModel.isLoading || isLoading
-                  ? CircularProgressIndicator()
-                  : MaterialButton(
-                      onPressed:
-                          isButtonEnabled ? () => _signup(viewModel) : null,
-                      height: 45,
-                      minWidth: double.infinity,
-                      color: isButtonEnabled
-                          ? Color.fromRGBO(51, 66, 78, 1)
-                          : Color.fromRGBO(180, 180, 180, 1),
-                      disabledColor: Color.fromRGBO(140, 150, 153, 1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'Create account',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ),
-            ],
+            ),
           ),
         ),
       ),

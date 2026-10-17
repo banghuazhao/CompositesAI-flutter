@@ -74,6 +74,8 @@ dependency_overrides:
   webview_flutter_platform_interface: ^2.15.1
 
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
   mockito: ^5.0.17

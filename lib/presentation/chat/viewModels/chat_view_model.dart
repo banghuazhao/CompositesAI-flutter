@@ -75,6 +75,9 @@ class ChatViewModel extends ChangeNotifier {
   AsyncCallback? _activeErrorRetry;
   int _nextErrorId = 0;
   bool _isDisposed = false;
+  int _authRequestId = 0;
+  int _sessionGeneration = 0;
+  String? _sessionOwner;
 
   final assistantId = "asst_pxUDI3A9Q8afCqT9cqgUkWQP";
 
@@ -134,6 +137,12 @@ class ChatViewModel extends ChangeNotifier {
     AsyncCallback? retry,
   }) {
     if (_isDisposed) return;
+    if (failure.type == ChatErrorType.unauthorized) {
+      // A confirmed expired session must not leave private data available to
+      // the next account. Reset synchronously before publishing the notice.
+      unawaited(clearChatStateOnLogout());
+      retry = null;
+    }
     final current = _activeError;
     if (current?.failure.type == failure.type &&
         current?.failure.operation == failure.operation &&
@@ -194,50 +203,78 @@ class ChatViewModel extends ChangeNotifier {
     loadMoreChats();
   }
 
-  Future<void> fetchAuthSessionNew() async {
+  Future<void> fetchAuthSessionNew() =>
+      _refreshAuthSession(retry: fetchAuthSessionNew);
+
+  bool _isCurrentSession(int generation) =>
+      !_isDisposed && generation == _sessionGeneration;
+
+  bool _isCurrentAuthRequest(int requestId) =>
+      !_isDisposed && requestId == _authRequestId;
+
+  Future<void> _refreshAuthSession({required AsyncCallback retry}) async {
+    final requestId = ++_authRequestId;
     try {
-      isLoggedIn = await _authUseCase.isLoggedIn();
-      if (isLoggedIn) {
-        await fetchUser();
-      } else {
-        user = null; // Ensure user is null if not logged in
+      final hasSession = await _authUseCase.isLoggedIn();
+      if (!_isCurrentAuthRequest(requestId)) return;
+      if (!hasSession) {
+        await clearChatStateOnLogout();
+        return;
       }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('$e');
-      }
-      isLoggedIn = false;
-      user = null; // Ensure proper reset
+      await _fetchAuthenticatedUser(requestId, retry: retry);
+    } catch (error) {
+      if (!_isCurrentAuthRequest(requestId)) return;
       _reportError(
-        ChatErrorMapper.from(
-          e,
-          operation: ChatOperation.authenticate,
-        ),
-        retry: fetchAuthSessionNew,
+        ChatErrorMapper.from(error, operation: ChatOperation.authenticate),
+        retry: retry,
       );
+    } finally {
+      notifyListeners();
     }
-    notifyListeners();
   }
 
-  Future<void> fetchUser() async {
+  Future<void> fetchUser() =>
+      _fetchAuthenticatedUser(++_authRequestId, retry: fetchUser);
+
+  Future<void> _fetchAuthenticatedUser(int requestId,
+      {required AsyncCallback retry}) async {
     try {
-      user = await _userUserCase.fetchMe();
-      isLoggedIn = true; // Ensure isLoggedIn is updated correctly
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('$e');
+      final authenticatedUser = await _userUserCase.fetchMe();
+      if (!_isCurrentAuthRequest(requestId)) return;
+      final owner = _userIdentity(authenticatedUser);
+      final previousOwner = _sessionOwner ?? _userIdentity(user);
+      if (previousOwner != null && previousOwner != owner) {
+        await _clearPrivateChatState();
+        if (!_isCurrentAuthRequest(requestId)) return;
       }
-      isLoggedIn = false; // Handle fetch user failure
-      user = null;
+      user = authenticatedUser;
+      _sessionOwner = owner;
+      isLoggedIn = true;
+      if (_activeError?.failure.operation == ChatOperation.authenticate ||
+          _activeError?.failure.type == ChatErrorType.unauthorized) {
+        _activeError = null;
+        _activeErrorRetry = null;
+      }
+    } catch (error) {
+      if (!_isCurrentAuthRequest(requestId)) return;
+      // Network or server failures do not prove that a valid session ended.
       _reportError(
-        ChatErrorMapper.from(
-          e,
-          operation: ChatOperation.authenticate,
-        ),
-        retry: fetchUser,
+        ChatErrorMapper.from(error, operation: ChatOperation.authenticate),
+        retry: retry,
       );
+    } finally {
+      notifyListeners();
     }
-    notifyListeners();
+  }
+
+  static String? _userIdentity(User? value) {
+    if (value == null) return null;
+    final id = value.id?.trim();
+    if (id != null && id.isNotEmpty) return 'id:$id';
+    final email = value.email.trim().toLowerCase();
+    if (email.isNotEmpty) return 'email:$email';
+    final username = value.username?.trim();
+    return username == null || username.isEmpty ? null : 'name:$username';
   }
 
   @override
@@ -256,19 +293,31 @@ class ChatViewModel extends ChangeNotifier {
 
   /// Pull-to-refresh / init: GET /chats/?page=1 (replace list) + GET /chats/pinned.
   Future<void> fetchChats() async {
+    final generation = _sessionGeneration;
     await _loadChatLists(showLoading: true);
+    if (!_isCurrentSession(generation)) return;
     await refreshChatOrganization();
   }
 
   Future<void> fetchTools() async {
     if (!isLoggedIn) return;
+    final generation = _sessionGeneration;
 
     isLoadingTools = true;
     notifyListeners();
     try {
       try {
-        _chatConfiguration = await _chatUseCase.fetchChatConfiguration();
+        final configuration = await _chatUseCase.fetchChatConfiguration();
+        if (!_isCurrentSession(generation)) return;
+        _chatConfiguration = configuration;
       } catch (e) {
+        if (!_isCurrentSession(generation)) return;
+        final failure =
+            ChatErrorMapper.from(e, operation: ChatOperation.loadTools);
+        if (failure.type == ChatErrorType.unauthorized) {
+          _reportError(failure);
+          return;
+        }
         _chatConfiguration = const ChatConfiguration(
           defaultModelIds: [_fallbackDefaultModelId],
           defaultPrompts: _fallbackDefaultQuestions,
@@ -280,8 +329,11 @@ class ChatViewModel extends ChangeNotifier {
 
       final toolsFuture = _chatUseCase.fetchTools();
       final modelsFuture = _chatUseCase.fetchModels();
-      tools = await toolsFuture;
-      models = await modelsFuture;
+      final loadedTools = await toolsFuture;
+      final loadedModels = await modelsFuture;
+      if (!_isCurrentSession(generation)) return;
+      tools = loadedTools;
+      models = loadedModels;
       selectedModel = _selectChatModel(
         models,
         preferredModelIds: isAdmin
@@ -305,6 +357,7 @@ class ChatViewModel extends ChangeNotifier {
         );
       }
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) {
         debugPrint('fetchTools error: $e');
       }
@@ -320,8 +373,10 @@ class ChatViewModel extends ChangeNotifier {
         retry: fetchTools,
       );
     } finally {
-      isLoadingTools = false;
-      notifyListeners();
+      if (_isCurrentSession(generation)) {
+        isLoadingTools = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -431,11 +486,13 @@ class ChatViewModel extends ChangeNotifier {
     if (!isLoggedIn) return;
     if (hasActiveChatFilter) return;
     if (allChatsLoaded || isLoadingMoreChats || isLoadingChats) return;
+    final generation = _sessionGeneration;
 
     isLoadingMoreChats = true;
     notifyListeners();
     try {
       final list = await _chatUseCase.fetchChats(page: _nextChatListPage);
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) {
         debugPrint(
             'loadMoreChats: page $_nextChatListPage returned ${list.length} chats');
@@ -457,6 +514,7 @@ class ChatViewModel extends ChangeNotifier {
         }
       }
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) {
         debugPrint('loadMoreChats error: $e');
       }
@@ -468,8 +526,10 @@ class ChatViewModel extends ChangeNotifier {
         retry: loadMoreChats,
       );
     } finally {
-      isLoadingMoreChats = false;
-      notifyListeners();
+      if (_isCurrentSession(generation)) {
+        isLoadingMoreChats = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -489,12 +549,19 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> refreshChatOrganization() async {
     if (!isLoggedIn) return;
+    final generation = _sessionGeneration;
     try {
-      chatFolders = await _chatUseCase.fetchFolders();
+      final folders = await _chatUseCase.fetchFolders();
+      if (!_isCurrentSession(generation)) return;
+      chatFolders = folders;
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) {
         debugPrint('refreshChatOrganization error: $e');
       }
+      final failure =
+          ChatErrorMapper.from(e, operation: ChatOperation.loadFilters);
+      if (failure.type == ChatErrorType.unauthorized) _reportError(failure);
     } finally {
       notifyListeners();
     }
@@ -614,6 +681,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> _loadChatLists({required bool showLoading}) async {
+    final generation = _sessionGeneration;
     isLoadingMoreChats = false;
     if (showLoading) {
       isLoadingChats = true;
@@ -622,6 +690,7 @@ class ChatViewModel extends ChangeNotifier {
     allChatsLoaded = true;
     try {
       final list = await _chatUseCase.fetchChats(page: 1);
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) {
         debugPrint('fetchChats page=1: API returned ${list.length} chats');
       }
@@ -633,6 +702,7 @@ class ChatViewModel extends ChangeNotifier {
         _nextChatListPage = 2;
       }
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) {
         debugPrint('fetchChats error: $e');
       }
@@ -646,13 +716,17 @@ class ChatViewModel extends ChangeNotifier {
         retry: fetchChats,
       );
     }
+    if (!_isCurrentSession(generation)) return;
     try {
-      pinnedChats = await _chatUseCase.fetchPinnedChats();
+      final pinned = await _chatUseCase.fetchPinnedChats();
+      if (!_isCurrentSession(generation)) return;
+      pinnedChats = pinned;
       if (kDebugMode) {
         debugPrint(
             'fetchPinnedChats: API returned ${pinnedChats.length} pinned');
       }
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) {
         debugPrint('fetchPinnedChats error: $e');
       }
@@ -666,15 +740,17 @@ class ChatViewModel extends ChangeNotifier {
         retry: fetchChats,
       );
     } finally {
-      if (showLoading) {
-        isLoadingChats = false;
+      if (_isCurrentSession(generation)) {
+        if (showLoading) isLoadingChats = false;
+        notifyListeners();
       }
-      notifyListeners();
     }
   }
 
   Future<void> updateNewChat(Chat newChat) async {
+    final generation = _sessionGeneration;
     await fetchChats();
+    if (!_isCurrentSession(generation)) return;
     final index = chats.indexWhere((chat) => chat.id == newChat.id);
     if (index >= 0) {
       selectedChat = chats[index];
@@ -690,8 +766,10 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteChat(Chat chat) async {
+    final generation = _sessionGeneration;
     try {
       await _chatUseCase.deleteChat(chat);
+      if (!_isCurrentSession(generation)) return;
       _removeChatFromLists(chat.id);
       if (selectedChat?.id == chat.id) {
         onTapNewChat();
@@ -699,6 +777,7 @@ class ChatViewModel extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       debugPrint('Delete error: $e');
       _reportError(
         ChatErrorMapper.from(
@@ -711,10 +790,13 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> updateChatTitle(Chat chat, String newTitle) async {
+    final generation = _sessionGeneration;
     try {
       final updated = await _chatUseCase.updateChatTitle(chat, newTitle);
+      if (!_isCurrentSession(generation)) return;
       _replaceChatInLists(updated);
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) debugPrint('Update error: $e');
       _reportError(
         ChatErrorMapper.from(
@@ -729,10 +811,13 @@ class ChatViewModel extends ChangeNotifier {
   /// POST /api/v1/chats/{id}/pin (no body, server toggles). On success, reloads
   /// [chats] and [pinnedChats] from GET /chats and GET /chats/pinned.
   Future<void> togglePin(Chat chat) async {
+    final generation = _sessionGeneration;
     try {
       await _chatUseCase.togglePin(chat);
+      if (!_isCurrentSession(generation)) return;
       await _loadChatLists(showLoading: false);
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) debugPrint('Pin/Unpin error: $e');
       _reportError(
         ChatErrorMapper.from(
@@ -746,8 +831,10 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> archiveChat(Chat chat) async {
+    final generation = _sessionGeneration;
     try {
       await _chatUseCase.archiveChat(chat);
+      if (!_isCurrentSession(generation)) return;
       _removeChatFromLists(chat.id);
       if (selectedChat?.id == chat.id) {
         onTapNewChat();
@@ -755,6 +842,7 @@ class ChatViewModel extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) debugPrint('Archive error: $e');
       _reportError(
         ChatErrorMapper.from(
@@ -767,11 +855,14 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> moveChatToFolder(Chat chat, String? folderId) async {
+    final generation = _sessionGeneration;
     try {
       final updated = await _chatUseCase.updateChatFolder(chat, folderId);
+      if (!_isCurrentSession(generation)) return;
       _replaceChatInLists(updated);
       await refreshChatOrganization();
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) debugPrint('Move chat error: $e');
       _reportError(
         ChatErrorMapper.from(
@@ -786,10 +877,13 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> createFolderAndMoveChat(Chat chat, String folderName) async {
     final trimmed = folderName.trim();
     if (trimmed.isEmpty) return;
+    final generation = _sessionGeneration;
     try {
       final folder = await _chatUseCase.createFolder(trimmed);
+      if (!_isCurrentSession(generation)) return;
       await moveChatToFolder(chat, folder.id);
     } catch (e) {
+      if (!_isCurrentSession(generation)) return;
       if (kDebugMode) debugPrint('Create folder error: $e');
       _reportError(
         ChatErrorMapper.from(
@@ -836,12 +930,15 @@ class ChatViewModel extends ChangeNotifier {
 
   /// Calls share API, copies link to clipboard. Returns true if success. No need to store the link.
   Future<bool> copyShareLink(Chat chat) async {
+    final generation = _sessionGeneration;
     try {
       final link = await _chatUseCase.shareChat(chat);
+      if (!_isCurrentSession(generation)) return false;
       await Clipboard.setData(ClipboardData(text: link));
       notifyListeners();
       return true;
     } catch (e) {
+      if (!_isCurrentSession(generation)) return false;
       if (kDebugMode) debugPrint('Share error: $e');
       _reportError(
         ChatErrorMapper.from(
@@ -856,35 +953,22 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> checkAuthStatus() async {
-    try {
-      isLoggedIn = await _authUseCase.isLoggedIn();
-      if (kDebugMode) debugPrint('isLoggedIn: $isLoggedIn');
-      if (isLoggedIn) {
-        await fetchUser();
-      } else {
-        user = null;
-      }
-    } catch (error) {
-      isLoggedIn = false;
-      user = null;
-      if (kDebugMode) debugPrint('checkAuthStatus error: $error');
-      _reportError(
-        ChatErrorMapper.from(
-          error,
-          operation: ChatOperation.authenticate,
-        ),
-        retry: checkAuthStatus,
-      );
-    } finally {
-      notifyListeners();
-    }
-  }
+  Future<void> checkAuthStatus() => _refreshAuthSession(retry: checkAuthStatus);
 
   /// Clears chat UI state when the session ends (logout, account deletion, QA env switch).
   /// Call after auth token is invalidated so the next login does not see another user's thread.
   Future<void> clearChatStateOnLogout() async {
-    await _conversation.reset();
+    _authRequestId++;
+    isLoggedIn = false;
+    user = null;
+    _sessionOwner = null;
+    await _clearPrivateChatState();
+  }
+
+  Future<void> _clearPrivateChatState() async {
+    _sessionGeneration++;
+    _chatFilterRequestId++;
+    final conversationReset = _conversation.reset();
     _attachments.reset();
     chats = [];
     pinnedChats = [];
@@ -905,6 +989,7 @@ class ChatViewModel extends ChangeNotifier {
     isLoadingChats = false;
     isLoadingChatFilters = false;
     isLoadingMoreChats = false;
+    isLoadingTools = false;
     _activeError = null;
     _activeErrorRetry = null;
     chatSearchQuery = '';
@@ -919,6 +1004,7 @@ class ChatViewModel extends ChangeNotifier {
     }
 
     notifyListeners();
+    await conversationReset;
   }
 
   void scrollToBottom({bool force = false}) {

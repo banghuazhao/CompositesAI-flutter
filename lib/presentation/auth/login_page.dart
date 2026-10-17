@@ -23,10 +23,13 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isButtonEnabled = false;
+  bool _isEmailLoginInProgress = false;
   String? _emailLoginError;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _passwordFocus = FocusNode();
 
   @override
   void initState() {
@@ -39,6 +42,8 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
@@ -57,9 +62,13 @@ class _LoginPageState extends State<LoginPage> {
   // ── Email/password login ─────────────────────────────────────────────────
 
   Future<void> _login(LoginViewModel viewModel) async {
-    if (viewModel.isLoading) return;
+    if (viewModel.isLoading || !_isButtonEnabled) return;
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _emailLoginError = null);
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _emailLoginError = null;
+      _isEmailLoginInProgress = true;
+    });
 
     final user = await viewModel.login(
       _emailController.text.trim(),
@@ -67,8 +76,10 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     if (!mounted) return;
+    setState(() => _isEmailLoginInProgress = false);
 
     if (user != null) {
+      TextInput.finishAutofillContext(shouldSave: true);
       Navigator.pop(context, user);
       return;
     }
@@ -89,6 +100,7 @@ class _LoginPageState extends State<LoginPage> {
     String providerName,
   ) async {
     if (viewModel.isLoading) return;
+    TextInput.finishAutofillContext(shouldSave: false);
     setState(() => _emailLoginError = null);
     FocusScope.of(context).unfocus();
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -132,9 +144,12 @@ class _LoginPageState extends State<LoginPage> {
     if (error != null && !_isCancellation(error)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer)),
+          content: Text(
+            error,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+          ),
           backgroundColor: Theme.of(context).colorScheme.errorContainer,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 4),
@@ -147,6 +162,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _githubSignIn(LoginViewModel viewModel) async {
     if (viewModel.isLoading) return;
+    TextInput.finishAutofillContext(shouldSave: false);
     setState(() => _emailLoginError = null);
     FocusScope.of(context).unfocus();
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -222,13 +238,16 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                            "If the browser didn't open automatically, open:"),
+                          "If the browser didn't open automatically, open:",
+                        ),
                         const SizedBox(height: 6),
                         SelectableText(uri),
                         const SizedBox(height: 12),
-                        Text(viewModel.isGithubFinalizing
-                            ? 'Finishing sign-in…'
-                            : 'Waiting for authorization…'),
+                        Text(
+                          viewModel.isGithubFinalizing
+                              ? 'Finishing sign-in…'
+                              : 'Waiting for authorization…',
+                        ),
                       ],
                     ],
                   ),
@@ -241,8 +260,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     if (uri != null)
                       TextButton(
-                        onPressed: () async => launchUrl(Uri.parse(uri),
-                            mode: LaunchMode.externalApplication),
+                        onPressed: () async => launchUrl(
+                          Uri.parse(uri),
+                          mode: LaunchMode.externalApplication,
+                        ),
                         child: const Text('Open GitHub'),
                       ),
                     TextButton(
@@ -276,9 +297,12 @@ class _LoginPageState extends State<LoginPage> {
       if (error != null && !_isCancellation(error)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error,
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.onErrorContainer)),
+            content: Text(
+              error,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
             backgroundColor: Theme.of(context).colorScheme.errorContainer,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 4),
@@ -289,9 +313,12 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('GitHub sign-in failed. Please try again.',
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer)),
+          content: Text(
+            'GitHub sign-in failed. Please try again.',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+          ),
           backgroundColor: Theme.of(context).colorScheme.errorContainer,
           behavior: SnackBarBehavior.floating,
         ),
@@ -305,6 +332,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _signup(LoginViewModel viewModel) async {
     if (viewModel.isLoading) return;
+    TextInput.finishAutofillContext(shouldSave: false);
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => SignupPage()),
@@ -320,241 +348,313 @@ class _LoginPageState extends State<LoginPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final supportsNativeOAuth = !kIsWeb &&
+        const [
+          TargetPlatform.android,
+          TargetPlatform.iOS,
+          TargetPlatform.macOS,
+        ].contains(defaultTargetPlatform);
 
     return ChangeNotifierProvider(
       create: (_) => sl<LoginViewModel>(),
       child: Consumer<LoginViewModel>(
         builder: (context, viewModel, _) {
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('Sign in'),
-              elevation: 0,
-            ),
-            body: SafeArea(
-              child: SingleChildScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: screenWidth > 600 ? 460 : double.infinity,
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10.0),
-                            child: Align(
-                              alignment: Alignment.topCenter,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.asset(
-                                  'images/app_icon.png',
-                                  height: 56,
-                                  width: 56,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          Text(
-                            'Welcome back',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.headlineSmall,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sign in to sync chats, tools, and expert settings.',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              prefixIcon: Icon(Icons.mail_outline_rounded),
-                            ),
-                            onChanged: (_) =>
-                                setState(() => _emailLoginError = null),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your email address';
-                              }
-                              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
-                                  .hasMatch(value)) {
-                                return 'Please enter a valid email address';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16.0),
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: viewModel.obscureText,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon:
-                                  const Icon(Icons.lock_outline_rounded),
-                              suffixIcon: IconButton(
-                                icon: Icon(viewModel.obscureText
-                                    ? Icons.visibility_off
-                                    : Icons.visibility),
-                                onPressed: viewModel.togglePasswordVisibility,
-                              ),
-                            ),
-                            onChanged: (_) =>
-                                setState(() => _emailLoginError = null),
-                          ),
-                          const SizedBox(height: 2.0),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(50, 48),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              onPressed: viewModel.isLoading
-                                  ? null
-                                  : () {
-                                      if (viewModel.isLoading) return;
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (_) =>
-                                                ForgetPasswordPage()),
-                                      );
-                                    },
-                              child: const Text(
-                                'Forgot password?',
-                                style: TextStyle(fontSize: 13),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12.0),
-                          viewModel.isLoading
-                              ? const Center(child: CircularProgressIndicator())
-                              : ElevatedButton(
-                                  onPressed: _isButtonEnabled
-                                      ? () => _login(viewModel)
-                                      : null,
-                                  child: const SizedBox(
-                                    width: double.infinity,
-                                    child: Text(
-                                      'Sign in',
-                                      textAlign: TextAlign.center,
+          return PopScope(
+            canPop: !viewModel.isLoading,
+            child: Scaffold(
+              appBar: AppBar(
+                title: const Text('Sign in'),
+                elevation: 0,
+                automaticallyImplyLeading: !viewModel.isLoading,
+              ),
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: screenWidth > 600 ? 460 : double.infinity,
+                      ),
+                      child: AutofillGroup(
+                        onDisposeAction: AutofillContextAction.cancel,
+                        child: Form(
+                          key: _formKey,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 10.0),
+                                child: Align(
+                                  alignment: Alignment.topCenter,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.asset(
+                                      'images/app_icon.png',
+                                      height: 56,
+                                      width: 56,
+                                      fit: BoxFit.contain,
                                     ),
                                   ),
                                 ),
-                          if (_emailLoginError != null) ...[
-                            const SizedBox(height: 10),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(Icons.error_outline,
-                                    color: scheme.error, size: 16),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    _emailLoginError!,
-                                    style: TextStyle(
-                                        color: scheme.error, fontSize: 13),
+                              ),
+                              const SizedBox(height: 28),
+                              Text(
+                                'Welcome back',
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Sign in to sync chats, tools, and expert settings.',
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              TextFormField(
+                                key: const ValueKey('login_email'),
+                                controller: _emailController,
+                                readOnly: viewModel.isLoading,
+                                focusNode: _emailFocus,
+                                keyboardType: TextInputType.emailAddress,
+                                autofillHints: const [
+                                  AutofillHints.username,
+                                  AutofillHints.email
+                                ],
+                                autocorrect: false,
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    _passwordFocus.requestFocus(),
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  prefixIcon: Icon(Icons.mail_outline_rounded),
+                                ),
+                                onChanged: (_) =>
+                                    setState(() => _emailLoginError = null),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your email address';
+                                  }
+                                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                                      .hasMatch(value)) {
+                                    return 'Please enter a valid email address';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16.0),
+                              TextFormField(
+                                key: const ValueKey('login_password'),
+                                controller: _passwordController,
+                                readOnly: viewModel.isLoading,
+                                focusNode: _passwordFocus,
+                                autofillHints: const [AutofillHints.password],
+                                keyboardType: TextInputType.visiblePassword,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (_) => _login(viewModel),
+                                obscureText: viewModel.obscureText,
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded,
                                   ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      viewModel.obscureText
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                    ),
+                                    onPressed:
+                                        viewModel.togglePasswordVisibility,
+                                  ),
+                                ),
+                                onChanged: (_) =>
+                                    setState(() => _emailLoginError = null),
+                              ),
+                              const SizedBox(height: 2.0),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: const Size(50, 48),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: viewModel.isLoading
+                                      ? null
+                                      : () {
+                                          if (viewModel.isLoading) return;
+                                          TextInput.finishAutofillContext(
+                                              shouldSave: false);
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ForgetPasswordPage(),
+                                            ),
+                                          );
+                                        },
+                                  child: const Text(
+                                    'Forgot password?',
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12.0),
+                              viewModel.isLoading && _isEmailLoginInProgress
+                                  ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : ElevatedButton(
+                                      key: const ValueKey('login_submit'),
+                                      onPressed: _isButtonEnabled &&
+                                              !viewModel.isLoading
+                                          ? () => _login(viewModel)
+                                          : null,
+                                      child: const SizedBox(
+                                        width: double.infinity,
+                                        child: Text(
+                                          'Sign in',
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ),
+                              if (_emailLoginError != null) ...[
+                                const SizedBox(height: 10),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: scheme.error,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        _emailLoginError!,
+                                        style: TextStyle(
+                                          color: scheme.error,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
-                            ),
-                          ],
-                          const SizedBox(height: 20.0),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 4,
-                            children: [
-                              const Text('Not a member yet?'),
-                              TextButton(
-                                style: TextButton.styleFrom(
-                                  minimumSize: const Size(48, 48),
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 4),
-                                  textStyle: const TextStyle(
-                                      fontWeight: FontWeight.bold),
+                              const SizedBox(height: 20.0),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 4,
+                                children: [
+                                  const Text('Not a member yet?'),
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      minimumSize: const Size(48, 48),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    onPressed: viewModel.isLoading
+                                        ? null
+                                        : () => _signup(viewModel),
+                                    child: const Text('Sign up'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20.0),
+                              Row(
+                                children: [
+                                  const Expanded(child: Divider()),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0,
+                                    ),
+                                    child: Text(
+                                      'OR',
+                                      style:
+                                          theme.textTheme.labelMedium?.copyWith(
+                                        color: scheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  const Expanded(child: Divider()),
+                                ],
+                              ),
+                              const SizedBox(height: 10.0),
+                              if (supportsNativeOAuth) ...[
+                                _buildSocialButton(
+                                  key: const ValueKey('login_google'),
+                                  iconPath: 'images/google_logo.png',
+                                  text: 'Continue with Google',
+                                  onPressed: viewModel.isLoading
+                                      ? null
+                                      : () => _handleSocialSignIn(
+                                            viewModel,
+                                            viewModel.signInWithGoogle,
+                                            'Google',
+                                          ),
                                 ),
+                                const SizedBox(height: 10),
+                              ],
+                              _buildSocialButtonIcon(
+                                key: const ValueKey('login_github'),
+                                icon: FontAwesomeIcons.github,
+                                text: 'Continue with GitHub',
                                 onPressed: viewModel.isLoading
                                     ? null
-                                    : () => _signup(viewModel),
-                                child: const Text('Sign up'),
+                                    : () => _githubSignIn(viewModel),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 20.0),
-                          Row(
-                            children: [
-                              const Expanded(child: Divider()),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text(
-                                  'OR',
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: scheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                              if (supportsNativeOAuth) ...[
+                                const SizedBox(height: 10),
+                                _buildSocialButtonIcon(
+                                  key: const ValueKey('login_microsoft'),
+                                  iconWidget: _microsoftLogo(size: 20),
+                                  text: 'Continue with Microsoft',
+                                  onPressed: viewModel.isLoading
+                                      ? null
+                                      : () => _handleSocialSignIn(
+                                            viewModel,
+                                            viewModel.signInWithMicrosoft,
+                                            'Microsoft',
+                                          ),
                                 ),
-                              ),
-                              const Expanded(child: Divider()),
+                              ],
+                              if (!kIsWeb &&
+                                  defaultTargetPlatform ==
+                                      TargetPlatform.iOS) ...[
+                                const SizedBox(height: 10),
+                                _buildSocialButton(
+                                  key: const ValueKey('login_apple'),
+                                  iconPath: 'images/apple_logo.png',
+                                  text: 'Continue with Apple',
+                                  onPressed: viewModel.isLoading
+                                      ? null
+                                      : () => _handleSocialSignIn(
+                                            viewModel,
+                                            viewModel.signInWithApple,
+                                            'Apple',
+                                          ),
+                                ),
+                              ],
+                              const SizedBox(height: 24.0),
                             ],
                           ),
-                          const SizedBox(height: 10.0),
-                          _buildSocialButton(
-                            iconPath: 'images/google_logo.png',
-                            text: 'Continue with Google',
-                            onPressed: viewModel.isLoading
-                                ? null
-                                : () => _handleSocialSignIn(viewModel,
-                                    viewModel.signInWithGoogle, 'Google'),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildSocialButtonIcon(
-                            icon: FontAwesomeIcons.github,
-                            text: 'Continue with GitHub',
-                            onPressed: viewModel.isLoading
-                                ? null
-                                : () => _githubSignIn(viewModel),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildSocialButtonIcon(
-                            iconWidget: _microsoftLogo(size: 20),
-                            text: 'Continue with Microsoft',
-                            onPressed: viewModel.isLoading
-                                ? null
-                                : () => _handleSocialSignIn(viewModel,
-                                    viewModel.signInWithMicrosoft, 'Microsoft'),
-                          ),
-                          if (!kIsWeb &&
-                              defaultTargetPlatform == TargetPlatform.iOS) ...[
-                            const SizedBox(height: 10),
-                            _buildSocialButton(
-                              iconPath: 'images/apple_logo.png',
-                              text: 'Continue with Apple',
-                              onPressed: viewModel.isLoading
-                                  ? null
-                                  : () => _handleSocialSignIn(viewModel,
-                                      viewModel.signInWithApple, 'Apple'),
-                            ),
-                          ],
-                          const SizedBox(height: 24.0),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -587,28 +687,34 @@ class _LoginPageState extends State<LoginPage> {
       height: size,
       child: Column(
         children: [
-          Row(children: [
-            square(const Color(0xFFF25022)),
-            SizedBox(width: gap),
-            square(const Color(0xFF7FBA00)),
-          ]),
+          Row(
+            children: [
+              square(const Color(0xFFF25022)),
+              SizedBox(width: gap),
+              square(const Color(0xFF7FBA00)),
+            ],
+          ),
           SizedBox(height: gap),
-          Row(children: [
-            square(const Color(0xFF00A4EF)),
-            SizedBox(width: gap),
-            square(const Color(0xFFFFB900)),
-          ]),
+          Row(
+            children: [
+              square(const Color(0xFF00A4EF)),
+              SizedBox(width: gap),
+              square(const Color(0xFFFFB900)),
+            ],
+          ),
         ],
       ),
     );
   }
 
   Widget _buildSocialButtonBase({
+    Key? key,
     required Widget leading,
     required String text,
     required VoidCallback? onPressed,
   }) {
     return Pressable(
+      key: key,
       haptic: true,
       borderRadius: BorderRadius.circular(AppRadii.md),
       onTap: onPressed,
@@ -648,19 +754,26 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildSocialButton({
+    Key? key,
     required String iconPath,
     required String text,
     required VoidCallback? onPressed,
   }) {
     return _buildSocialButtonBase(
-      leading:
-          Image.asset(iconPath, height: 22, width: 22, fit: BoxFit.contain),
+      key: key,
+      leading: Image.asset(
+        iconPath,
+        height: 22,
+        width: 22,
+        fit: BoxFit.contain,
+      ),
       text: text,
       onPressed: onPressed,
     );
   }
 
   Widget _buildSocialButtonIcon({
+    Key? key,
     FaIconData? icon,
     Widget? iconWidget,
     required String text,
@@ -668,9 +781,13 @@ class _LoginPageState extends State<LoginPage> {
   }) {
     assert(icon != null || iconWidget != null);
     return _buildSocialButtonBase(
+      key: key,
       leading: iconWidget ??
-          FaIcon(icon!,
-              color: Theme.of(context).colorScheme.onSurface, size: 22),
+          FaIcon(
+            icon!,
+            color: Theme.of(context).colorScheme.onSurface,
+            size: 22,
+          ),
       text: text,
       onPressed: onPressed,
     );

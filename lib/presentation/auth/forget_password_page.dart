@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'widgets/login_button.dart';
 import 'forget_password_view_model.dart'; // Adjust the import path as necessary
@@ -19,6 +20,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _newPasswordFocus = FocusNode();
+  final FocusNode _confirmPasswordFocus = FocusNode();
+  final FocusNode _codeFocus = FocusNode();
   bool isEmailValid = false;
 
   String? newPassword;
@@ -47,6 +52,52 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
     }
   }
 
+  Future<void> _sendCode(ForgetPasswordViewModel viewModel) async {
+    if (viewModel.isLoading ||
+        !isEmailValid ||
+        viewModel.isPasswordResetting ||
+        !_formKey.currentState!.validate()) {
+      return;
+    }
+    await viewModel.forgetPassword(_emailController.text);
+    if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+    if (viewModel.errorMessage.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(viewModel.errorMessage)),
+      );
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            ModalRoute.of(context)?.isCurrent == true &&
+            viewModel.isPasswordResetting) {
+          _newPasswordFocus.requestFocus();
+        }
+      });
+    }
+  }
+
+  Future<void> _resetPassword(ForgetPasswordViewModel viewModel) async {
+    if (viewModel.isLoading ||
+        !confirmEnable ||
+        !_formKey.currentState!.validate()) {
+      return;
+    }
+    await viewModel.confirmResetPassword(_emailController.text,
+        _newPasswordController.text, _confirmationCodeController.text);
+    if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+    if (viewModel.errorMessage.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(viewModel.errorMessage)),
+      );
+    } else {
+      TextInput.finishAutofillContext(shouldSave: true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password reset successful!')),
+      );
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -64,107 +115,38 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Email Input Field
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: InputDecoration(
-                          labelText: "Email",
-                          hintText: "Input Email",
-                          border: UnderlineInputBorder(),
-                          errorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.error),
-                          ),
-                          focusedErrorBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Theme.of(context).colorScheme.error),
-                          ),
-                          errorStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.error),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email address to receive a confirmation code to reset your password.';
-                          }
-                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                            return 'Please enter a valid email address to receive a confirmation code to reset your password.';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: 20),
-
-                      // New Password Field
-                      if (viewModel.isPasswordResetting)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextFormField(
-                              controller: _newPasswordController,
-                              obscureText: viewModel.obscureTextNewPassword,
-                              decoration: InputDecoration(
-                                labelText: "New Password",
-                                hintText: "Enter new password",
-                                border: UnderlineInputBorder(),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    viewModel.obscureTextNewPassword
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                  onPressed:
-                                      viewModel.toggleNewPasswordVisibility,
-                                ),
-                              ),
-                              onChanged: (text) {
-                                newPassword = text;
-                                setState(() {
-                                  isNewPasswordValid = newPassword!.length >= 6;
-                                });
-                                checkConfirmInput();
-                              },
-                            ),
-                            SizedBox(height: 4.0),
-
-                            // Message aligned with the New Password input field
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 3.0),
-                                child: Text(
-                                  isNewPasswordValid
-                                      ? ''
-                                      : 'Password must be at least 6 characters long',
-                                  style: TextStyle(
-                                    color: isNewPasswordValid
-                                        ? Colors.transparent
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                    fontSize: 14.0,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 18),
-                          ],
-                        ),
-
-                      // Confirm Password Field
-                      if (viewModel.isPasswordResetting)
+                child: AutofillGroup(
+                  onDisposeAction: AutofillContextAction.cancel,
+                  child: Form(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Email Input Field
                         TextFormField(
-                          controller: _confirmPasswordController,
-                          obscureText: viewModel.obscureTextConfirmPassword,
+                          key: const ValueKey('reset_email'),
+                          controller: _emailController,
+                          focusNode: _emailFocus,
+                          readOnly: viewModel.isLoading,
+                          autofillHints: const [
+                            AutofillHints.username,
+                            AutofillHints.email
+                          ],
+                          autocorrect: false,
+                          textInputAction: viewModel.isPasswordResetting
+                              ? TextInputAction.next
+                              : TextInputAction.done,
+                          onFieldSubmitted: (_) {
+                            if (viewModel.isPasswordResetting) {
+                              _newPasswordFocus.requestFocus();
+                            } else {
+                              _sendCode(viewModel);
+                            }
+                          },
                           decoration: InputDecoration(
-                            labelText: "Confirm Password",
-                            hintText: "Re-enter your password",
+                            labelText: "Email",
+                            hintText: "Input Email",
                             border: UnderlineInputBorder(),
                             errorBorder: UnderlineInputBorder(
                               borderSide: BorderSide(
@@ -176,148 +158,227 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             ),
                             errorStyle: TextStyle(
                                 color: Theme.of(context).colorScheme.error),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                viewModel.obscureTextConfirmPassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                              ),
-                              onPressed:
-                                  viewModel.toggleConfirmPasswordVisibility,
-                            ),
                           ),
+                          keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please confirm your password';
+                              return 'Please enter your email address to receive a confirmation code to reset your password.';
                             }
-                            if (value != _newPasswordController.text) {
-                              return "The passwords do not match";
-                            }
-                            return null;
-                          },
-                        ),
-                      SizedBox(height: 20),
-
-                      // Confirmation Message
-                      if (viewModel.isPasswordResetting)
-                        Text(
-                          "A confirmation code has been sent to ${_emailController.text}. Please enter the code to verify your email address.",
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                      SizedBox(height: 18),
-
-                      // Confirmation Code Input
-                      if (viewModel.isPasswordResetting)
-                        TextFormField(
-                          keyboardType: TextInputType.number,
-                          controller: _confirmationCodeController,
-                          decoration: InputDecoration(
-                            labelText: "Confirmation Code",
-                            border: UnderlineInputBorder(),
-                            errorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(
-                                  color: Theme.of(context).colorScheme.error),
-                            ),
-                            focusedErrorBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(
-                                  color: Theme.of(context).colorScheme.error),
-                            ),
-                            errorStyle: TextStyle(
-                                color: Theme.of(context).colorScheme.error),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.length != 6) {
-                              return "Please enter a valid confirmation code to proceed";
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                                .hasMatch(value)) {
+                              return 'Please enter a valid email address to receive a confirmation code to reset your password.';
                             }
                             return null;
                           },
-                          onChanged: (value) {
-                            checkConfirmInput();
-                          },
                         ),
-                      SizedBox(height: 20),
+                        SizedBox(height: 20),
 
-                      // Confirm Button
-                      if (viewModel.isPasswordResetting)
-                        LoginButton(
-                          'Reset',
-                          enable: confirmEnable,
-                          isLoading: viewModel.isLoading,
-                          onPressed: () async {
-                            if (viewModel.isLoading ||
-                                !_formKey.currentState!.validate()) {
-                              return;
-                            }
-                            await viewModel.confirmResetPassword(
-                                _emailController.text,
-                                _newPasswordController.text,
-                                _confirmationCodeController.text);
-                            if (!context.mounted) return;
-                            if (viewModel.errorMessage.isNotEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(viewModel.errorMessage),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content:
-                                        Text("Password reset successful!")),
-                              );
-                              Navigator.pop(context);
-                            }
-                          },
-                        ),
-
-                      // Reset Password Button
-                      if (!viewModel.isPasswordResetting)
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              top: 1.0), // Adjust top padding here
-                          child: MaterialButton(
-                            onPressed: viewModel.isLoading
-                                ? null
-                                : () async {
-                                    if (_formKey.currentState!.validate()) {
-                                      await viewModel.forgetPassword(
-                                          _emailController.text);
-                                      if (!context.mounted) return;
-
-                                      if (viewModel.errorMessage.isNotEmpty) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                                'Failed to send confirmation code.'),
-                                          ),
-                                        );
-                                      }
-                                    }
-                                  },
-                            height: 45,
-                            minWidth: double.infinity,
-                            color: isEmailValid
-                                ? Color.fromRGBO(66, 66, 66, 1.0)
-                                : Color.fromRGBO(180, 180, 180, 1),
-                            disabledColor: Color.fromRGBO(180, 180, 180, 1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: viewModel.isLoading
-                                ? CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  )
-                                : Text(
-                                    "Reset Password",
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 16),
+                        // New Password Field
+                        if (viewModel.isPasswordResetting)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TextFormField(
+                                key: const ValueKey('reset_new_password'),
+                                controller: _newPasswordController,
+                                focusNode: _newPasswordFocus,
+                                readOnly: viewModel.isLoading,
+                                autofillHints: const [
+                                  AutofillHints.newPassword
+                                ],
+                                keyboardType: TextInputType.visiblePassword,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    _confirmPasswordFocus.requestFocus(),
+                                obscureText: viewModel.obscureTextNewPassword,
+                                decoration: InputDecoration(
+                                  labelText: "New Password",
+                                  hintText: "Enter new password",
+                                  border: UnderlineInputBorder(),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      viewModel.obscureTextNewPassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                    ),
+                                    onPressed:
+                                        viewModel.toggleNewPasswordVisibility,
                                   ),
+                                ),
+                                onChanged: (text) {
+                                  newPassword = text;
+                                  setState(() {
+                                    isNewPasswordValid =
+                                        newPassword!.length >= 6;
+                                  });
+                                  checkConfirmInput();
+                                },
+                              ),
+                              SizedBox(height: 4.0),
+
+                              // Message aligned with the New Password input field
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 3.0),
+                                  child: Text(
+                                    isNewPasswordValid
+                                        ? ''
+                                        : 'Password must be at least 6 characters long',
+                                    style: TextStyle(
+                                      color: isNewPasswordValid
+                                          ? Colors.transparent
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                      fontSize: 14.0,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 18),
+                            ],
                           ),
-                        ),
-                    ],
+
+                        // Confirm Password Field
+                        if (viewModel.isPasswordResetting)
+                          TextFormField(
+                            key: const ValueKey('reset_password_confirmation'),
+                            controller: _confirmPasswordController,
+                            focusNode: _confirmPasswordFocus,
+                            readOnly: viewModel.isLoading,
+                            autofillHints: const [AutofillHints.newPassword],
+                            keyboardType: TextInputType.visiblePassword,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            textInputAction: TextInputAction.next,
+                            onFieldSubmitted: (_) => _codeFocus.requestFocus(),
+                            obscureText: viewModel.obscureTextConfirmPassword,
+                            decoration: InputDecoration(
+                              labelText: "Confirm Password",
+                              hintText: "Re-enter your password",
+                              border: UnderlineInputBorder(),
+                              errorBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.error),
+                              ),
+                              focusedErrorBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.error),
+                              ),
+                              errorStyle: TextStyle(
+                                  color: Theme.of(context).colorScheme.error),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  viewModel.obscureTextConfirmPassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                ),
+                                onPressed:
+                                    viewModel.toggleConfirmPasswordVisibility,
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password';
+                              }
+                              if (value != _newPasswordController.text) {
+                                return "The passwords do not match";
+                              }
+                              return null;
+                            },
+                          ),
+                        SizedBox(height: 20),
+
+                        // Confirmation Message
+                        if (viewModel.isPasswordResetting)
+                          Text(
+                            "A confirmation code has been sent to ${_emailController.text}. Please enter the code to verify your email address.",
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        SizedBox(height: 18),
+
+                        // Confirmation Code Input
+                        if (viewModel.isPasswordResetting)
+                          TextFormField(
+                            key: const ValueKey('reset_code'),
+                            focusNode: _codeFocus,
+                            readOnly: viewModel.isLoading,
+                            autofillHints: const [AutofillHints.oneTimeCode],
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _resetPassword(viewModel),
+                            keyboardType: TextInputType.number,
+                            controller: _confirmationCodeController,
+                            decoration: InputDecoration(
+                              labelText: "Confirmation Code",
+                              border: UnderlineInputBorder(),
+                              errorBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.error),
+                              ),
+                              focusedErrorBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Theme.of(context).colorScheme.error),
+                              ),
+                              errorStyle: TextStyle(
+                                  color: Theme.of(context).colorScheme.error),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.length != 6) {
+                                return "Please enter a valid confirmation code to proceed";
+                              }
+                              return null;
+                            },
+                            onChanged: (value) {
+                              checkConfirmInput();
+                            },
+                          ),
+                        SizedBox(height: 20),
+
+                        // Confirm Button
+                        if (viewModel.isPasswordResetting)
+                          LoginButton(
+                            'Reset',
+                            enable: confirmEnable,
+                            isLoading: viewModel.isLoading,
+                            onPressed: () => _resetPassword(viewModel),
+                          ),
+
+                        // Reset Password Button
+                        if (!viewModel.isPasswordResetting)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                                top: 1.0), // Adjust top padding here
+                            child: MaterialButton(
+                              onPressed: viewModel.isLoading
+                                  ? null
+                                  : () => _sendCode(viewModel),
+                              height: 45,
+                              minWidth: double.infinity,
+                              color: isEmailValid
+                                  ? Color.fromRGBO(66, 66, 66, 1.0)
+                                  : Color.fromRGBO(180, 180, 180, 1),
+                              disabledColor: Color.fromRGBO(180, 180, 180, 1),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: viewModel.isLoading
+                                  ? CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    )
+                                  : Text(
+                                      "Reset Password",
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 16),
+                                    ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -334,6 +395,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
     _confirmationCodeController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _emailFocus.dispose();
+    _newPasswordFocus.dispose();
+    _confirmPasswordFocus.dispose();
+    _codeFocus.dispose();
     super.dispose();
   }
 

@@ -19,6 +19,7 @@ import 'package:infrastructure/apple_sign_in_service.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 import 'package:infrastructure/feature_flag_provider.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
+import 'package:infrastructure/microsoft_sign_in_service.dart';
 import 'package:infrastructure/token_provider.dart';
 
 import 'package:swiftcomp/presentation/auth/forget_password_view_model.dart';
@@ -28,6 +29,7 @@ import 'package:swiftcomp/presentation/settings/viewModels/admin_model_tool_view
 import 'package:swiftcomp/presentation/auth/signup_view_model.dart';
 import 'package:swiftcomp/presentation/auth/update_password_view_model.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
+import 'services/microsoft_sign_in_service.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/qa_settings_view_model.dart';
 
 final sl = GetIt.instance;
@@ -40,7 +42,10 @@ void initInjection() {
         userUserCase: sl(),
       ));
   sl.registerFactory<LoginViewModel>(() => LoginViewModel(
-      authUseCase: sl(), appleSignInService: sl(), googleSignInService: sl()));
+      authUseCase: sl(),
+      appleSignInService: sl(),
+      googleSignInService: sl(),
+      microsoftSignInService: sl()));
   sl.registerFactory<SignupViewModel>(() => SignupViewModel(authUseCase: sl()));
   sl.registerLazySingleton<SettingsViewModel>(() => SettingsViewModel(
       authUseCase: sl(), userUserCase: sl(), featureFlagProvider: sl()));
@@ -68,7 +73,8 @@ void initInjection() {
       client: sl(),
       authClient: sl(),
       apiEnvironment: sl(),
-      tokenProvider: sl()));
+      tokenProvider: sl(),
+      microsoftSignInService: sl()));
   sl.registerLazySingleton<UserRepository>(
       () => UserRepositoryImpl(authClient: sl(), apiEnvironment: sl()));
 
@@ -84,4 +90,6 @@ void initInjection() {
   sl.registerLazySingleton<AppleSignInService>(() => AppleSignInServiceImpl());
   sl.registerLazySingleton<GoogleSignInService>(
       () => GoogleSignInServiceImpl());
+  sl.registerLazySingleton<MicrosoftSignInService>(
+      () => MicrosoftSignInServiceImpl());
 }

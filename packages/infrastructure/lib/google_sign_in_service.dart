@@ -19,7 +19,10 @@ class GoogleSignInUser {
 
   // Constructor
   GoogleSignInUser(
-      {required this.email, this.displayName, this.photoUrl, required this.idToken});
+      {required this.email,
+      this.displayName,
+      this.photoUrl,
+      required this.idToken});
 }
 
 // Implementation of the service
@@ -34,18 +37,17 @@ class GoogleSignInServiceImpl implements GoogleSignInService {
     String? serverClientId,
     bool forceCodeForRefreshToken = false,
   }) async {
-    if (!_initialized) {
-      await GoogleSignIn.instance.initialize(
-        clientId: clientId,
-        serverClientId: serverClientId,
-        hostedDomain: hostedDomain,
-      );
-      _initialized = true;
-    }
-
     try {
-      final GoogleSignInAccount account = await GoogleSignIn.instance
-          .authenticate(scopeHint: scopes);
+      if (!_initialized) {
+        await GoogleSignIn.instance.initialize(
+          clientId: clientId,
+          serverClientId: serverClientId,
+          hostedDomain: hostedDomain,
+        );
+        _initialized = true;
+      }
+      final GoogleSignInAccount account =
+          await GoogleSignIn.instance.authenticate(scopeHint: scopes);
       final GoogleSignInAuthentication auth = account.authentication;
       return GoogleSignInUser(
         email: account.email,
@@ -67,7 +69,8 @@ class GoogleSignInServiceImpl implements GoogleSignInService {
               'Google sign-in is not configured correctly. Please contact support.');
         // ignore: no_default_cases
         default:
-          rethrow;
+          throw Exception(
+              'Google sign-in could not be completed. Please try again.');
       }
     }
   }

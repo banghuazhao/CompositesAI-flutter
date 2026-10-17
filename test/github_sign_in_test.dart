@@ -14,11 +14,13 @@ import 'package:mockito/mockito.dart';
 import 'package:swiftcomp/presentation/auth/login_view_model.dart';
 
 class _GithubTestModel extends LoginViewModel {
-  _GithubTestModel(MockAuthUseCase authUseCase, this.respond)
+  _GithubTestModel(MockAuthUseCase authUseCase, this.respond,
+      {Duration requestTimeout = const Duration(seconds: 30)})
       : super(
           authUseCase: authUseCase,
           appleSignInService: MockAppleSignInService(),
           googleSignInService: MockGoogleSignInService(),
+          githubRequestTimeout: requestTimeout,
         );
 
   final Future<Map<String, dynamic>> Function(Uri, Map<String, String>) respond;
@@ -222,6 +224,25 @@ void main() {
     model.dispose();
   });
 
+  test('GitHub backend rejection does not blame an unused password form',
+      () async {
+    when(auth.validateGithubAccessToken('accepted-token'))
+        .thenThrow(Exception('The email or password provided is incorrect.'));
+    final model = _GithubTestModel(
+        auth,
+        (uri, _) async => uri.path.endsWith('/device/code')
+            ? _device('1')
+            : {'access_token': 'accepted-token'});
+
+    await model.signInWithGithub();
+
+    expect(model.errorMessage,
+        'GitHub sign-in could not be completed. Please try again.');
+    expect(model.isSigningIn, isFalse);
+    expect(model.isLoading, isFalse);
+    model.dispose();
+  });
+
   test('disposal cancels a pending poll without notifying disposed listeners',
       () async {
     final pollStarted = Completer<void>();
@@ -238,6 +259,61 @@ void main() {
 
     await expectLater(signIn, completes);
     verifyNever(auth.validateGithubAccessToken('late-token'));
+  });
+
+  test('cancel releases a stalled request immediately for another login',
+      () async {
+    final pending = Completer<Map<String, dynamic>>();
+    final model = _GithubTestModel(auth, (_, __) => pending.future);
+    final request = model.signInWithGithub();
+    expect(model.isLoading, isTrue);
+
+    model.cancelGithubSignIn();
+    await request.timeout(const Duration(seconds: 1));
+
+    expect(model.isLoading, isFalse);
+    expect(model.errorMessage, isNull);
+    model.dispose();
+  });
+
+  for (final stallDeviceRequest in [true, false]) {
+    test(
+        'stalled GitHub ${stallDeviceRequest ? 'device' : 'poll'} request times out',
+        () async {
+      final pending = Completer<Map<String, dynamic>>();
+      final model = _GithubTestModel(auth, (uri, _) async {
+        if (!stallDeviceRequest && uri.path.endsWith('/device/code')) {
+          return _device('1');
+        }
+        return pending.future;
+      }, requestTimeout: const Duration(milliseconds: 15));
+
+      await model.signInWithGithub().timeout(const Duration(seconds: 1));
+
+      expect(model.isLoading, isFalse);
+      expect(model.isSigningIn, isFalse);
+      expect(
+          model.errorMessage, 'Network error. Please check your connection.');
+      verifyZeroInteractions(auth);
+      model.dispose();
+    });
+  }
+
+  test('poll wait respects device expiry instead of sleeping a full interval',
+      () async {
+    final model = _GithubTestModel(auth, (uri, _) async {
+      if (uri.path.endsWith('/device/code')) {
+        return {..._device('1', interval: 60), 'expires_in': 1};
+      }
+      return {'error': 'authorization_pending'};
+    });
+
+    await model.signInWithGithub().timeout(const Duration(seconds: 3));
+
+    expect(model.isLoading, isFalse);
+    expect(model.isSigningIn, isFalse);
+    expect(model.errorMessage, 'GitHub device flow timed out');
+    model.dispose();
   });
 
   test('leaving login before password response does not notify after disposal',
