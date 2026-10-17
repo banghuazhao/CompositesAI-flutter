@@ -335,8 +335,7 @@ void main() {
     final code = tester.widget<TextField>(_field('reset_code'));
     expect(code.autofillHints, orderedEquals([AutofillHints.oneTimeCode]));
     expect(code.textInputAction, TextInputAction.done);
-    await _enter(tester, 'reset_email', 'person@example.test');
-    await _next(tester, 'reset_new_password');
+    expect(tester.widget<TextField>(_field('reset_email')).readOnly, isTrue);
     await _enter(tester, 'reset_new_password', 'example-password');
     await _next(tester, 'reset_password_confirmation');
     await _enter(tester, 'reset_password_confirmation', 'example-password');

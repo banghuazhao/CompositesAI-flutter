@@ -121,23 +121,45 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    final baseURL = await apiEnvironment.getBaseUrl();
-    final url = Uri.parse('$baseURL/auths/signout');
-
-    final response = await _request(
-      authClient.get(url, headers: {'Content-Type': 'application/json'}),
-    );
-
-    if (response.statusCode == 200) {
-      await tokenProvider.deleteToken();
-      try {
-        await microsoftSignInService?.clearAppSession().timeout(requestTimeout);
-      } catch (_) {
-        // App logout must finish even if the native cache is unavailable. The
-        // shared service retries scoped cleanup before any later Microsoft login.
+    // Enqueue native cleanup before any later Microsoft account selection.
+    // Neither a broker nor network failure may block local sign-out.
+    try {
+      final cleanup = microsoftSignInService?.clearAppSession();
+      if (cleanup != null) {
+        unawaited(cleanup.timeout(requestTimeout).catchError((Object _) {}));
       }
-    } else {
-      throw mapServerErrorToDomainException(response);
+    } catch (_) {
+      // The shared service retries app-scoped cleanup at the next sign-in.
+    }
+
+    // Storage errors still propagate: the UI must not claim a session was
+    // removed if secure storage could not actually remove it.
+    final departingToken = await tokenProvider.takeToken();
+    if (departingToken == null || departingToken.trim().isEmpty) return;
+    unawaited(_signOutRemotely(departingToken));
+  }
+
+  Future<void> _signOutRemotely(String departingToken) async {
+    var expired = false;
+    final operation = () async {
+      final baseURL = await apiEnvironment.getBaseUrl();
+      // Timing out cannot cancel the preference lookup. Do not launch a new
+      // request if it eventually finishes after the cleanup deadline.
+      if (expired) return;
+      await client.get(
+        Uri.parse('$baseURL/auths/signout'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $departingToken',
+        },
+      );
+    }();
+    try {
+      await operation.timeout(requestTimeout);
+    } catch (_) {
+      expired = true;
+      // Best effort only. Using the raw client and the captured token means
+      // a late response cannot authenticate as, or remove, a newer session.
     }
   }
 

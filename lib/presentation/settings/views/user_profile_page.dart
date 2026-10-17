@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:domain/auth/entities/user.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -80,14 +82,21 @@ class UserProfilePage extends StatelessWidget {
                     label: 'Sign Out',
                     color: Colors.red.shade600,
                     onTap: () async {
+                      if (viewModel.isLoading) return;
+                      final chat = context.read<ChatViewModel>();
+                      final settings = context.read<SettingsViewModel>();
+                      final route = ModalRoute.of(context);
                       final ok = await viewModel.logoutUser(context);
-                      if (!context.mounted) return;
                       if (ok) {
-                        await context
-                            .read<ChatViewModel>()
-                            .clearChatStateOnLogout();
-                        if (!context.mounted) return;
-                        Navigator.of(context).pop('refresh');
+                        // These global models must clear even if the profile
+                        // route was closed while secure storage was pending.
+                        settings.clearSession();
+                        unawaited(chat
+                            .clearChatStateOnLogout()
+                            .catchError((Object _) {}));
+                        if (context.mounted && route?.isCurrent == true) {
+                          Navigator.of(context).pop('refresh');
+                        }
                       }
                     },
                   ),

@@ -7,6 +7,7 @@ import 'package:domain/auth/entities/expert_upgrade_request.dart';
 import 'package:domain/auth/entities/user.dart';
 import 'package:domain/auth/use_cases/auth_use_case.dart';
 import 'package:domain/auth/use_cases/user_use_case.dart';
+import 'package:domain/common/domain_exceptions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,6 +37,11 @@ class SettingsViewModel extends ChangeNotifier {
   final int _maxTaps = 5;
   final int _tapTimeout = 1000; // Timeout in milliseconds
   DateTime _lastTapTime = DateTime.now();
+  int _sessionGeneration = 0;
+  int _authRequestId = 0;
+  int _expertRequestId = 0;
+  bool _isDisposed = false;
+  bool _isLoggingOut = false;
 
   SettingsViewModel(
       {required this.authUseCase,
@@ -46,52 +52,114 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   void updateUser(User user) {
+    if (_isDisposed) return;
+    _sessionGeneration++;
+    _authRequestId++;
+    _expertRequestId++;
+    _clearExpertRequestMetadata();
+    submission = '';
+    _applyUser(user);
+    notifyListeners();
+  }
+
+  /// Invalidates in-flight account work before publishing the signed-out state.
+  void clearSession() {
+    if (_isDisposed) return;
+    _sessionGeneration++;
+    _authRequestId++;
+    _expertRequestId++;
+    user = null;
+    isLoggedIn = false;
+    isExpert = false;
+    isAdmin = false;
+    isLoading = false;
+    submission = '';
+    _clearExpertRequestMetadata();
+    notifyListeners();
+  }
+
+  bool _isCurrentSession(int generation) =>
+      !_isDisposed && generation == _sessionGeneration;
+
+  bool _isCurrentAuthRequest(int requestId) =>
+      !_isDisposed && requestId == _authRequestId;
+
+  bool _isCurrentExpertRequest(int generation, int requestId) =>
+      _isCurrentSession(generation) && requestId == _expertRequestId;
+
+  static String? _userIdentity(User? value) {
+    if (value == null) return null;
+    final id = value.id?.trim();
+    if (id != null && id.isNotEmpty) return 'id:$id';
+    final email = value.email.trim().toLowerCase();
+    if (email.isNotEmpty) return 'email:$email';
+    return value.username;
+  }
+
+  void _applyUser(User user) {
+    if (_userIdentity(this.user) != _userIdentity(user) ||
+        isExpert != user.isCompositeExpert ||
+        isAdmin != user.isAdmin) {
+      _sessionGeneration++;
+      _expertRequestId++;
+      _clearExpertRequestMetadata();
+      submission = '';
+    }
     this.user = user;
     isLoggedIn = true;
     isExpert = user.isCompositeExpert;
-    isAdmin = user.isAdmin; // Ensure isLoggedIn is updated correctly
-    notifyListeners();
+    isAdmin = user.isAdmin;
   }
 
   Future<void> fetchAuthSessionNew() async {
+    if (_isDisposed) return;
+    final requestId = ++_authRequestId;
     try {
-      isLoggedIn = await authUseCase.isLoggedIn();
-      if (isLoggedIn) {
-        await fetchUser();
+      final hasSession = await authUseCase.isLoggedIn();
+      if (!_isCurrentAuthRequest(requestId)) return;
+      if (!hasSession) {
+        clearSession();
+        return;
+      }
+      final verified = await _fetchUser(requestId);
+      if (verified && _isCurrentAuthRequest(requestId)) {
         await refreshExpertRequestMetadata();
-      } else {
-        user = null; // Ensure user is null if not logged in
-        _clearExpertRequestMetadata();
       }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('$e');
+    } catch (error) {
+      if (!_isCurrentAuthRequest(requestId)) return;
+      if (error is UnauthorizedException) {
+        clearSession();
+      } else if (kDebugMode) {
+        debugPrint('Could not refresh the settings session.');
       }
-      isLoggedIn = false;
-      user = null; // Ensure proper reset
-      _clearExpertRequestMetadata();
+    } finally {
+      if (_isCurrentAuthRequest(requestId)) notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> fetchUser() async {
+    if (_isDisposed) return;
+    await _fetchUser(++_authRequestId);
+  }
+
+  Future<bool> _fetchUser(int requestId) async {
     try {
-      user = await userUserCase.fetchMe();
-      if (kDebugMode) {
-        debugPrint('user: $user');
+      final fetchedUser = await userUserCase.fetchMe();
+      if (!_isCurrentAuthRequest(requestId)) return false;
+      _applyUser(fetchedUser);
+      return true;
+    } catch (error) {
+      if (!_isCurrentAuthRequest(requestId)) return false;
+      if (error is UnauthorizedException) {
+        clearSession();
+      } else if (kDebugMode) {
+        // A temporary network failure does not establish that a session ended.
+        debugPrint('Could not refresh the settings profile.');
       }
-      isLoggedIn = true;
-      isExpert = user!.isCompositeExpert;
-      isAdmin = user!.isAdmin; // Ensure isLoggedIn is updated correctly
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('$e');
-      }
-      isLoggedIn = false; // Handle fetch user failure
-      user = null;
-      _clearExpertRequestMetadata();
+      return false;
+    } finally {
+      if (_isCurrentAuthRequest(requestId)) notifyListeners();
     }
-    notifyListeners();
   }
 
   String? get _currentUserId {
@@ -118,6 +186,9 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshExpertRequestMetadata() async {
+    if (_isDisposed) return;
+    final generation = _sessionGeneration;
+    final requestId = ++_expertRequestId;
     if (!isLoggedIn) {
       _clearExpertRequestMetadata();
       notifyListeners();
@@ -130,30 +201,39 @@ class SettingsViewModel extends ChangeNotifier {
     try {
       if (isAdmin) {
         final requests = await userUserCase.fetchPendingExpertRequests();
+        if (!_isCurrentExpertRequest(generation, requestId)) return;
         pendingExpertRequestCount = requests.length;
         currentExpertRequest = null;
       } else if (!isExpert) {
         final userId = _currentUserId;
-        currentExpertRequest = userId == null
+        final request = userId == null
             ? null
             : await userUserCase.fetchExpertRequestForUser(userId);
+        if (!_isCurrentExpertRequest(generation, requestId)) return;
+        currentExpertRequest = request;
         pendingExpertRequestCount = 0;
       } else {
         _clearExpertRequestMetadata();
       }
     } catch (error) {
-      if (kDebugMode) {
-        debugPrint('Failed to refresh expert request metadata: $error');
+      if (!_isCurrentExpertRequest(generation, requestId)) return;
+      if (error is UnauthorizedException) {
+        clearSession();
+      } else if (kDebugMode) {
+        debugPrint('Could not refresh expert request metadata.');
       }
     } finally {
-      isLoadingExpertRequestMetadata = false;
-      notifyListeners();
+      if (_isCurrentExpertRequest(generation, requestId)) {
+        isLoadingExpertRequestMetadata = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> initPackageInfo() async {
     try {
       final PackageInfo info = await PackageInfo.fromPlatform();
+      if (_isDisposed) return;
       version = info.version;
       notifyListeners();
     } catch (e) {
@@ -164,8 +244,13 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> newLogout(BuildContext context) async {
+    if (_isDisposed || _isLoggingOut) return;
+    _isLoggingOut = true;
+    final generation = _sessionGeneration;
     try {
       await authUseCase.logout();
+      if (!_isCurrentSession(generation)) return;
+      clearSession();
       if (!context.mounted) return;
 
       // Display Snackbar for success message
@@ -176,12 +261,9 @@ class SettingsViewModel extends ChangeNotifier {
           backgroundColor: Colors.black,
         ),
       );
-      isLoggedIn = false;
-      notifyListeners();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('$e');
-      }
+    } catch (_) {
+      if (!_isCurrentSession(generation)) return;
+      if (kDebugMode) debugPrint('Could not clear the local settings session.');
       if (!context.mounted) return;
       // Display Snackbar for error message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -191,7 +273,18 @@ class SettingsViewModel extends ChangeNotifier {
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      _isLoggingOut = false;
     }
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _sessionGeneration++;
+    _authRequestId++;
+    _expertRequestId++;
+    super.dispose();
   }
 
   Future<void> openFeedback() async {
@@ -304,25 +397,33 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> updateUserName(String newName) async {
+    final generation = _sessionGeneration;
     try {
       // Call the update method in userUserCase to update the name in the backend or database
       await userUserCase.updateMe(newName);
+      if (!_isCurrentSession(generation)) return;
 
       // Update the local user object if it exists
       if (user != null) {
         user!.name = newName; // Update the user’s name
         notifyListeners(); // Notify the UI to refresh
       }
-    } catch (error) {
-      // Handle any errors that may occur
-      debugPrint("Failed to update user name: $error");
+    } catch (_) {
+      if (_isCurrentSession(generation)) {
+        debugPrint('Could not update the account name.');
+      }
     }
   }
 
   Future<String> submitApplication(String reason, String link) async {
+    final generation = _sessionGeneration;
     String result = '';
     try {
-      submission = await userUserCase.submitApplication(reason, link);
+      final response = await userUserCase.submitApplication(reason, link);
+      if (!_isCurrentSession(generation)) {
+        return 'Your session changed. Please try again.';
+      }
+      submission = response;
       if (submission == 'success') {
         result =
             'Application successfully submitted. Please wait for approval.';
@@ -336,8 +437,8 @@ class SettingsViewModel extends ChangeNotifier {
             'Submission failed due to an internal error. Please try again later.';
         return result;
       }
-    } catch (error) {
-      result = 'failed to submit: $error';
+    } catch (_) {
+      result = 'Submission failed. Please try again later.';
       return result;
     }
   }
@@ -349,13 +450,22 @@ class SettingsViewModel extends ChangeNotifier {
     }
 
     final notes = _buildExpertRequestNotes(reason, link);
+    final generation = _sessionGeneration;
+    final requestId = ++_expertRequestId;
 
     try {
-      currentExpertRequest =
-          await userUserCase.requestExpertUpgrade(userId, notes);
+      final request = await userUserCase.requestExpertUpgrade(userId, notes);
+      if (!_isCurrentExpertRequest(generation, requestId)) {
+        return 'Your session changed. Please try again.';
+      }
+      currentExpertRequest = request;
+      isLoadingExpertRequestMetadata = false;
       notifyListeners();
       return 'Application successfully submitted. Please wait for approval.';
     } catch (error) {
+      if (!_isCurrentExpertRequest(generation, requestId)) {
+        return 'Your session changed. Please try again.';
+      }
       final message = error.toString();
       if (message.toLowerCase().contains('cooldown')) {
         return 'You already submitted an expert request recently. Please wait for approval.';
@@ -365,6 +475,11 @@ class SettingsViewModel extends ChangeNotifier {
         return 'This user has already submitted an expert application. Please wait for approval.';
       }
       return 'Submission failed due to an internal error. Please try again later.';
+    } finally {
+      if (_isCurrentExpertRequest(generation, requestId)) {
+        isLoadingExpertRequestMetadata = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -388,7 +503,9 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> approveExpertRequest(ExpertUpgradeRequest request) {
+    final generation = _sessionGeneration;
     return userUserCase.approveExpertRequest(request).then((_) {
+      if (!_isCurrentSession(generation)) return;
       if (pendingExpertRequestCount > 0) {
         pendingExpertRequestCount -= 1;
         notifyListeners();
@@ -397,7 +514,9 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   Future<void> denyExpertRequest(ExpertUpgradeRequest request) {
+    final generation = _sessionGeneration;
     return userUserCase.denyExpertRequest(request).then((_) {
+      if (!_isCurrentSession(generation)) return;
       if (pendingExpertRequestCount > 0) {
         pendingExpertRequestCount -= 1;
         notifyListeners();

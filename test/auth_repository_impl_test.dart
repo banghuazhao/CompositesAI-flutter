@@ -259,7 +259,6 @@ void main() {
         repository.updatePassword('current-password', 'replacement-password'),
     'signup verification': (repository) =>
         repository.sendSignupVerificationCode('person@example.com'),
-    'signout': (repository) => repository.logout(),
     'LinkedIn exchange': (repository) =>
         repository.handleAuthorizationCodeFromLinked('code'),
     'LinkedIn profile': (repository) =>

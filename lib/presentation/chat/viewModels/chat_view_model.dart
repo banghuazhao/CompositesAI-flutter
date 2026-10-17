@@ -203,8 +203,9 @@ class ChatViewModel extends ChangeNotifier {
     loadMoreChats();
   }
 
-  Future<void> fetchAuthSessionNew() =>
-      _refreshAuthSession(retry: fetchAuthSessionNew);
+  Future<void> fetchAuthSessionNew() async {
+    await _refreshAuthSession();
+  }
 
   bool _isCurrentSession(int generation) =>
       !_isDisposed && generation == _sessionGeneration;
@@ -212,40 +213,41 @@ class ChatViewModel extends ChangeNotifier {
   bool _isCurrentAuthRequest(int requestId) =>
       !_isDisposed && requestId == _authRequestId;
 
-  Future<void> _refreshAuthSession({required AsyncCallback retry}) async {
+  Future<bool> _refreshAuthSession() async {
     final requestId = ++_authRequestId;
     try {
       final hasSession = await _authUseCase.isLoggedIn();
-      if (!_isCurrentAuthRequest(requestId)) return;
+      if (!_isCurrentAuthRequest(requestId)) return false;
       if (!hasSession) {
         await clearChatStateOnLogout();
-        return;
+        return false;
       }
-      await _fetchAuthenticatedUser(requestId, retry: retry);
+      return await _fetchAuthenticatedUser(requestId);
     } catch (error) {
-      if (!_isCurrentAuthRequest(requestId)) return;
+      if (!_isCurrentAuthRequest(requestId)) return false;
       _reportError(
         ChatErrorMapper.from(error, operation: ChatOperation.authenticate),
-        retry: retry,
+        retry: _retryAuthentication,
       );
+      return false;
     } finally {
       notifyListeners();
     }
   }
 
-  Future<void> fetchUser() =>
-      _fetchAuthenticatedUser(++_authRequestId, retry: fetchUser);
+  Future<void> fetchUser() async {
+    await _fetchAuthenticatedUser(++_authRequestId);
+  }
 
-  Future<void> _fetchAuthenticatedUser(int requestId,
-      {required AsyncCallback retry}) async {
+  Future<bool> _fetchAuthenticatedUser(int requestId) async {
     try {
       final authenticatedUser = await _userUserCase.fetchMe();
-      if (!_isCurrentAuthRequest(requestId)) return;
+      if (!_isCurrentAuthRequest(requestId)) return false;
       final owner = _userIdentity(authenticatedUser);
       final previousOwner = _sessionOwner ?? _userIdentity(user);
       if (previousOwner != null && previousOwner != owner) {
         await _clearPrivateChatState();
-        if (!_isCurrentAuthRequest(requestId)) return;
+        if (!_isCurrentAuthRequest(requestId)) return false;
       }
       user = authenticatedUser;
       _sessionOwner = owner;
@@ -255,16 +257,27 @@ class ChatViewModel extends ChangeNotifier {
         _activeError = null;
         _activeErrorRetry = null;
       }
+      return true;
     } catch (error) {
-      if (!_isCurrentAuthRequest(requestId)) return;
+      if (!_isCurrentAuthRequest(requestId)) return false;
       // Network or server failures do not prove that a valid session ended.
       _reportError(
         ChatErrorMapper.from(error, operation: ChatOperation.authenticate),
-        retry: retry,
+        retry: _retryAuthentication,
       );
+      return false;
     } finally {
       notifyListeners();
     }
+  }
+
+  Future<void> _retryAuthentication() async {
+    final requestId = _authRequestId + 1;
+    final verified = await _refreshAuthSession();
+    // Preserving an existing user after a timeout is not fresh verification.
+    // A newer login/logout also supersedes this retry before hydration starts.
+    if (!verified || !isLoggedIn || !_isCurrentAuthRequest(requestId)) return;
+    await Future.wait([fetchChats(), fetchTools()]);
   }
 
   static String? _userIdentity(User? value) {
@@ -953,7 +966,9 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> checkAuthStatus() => _refreshAuthSession(retry: checkAuthStatus);
+  Future<void> checkAuthStatus() async {
+    await _refreshAuthSession();
+  }
 
   /// Clears chat UI state when the session ends (logout, account deletion, QA env switch).
   /// Call after auth token is invalidated so the next login does not see another user's thread.

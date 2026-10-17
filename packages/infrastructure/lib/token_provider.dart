@@ -24,6 +24,14 @@ class TokenProvider {
   Future<void> deleteToken() =>
       _serialize(() => _secureStorage.delete(key: _tokenKey));
 
+  /// Removes and returns the departing session in one storage operation.
+  /// A new sign-in cannot write between the read and deletion.
+  Future<String?> takeToken() => _serialize(() async {
+        final token = await _secureStorage.read(key: _tokenKey);
+        if (token != null) await _secureStorage.delete(key: _tokenKey);
+        return token;
+      });
+
   /// A request may only invalidate the session it actually used. A late 401
   /// from an old account must not delete a newer account's saved session.
   Future<bool> deleteTokenIfMatches(String expectedToken) =>

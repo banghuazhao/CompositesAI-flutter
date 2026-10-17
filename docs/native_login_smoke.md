@@ -2,8 +2,11 @@
 
 ## Validation on 18 October 2026
 
-- All 303 Flutter tests and 11 wrapper privacy/lifecycle tests passed. Analysis
-  passed for all 29 changed Dart files.
+- All 348 Flutter tests and 11 wrapper privacy/lifecycle tests passed. Analysis
+  passed for the changed Dart files.
+- Automated recovery coverage includes profile timeouts and Retry hydration,
+  reset-code recipient binding/resend cooldown, and offline logout with late
+  account responses and navigation away from the profile screen.
 - Two physical-iPhone UI runs were stopped before app launch after Xcode's asset
   compiler stopped making progress. Neither run produced a passing device result.
   The underlying macOS tooling cause was not established.

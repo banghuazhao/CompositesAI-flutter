@@ -1,5 +1,6 @@
 // lib/data/repositories/signup_repository_impl.dart
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:domain/auth/entities/user.dart';
@@ -14,8 +15,13 @@ import '../../mappers/domain_exception_mapper.dart';
 class UserRepositoryImpl implements UserRepository {
   final AuthenticatedHttpClient authClient;
   final APIEnvironment apiEnvironment;
+  final Duration profileRequestTimeout;
 
-  UserRepositoryImpl({required this.authClient, required this.apiEnvironment});
+  UserRepositoryImpl({
+    required this.authClient,
+    required this.apiEnvironment,
+    this.profileRequestTimeout = const Duration(seconds: 30),
+  });
 
   @override
   Future<User> fetchMe() async {
@@ -23,17 +29,20 @@ class UserRepositoryImpl implements UserRepository {
     final url = Uri.parse('$baseURL/auths/');
     //convert plain url(string) to Uri object
     // No need to add Authorization header; AuthenticatedHttpClient handles it
+    // Stop awaiting before parsing the profile. A response arriving after this
+    // deadline cannot publish an old user into a recovered/newer app session.
     final response = await authClient.get(url, headers: {
       'Content-Type': 'application/json',
+    }).timeout(profileRequestTimeout, onTimeout: () {
+      throw TimeoutException(
+        'Profile request timed out. Please try again.',
+      );
     });
 
     // Check the response status and handle accordingly
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final user = User.fromJson(data);
-      if (kDebugMode) {
-        debugPrint('Fetched current user: $user');
-      }
       return user;
     } else {
       throw mapServerErrorToDomainException(response);

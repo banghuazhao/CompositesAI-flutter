@@ -29,6 +29,13 @@ class _Storage extends TokenProvider {
 
   @override
   Future<void> deleteToken() async => token = null;
+
+  @override
+  Future<String?> takeToken() async {
+    final previous = token;
+    token = null;
+    return previous;
+  }
 }
 
 class _Environment extends APIEnvironment {
@@ -157,6 +164,7 @@ void main() {
     await repository.logout();
 
     expect(storage.token, isNull);
+    await service.clearAppSession();
     expect(accounts, isEmpty);
     await model.signInWithMicrosoft();
     expect(model.signedInUser?.id, 'account-b');

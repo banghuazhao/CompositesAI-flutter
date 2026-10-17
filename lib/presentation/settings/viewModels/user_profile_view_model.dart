@@ -11,6 +11,8 @@ class UserProfileViewModel extends ChangeNotifier {
 
   bool isLoading = false;
   bool isSignedIn = false;
+  bool _disposed = false;
+  int _profileRequestId = 0;
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
@@ -19,39 +21,55 @@ class UserProfileViewModel extends ChangeNotifier {
       required this.userUseCase,
       required this.user});
 
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _profileRequestId++;
+    super.dispose();
+  }
+
   Future<void> fetchUser() async {
+    if (_disposed) return;
+    final requestId = ++_profileRequestId;
     try {
-      user = await userUseCase.fetchMe();
+      final fetchedUser = await userUseCase.fetchMe();
+      if (_disposed || requestId != _profileRequestId) return;
+      user = fetchedUser;
       notifyListeners();
     } catch (e) {
+      if (_disposed || requestId != _profileRequestId) return;
       user = null; // Clear user data in case of an error
       notifyListeners(); // Ensure the UI is updated
     }
   }
 
-  /// Returns `true` if server logout and token removal succeeded.
+  /// Returns true once the local session is removed, even if the page was left.
   Future<bool> logoutUser(BuildContext context) async {
+    if (_disposed || isLoading) return false;
+    _profileRequestId++;
     setLoading(true);
     try {
       await authUseCase.logout();
-      if (!context.mounted) return false;
-
-      // Display a success Snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Logged out"),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.black,
-        ),
-      );
-
-      // Update state
-      user = null; // Clear user data
+      user = null;
+      isSignedIn = false;
       notifyListeners();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Logged out'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.black,
+          ),
+        );
+      }
       return true;
-    } catch (e) {
-      // Log the error and display an error Snackbar
-      debugPrint("Logout failed: $e");
+    } catch (_) {
+      debugPrint('Logout failed.');
       if (!context.mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -67,6 +85,7 @@ class UserProfileViewModel extends ChangeNotifier {
   }
 
   Future<bool> deleteUser() async {
+    _profileRequestId++;
     setLoading(true);
     _errorMessage = null;
     try {

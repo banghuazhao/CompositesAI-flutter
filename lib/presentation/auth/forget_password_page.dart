@@ -6,7 +6,9 @@ import 'forget_password_view_model.dart'; // Adjust the import path as necessary
 import '../../app/injection_container.dart'; // Import your service locator to inject dependencies
 
 class ForgetPasswordPage extends StatefulWidget {
-  const ForgetPasswordPage({super.key});
+  const ForgetPasswordPage({super.key, this.initialEmail});
+
+  final String? initialEmail;
 
   @override
   _ForgetPasswordPageState createState() => _ForgetPasswordPageState();
@@ -34,6 +36,9 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   @override
   void initState() {
     super.initState();
+    _emailController.text = widget.initialEmail?.trim() ?? '';
+    isEmailValid =
+        RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(_emailController.text);
     _emailController.addListener(
         _validateEmail); //these functions to automatically run whenever the text in the associated input field changes
     _newPasswordController.addListener(
@@ -45,27 +50,27 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   void _validateEmail() {
     final email = _emailController.text;
     final isValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
-    if (isValid != isEmailValid) {
-      setState(() {
-        isEmailValid = isValid;
-      });
-    }
+    setState(() => isEmailValid = isValid);
   }
 
   Future<void> _sendCode(ForgetPasswordViewModel viewModel) async {
     if (viewModel.isLoading ||
         !isEmailValid ||
         viewModel.isPasswordResetting ||
+        viewModel.cooldownForEmail(_emailController.text) > 0 ||
         !_formKey.currentState!.validate()) {
       return;
     }
-    await viewModel.forgetPassword(_emailController.text);
+    FocusScope.of(context).unfocus();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final sent = await viewModel.forgetPassword(_emailController.text);
     if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
     if (viewModel.errorMessage.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(viewModel.errorMessage)),
       );
-    } else {
+    } else if (sent) {
+      _emailController.text = viewModel.requestedEmail!;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted &&
             ModalRoute.of(context)?.isCurrent == true &&
@@ -78,24 +83,64 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
 
   Future<void> _resetPassword(ForgetPasswordViewModel viewModel) async {
     if (viewModel.isLoading ||
+        !viewModel.isPasswordResetting ||
         !confirmEnable ||
         !_formKey.currentState!.validate()) {
       return;
     }
-    await viewModel.confirmResetPassword(_emailController.text,
+    FocusScope.of(context).unfocus();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final reset = await viewModel.confirmResetPassword(_emailController.text,
         _newPasswordController.text, _confirmationCodeController.text);
     if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
     if (viewModel.errorMessage.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(viewModel.errorMessage)),
       );
-    } else {
+    } else if (reset) {
       TextInput.finishAutofillContext(shouldSave: true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password reset successful!')),
       );
       Navigator.pop(context);
     }
+  }
+
+  Future<void> _resendCode(ForgetPasswordViewModel viewModel) async {
+    if (!viewModel.canResendCode) return;
+    FocusScope.of(context).unfocus();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final sent = await viewModel.resendCode();
+    if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+    if (viewModel.errorMessage.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(viewModel.errorMessage)),
+      );
+    } else if (sent) {
+      _confirmationCodeController.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Confirmation code sent again.')),
+      );
+      _codeFocus.requestFocus();
+    }
+  }
+
+  void _changeEmail(ForgetPasswordViewModel viewModel) {
+    if (!viewModel.changeEmail()) return;
+    TextInput.finishAutofillContext(shouldSave: false);
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    _confirmationCodeController.clear();
+    _newPasswordController.clear();
+    _confirmPasswordController.clear();
+    setState(() {
+      newPassword = null;
+      isNewPasswordValid = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        _emailFocus.requestFocus();
+      }
+    });
   }
 
   @override
@@ -128,7 +173,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                           key: const ValueKey('reset_email'),
                           controller: _emailController,
                           focusNode: _emailFocus,
-                          readOnly: viewModel.isLoading,
+                          readOnly: viewModel.isLoading ||
+                              viewModel.requestedEmail != null,
                           autofillHints: const [
                             AutofillHints.username,
                             AutofillHints.email
@@ -295,7 +341,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                         // Confirmation Message
                         if (viewModel.isPasswordResetting)
                           Text(
-                            "A confirmation code has been sent to ${_emailController.text}. Please enter the code to verify your email address.",
+                            "A confirmation code has been sent to ${viewModel.requestedEmail ?? _emailController.text}. Please enter the code to verify your email address.",
                             style: Theme.of(context).textTheme.bodyMedium,
                             textAlign: TextAlign.center,
                           ),
@@ -311,6 +357,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) => _resetPassword(viewModel),
                             keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(6),
+                            ],
                             controller: _confirmationCodeController,
                             decoration: InputDecoration(
                               labelText: "Confirmation Code",
@@ -342,9 +392,37 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                         if (viewModel.isPasswordResetting)
                           LoginButton(
                             'Reset',
-                            enable: confirmEnable,
-                            isLoading: viewModel.isLoading,
+                            enable: confirmEnable && !viewModel.isLoading,
+                            isLoading:
+                                viewModel.isLoading && !viewModel.isSendingCode,
                             onPressed: () => _resetPassword(viewModel),
+                          ),
+
+                        if (viewModel.isPasswordResetting &&
+                            viewModel.requestedEmail != null)
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 12,
+                            children: [
+                              TextButton(
+                                key: const ValueKey('reset_resend_code'),
+                                onPressed: viewModel.canResendCode
+                                    ? () => _resendCode(viewModel)
+                                    : null,
+                                child: Text(viewModel.isSendingCode
+                                    ? 'Sending code…'
+                                    : viewModel.resendSecondsRemaining > 0
+                                        ? 'Resend code in ${viewModel.resendSecondsRemaining}s'
+                                        : 'Resend code'),
+                              ),
+                              TextButton(
+                                key: const ValueKey('reset_change_email'),
+                                onPressed: viewModel.isLoading
+                                    ? null
+                                    : () => _changeEmail(viewModel),
+                                child: const Text('Change email'),
+                              ),
+                            ],
                           ),
 
                         // Reset Password Button
@@ -353,7 +431,11 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             padding: const EdgeInsets.only(
                                 top: 1.0), // Adjust top padding here
                             child: MaterialButton(
-                              onPressed: viewModel.isLoading
+                              onPressed: viewModel.isLoading ||
+                                      !isEmailValid ||
+                                      viewModel.cooldownForEmail(
+                                              _emailController.text) >
+                                          0
                                   ? null
                                   : () => _sendCode(viewModel),
                               height: 45,
@@ -371,7 +453,11 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                                           Colors.white),
                                     )
                                   : Text(
-                                      "Reset Password",
+                                      viewModel.cooldownForEmail(
+                                                  _emailController.text) >
+                                              0
+                                          ? 'Try again in ${viewModel.cooldownForEmail(_emailController.text)}s'
+                                          : 'Reset Password',
                                       style: TextStyle(
                                           color: Colors.white, fontSize: 16),
                                     ),
