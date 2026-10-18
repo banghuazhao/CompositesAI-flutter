@@ -1,22 +1,44 @@
 import 'package:flutter/material.dart';
-
 import 'package:provider/provider.dart';
-import '../viewModels/settings_view_model.dart';
 
+import '../viewModels/settings_view_model.dart';
 
 class UpdateNamePage extends StatefulWidget {
   final String currentName;
+  final int? expectedSessionGeneration;
 
-  const UpdateNamePage({Key? key, required this.currentName}) : super(key: key);
+  const UpdateNamePage({
+    super.key,
+    required this.currentName,
+    this.expectedSessionGeneration,
+  });
 
   @override
-  _UpdateNamePageState createState() => _UpdateNamePageState();
+  State<UpdateNamePage> createState() => _UpdateNamePageState();
 }
 
 class _UpdateNamePageState extends State<UpdateNamePage> {
-  final TextEditingController _nameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  SettingsViewModel? _viewModel;
+  int? _sessionGeneration;
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.currentName);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_viewModel == null) {
+      _viewModel = context.read<SettingsViewModel>();
+      _sessionGeneration =
+          widget.expectedSessionGeneration ?? _viewModel!.sessionGeneration;
+    }
+  }
 
   @override
   void dispose() {
@@ -25,68 +47,79 @@ class _UpdateNamePageState extends State<UpdateNamePage> {
   }
 
   Future<void> _saveName() async {
-    if (_nameController.text.isEmpty) {
-      // Show validation message if name is empty
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Name cannot be empty")),
-      );
-      return;
-    }
+    if (_isLoading || !_formKey.currentState!.validate()) return;
+    final name = _nameController.text.trim();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    FocusScope.of(context).unfocus();
+    setState(() => _isLoading = true);
 
-    setState(() {
-      _isLoading = true;
-    });
-
+    bool saved;
     try {
-      // Access the view model and update the user's name
-      // looks for an instance of SettingsViewModel that has been provided by a Provider widget (like ChangeNotifierProvider) somewhere higher in the widget tree
-      final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
-      await viewModel.updateUserName(_nameController.text);
-
-      // Navigate back to the previous screen with a 'refresh' result
-      Navigator.pop(context, 'refresh');
-    } catch (error) {
-      // Show error message if update fails
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to update name: $error")),
+      saved = await _viewModel!.updateUserName(
+        name,
+        expectedSessionGeneration: _sessionGeneration,
       );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+    } catch (_) {
+      saved = false;
+    }
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+
+    if (saved) {
+      Navigator.pop(context, 'refresh');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not update your name. Please try again.'),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Update Name")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Enter your new username:",
-              style: TextStyle(fontSize: 16.0),
+      appBar: AppBar(title: const Text('Update Name')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  key: const ValueKey('name_input'),
+                  controller: _nameController,
+                  readOnly: _isLoading,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.name],
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Name cannot be empty'
+                      : null,
+                  onFieldSubmitted: (_) => _saveName(),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  key: const ValueKey('name_save'),
+                  onPressed: _isLoading ? null : _saveName,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            semanticsLabel: 'Saving name',
+                          ),
+                        )
+                      : const Text('Save'),
+                ),
+              ],
             ),
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                hintText: widget.currentName,
-                hintStyle: const TextStyle(color: Colors.black54),
-              ),
-            ),
-            SizedBox(height: 20.0),
-            _isLoading
-                ? Center(child: CircularProgressIndicator()) // Center the loading indicator
-                : Center(
-              child: ElevatedButton(
-                onPressed: _saveName,
-                child: Text("Save"),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

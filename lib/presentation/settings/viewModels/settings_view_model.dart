@@ -43,6 +43,9 @@ class SettingsViewModel extends ChangeNotifier {
   bool _isDisposed = false;
   bool _isLoggingOut = false;
 
+  /// Lets account forms stay bound to the session in which they were opened.
+  int get sessionGeneration => _sessionGeneration;
+
   SettingsViewModel(
       {required this.authUseCase,
       required this.userUserCase,
@@ -396,22 +399,34 @@ class SettingsViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> updateUserName(String newName) async {
+  Future<bool> updateUserName(
+    String newName, {
+    int? expectedSessionGeneration,
+  }) async {
     final generation = _sessionGeneration;
+    final name = newName.trim();
+    if (!_isCurrentSession(generation) ||
+        !isLoggedIn ||
+        user == null ||
+        name.isEmpty ||
+        (expectedSessionGeneration != null &&
+            expectedSessionGeneration != generation)) {
+      return false;
+    }
     try {
-      // Call the update method in userUserCase to update the name in the backend or database
-      await userUserCase.updateMe(newName);
-      if (!_isCurrentSession(generation)) return;
+      await userUserCase.updateMe(name);
+      if (!_isCurrentSession(generation) || user == null) return false;
 
-      // Update the local user object if it exists
-      if (user != null) {
-        user!.name = newName; // Update the user’s name
-        notifyListeners(); // Notify the UI to refresh
-      }
+      // An older profile response must not overwrite the confirmed new name.
+      _authRequestId++;
+      user!.name = name;
+      notifyListeners();
+      return true;
     } catch (_) {
       if (_isCurrentSession(generation)) {
         debugPrint('Could not update the account name.');
       }
+      return false;
     }
   }
 

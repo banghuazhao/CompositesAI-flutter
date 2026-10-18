@@ -48,6 +48,15 @@ class UserProfileViewModel extends ChangeNotifier {
     }
   }
 
+  void applyConfirmedName(String name) {
+    if (_disposed || user == null) return;
+    final confirmedName = name.trim();
+    if (confirmedName.isEmpty) return;
+    _profileRequestId++;
+    user!.name = confirmedName;
+    notifyListeners();
+  }
+
   /// Returns true once the local session is removed, even if the page was left.
   Future<bool> logoutUser(BuildContext context) async {
     if (_disposed || isLoading) return false;

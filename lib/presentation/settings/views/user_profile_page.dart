@@ -38,15 +38,27 @@ class UserProfilePage extends StatelessWidget {
                     icon: Icons.person_outline,
                     label: 'Change Name',
                     onTap: () async {
+                      final settings = context.read<SettingsViewModel>();
+                      final generation = settings.sessionGeneration;
+                      final currentName = viewModel.user?.name ?? '';
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => UpdateNamePage(
-                            currentName: viewModel.user?.name ?? '',
+                            currentName: currentName,
+                            expectedSessionGeneration: generation,
                           ),
                         ),
                       );
-                      if (result == 'refresh') await viewModel.fetchUser();
+                      if (!context.mounted ||
+                          result != 'refresh' ||
+                          settings.sessionGeneration != generation) {
+                        return;
+                      }
+                      final confirmedName = settings.user?.name;
+                      if (confirmedName != null) {
+                        viewModel.applyConfirmedName(confirmedName);
+                      }
                     },
                   ),
                   _buildDivider(),

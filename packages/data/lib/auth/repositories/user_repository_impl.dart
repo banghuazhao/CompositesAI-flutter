@@ -7,6 +7,7 @@ import 'package:domain/auth/entities/user.dart';
 import 'package:domain/auth/entities/expert_upgrade_request.dart';
 import 'package:domain/auth/repositories_abstract/user_repository.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:infrastructure/api_environment.dart';
 import 'package:infrastructure/authenticated_http_client.dart';
 
@@ -16,22 +17,26 @@ class UserRepositoryImpl implements UserRepository {
   final AuthenticatedHttpClient authClient;
   final APIEnvironment apiEnvironment;
   final Duration profileRequestTimeout;
+  final Duration profileUpdateTimeout;
 
   UserRepositoryImpl({
     required this.authClient,
     required this.apiEnvironment,
     this.profileRequestTimeout = const Duration(seconds: 30),
+    this.profileUpdateTimeout = const Duration(seconds: 30),
   });
 
   @override
-  Future<User> fetchMe() async {
-    final baseURL = await apiEnvironment.getBaseUrl();
+  Future<User> fetchMe() => _fetchMe(authClient);
+
+  Future<User> _fetchMe(http.Client requestClient, {String? baseURL}) async {
+    baseURL ??= await apiEnvironment.getBaseUrl();
     final url = Uri.parse('$baseURL/auths/');
     //convert plain url(string) to Uri object
     // No need to add Authorization header; AuthenticatedHttpClient handles it
     // Stop awaiting before parsing the profile. A response arriving after this
     // deadline cannot publish an old user into a recovered/newer app session.
-    final response = await authClient.get(url, headers: {
+    final response = await requestClient.get(url, headers: {
       'Content-Type': 'application/json',
     }).timeout(profileRequestTimeout, onTimeout: () {
       throw TimeoutException(
@@ -51,27 +56,44 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<void> updateMe(String newName) async {
-    final baseURL = await apiEnvironment.getBaseUrl();
+    var expired = false;
+    final operation = () async {
+      final sessionClient =
+          await authClient.forCurrentSession(isActive: () => !expired);
+      if (expired) return;
+      final baseURL = await apiEnvironment.getBaseUrl();
+      if (expired) return;
 
-    // Backend endpoint `/auths/update/profile` requires `profile_image_url`.
-    // We can reuse the current user profile image returned by `fetchMe()`.
-    final currentUser = await fetchMe();
-    final profileImageUrl = currentUser.avatarUrl ?? '';
-    if (profileImageUrl.isEmpty) {
-      throw Exception('Missing profile_image_url for current user');
+      // Both steps must retain the departing account's authorization. Reading
+      // the live token again for POST could rename an account signed in later.
+      final currentUser = await _fetchMe(sessionClient, baseURL: baseURL);
+      if (expired) return;
+      final profileImageUrl = currentUser.avatarUrl ?? '';
+      if (profileImageUrl.isEmpty) {
+        throw Exception('Missing profile_image_url for current user');
+      }
+
+      final response = await sessionClient.post(
+        Uri.parse('$baseURL/auths/update/profile'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': newName,
+          'profile_image_url': profileImageUrl,
+        }),
+      );
+      if (expired) return;
+      if (response.statusCode == 200) return;
+      throw mapServerErrorToDomainException(response);
+    }();
+
+    try {
+      await operation.timeout(profileUpdateTimeout, onTimeout: () {
+        expired = true;
+        throw TimeoutException('Name update timed out. Please try again.');
+      });
+    } finally {
+      expired = true;
     }
-
-    final response = await authClient.post(
-      Uri.parse('$baseURL/auths/update/profile'), // Adjust URL as necessary
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': newName,
-        'profile_image_url': profileImageUrl,
-      }),
-    );
-
-    if (response.statusCode == 200) return;
-    throw mapServerErrorToDomainException(response);
   }
 
   @override

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:domain/auth/entities/user.dart';
 import 'package:domain/auth/mocks/auth_use_case_mock.dart';
 import 'package:domain/auth/mocks/user_use_case_mock.dart';
@@ -7,6 +9,103 @@ import 'package:swiftcomp/presentation/settings/viewModels/user_profile_view_mod
 
 void main() {
   group('UserProfileViewModel Tests', () {
+    group('applyConfirmedName', () {
+      test('publishes the confirmed name locally without another request', () {
+        final account = User(
+          id: 'current-account',
+          email: 'person@example.test',
+          name: 'Original Name',
+          avatarUrl: '/existing-avatar.png',
+        );
+        final auth = MockAuthUseCase();
+        final users = MockUserUseCase();
+        final model = UserProfileViewModel(
+            authUseCase: auth, userUseCase: users, user: account);
+        addTearDown(model.dispose);
+        var notifications = 0;
+        model.addListener(() => notifications++);
+
+        model.applyConfirmedName(' Confirmed Name ');
+
+        expect(model.user, same(account));
+        expect(model.user!.name, 'Confirmed Name');
+        expect(model.user!.email, 'person@example.test');
+        expect(model.user!.avatarUrl, '/existing-avatar.png');
+        expect(notifications, 1);
+        verifyZeroInteractions(users);
+        verifyZeroInteractions(auth);
+      });
+
+      for (final fail in [false, true]) {
+        test('ignores an older profile response after confirmation, fail=$fail',
+            () async {
+          final response = Completer<User>();
+          final users = MockUserUseCase();
+          when(users.fetchMe()).thenAnswer((_) => response.future);
+          final account = User(
+              id: 'current-account',
+              email: 'person@example.test',
+              name: 'Original Name');
+          final model = UserProfileViewModel(
+              authUseCase: MockAuthUseCase(),
+              userUseCase: users,
+              user: account);
+          addTearDown(model.dispose);
+          var notifications = 0;
+          model.addListener(() => notifications++);
+          final refresh = model.fetchUser();
+
+          model.applyConfirmedName('Confirmed Name');
+          if (fail) {
+            response.completeError(TimeoutException('Profile unavailable'));
+          } else {
+            response.complete(User(
+                id: 'current-account',
+                email: 'person@example.test',
+                name: 'Older Snapshot'));
+          }
+          await refresh;
+
+          expect(model.user, same(account));
+          expect(model.user!.name, 'Confirmed Name');
+          expect(model.user!.email, 'person@example.test');
+          expect(notifications, 1);
+          verify(users.fetchMe()).called(1);
+        });
+      }
+
+      test('does not mutate or notify after the profile is disposed', () {
+        final account = User(email: 'person@example.test', name: 'Original Name');
+        final model = UserProfileViewModel(
+            authUseCase: MockAuthUseCase(),
+            userUseCase: MockUserUseCase(),
+            user: account);
+        var notifications = 0;
+        model.addListener(() => notifications++);
+        model.dispose();
+
+        model.applyConfirmedName('Confirmed Name');
+
+        expect(account.name, 'Original Name');
+        expect(notifications, 0);
+      });
+
+      test('does not recreate a cleared profile', () {
+        final model = UserProfileViewModel(
+            authUseCase: MockAuthUseCase(),
+            userUseCase: MockUserUseCase(),
+            user: null);
+        addTearDown(model.dispose);
+        var notifications = 0;
+        model.addListener(() => notifications++);
+
+        model.applyConfirmedName('Confirmed Name');
+
+        expect(model.user, isNull);
+        expect(notifications, 0);
+      });
+    });
+
     group('isLoggedIn', () {
       test('should return true when token is not null', () async {
         final MockAuthUseCase mockAuthUseCase = MockAuthUseCase();
