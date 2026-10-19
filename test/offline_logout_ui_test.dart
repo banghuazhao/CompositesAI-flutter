@@ -35,10 +35,16 @@ class _GlobalChat extends ChangeNotifier implements ChatViewModel {
 class _GlobalSettings extends ChangeNotifier implements SettingsViewModel {
   bool privateStatePresent = true;
   int clearCalls = 0;
+  @override
+  int sessionGeneration = 0;
+  @override
+  bool isLoggedIn = true;
 
   @override
   void clearSession() {
     clearCalls++;
+    sessionGeneration++;
+    isLoggedIn = false;
     privateStatePresent = false;
     notifyListeners();
   }

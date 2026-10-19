@@ -69,7 +69,7 @@ void main() {
           expect(model.user, same(account));
           expect(model.user!.name, 'Confirmed Name');
           expect(model.user!.email, 'person@example.test');
-          expect(notifications, 1);
+          expect(notifications, 2);
           verify(users.fetchMe()).called(1);
         });
       }

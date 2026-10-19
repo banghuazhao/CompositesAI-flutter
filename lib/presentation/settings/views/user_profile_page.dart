@@ -19,112 +19,234 @@ class UserProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => UserProfileViewModel(
-          authUseCase: sl(), userUseCase: sl(), user: user),
+      create: (context) {
+        final settings = context.read<SettingsViewModel>();
+        final generation = settings.sessionGeneration;
+        return UserProfileViewModel(
+          authUseCase: sl(),
+          userUseCase: sl(),
+          user: user,
+          isCurrentSession: () =>
+              settings.sessionGeneration == generation && settings.isLoggedIn,
+        );
+      },
       child: Scaffold(
         appBar: AppBar(title: const Text('Profile')),
         body: Consumer<UserProfileViewModel>(
           builder: (context, viewModel, _) {
-            if (viewModel.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return ListView(
-              children: [
-                _buildHeader(context, viewModel),
-                const SizedBox(height: 8),
-                _buildSection(context, [
-                  _buildRow(
-                    context,
-                    icon: Icons.person_outline,
-                    label: 'Change Name',
-                    onTap: () async {
-                      final settings = context.read<SettingsViewModel>();
-                      final generation = settings.sessionGeneration;
-                      final currentName = viewModel.user?.name ?? '';
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => UpdateNamePage(
-                            currentName: currentName,
-                            expectedSessionGeneration: generation,
-                          ),
-                        ),
-                      );
-                      if (!context.mounted ||
-                          result != 'refresh' ||
-                          settings.sessionGeneration != generation) {
-                        return;
-                      }
-                      final confirmedName = settings.user?.name;
-                      if (confirmedName != null) {
-                        viewModel.applyConfirmedName(confirmedName);
-                      }
-                    },
-                  ),
-                  _buildDivider(),
-                  _buildRow(
-                    context,
-                    icon: Icons.lock_outline,
-                    label: 'Update Password',
-                    onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => UpdatePasswordPage(
-                            email: viewModel.user?.email,
-                          ),
-                        ),
-                      );
-                      if (result == 'password_updated') {
-                        await viewModel.fetchUser();
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Password updated successfully')),
-                        );
-                      }
-                    },
-                  ),
-                ]),
-                const SizedBox(height: 16),
-                _buildSection(context, [
-                  _buildRow(
-                    context,
-                    icon: Icons.logout,
-                    label: 'Sign Out',
-                    color: Colors.red.shade600,
-                    onTap: () async {
-                      if (viewModel.isLoading) return;
-                      final chat = context.read<ChatViewModel>();
-                      final settings = context.read<SettingsViewModel>();
-                      final route = ModalRoute.of(context);
-                      final ok = await viewModel.logoutUser(context);
-                      if (ok) {
-                        // These global models must clear even if the profile
-                        // route was closed while secure storage was pending.
-                        settings.clearSession();
-                        unawaited(chat
-                            .clearChatStateOnLogout()
-                            .catchError((Object _) {}));
-                        if (context.mounted && route?.isCurrent == true) {
-                          Navigator.of(context).pop('refresh');
-                        }
-                      }
-                    },
-                  ),
-                  _buildDivider(),
-                  _buildRow(
-                    context,
-                    icon: Icons.delete_outline,
-                    label: 'Delete Account',
-                    color: Colors.red.shade600,
-                    onTap: () => _confirmDeleteUser(context, viewModel),
-                  ),
-                ]),
-                const SizedBox(height: 32),
-              ],
+            return Consumer<SettingsViewModel>(
+              builder: (context, _, __) =>
+                  _buildProfileBody(context, viewModel),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileBody(
+      BuildContext context, UserProfileViewModel viewModel) {
+    if (viewModel.isSessionExpired ||
+        !(viewModel.isCurrentSession?.call() ?? true)) {
+      return _buildUnavailableProfile(context, viewModel, expired: true);
+    }
+    if (viewModel.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (viewModel.user == null) {
+      return _buildUnavailableProfile(context, viewModel);
+    }
+    return RefreshIndicator(
+      onRefresh: viewModel.fetchUser,
+      child: ListView(
+        key: const ValueKey('profile_refresh_list'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          if (viewModel.isRefreshingProfile)
+            const LinearProgressIndicator(
+              key: ValueKey('profile_refresh_progress'),
+              semanticsLabel: 'Refreshing profile',
+            ),
+          _buildHeader(context, viewModel),
+          if (viewModel.profileRefreshError != null)
+            _buildRefreshNotice(context, viewModel),
+          const SizedBox(height: 8),
+          _buildSection(context, [
+            _buildRow(
+              context,
+              icon: Icons.person_outline,
+              label: 'Change Name',
+              onTap: () async {
+                final settings = context.read<SettingsViewModel>();
+                final generation = settings.sessionGeneration;
+                final currentName = viewModel.user?.name ?? '';
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => UpdateNamePage(
+                      currentName: currentName,
+                      expectedSessionGeneration: generation,
+                    ),
+                  ),
+                );
+                if (!context.mounted ||
+                    result != 'refresh' ||
+                    settings.sessionGeneration != generation) {
+                  return;
+                }
+                final confirmedName = settings.user?.name;
+                if (confirmedName != null) {
+                  viewModel.applyConfirmedName(confirmedName);
+                }
+              },
+            ),
+            _buildDivider(),
+            _buildRow(
+              context,
+              icon: Icons.lock_outline,
+              label: 'Update Password',
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => UpdatePasswordPage(
+                      email: viewModel.user?.email,
+                    ),
+                  ),
+                );
+                if (result == 'password_updated') {
+                  await viewModel.fetchUser();
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Password updated successfully')),
+                  );
+                }
+              },
+            ),
+          ]),
+          const SizedBox(height: 16),
+          _buildSection(context, [
+            _buildRow(
+              context,
+              icon: Icons.logout,
+              label: 'Sign Out',
+              color: Colors.red.shade600,
+              onTap: () async {
+                if (viewModel.isLoading) return;
+                final chat = context.read<ChatViewModel>();
+                final settings = context.read<SettingsViewModel>();
+                final route = ModalRoute.of(context);
+                final ok = await viewModel.logoutUser(context);
+                if (ok) {
+                  // These global models must clear even if the profile
+                  // route was closed while secure storage was pending.
+                  settings.clearSession();
+                  unawaited(
+                      chat.clearChatStateOnLogout().catchError((Object _) {}));
+                  if (context.mounted && route?.isCurrent == true) {
+                    Navigator.of(context).pop('refresh');
+                  }
+                }
+              },
+            ),
+            _buildDivider(),
+            _buildRow(
+              context,
+              icon: Icons.delete_outline,
+              label: 'Delete Account',
+              color: Colors.red.shade600,
+              onTap: () => _confirmDeleteUser(context, viewModel),
+            ),
+          ]),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefreshNotice(
+      BuildContext context, UserProfileViewModel viewModel) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      key: const ValueKey('profile_refresh_error'),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              viewModel.profileRefreshError!,
+              style: TextStyle(color: scheme.onErrorContainer),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              key: const ValueKey('profile_refresh_retry'),
+              style: TextButton.styleFrom(
+                  foregroundColor: scheme.onErrorContainer),
+              onPressed:
+                  viewModel.isRefreshingProfile ? null : viewModel.fetchUser,
+              child: const Text('Retry'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnavailableProfile(
+    BuildContext context,
+    UserProfileViewModel viewModel, {
+    bool expired = false,
+  }) {
+    return SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (viewModel.isRefreshingProfile)
+                const LinearProgressIndicator(
+                  key: ValueKey('profile_refresh_progress'),
+                  semanticsLabel: 'Refreshing profile',
+                ),
+              const SizedBox(height: 16),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  expired
+                      ? 'Your session has expired. Please sign in again.'
+                      : viewModel.profileRefreshError ??
+                          'Profile details are unavailable.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (expired)
+                FilledButton(
+                  key: const ValueKey('profile_session_back'),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Back to settings'),
+                )
+              else
+                FilledButton(
+                  key: const ValueKey('profile_refresh_retry'),
+                  onPressed: viewModel.isRefreshingProfile
+                      ? null
+                      : viewModel.fetchUser,
+                  child: const Text('Retry'),
+                ),
+            ],
+          ),
         ),
       ),
     );
