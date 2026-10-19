@@ -1,4 +1,3 @@
-- More reliable social sign-in and GitHub cancellation.
-- Clearer sign-up and password messages, with better dark mode.
-- Stop now cancels running chat and tool tasks.
-- Fixed document images with spaces or Unicode in filenames.
+- More reliable sign-in, account switching and offline sign-out.
+- Easier password recovery and improved password autofill.
+- Smoother name changes and profile refresh, with a retry option after connection problems.

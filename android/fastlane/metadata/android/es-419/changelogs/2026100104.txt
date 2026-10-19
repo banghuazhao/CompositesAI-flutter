@@ -1,0 +1,3 @@
+- Inicio de sesión, cambio de cuenta y cierre de sesión sin conexión más confiables.
+- Recuperación de contraseñas más sencilla y autocompletado de contraseñas mejorado.
+- Cambios de nombre y actualización del perfil más fluidos, con la opción de volver a intentar tras un problema de conexión.

@@ -1,4 +1,3 @@
-- Zuverlässigere Anmeldung über Drittanbieter und Abbruch der GitHub-Anmeldung.
-- Klarere Meldungen bei Registrierung und Passwörtern sowie ein verbesserter Dunkelmodus.
-- Stop bricht jetzt laufende Chat- und Tool-Aufgaben ab.
-- Bilder in Dokumenten werden auch bei Leerzeichen oder Unicode-Zeichen im Dateinamen korrekt geladen.
+- Zuverlässigere Anmeldung, einfacherer Kontowechsel und Abmeldung auch ohne Internetverbindung.
+- Einfachere Passwortwiederherstellung und verbessertes automatisches Ausfüllen von Passwörtern.
+- Reibungslosere Namensänderungen und Profilaktualisierungen mit einer Wiederholungsoption bei Verbindungsproblemen.

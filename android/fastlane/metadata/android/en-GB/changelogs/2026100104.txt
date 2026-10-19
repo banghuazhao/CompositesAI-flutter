@@ -1,0 +1,3 @@
+- More reliable sign-in, account switching and offline sign-out.
+- Easier password recovery and improved password autofill.
+- Smoother name changes and profile refresh, with a retry option after connection problems.

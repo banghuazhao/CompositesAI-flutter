@@ -1,0 +1,3 @@
+- Início de sessão, mudança de conta e fim de sessão sem ligação mais fiáveis.
+- Recuperação de palavra-passe mais fácil e preenchimento automático de palavras-passe melhorado.
+- Alteração de nome e atualização do perfil mais simples, com opção de tentar novamente após problemas de ligação.

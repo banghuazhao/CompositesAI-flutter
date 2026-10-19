@@ -1,0 +1,3 @@
+- Login, troca de conta e saída da conta sem conexão mais confiáveis.
+- Recuperação de senha mais fácil e preenchimento automático de senhas aprimorado.
+- Alteração de nome e atualização do perfil mais práticas, com a opção de tentar novamente após problemas de conexão.

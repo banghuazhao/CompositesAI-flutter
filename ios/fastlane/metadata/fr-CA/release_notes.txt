@@ -1,4 +1,3 @@
-- Connexion via un compte tiers et annulation de la connexion GitHub plus fiables.
-- Messages d’inscription et de mot de passe plus clairs, avec un mode sombre amélioré.
-- Stop annule désormais les tâches de chat et d’outils en cours.
-- Les images des documents se chargent correctement si leur nom contient des espaces ou des caractères Unicode.
+- Connexion, changement de compte et déconnexion hors ligne plus fiables.
+- Récupération du mot de passe simplifiée et remplissage automatique amélioré.
+- Modification du nom et actualisation du profil plus fluides, avec la possibilité de réessayer après un problème de connexion.

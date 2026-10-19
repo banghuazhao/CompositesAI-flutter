@@ -1,0 +1,3 @@
+- Connexion, changement de compte et déconnexion hors ligne plus fiables.
+- Récupération du mot de passe simplifiée et remplissage automatique amélioré.
+- Modification du nom et actualisation du profil plus fluides, avec la possibilité de réessayer après un problème de connexion.

@@ -1,4 +1,3 @@
-- Inicio de sesión con otras cuentas y cancelación del acceso con GitHub más fiables.
-- Mensajes más claros al registrarse y gestionar contraseñas, con mejoras en el modo oscuro.
-- Stop ahora cancela las tareas de chat y herramientas en curso.
-- Corregida la carga de imágenes de documentos cuyos nombres contienen espacios o caracteres Unicode.
+- Inicio de sesión, cambio de cuenta y cierre de sesión sin conexión más fiables.
+- Recuperación de contraseñas más sencilla y autocompletado de contraseñas mejorado.
+- Cambios de nombre y actualización del perfil más fluidos, con la opción de reintentar tras un problema de conexión.
