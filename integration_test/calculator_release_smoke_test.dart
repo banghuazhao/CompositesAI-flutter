@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -608,7 +609,195 @@ void main() {
     expect(_enteredText(tester, _fieldWithLabel('N11 (N/mm)')), '100.00');
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(minutes: 3)));
+  testWidgets('material tools native details cancel and apply safely',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si);
+    final material = _releaseMaterial('Preview prepreg', id: 'preview-native');
+    await MaterialLibrary.instance.save(material);
+    final stored =
+        SharedPreferencesHelper.localStorage.getString('Custom_Materials_v1');
+    LibraryMaterial? selected;
+    await tester.pumpWidget(_calculatorApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Material preview smoke')),
+        body: Center(
+          child: MaterialLibraryButton(
+            kind: MaterialKind.lamina,
+            onSelected: (value) => selected = value,
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.text('Library'));
+    final details =
+        find.byKey(const ValueKey('material-details-preview-native'));
+    await _tap(tester, details);
+    expect(find.byKey(const Key('material-details-dialog')), findsOneWidget);
+    expect(selected, isNull);
+    await _tap(tester, find.byKey(const Key('material-details-cancel')));
+    expect(find.byType(DraggableScrollableSheet), findsOneWidget);
+    expect(selected, isNull);
+    await _tap(tester, details);
+    await _tap(tester, find.byKey(const Key('material-details-apply')));
+    expect(selected, same(material));
+    expect(find.byType(DraggableScrollableSheet), findsNothing);
+    expect(find.text('Material preview smoke'), findsOneWidget);
+    expect(
+        SharedPreferencesHelper.localStorage.getString('Custom_Materials_v1'),
+        stored);
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('material tools native JSON includes saved kinds outside search',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.us);
+    final material = _releaseMaterial('Native export prepreg',
+        id: 'native-export-lamina', e1: 150.12345678901235);
+    const matrix = LibraryMaterial(
+      id: 'native-export-matrix',
+      name: 'Native export matrix',
+      kind: MaterialKind.matrix,
+      isCustom: true,
+      e1: 3.5,
+      nu12: 0.35,
+    );
+    await MaterialLibrary.instance.save(material);
+    await MaterialLibrary.instance.save(matrix);
+    final stored =
+        SharedPreferencesHelper.localStorage.getString('Custom_Materials_v1');
+    const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final shareCalls = <MethodCall>[];
+    // Intercept only the final native handoff. SharePlus keeps its real
+    // platform singleton and writes the generated XFile to a device temp file.
+    messenger.setMockMethodCallHandler(shareChannel, (call) async {
+      shareCalls.add(call);
+      return ''; // The native share sheet was dismissed.
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(shareChannel, null));
+    await tester.pumpWidget(_calculatorApp(
+      home: Scaffold(
+        body: Center(
+          child: MaterialLibraryButton(
+            kind: MaterialKind.lamina,
+            onSelected: (_) {},
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.text('Library'));
+    await _enterText(
+        tester,
+        find.byWidgetPredicate((widget) =>
+            widget is TextField &&
+            widget.decoration?.hintText == 'Search materials'),
+        'Native export prepreg');
+    expect(find.text(matrix.name), findsNothing);
+    await _tap(tester, find.byKey(const Key('material-library-export-button')));
+    final call = shareCalls.single;
+    expect(call.method, 'share');
+    final request = call.arguments as Map;
+    final file = File((request['paths'] as List).single as String);
+    addTearDown(() async {
+      if (await file.exists()) await file.delete();
+    });
+    expect(file.uri.pathSegments.last, 'CompositesAI_materials.json');
+    expect(request['mimeTypes'], ['application/json']);
+    expect(request['originWidth'], greaterThan(0));
+    expect(request['originHeight'], greaterThan(0));
+    final data = jsonDecode(utf8.decode(await file.readAsBytes())) as Map;
+    expect(data['version'], 1);
+    expect(data['unitSystem'], 'SI');
+    final records = data['materials'] as List;
+    expect(records.map((record) => (record as Map)['id']),
+        [matrix.id, material.id]);
+    expect((records.last as Map)['e1'], material.e1);
+    expect(
+        SharedPreferencesHelper.localStorage.getString('Custom_Materials_v1'),
+        stored);
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('material tools native failure filters keep complete clipboard',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si);
+    await tester.pumpWidget(_calculatorApp(
+        home: LaminateFailureResultPage(result: _filterFailureResult())));
+    await tester.pumpAndSettle();
+    await _tap(
+        tester, find.byKey(const ValueKey('failure-only-failed-filter')));
+
+    Future<void> select(FailureCriterion criterion) async {
+      await _tap(
+          tester, find.byKey(const ValueKey('failure-criterion-filter')));
+      await _tap(tester, find.text(criterion.label).last);
+    }
+
+    DataTable table() => tester.widget<DataTable>(find.byType(DataTable));
+    await select(FailureCriterion.maxStress);
+    expect(table().rows, hasLength(20));
+    expect(table().columns, hasLength(6));
+    await _tap(tester, find.byKey(const ValueKey('failure-table-last-page')));
+    expect(table().rows.map((row) => row.key), [
+      const ValueKey('failure-point-40'),
+      const ValueKey('failure-point-42'),
+      const ValueKey('failure-point-44'),
+    ]);
+    await select(FailureCriterion.tsaiWu);
+    expect(table().rows, isEmpty);
+    expect(find.byKey(const ValueKey('failure-empty-state')), findsOneWidget);
+    await select(FailureCriterion.hashin);
+    expect(table().rows.single.key, const ValueKey('failure-point-45'));
+    await _tap(tester, find.byTooltip('Export results'));
+    await _tap(tester, find.text('Copy results'));
+    await _waitFor(tester, find.text('Results copied to clipboard'));
+    final clipboard = await Clipboard.getData(Clipboard.kTextPlain);
+    final rows = clipboard!.text!.split('\r\n');
+    final section = rows
+        .indexOf('Result: Ply stresses (material axes) and failure indices');
+    expect(section, greaterThanOrEqualTo(0));
+    final surfaces = rows
+        .skip(section + 2)
+        .takeWhile((row) => row.isNotEmpty)
+        .map((row) => row.split('\t'))
+        .toList();
+    expect(surfaces, hasLength(46));
+    expect(surfaces.every((row) => row.length == 11), isTrue);
+    expect(surfaces.first[0], '1');
+    expect(surfaces.last[0], '23');
+    expect(surfaces.last[2], 'Top');
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }
+
+LaminateFailureResult _filterFailureResult() => LaminateFailureResult(
+      points: [
+        for (var row = 0; row < 46; row++)
+          PlyStressPoint(
+            ply: row ~/ 2 + 1,
+            angle: 0,
+            isTop: row.isOdd,
+            z: row * 0.125,
+            globalStress: [_releaseStress, 0, 0],
+            materialStress: [_releaseStress, 0, 0],
+            results: {
+              FailureCriterion.maxStress:
+                  CriterionResult(row.isEven ? 1 : 2, 'Fiber tension'),
+              FailureCriterion.tsaiHill:
+                  CriterionResult(row % 3 == 0 ? 0.5 : 2, 'Fiber tension'),
+              FailureCriterion.tsaiWu:
+                  const CriterionResult(double.infinity, 'Unloaded'),
+              FailureCriterion.hashin:
+                  CriterionResult(row == 45 ? 0.25 : 2, 'Fiber tension'),
+            },
+          ),
+      ],
+      midplaneStrains: [0, 0, 0],
+      curvatures: [0, 0, 0],
+    );
 
 class _FailingUnitPreferences extends Fake implements SharedPreferences {
   _FailingUnitPreferences(this.backing);

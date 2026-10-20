@@ -51,15 +51,16 @@ class LaminateFailureResultPage extends StatelessWidget {
           rows: [
             for (final criterion in FailureCriterion.values)
               () {
-                final point = result.critical(criterion);
-                final outcome = point.results[criterion]!;
+                final critical = _criticalOutcome(result, criterion);
+                final point = critical?.$1;
+                final outcome = critical?.$2;
                 return <Object?>[
                   criterion.label,
-                  outcome.strengthRatio,
-                  point.ply,
-                  point.angle,
-                  point.position,
-                  outcome.mode,
+                  outcome?.strengthRatio,
+                  point?.ply,
+                  point?.angle,
+                  point?.position,
+                  outcome?.mode,
                 ];
               }(),
           ],
@@ -94,7 +95,7 @@ class LaminateFailureResultPage extends StatelessWidget {
                 point.z,
                 ...point.materialStress,
                 for (final criterion in FailureCriterion.values)
-                  point.results[criterion]!.failureIndex,
+                  point.results[criterion]?.failureIndex,
               ],
           ],
         ),
@@ -106,7 +107,8 @@ class LaminateFailureResultPage extends StatelessWidget {
             for (final criterion in FailureCriterion.values)
               ChartSeries(criterion.label, [
                 for (final point in result.points)
-                  (point.z, point.results[criterion]!.failureIndex),
+                  if (point.results[criterion] case final outcome?)
+                    (point.z, outcome.failureIndex),
               ]),
           ],
         ),
@@ -204,42 +206,52 @@ class _FirstPlyFailureCard extends StatelessWidget {
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
-            for (final criterion in FailureCriterion.values) ...[
-              () {
-                final point = result.critical(criterion);
-                final outcome = point.results[criterion]!;
-                final fails = outcome.fails;
-                final ratio = number(outcome.strengthRatio);
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  isThreeLine: true,
-                  leading: Icon(
-                    fails
-                        ? Icons.error_outline_rounded
-                        : Icons.check_circle_outline_rounded,
-                    color: fails ? scheme.error : Colors.green.shade600,
-                  ),
-                  title: Text(criterion.label),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Ply ${point.ply} (${_angle(point.angle)}) '
-                        '${point.position.toLowerCase()} · ${outcome.mode}',
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'R = $ratio',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: fails ? scheme.error : null,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+            if (result.points.isEmpty)
+              Text(S.of(context).Calculator_no_failure_results),
+            if (result.points.isNotEmpty)
+              for (final criterion in FailureCriterion.values) ...[
+                () {
+                  final critical = _criticalOutcome(result, criterion);
+                  if (critical == null) {
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(criterion.label),
+                      subtitle: const Text('—'),
+                    );
+                  }
+                  final (point, outcome) = critical;
+                  final fails = outcome.fails;
+                  final ratio = number(outcome.strengthRatio);
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    isThreeLine: true,
+                    leading: Icon(
+                      fails
+                          ? Icons.error_outline_rounded
+                          : Icons.check_circle_outline_rounded,
+                      color: fails ? scheme.error : Colors.green.shade600,
+                    ),
+                    title: Text(criterion.label),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ply ${point.ply} (${_angle(point.angle)}) '
+                          '${point.position.toLowerCase()} · ${outcome.mode}',
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              }(),
-            ],
+                        const SizedBox(height: 4),
+                        Text(
+                          'R = $ratio',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: fails ? scheme.error : null,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }(),
+              ],
           ],
         ),
       ),
@@ -267,6 +279,9 @@ class _PlyTableCardState extends State<_PlyTableCard>
   // An even page size keeps the bottom/top surface pair of each ply together.
   static const _rowsPerPage = 20;
   int _pageIndex = 0;
+  FailureCriterion? _criterion;
+  bool _onlyFailing = false;
+  int _revealRevision = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -274,15 +289,43 @@ class _PlyTableCardState extends State<_PlyTableCard>
   @override
   void didUpdateWidget(covariant _PlyTableCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.result != widget.result) _pageIndex = 0;
+    if (oldWidget.result != widget.result) {
+      _pageIndex = 0;
+      _revealTable();
+    }
   }
 
   void _showPage(int target) {
     if (target == _pageIndex) return;
-    final result = widget.result;
     setState(() => _pageIndex = target);
+    _revealTable();
+  }
+
+  void _selectCriterion(FailureCriterion? criterion) {
+    if (criterion == _criterion) return;
+    setState(() {
+      _criterion = criterion;
+      _pageIndex = 0;
+    });
+    _revealTable();
+  }
+
+  void _setOnlyFailing(bool onlyFailing) {
+    if (onlyFailing == _onlyFailing) return;
+    setState(() {
+      _onlyFailing = onlyFailing;
+      _pageIndex = 0;
+    });
+    _revealTable();
+  }
+
+  void _revealTable() {
+    final revision = ++_revealRevision;
+    final result = widget.result;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _pageIndex != target || widget.result != result) return;
+      if (!mounted || _revealRevision != revision || widget.result != result) {
+        return;
+      }
       final renderObject = context.findRenderObject();
       if (renderObject == null || !renderObject.attached) return;
       // After a short last page replaces a full page, reveal its new rows
@@ -297,12 +340,24 @@ class _PlyTableCardState extends State<_PlyTableCard>
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final points = widget.result.points;
-    final rowCount = points.length;
+    final criteria =
+        _criterion == null ? FailureCriterion.values : [_criterion!];
+    // Keep original indexes so filtering never changes surface identity or
+    // scans all points while building an individual table row.
+    final indexes = [
+      for (var index = 0; index < points.length; index++)
+        if (!_onlyFailing ||
+            criteria.any((criterion) =>
+                points[index].results[criterion]?.fails ?? false))
+          index,
+    ];
+    final rowCount = indexes.length;
     final lastPage = rowCount == 0 ? 0 : (rowCount - 1) ~/ _rowsPerPage;
     final page = _pageIndex.clamp(0, lastPage).toInt();
     final start = page * _rowsPerPage;
     final end = (start + _rowsPerPage).clamp(0, rowCount).toInt();
     final localizations = MaterialLocalizations.of(context);
+    final strings = S.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -325,6 +380,80 @@ class _PlyTableCardState extends State<_PlyTableCard>
                 style: theme.textTheme.bodySmall,
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(strings.Calculator_failure_criterion),
+                  Semantics(
+                    label: strings.Calculator_failure_criterion,
+                    child: DropdownButton<FailureCriterion>(
+                      key: const ValueKey('failure-criterion-filter'),
+                      value: _criterion,
+                      hint: Text(strings.Calculator_all_failure_criteria,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      isExpanded: true,
+                      itemHeight: null,
+                      selectedItemBuilder: (context) => [
+                        strings.Calculator_all_failure_criteria,
+                        for (final criterion in FailureCriterion.values)
+                          criterion.label,
+                      ]
+                          .map((label) => Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: Text(label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis)))
+                          .toList(),
+                      items: [
+                        DropdownMenuItem<FailureCriterion>(
+                          child: Text(strings.Calculator_all_failure_criteria),
+                        ),
+                        for (final criterion in FailureCriterion.values)
+                          DropdownMenuItem(
+                            value: criterion,
+                            child: Text(criterion.label),
+                          ),
+                      ],
+                      onChanged: _selectCriterion,
+                    ),
+                  ),
+                  SwitchListTile(
+                    key: const ValueKey('failure-only-failed-filter'),
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(strings.Calculator_failed_surfaces_only),
+                    value: _onlyFailing,
+                    onChanged: _setOnlyFailing,
+                  ),
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      strings.Calculator_failure_filter_summary(
+                          rowCount, points.length),
+                      key: const ValueKey('failure-filter-status'),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (indexes.isEmpty)
+              Padding(
+                key: const ValueKey('failure-empty-state'),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(points.isEmpty
+                        ? strings.Calculator_no_failure_results
+                        : strings.Calculator_no_failed_surfaces),
+                    const SizedBox(height: 4),
+                    Text(strings.Calculator_failure_exports_all,
+                        style: theme.textTheme.bodySmall),
+                  ],
+                ),
+              ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -339,7 +468,7 @@ class _PlyTableCardState extends State<_PlyTableCard>
                   const DataColumn(label: Text('σ1'), numeric: true),
                   const DataColumn(label: Text('σ2'), numeric: true),
                   const DataColumn(label: Text('τ12'), numeric: true),
-                  for (final criterion in FailureCriterion.values)
+                  for (final criterion in criteria)
                     DataColumn(
                       label: Text(criterion.shortLabel),
                       numeric: true,
@@ -348,25 +477,27 @@ class _PlyTableCardState extends State<_PlyTableCard>
                 rows: [
                   for (var rowIndex = start; rowIndex < end; rowIndex++)
                     () {
-                      final point = points[rowIndex];
+                      final originalIndex = indexes[rowIndex];
+                      final point = points[originalIndex];
                       return DataRow(
-                          key: ValueKey('failure-point-$rowIndex'),
+                          key: ValueKey('failure-point-$originalIndex'),
                           cells: [
                             DataCell(
                                 Text('${point.ply} (${_angle(point.angle)})')),
                             DataCell(Text(point.position)),
                             for (final stress in point.materialStress)
                               DataCell(Text(widget.number(stress))),
-                            for (final criterion in FailureCriterion.values)
+                            for (final criterion in criteria)
                               DataCell(() {
-                                final index =
-                                    point.results[criterion]!.failureIndex;
+                                final outcome = point.results[criterion];
+                                final fails = outcome?.fails ?? false;
                                 return Text(
-                                  widget.number(index),
+                                  outcome == null
+                                      ? '—'
+                                      : widget.number(outcome.failureIndex),
                                   style: TextStyle(
-                                    color: index >= 1 ? scheme.error : null,
-                                    fontWeight:
-                                        index >= 1 ? FontWeight.w600 : null,
+                                    color: fails ? scheme.error : null,
+                                    fontWeight: fails ? FontWeight.w600 : null,
                                   ),
                                 );
                               }()),
@@ -427,6 +558,20 @@ class _PlyTableCardState extends State<_PlyTableCard>
       ),
     );
   }
+}
+
+(PlyStressPoint, CriterionResult)? _criticalOutcome(
+    LaminateFailureResult result, FailureCriterion criterion) {
+  (PlyStressPoint, CriterionResult)? critical;
+  for (final point in result.points) {
+    final outcome = point.results[criterion];
+    if (outcome != null &&
+        (critical == null ||
+            outcome.strengthRatio < critical.$2.strengthRatio)) {
+      critical = (point, outcome);
+    }
+  }
+  return critical;
 }
 
 String _angle(double angle) {

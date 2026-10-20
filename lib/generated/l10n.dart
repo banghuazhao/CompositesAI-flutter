@@ -1031,6 +1031,256 @@ class S {
       args: [],
     );
   }
+
+  /// `Material details`
+  String get Calculator_material_details {
+    return Intl.message(
+      'Material details',
+      name: 'Calculator_material_details',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Material type`
+  String get Calculator_material_type {
+    return Intl.message(
+      'Material type',
+      name: 'Calculator_material_type',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unidirectional lamina`
+  String get Calculator_material_kind_lamina {
+    return Intl.message(
+      'Unidirectional lamina',
+      name: 'Calculator_material_kind_lamina',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fiber`
+  String get Calculator_material_kind_fiber {
+    return Intl.message(
+      'Fiber',
+      name: 'Calculator_material_kind_fiber',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Matrix`
+  String get Calculator_material_kind_matrix {
+    return Intl.message(
+      'Matrix',
+      name: 'Calculator_material_kind_matrix',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Source`
+  String get Calculator_material_source {
+    return Intl.message(
+      'Source',
+      name: 'Calculator_material_source',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elastic properties`
+  String get Calculator_material_elastic_properties {
+    return Intl.message(
+      'Elastic properties',
+      name: 'Calculator_material_elastic_properties',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Thermal expansion`
+  String get Calculator_material_thermal_properties {
+    return Intl.message(
+      'Thermal expansion',
+      name: 'Calculator_material_thermal_properties',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Strengths`
+  String get Calculator_material_strengths {
+    return Intl.message(
+      'Strengths',
+      name: 'Calculator_material_strengths',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not provided`
+  String get Calculator_material_not_provided {
+    return Intl.message(
+      'Not provided',
+      name: 'Calculator_material_not_provided',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Missing elastic values keep the current inputs. Missing thermal or strength groups also keep the current inputs.`
+  String get Calculator_material_missing_note {
+    return Intl.message(
+      'Missing elastic values keep the current inputs. Missing thermal or strength groups also keep the current inputs.',
+      name: 'Calculator_material_missing_note',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Strengths are applied together only when all five values are provided.`
+  String get Calculator_material_strengths_note {
+    return Intl.message(
+      'Strengths are applied together only when all five values are provided.',
+      name: 'Calculator_material_strengths_note',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Thermal values need α11 (α for isotropic materials). For laminae and fibers, missing α22 uses α11 and shear CTE is set to zero.`
+  String get Calculator_material_thermal_note {
+    return Intl.message(
+      'Thermal values need α11 (α for isotropic materials). For laminae and fibers, missing α22 uses α11 and shear CTE is set to zero.',
+      name: 'Calculator_material_thermal_note',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Apply material`
+  String get Calculator_apply_material {
+    return Intl.message(
+      'Apply material',
+      name: 'Calculator_apply_material',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Export my materials (JSON)`
+  String get Calculator_export_materials {
+    return Intl.message(
+      'Export my materials (JSON)',
+      name: 'Calculator_export_materials',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Exports all saved materials in SI units, including materials outside the current search.`
+  String get Calculator_export_materials_help {
+    return Intl.message(
+      'Exports all saved materials in SI units, including materials outside the current search.',
+      name: 'Calculator_export_materials_help',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not export saved materials. Please try again.`
+  String get Calculator_material_export_failed {
+    return Intl.message(
+      'Could not export saved materials. Please try again.',
+      name: 'Calculator_material_export_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save a custom material to enable JSON export.`
+  String get Calculator_material_export_empty {
+    return Intl.message(
+      'Save a custom material to enable JSON export.',
+      name: 'Calculator_material_export_empty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Criterion`
+  String get Calculator_failure_criterion {
+    return Intl.message(
+      'Criterion',
+      name: 'Calculator_failure_criterion',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `All criteria`
+  String get Calculator_all_failure_criteria {
+    return Intl.message(
+      'All criteria',
+      name: 'Calculator_all_failure_criteria',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failing surfaces only`
+  String get Calculator_failed_surfaces_only {
+    return Intl.message(
+      'Failing surfaces only',
+      name: 'Calculator_failed_surfaces_only',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No failing surfaces match this criterion.`
+  String get Calculator_no_failed_surfaces {
+    return Intl.message(
+      'No failing surfaces match this criterion.',
+      name: 'Calculator_no_failed_surfaces',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{shown} of {total} surfaces shown. Exports include all surfaces.`
+  String Calculator_failure_filter_summary(Object shown, Object total) {
+    return Intl.message(
+      '$shown of $total surfaces shown. Exports include all surfaces.',
+      name: 'Calculator_failure_filter_summary',
+      desc: '',
+      args: [shown, total],
+    );
+  }
+
+  /// `Exports always include every surface and criterion.`
+  String get Calculator_failure_exports_all {
+    return Intl.message(
+      'Exports always include every surface and criterion.',
+      name: 'Calculator_failure_exports_all',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No failure results are available.`
+  String get Calculator_no_failure_results {
+    return Intl.message(
+      'No failure results are available.',
+      name: 'Calculator_no_failure_results',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

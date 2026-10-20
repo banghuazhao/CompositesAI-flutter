@@ -26,19 +26,22 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(angles) => "Angles: ${angles}";
 
-  static String m3(unit) => "Too large for ${unit}; check units";
+  static String m3(shown, total) =>
+      "${shown} of ${total} surfaces shown. Exports include all surfaces.";
 
-  static String m4(count) => "+${count} more";
+  static String m4(unit) => "Too large for ${unit}; check units";
 
-  static String m5(count) =>
+  static String m5(count) => "+${count} more";
+
+  static String m6(count) =>
       "${Intl.plural(count, one: '1 ply', other: '${count} plies')}";
 
-  static String m6(name) =>
+  static String m7(name) =>
       "A saved material named \"${name}\" already exists. Replace its saved values or choose another name.";
 
-  static String m7(value, unit) => "Total thickness: ${value} ${unit}";
+  static String m8(value, unit) => "Total thickness: ${value} ${unit}";
 
-  static String m8(modulus, stress, length, loads) =>
+  static String m9(modulus, stress, length, loads) =>
       "Moduli ${modulus} · stress ${stress} · length ${length} · loads ${loads}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -55,6 +58,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Buckling load of column",
     ),
     "Calculate": MessageLookupByLibrary.simpleMessage("Calculate"),
+    "Calculator_all_failure_criteria": MessageLookupByLibrary.simpleMessage(
+      "All criteria",
+    ),
+    "Calculator_apply_material": MessageLookupByLibrary.simpleMessage(
+      "Apply material",
+    ),
     "Calculator_calculation_failed": MessageLookupByLibrary.simpleMessage(
       "Could not calculate these results. Check the material constants, loads and thickness.",
     ),
@@ -79,18 +88,83 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_export_failed": MessageLookupByLibrary.simpleMessage(
       "Could not export these results.",
     ),
+    "Calculator_export_materials": MessageLookupByLibrary.simpleMessage(
+      "Export my materials (JSON)",
+    ),
+    "Calculator_export_materials_help": MessageLookupByLibrary.simpleMessage(
+      "Exports all saved materials in SI units, including materials outside the current search.",
+    ),
     "Calculator_export_results": MessageLookupByLibrary.simpleMessage(
       "Export results",
     ),
+    "Calculator_failed_surfaces_only": MessageLookupByLibrary.simpleMessage(
+      "Failing surfaces only",
+    ),
+    "Calculator_failure_criterion": MessageLookupByLibrary.simpleMessage(
+      "Criterion",
+    ),
+    "Calculator_failure_exports_all": MessageLookupByLibrary.simpleMessage(
+      "Exports always include every surface and criterion.",
+    ),
+    "Calculator_failure_filter_summary": m3,
     "Calculator_finite_thickness": MessageLookupByLibrary.simpleMessage(
       "Enter a finite number",
     ),
     "Calculator_material_delete_failed": MessageLookupByLibrary.simpleMessage(
       "Could not delete this material. Please try again.",
     ),
-    "Calculator_modulus_too_large": m3,
-    "Calculator_more_plies": m4,
-    "Calculator_ply_count": m5,
+    "Calculator_material_details": MessageLookupByLibrary.simpleMessage(
+      "Material details",
+    ),
+    "Calculator_material_elastic_properties":
+        MessageLookupByLibrary.simpleMessage("Elastic properties"),
+    "Calculator_material_export_empty": MessageLookupByLibrary.simpleMessage(
+      "Save a custom material to enable JSON export.",
+    ),
+    "Calculator_material_export_failed": MessageLookupByLibrary.simpleMessage(
+      "Could not export saved materials. Please try again.",
+    ),
+    "Calculator_material_kind_fiber": MessageLookupByLibrary.simpleMessage(
+      "Fiber",
+    ),
+    "Calculator_material_kind_lamina": MessageLookupByLibrary.simpleMessage(
+      "Unidirectional lamina",
+    ),
+    "Calculator_material_kind_matrix": MessageLookupByLibrary.simpleMessage(
+      "Matrix",
+    ),
+    "Calculator_material_missing_note": MessageLookupByLibrary.simpleMessage(
+      "Missing elastic values keep the current inputs. Missing thermal or strength groups also keep the current inputs.",
+    ),
+    "Calculator_material_not_provided": MessageLookupByLibrary.simpleMessage(
+      "Not provided",
+    ),
+    "Calculator_material_source": MessageLookupByLibrary.simpleMessage(
+      "Source",
+    ),
+    "Calculator_material_strengths": MessageLookupByLibrary.simpleMessage(
+      "Strengths",
+    ),
+    "Calculator_material_strengths_note": MessageLookupByLibrary.simpleMessage(
+      "Strengths are applied together only when all five values are provided.",
+    ),
+    "Calculator_material_thermal_note": MessageLookupByLibrary.simpleMessage(
+      "Thermal values need α11 (α for isotropic materials). For laminae and fibers, missing α22 uses α11 and shear CTE is set to zero.",
+    ),
+    "Calculator_material_thermal_properties":
+        MessageLookupByLibrary.simpleMessage("Thermal expansion"),
+    "Calculator_material_type": MessageLookupByLibrary.simpleMessage(
+      "Material type",
+    ),
+    "Calculator_modulus_too_large": m4,
+    "Calculator_more_plies": m5,
+    "Calculator_no_failed_surfaces": MessageLookupByLibrary.simpleMessage(
+      "No failing surfaces match this criterion.",
+    ),
+    "Calculator_no_failure_results": MessageLookupByLibrary.simpleMessage(
+      "No failure results are available.",
+    ),
+    "Calculator_ply_count": m6,
     "Calculator_poisson_range": MessageLookupByLibrary.simpleMessage(
       "Must be between -1 and 0.5",
     ),
@@ -103,7 +177,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_replace_material": MessageLookupByLibrary.simpleMessage(
       "Replace",
     ),
-    "Calculator_replace_material_message": m6,
+    "Calculator_replace_material_message": m7,
     "Calculator_replace_material_title": MessageLookupByLibrary.simpleMessage(
       "Replace saved material?",
     ),
@@ -123,8 +197,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_too_many_layers": MessageLookupByLibrary.simpleMessage(
       "Too many layers",
     ),
-    "Calculator_total_thickness": m7,
-    "Calculator_unit_details": m8,
+    "Calculator_total_thickness": m8,
+    "Calculator_unit_details": m9,
     "Calculator_units": MessageLookupByLibrary.simpleMessage(
       "Calculator units",
     ),

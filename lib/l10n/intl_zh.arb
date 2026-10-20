@@ -163,5 +163,36 @@
       "name": {}
     }
   },
-  "Calculator_material_delete_failed": "无法删除此材料，请重试。"
+  "Calculator_material_delete_failed": "无法删除此材料，请重试。",
+  "Calculator_material_details": "材料详情",
+  "Calculator_material_type": "材料类型",
+  "Calculator_material_kind_lamina": "单向复合材料层",
+  "Calculator_material_kind_fiber": "纤维",
+  "Calculator_material_kind_matrix": "基体",
+  "Calculator_material_source": "来源",
+  "Calculator_material_elastic_properties": "弹性性能",
+  "Calculator_material_thermal_properties": "热膨胀系数",
+  "Calculator_material_strengths": "强度",
+  "Calculator_material_not_provided": "未提供",
+  "Calculator_material_missing_note": "未提供的弹性数值将保留当前输入。未提供的热膨胀或强度数据组也将保留当前输入。",
+  "Calculator_material_strengths_note": "仅当五项强度值均已提供时，才会一起应用这些强度值。",
+  "Calculator_material_thermal_note": "应用热膨胀系数需要提供 α11（各向同性材料为 α）。对于复合材料层和纤维，未提供的 α22 使用 α11，剪切热膨胀系数设为零。",
+  "Calculator_apply_material": "应用材料",
+  "Calculator_export_materials": "导出我的材料（JSON）",
+  "Calculator_export_materials_help": "导出所有已保存的材料，数值使用 SI 单位，包括当前搜索结果以外的材料。",
+  "Calculator_material_export_failed": "无法导出已保存的材料，请重试。",
+  "Calculator_material_export_empty": "保存自定义材料后即可导出 JSON。",
+  "Calculator_failure_criterion": "准则",
+  "Calculator_all_failure_criteria": "所有准则",
+  "Calculator_failed_surfaces_only": "仅显示失效表面",
+  "Calculator_no_failed_surfaces": "没有符合此准则的失效表面。",
+  "Calculator_failure_filter_summary": "已显示 {shown} / {total} 个表面。导出包括所有表面。",
+  "Calculator_failure_exports_all": "导出始终包含所有表面和失效准则。",
+  "Calculator_no_failure_results": "暂无失效分析结果。",
+  "@Calculator_failure_filter_summary": {
+    "placeholders": {
+      "shown": {},
+      "total": {}
+    }
+  }
 }

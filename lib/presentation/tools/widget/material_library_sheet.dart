@@ -4,6 +4,8 @@ import 'package:swiftcomp/generated/l10n.dart';
 
 import '../model/material_library.dart';
 import '../model/unit_system.dart';
+import 'material_details_dialog.dart';
+import 'material_library_export_button.dart';
 
 /// Builds a custom material from the current inputs, or returns null when
 /// they are incomplete.
@@ -49,7 +51,7 @@ class MaterialLibraryButton extends StatelessWidget {
           kind: kind,
           saveCurrent: saveCurrent,
         );
-        if (material != null) onSelected(material);
+        if (context.mounted && material != null) onSelected(material);
       },
       icon: const Icon(Icons.inventory_2_outlined, size: 18),
       label: const Text('Library'),
@@ -71,6 +73,8 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
   bool _saving = false;
+  bool _detailsOpen = false;
+  bool _selectionMade = false;
   final Set<String> _deleting = {};
 
   @override
@@ -158,6 +162,8 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
                   ),
                 ),
               ],
+              const SizedBox(height: 8),
+              const MaterialLibraryExportButton(),
               if (custom.isNotEmpty) ...[
                 _sectionLabel(context, 'My materials'),
                 for (final material in custom) _tile(context, material, units),
@@ -201,18 +207,55 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
         title: Text(material.name),
         subtitle: Text(details),
         isThreeLine: material.source.isNotEmpty,
-        onTap: () => Navigator.of(context).pop(material),
-        trailing: material.isCustom
-            ? IconButton(
+        onTap: () => _selectMaterial(material),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              key: ValueKey('material-details-${material.id}'),
+              tooltip: S.maybeOf(context)?.Calculator_material_details ??
+                  'Material details',
+              icon: const Icon(Icons.info_outline_rounded),
+              onPressed: () => _previewMaterial(material),
+            ),
+            if (material.isCustom)
+              IconButton(
                 tooltip: 'Delete ${material.name}',
                 icon: const Icon(Icons.delete_outline_rounded),
                 onPressed: _deleting.contains(material.id)
                     ? null
                     : () => _confirmDelete(material),
-              )
-            : null,
+              ),
+          ],
+        ),
       ),
     );
+  }
+
+  void _selectMaterial(LibraryMaterial material) {
+    if (!mounted ||
+        _selectionMade ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    _selectionMade = true;
+    Navigator.of(context).pop(material);
+  }
+
+  Future<void> _previewMaterial(LibraryMaterial material) async {
+    if (!mounted ||
+        _detailsOpen ||
+        _selectionMade ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    _detailsOpen = true;
+    try {
+      final apply = await showMaterialDetails(context, material);
+      if (apply == true && mounted) _selectMaterial(material);
+    } finally {
+      _detailsOpen = false;
+    }
   }
 
   Future<void> _confirmDelete(LibraryMaterial material) async {

@@ -163,5 +163,36 @@
       "name": {}
     }
   },
-  "Calculator_material_delete_failed": "Could not delete this material. Please try again."
+  "Calculator_material_delete_failed": "Could not delete this material. Please try again.",
+  "Calculator_material_details": "Material details",
+  "Calculator_material_type": "Material type",
+  "Calculator_material_kind_lamina": "Unidirectional lamina",
+  "Calculator_material_kind_fiber": "Fiber",
+  "Calculator_material_kind_matrix": "Matrix",
+  "Calculator_material_source": "Source",
+  "Calculator_material_elastic_properties": "Elastic properties",
+  "Calculator_material_thermal_properties": "Thermal expansion",
+  "Calculator_material_strengths": "Strengths",
+  "Calculator_material_not_provided": "Not provided",
+  "Calculator_material_missing_note": "Missing elastic values keep the current inputs. Missing thermal or strength groups also keep the current inputs.",
+  "Calculator_material_strengths_note": "Strengths are applied together only when all five values are provided.",
+  "Calculator_material_thermal_note": "Thermal values need α11 (α for isotropic materials). For laminae and fibers, missing α22 uses α11 and shear CTE is set to zero.",
+  "Calculator_apply_material": "Apply material",
+  "Calculator_export_materials": "Export my materials (JSON)",
+  "Calculator_export_materials_help": "Exports all saved materials in SI units, including materials outside the current search.",
+  "Calculator_material_export_failed": "Could not export saved materials. Please try again.",
+  "Calculator_material_export_empty": "Save a custom material to enable JSON export.",
+  "Calculator_failure_criterion": "Criterion",
+  "Calculator_all_failure_criteria": "All criteria",
+  "Calculator_failed_surfaces_only": "Failing surfaces only",
+  "Calculator_no_failed_surfaces": "No failing surfaces match this criterion.",
+  "Calculator_failure_filter_summary": "{shown} of {total} surfaces shown. Exports include all surfaces.",
+  "Calculator_failure_exports_all": "Exports always include every surface and criterion.",
+  "Calculator_no_failure_results": "No failure results are available.",
+  "@Calculator_failure_filter_summary": {
+    "placeholders": {
+      "shown": {},
+      "total": {}
+    }
+  }
 }

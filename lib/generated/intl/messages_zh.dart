@@ -26,17 +26,19 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(angles) => "铺层角度：${angles}";
 
-  static String m3(unit) => "数值对于 ${unit} 过大，请检查单位";
+  static String m3(shown, total) => "已显示 ${shown} / ${total} 个表面。导出包括所有表面。";
 
-  static String m4(count) => "另有 ${count} 层";
+  static String m4(unit) => "数值对于 ${unit} 过大，请检查单位";
 
-  static String m5(count) => "${count} 层";
+  static String m5(count) => "另有 ${count} 层";
 
-  static String m6(name) => "已存在名为“${name}”的材料。您可以替换其已保存的数据，或选择其他名称。";
+  static String m6(count) => "${count} 层";
 
-  static String m7(value, unit) => "总厚度：${value} ${unit}";
+  static String m7(name) => "已存在名为“${name}”的材料。您可以替换其已保存的数据，或选择其他名称。";
 
-  static String m8(modulus, stress, length, loads) =>
+  static String m8(value, unit) => "总厚度：${value} ${unit}";
+
+  static String m9(modulus, stress, length, loads) =>
       "模量 ${modulus} · 应力 ${stress} · 长度 ${length} · 载荷 ${loads}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -47,6 +49,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "Buckling_Load": MessageLookupByLibrary.simpleMessage("屈曲载荷"),
     "Buckling_load_of_column": MessageLookupByLibrary.simpleMessage("杆的屈曲载荷计算"),
     "Calculate": MessageLookupByLibrary.simpleMessage("计算"),
+    "Calculator_all_failure_criteria": MessageLookupByLibrary.simpleMessage(
+      "所有准则",
+    ),
+    "Calculator_apply_material": MessageLookupByLibrary.simpleMessage("应用材料"),
     "Calculator_calculation_failed": MessageLookupByLibrary.simpleMessage(
       "无法计算结果，请检查材料常数、载荷和厚度。",
     ),
@@ -65,16 +71,71 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_copy_results": MessageLookupByLibrary.simpleMessage("复制结果"),
     "Calculator_expanded_angles": m2,
     "Calculator_export_failed": MessageLookupByLibrary.simpleMessage("无法导出结果。"),
+    "Calculator_export_materials": MessageLookupByLibrary.simpleMessage(
+      "导出我的材料（JSON）",
+    ),
+    "Calculator_export_materials_help": MessageLookupByLibrary.simpleMessage(
+      "导出所有已保存的材料，数值使用 SI 单位，包括当前搜索结果以外的材料。",
+    ),
     "Calculator_export_results": MessageLookupByLibrary.simpleMessage("导出结果"),
+    "Calculator_failed_surfaces_only": MessageLookupByLibrary.simpleMessage(
+      "仅显示失效表面",
+    ),
+    "Calculator_failure_criterion": MessageLookupByLibrary.simpleMessage("准则"),
+    "Calculator_failure_exports_all": MessageLookupByLibrary.simpleMessage(
+      "导出始终包含所有表面和失效准则。",
+    ),
+    "Calculator_failure_filter_summary": m3,
     "Calculator_finite_thickness": MessageLookupByLibrary.simpleMessage(
       "请输入有限数值",
     ),
     "Calculator_material_delete_failed": MessageLookupByLibrary.simpleMessage(
       "无法删除此材料，请重试。",
     ),
-    "Calculator_modulus_too_large": m3,
-    "Calculator_more_plies": m4,
-    "Calculator_ply_count": m5,
+    "Calculator_material_details": MessageLookupByLibrary.simpleMessage("材料详情"),
+    "Calculator_material_elastic_properties":
+        MessageLookupByLibrary.simpleMessage("弹性性能"),
+    "Calculator_material_export_empty": MessageLookupByLibrary.simpleMessage(
+      "保存自定义材料后即可导出 JSON。",
+    ),
+    "Calculator_material_export_failed": MessageLookupByLibrary.simpleMessage(
+      "无法导出已保存的材料，请重试。",
+    ),
+    "Calculator_material_kind_fiber": MessageLookupByLibrary.simpleMessage(
+      "纤维",
+    ),
+    "Calculator_material_kind_lamina": MessageLookupByLibrary.simpleMessage(
+      "单向复合材料层",
+    ),
+    "Calculator_material_kind_matrix": MessageLookupByLibrary.simpleMessage(
+      "基体",
+    ),
+    "Calculator_material_missing_note": MessageLookupByLibrary.simpleMessage(
+      "未提供的弹性数值将保留当前输入。未提供的热膨胀或强度数据组也将保留当前输入。",
+    ),
+    "Calculator_material_not_provided": MessageLookupByLibrary.simpleMessage(
+      "未提供",
+    ),
+    "Calculator_material_source": MessageLookupByLibrary.simpleMessage("来源"),
+    "Calculator_material_strengths": MessageLookupByLibrary.simpleMessage("强度"),
+    "Calculator_material_strengths_note": MessageLookupByLibrary.simpleMessage(
+      "仅当五项强度值均已提供时，才会一起应用这些强度值。",
+    ),
+    "Calculator_material_thermal_note": MessageLookupByLibrary.simpleMessage(
+      "应用热膨胀系数需要提供 α11（各向同性材料为 α）。对于复合材料层和纤维，未提供的 α22 使用 α11，剪切热膨胀系数设为零。",
+    ),
+    "Calculator_material_thermal_properties":
+        MessageLookupByLibrary.simpleMessage("热膨胀系数"),
+    "Calculator_material_type": MessageLookupByLibrary.simpleMessage("材料类型"),
+    "Calculator_modulus_too_large": m4,
+    "Calculator_more_plies": m5,
+    "Calculator_no_failed_surfaces": MessageLookupByLibrary.simpleMessage(
+      "没有符合此准则的失效表面。",
+    ),
+    "Calculator_no_failure_results": MessageLookupByLibrary.simpleMessage(
+      "暂无失效分析结果。",
+    ),
+    "Calculator_ply_count": m6,
     "Calculator_poisson_range": MessageLookupByLibrary.simpleMessage(
       "必须介于 -1 和 0.5 之间",
     ),
@@ -83,7 +144,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "厚度必须大于零",
     ),
     "Calculator_replace_material": MessageLookupByLibrary.simpleMessage("替换"),
-    "Calculator_replace_material_message": m6,
+    "Calculator_replace_material_message": m7,
     "Calculator_replace_material_title": MessageLookupByLibrary.simpleMessage(
       "替换已保存的材料？",
     ),
@@ -99,8 +160,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_too_many_layers": MessageLookupByLibrary.simpleMessage(
       "铺层数量过多",
     ),
-    "Calculator_total_thickness": m7,
-    "Calculator_unit_details": m8,
+    "Calculator_total_thickness": m8,
+    "Calculator_unit_details": m9,
     "Calculator_units": MessageLookupByLibrary.simpleMessage("计算器单位"),
     "Calculator_units_explanation": MessageLookupByLibrary.simpleMessage(
       "输入、结果和导出文件均使用这些单位。已输入的数值不会自动换算。",
