@@ -1,6 +1,4 @@
-import 'package:composite_calculator/models/lamina_engineering_constants_input.dart';
 import 'package:composite_calculator/models/lamina_engineering_constants_output.dart';
-import 'package:composite_calculator/calculators/lamina_engineering_constants_calculator.dart';
 import 'package:composite_calculator/models/analysis_type.dart';
 
 import 'package:fl_chart/fl_chart.dart';
@@ -16,6 +14,7 @@ import 'package:swiftcomp/util/number.dart';
 
 import '../../tools/model/thermal_model.dart';
 import '../model/calc_report.dart';
+import '../model/lamina_engineering_sweep.dart';
 import '../model/unit_system.dart';
 import '../widget/report_export_button.dart';
 
@@ -23,11 +22,13 @@ class LaminaEngineeringConstantsResultPage extends StatefulWidget {
   final AnalysisType analysisType;
   final TransverselyIsotropicMaterial transverselyIsotropicMaterial;
   final TransverselyIsotropicCTE transverselyIsotropicCTE;
+  final LaminaEngineeringSweep sweep;
 
   LaminaEngineeringConstantsResultPage({
     Key? key,
     required this.analysisType,
     required this.transverselyIsotropicMaterial,
+    required this.sweep,
     TransverselyIsotropicCTE? transverselyIsotropicCTE,
   })  : transverselyIsotropicCTE =
             transverselyIsotropicCTE ?? TransverselyIsotropicCTE(),
@@ -63,7 +64,7 @@ class _LaminaEngineeringConstantsResultPageState
     for (var i = -90; i <= 90; i++) {
       double angle = i.toDouble();
 
-      LaminaEngineeringConstantsOutput output = calculateResult(angle);
+      final output = widget.sweep.atAngle(i);
 
       E_x_datas.add(FlSpot(angle, output.E1));
       E_y_datas.add(FlSpot(angle, output.E2));
@@ -81,34 +82,7 @@ class _LaminaEngineeringConstantsResultPageState
   }
 
   LaminaEngineeringConstantsOutput calculateResult(double layupAngle) {
-    double e1 = widget.transverselyIsotropicMaterial.e1!;
-    double e2 = widget.transverselyIsotropicMaterial.e2!;
-    double g12 = widget.transverselyIsotropicMaterial.g12!;
-    double nu12 = widget.transverselyIsotropicMaterial.nu12!;
-
-    if (widget.analysisType == AnalysisType.elastic) {
-      LaminaEngineeringConstantsInput input = LaminaEngineeringConstantsInput(
-          analysisType: AnalysisType.elastic,
-          E1: e1,
-          E2: e2,
-          G12: g12,
-          nu12: nu12,
-          layupAngle: layupAngle);
-      return LaminaEngineeringConstantsCalculator.calculate(input);
-    } else {
-      LaminaEngineeringConstantsInput input = LaminaEngineeringConstantsInput(
-        analysisType: AnalysisType.thermalElastic,
-        E1: e1,
-        E2: e2,
-        G12: g12,
-        nu12: nu12,
-        layupAngle: layupAngle,
-        alpha11: widget.transverselyIsotropicCTE.alpha11!,
-        alpha22: widget.transverselyIsotropicCTE.alpha22!,
-        alpha12: widget.transverselyIsotropicCTE.alpha12!,
-      );
-      return LaminaEngineeringConstantsCalculator.calculate(input);
-    }
+    return widget.sweep.atAngle(layupAngle.round());
   }
 
   @override
@@ -116,7 +90,6 @@ class _LaminaEngineeringConstantsResultPageState
     super.initState();
     calculateNewAngle();
     initChartData();
-    setState(() {});
   }
 
   @override
@@ -244,11 +217,14 @@ class _LaminaEngineeringConstantsResultPageState
     if (widget.analysisType == AnalysisType.thermalElastic) {
       List<Widget> moreChildren = [
         const Divider(),
-        _engineeringConstantsRow(withUnit("ɑxx", units.cte), output.alpha_11, alpha_xx_datas),
+        _engineeringConstantsRow(
+            withUnit("ɑxx", units.cte), output.alpha_11, alpha_xx_datas),
         const Divider(),
-        _engineeringConstantsRow(withUnit("ɑyy", units.cte), output.alpha_22, alpha_yy_datas),
+        _engineeringConstantsRow(
+            withUnit("ɑyy", units.cte), output.alpha_22, alpha_yy_datas),
         const Divider(),
-        _engineeringConstantsRow(withUnit("ɑxy", units.cte), output.alpha_12, alpha_xy_datas)
+        _engineeringConstantsRow(
+            withUnit("ɑxy", units.cte), output.alpha_12, alpha_xy_datas)
       ];
       children.addAll(moreChildren);
     }
@@ -278,61 +254,60 @@ class _LaminaEngineeringConstantsResultPageState
 
   _engineeringConstantsRow(
       String constant, double value, List<FlSpot> chartDatas) {
-    double width = MediaQuery.of(context).size.width;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          children: [
-            Text(
-              constant,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            SizedBox(
-              height: 8,
-            ),
-            SizedBox(
-                width: width - 180 - 90,
-                child: Center(
-                  child: _getValue(value),
-                ))
-          ],
-        ),
-        Container(
-          width: 180,
-          height: 80,
-          child: LineChart(LineChartData(
-            extraLinesData: ExtraLinesData(verticalLines: [
-              VerticalLine(
-                  x: layupAngle,
-                  color: Theme.of(context).colorScheme.primary,
-                  strokeWidth: 1)
-            ]),
-            lineTouchData: LineTouchData(enabled: false),
-            gridData: FlGridData(show: false),
-            titlesData: FlTitlesData(
-              show: false,
-              // rightTitles: SideTitles(showTitles: false),
-              // topTitles: SideTitles(showTitles: false),
-              // bottomTitles: SideTitles(showTitles: false)
-            ),
-            // borderData: borderData,
-            lineBarsData: [
-              LineChartBarData(
-                isCurved: true,
-                color: Theme.of(context).colorScheme.primary,
-                barWidth: 2,
-                isStrokeCapRound: true,
-                dotData: FlDotData(show: false),
-                belowBarData: BarAreaData(show: false),
-                spots: chartDatas,
-              ),
-            ],
-          )),
-        )
-      ],
-    );
+    return LayoutBuilder(
+        builder: (context, constraints) => Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                    child: Column(
+                  children: [
+                    Text(
+                      constant,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    SizedBox(
+                      height: 8,
+                    ),
+                    _getValue(value),
+                  ],
+                )),
+                const SizedBox(width: 12),
+                Container(
+                  width: constraints.maxWidth < 280
+                      ? constraints.maxWidth * 0.5
+                      : 180,
+                  height: 80,
+                  child: LineChart(LineChartData(
+                    extraLinesData: ExtraLinesData(verticalLines: [
+                      VerticalLine(
+                          x: layupAngle,
+                          color: Theme.of(context).colorScheme.primary,
+                          strokeWidth: 1)
+                    ]),
+                    lineTouchData: LineTouchData(enabled: false),
+                    gridData: FlGridData(show: false),
+                    titlesData: FlTitlesData(
+                      show: false,
+                      // rightTitles: SideTitles(showTitles: false),
+                      // topTitles: SideTitles(showTitles: false),
+                      // bottomTitles: SideTitles(showTitles: false)
+                    ),
+                    // borderData: borderData,
+                    lineBarsData: [
+                      LineChartBarData(
+                        isCurved: true,
+                        color: Theme.of(context).colorScheme.primary,
+                        barWidth: 2,
+                        isStrokeCapRound: true,
+                        dotData: FlDotData(show: false),
+                        belowBarData: BarAreaData(show: false),
+                        spots: chartDatas,
+                      ),
+                    ],
+                  )),
+                )
+              ],
+            ));
   }
 
   _getValue(double value) {

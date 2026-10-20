@@ -28,8 +28,8 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
   TextEditingController textEditingController3 = TextEditingController();
 
   validateTensor(double? value) {
-    if (value == null) {
-      return localizeCalculatorValidation(context, 'Not a number');
+    if (value == null || !value.isFinite) {
+      return localizeCalculatorValidation(context, 'Enter a finite number');
     } else {
       return null;
     }
@@ -116,6 +116,7 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         (widget.mechanicalTensor as PlaneStrain).epsilon11 =
                             double.tryParse(value);
                       }
+                      setState(() {});
                     },
                   ),
                 ),
@@ -150,6 +151,7 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         (widget.mechanicalTensor as PlaneStrain).epsilon22 =
                             double.tryParse(value);
                       }
+                      setState(() {});
                     },
                   ),
                 ),
@@ -191,6 +193,7 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         (widget.mechanicalTensor as PlaneStrain).gamma12 =
                             double.tryParse(value);
                       }
+                      setState(() {});
                     },
                   ),
                 ),

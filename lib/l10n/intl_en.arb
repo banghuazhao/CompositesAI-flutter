@@ -136,5 +136,22 @@
         "type": "int"
       }
     }
+  },
+  "Calculator_chart_inspection_hint": "Tap a point or hover to inspect ply values",
+  "Calculator_chart_depth": "Depth: {value} {unit}",
+  "Calculator_chart_ply_surface": "Ply {ply} · {surface}",
+  "Calculator_surface_bottom": "Bottom",
+  "Calculator_surface_top": "Top",
+  "@Calculator_chart_depth": {
+    "placeholders": {
+      "value": {},
+      "unit": {}
+    }
+  },
+  "@Calculator_chart_ply_surface": {
+    "placeholders": {
+      "ply": {},
+      "surface": {}
+    }
   }
 }

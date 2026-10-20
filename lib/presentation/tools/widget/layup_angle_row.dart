@@ -16,8 +16,8 @@ class LayupAngleRow extends StatefulWidget {
 
 class _LayupAngleRowState extends State<LayupAngleRow> {
   validateLayupAngle(double? value) {
-    if (value == null) {
-      return localizeCalculatorValidation(context, 'Not a number');
+    if (value == null || !value.isFinite) {
+      return localizeCalculatorValidation(context, 'Enter a finite number');
     } else {
       return null;
     }
@@ -51,7 +51,9 @@ class _LayupAngleRowState extends State<LayupAngleRow> {
                       ? validateLayupAngle(widget.layupAngle.value)
                       : null),
               onChanged: (value) {
-                widget.layupAngle.value = double.tryParse(value);
+                setState(() {
+                  widget.layupAngle.value = double.tryParse(value);
+                });
               },
             ),
           )

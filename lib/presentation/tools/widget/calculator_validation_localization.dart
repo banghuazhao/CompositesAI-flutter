@@ -9,6 +9,8 @@ String? localizeCalculatorValidation(BuildContext context, String? message) {
   switch (message) {
     case 'Not a number':
       return strings?.Not_a_number ?? 'Not a number';
+    case 'Enter a finite number':
+      return strings?.Calculator_finite_thickness ?? 'Enter a finite number';
     case 'Not > 0':
       return strings?.Calculator_positive_number ?? 'Must be greater than zero';
     case 'Not in (-1.0, 0.5)':

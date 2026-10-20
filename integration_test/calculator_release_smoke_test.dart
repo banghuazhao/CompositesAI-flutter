@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -9,8 +10,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/model/material_library.dart';
 import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
+import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_page.dart';
+import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_result_page.dart';
 import 'package:swiftcomp/presentation/tools/page/laminate_plate_properties_page.dart';
 import 'package:swiftcomp/presentation/tools/page/laminate_plate_properties_result_page.dart';
+import 'package:swiftcomp/presentation/tools/page/laminate_stress_strain_result_page.dart';
 import 'package:swiftcomp/presentation/tools/widget/layup_sequence_row.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/others.dart';
@@ -49,7 +53,14 @@ void main() {
       final search = find.byWidgetPredicate((widget) =>
           widget is TextField &&
           widget.decoration?.hintText == 'Search materials');
-      await _enterText(tester, search, 'T300/5208');
+      await _enterText(tester, search, '  kAw  ');
+      expect(find.text('T300/5208 carbon/epoxy'), findsOneWidget);
+      expect(find.text('IM7/8552 carbon/epoxy'), findsNothing);
+      final clearSearch =
+          MaterialLocalizations.of(tester.element(search)).clearButtonTooltip;
+      await _tap(tester, find.byTooltip(clearSearch));
+      expect(_enteredText(tester, search), isEmpty);
+      expect(find.byTooltip(clearSearch), findsNothing);
       await _tap(tester, find.text('T300/5208 carbon/epoxy'));
       expect(find.text('E1 (${units.modulus})'), findsOneWidget);
 
@@ -167,23 +178,147 @@ void main() {
       }
       expect(tester.takeException(), isNull);
     }, timeout: const Timeout(Duration(minutes: 3)));
+
+    testWidgets('${units.name} native chart inspection retains vertical scroll',
+        (tester) async {
+      await _isolatedPreferences(system);
+      const scrollKey = ValueKey('native-chart-smoke-scroll');
+      await tester.pumpWidget(_calculatorApp(
+        home: Scaffold(
+          appBar: AppBar(title: Text('${units.name} chart smoke')),
+          body: SingleChildScrollView(
+            key: scrollKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 80),
+                LaminarStressStrainLineChat(
+                  title: 'Stress through the thickness',
+                  component: 'σ11',
+                  depthUnit: units.length,
+                  valueUnit: units.stress,
+                  data: [
+                    FlSpot(units.lengthFromMm(-0.125), units.stressFromMPa(10)),
+                    FlSpot(0, units.stressFromMPa(20)),
+                    FlSpot(0, units.stressFromMPa(40)),
+                    FlSpot(units.lengthFromMm(0.125), units.stressFromMPa(50)),
+                  ],
+                ),
+                const SizedBox(height: 1400),
+                const Text('End of chart scroll smoke'),
+              ],
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await _show(tester, find.byType(LineChart));
+
+      var chart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(chart.chartRendererKey, isNotNull);
+      final plot = find.byKey(chart.chartRendererKey!);
+      final plotRect = tester.getRect(plot);
+      await tester.tapAt(plotRect.center);
+      await tester.pumpAndSettle();
+
+      chart = tester.widget<LineChart>(find.byType(LineChart));
+      final indicators = chart.data.showingTooltipIndicators;
+      expect(indicators, hasLength(1));
+      expect(chart.data.lineBarsData.single.showingIndicators, hasLength(2));
+      final tooltip = chart.data.lineTouchData.touchTooltipData
+          .getTooltipItems(indicators.single.showingSpots)
+          .single;
+      expect(tooltip, isNotNull);
+      expect(tooltip!.text, contains('Depth: 0 ${units.length}'));
+      expect(tooltip.text, contains('Ply 1 · Top'));
+      expect(tooltip.text, contains('Ply 2 · Bottom'));
+      expect(tooltip.text.split(' ${units.stress}'), hasLength(3));
+
+      final scrollable = find.descendant(
+        of: find.byKey(scrollKey),
+        matching: find.byType(Scrollable),
+      );
+      final position = tester.state<ScrollableState>(scrollable.first).position;
+      final before = position.pixels;
+      await tester.dragFrom(plotRect.center, const Offset(0, -180));
+      await tester.pumpAndSettle();
+      expect(position.pixels, greaterThan(before + 20),
+          reason: 'Dragging the plot must scroll the surrounding result page.');
+      expect(tester.takeException(), isNull);
+    }, timeout: const Timeout(Duration(minutes: 2)));
   }
+
+  testWidgets('native lamina finite angle and stress validation recovers',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si);
+    await tester.pumpWidget(_calculatorApp(home: LaminaStressStrainPage()));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.text('Library'));
+    await _tap(tester, find.text('T300/5208 carbon/epoxy'));
+    final angle = _fieldWithLabel('(-90 <= Angle <= 90)');
+    final stress = _fieldWithLabel('σ11 (MPa)');
+    await _enterText(tester, angle, '0');
+    await _enterText(tester, stress, '100');
+    await _enterText(tester, _fieldWithLabel('σ22 (MPa)'), '0');
+    await _enterText(tester, _fieldWithLabel('σ12 (MPa)'), '0');
+
+    for (final invalid in ['NaN', 'Infinity']) {
+      await _enterText(tester, angle, invalid);
+      await _tap(tester, find.text('Calculate'));
+      expect(find.byType(LaminaStressStrainResult), findsNothing);
+      expect(tester.widget<TextField>(angle).decoration!.errorText,
+          'Enter a finite number');
+      expect(tester.takeException(), isNull);
+    }
+    await _enterText(tester, angle, '0');
+    for (final invalid in ['NaN', 'Infinity']) {
+      await _enterText(tester, stress, invalid);
+      await _tap(tester, find.text('Calculate'));
+      expect(find.byType(LaminaStressStrainResult), findsNothing);
+      expect(tester.widget<TextField>(stress).decoration!.errorText,
+          'Enter a finite number');
+      expect(tester.takeException(), isNull);
+    }
+    await _enterText(tester, stress, '100');
+    await _tap(tester, find.text('Calculate'));
+    expect(find.byType(LaminaStressStrainResult), findsOneWidget);
+    final result = tester.widget<LaminaStressStrainResult>(
+        find.byType(LaminaStressStrainResult));
+    expect(result.output.epsilon11, greaterThan(0));
+    expect(
+        result.output.Q.expand((row) => row).every((value) => value.isFinite),
+        isTrue);
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }
 
-Widget _calculatorApp() => MultiProvider(
+Future<void> _isolatedPreferences(UnitSystem system) async {
+  expect(kIsWeb, isFalse, reason: 'Run this smoke target on iOS or Android.');
+  expect(
+      defaultTargetPlatform, anyOf(TargetPlatform.iOS, TargetPlatform.android));
+  SharedPreferences.setMockInitialValues({
+    'Calculator_Unit_System': system.name,
+  });
+  await SharedPreferencesHelper.init();
+  MaterialLibrary.instance.resetForTest();
+  addTearDown(MaterialLibrary.instance.resetForTest);
+}
+
+Widget _calculatorApp({Widget home = const LaminatePlatePropertiesPage()}) =>
+    MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NumberPrecisionHelper()),
         ChangeNotifierProvider(create: (_) => UnitSettings()),
       ],
-      child: const MaterialApp(
-        locale: Locale('en'),
-        localizationsDelegates: [
+      child: MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: S.delegate.supportedLocales,
+        localizationsDelegates: const [
           S.delegate,
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: LaminatePlatePropertiesPage(),
+        home: home,
       ),
     );
 

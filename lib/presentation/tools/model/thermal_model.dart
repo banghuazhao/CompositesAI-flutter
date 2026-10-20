@@ -10,12 +10,11 @@ class TransverselyIsotropicCTE extends MechanicalMaterial {
 
   TransverselyIsotropicCTE();
 
-  isValid() {
-    if (alpha11 != null && alpha22 != null && alpha12 != null) {
-      return true;
-    }
-    return false;
-  }
+  bool isValid({bool includeShear = true}) => [
+        alpha11,
+        alpha22,
+        if (includeShear) alpha12
+      ].every((value) => value?.isFinite ?? false);
 }
 
 class IsotropicCTE extends MechanicalMaterial {
@@ -26,10 +25,5 @@ class IsotropicCTE extends MechanicalMaterial {
 
   IsotropicCTE();
 
-  isValid() {
-    if (alpha != null) {
-      return true;
-    }
-    return false;
-  }
+  bool isValid() => alpha?.isFinite ?? false;
 }

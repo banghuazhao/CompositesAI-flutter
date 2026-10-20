@@ -32,8 +32,8 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
   TextEditingController textEditingController6 = TextEditingController();
 
   validateTensor(double? value) {
-    if (value == null) {
-      return localizeCalculatorValidation(context, 'Not a number');
+    if (value == null || !value.isFinite) {
+      return localizeCalculatorValidation(context, 'Enter a finite number');
     } else {
       return null;
     }
@@ -125,6 +125,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         (widget.mechanicalTensor as LaminateStrain).epsilon11 =
                             double.tryParse(value);
                       }
+                      setState(() {});
                     },
                   ),
                 ),
@@ -159,6 +160,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         (widget.mechanicalTensor as LaminateStrain).epsilon22 =
                             double.tryParse(value);
                       }
+                      setState(() {});
                     },
                   ),
                 ),
@@ -200,6 +202,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         (widget.mechanicalTensor as LaminateStrain).epsilon12 =
                             double.tryParse(value);
                       }
+                      setState(() {});
                     },
                   ),
                 ),
@@ -234,6 +237,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         (widget.mechanicalTensor as LaminateStrain).kappa11 =
                             double.tryParse(value);
                       }
+                      setState(() {});
                     },
                   ),
                 ),
@@ -275,6 +279,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         (widget.mechanicalTensor as LaminateStrain).kappa22 =
                             double.tryParse(value);
                       }
+                      setState(() {});
                     },
                   ),
                 ),
@@ -309,6 +314,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         (widget.mechanicalTensor as LaminateStrain).kappa12 =
                             double.tryParse(value);
                       }
+                      setState(() {});
                     },
                   ),
                 ),

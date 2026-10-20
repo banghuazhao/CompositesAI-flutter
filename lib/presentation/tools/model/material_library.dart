@@ -70,6 +70,21 @@ class LibraryMaterial {
   bool get hasStrengths =>
       xt != null && xc != null && yt != null && yc != null && s12 != null;
 
+  bool get _hasFiniteNumbers => [
+        e1,
+        e2,
+        g12,
+        nu12,
+        nu23,
+        alpha11,
+        alpha22,
+        xt,
+        xc,
+        yt,
+        yc,
+        s12
+      ].every((value) => value == null || value.isFinite);
+
   /// One-line summary in the given units, e.g. "E1 181 GPa · E2 10.3 GPa".
   String summary(Units units) {
     String mod(double v) => _short(units.modulusFromGPa(v));
@@ -83,7 +98,8 @@ class LibraryMaterial {
         if (g12 != null) 'G12 ${mod(g12!)} ${units.modulus}',
         'ν12 ${_short(nu12)}',
       ],
-      if (hasStrengths) 'Xt ${_short(units.stressFromMPa(xt!))} ${units.stress}',
+      if (hasStrengths)
+        'Xt ${_short(units.stressFromMPa(xt!))} ${units.stress}',
     ];
     return parts.join(' · ');
   }
@@ -191,11 +207,28 @@ class LibraryMaterial {
     MaterialKind kind = MaterialKind.lamina,
   }) {
     if (material.e1 == null || material.nu12 == null) return null;
+    if ([
+      material.e1,
+      material.e2,
+      material.g12,
+      material.nu12,
+      material.nu23,
+      cte?.alpha11,
+      cte?.alpha22,
+      cte?.alpha12,
+      strengths?.xt,
+      strengths?.xc,
+      strengths?.yt,
+      strengths?.yc,
+      strengths?.s12,
+    ].any((value) => value != null && !value.isFinite)) {
+      return null;
+    }
     double? mod(double? v) => v == null ? null : units.modulusToGPa(v);
     double? str(double? v) => v == null ? null : units.stressToMPa(v);
     double? exp(double? v) => v == null ? null : units.cteToPerC(v);
     final hasStrengths = strengths?.isValid() ?? false;
-    return LibraryMaterial(
+    final saved = LibraryMaterial(
       id: 'custom-${DateTime.now().microsecondsSinceEpoch}',
       name: name,
       kind: kind,
@@ -214,6 +247,7 @@ class LibraryMaterial {
       yc: hasStrengths ? str(strengths!.yc) : null,
       s12: hasStrengths ? str(strengths!.s12) : null,
     );
+    return saved._hasFiniteNumbers ? saved : null;
   }
 
   static LibraryMaterial? fromIsotropicInputs({
@@ -223,7 +257,11 @@ class LibraryMaterial {
     IsotropicCTE? cte,
   }) {
     if (material.e == null || material.nu == null) return null;
-    return LibraryMaterial(
+    if ([material.e, material.nu, cte?.alpha]
+        .any((value) => value != null && !value.isFinite)) {
+      return null;
+    }
+    final saved = LibraryMaterial(
       id: 'custom-${DateTime.now().microsecondsSinceEpoch}',
       name: name,
       kind: MaterialKind.matrix,
@@ -233,6 +271,7 @@ class LibraryMaterial {
       nu12: material.nu!,
       alpha11: cte?.alpha == null ? null : units.cteToPerC(cte!.alpha!),
     );
+    return saved._hasFiniteNumbers ? saved : null;
   }
 }
 
@@ -255,6 +294,9 @@ class MaterialLibrary extends ChangeNotifier {
       ];
 
   Future<void> save(LibraryMaterial material) async {
+    if (!material._hasFiniteNumbers) {
+      throw ArgumentError('Material values must be finite.');
+    }
     final custom = [..._custom ??= _load()];
     custom.removeWhere(
       (existing) =>

@@ -11,6 +11,7 @@ import 'package:swiftcomp/presentation/tools/widget/description.dart';
 import 'package:swiftcomp/presentation/tools/widget/lamina_constants_row.dart';
 
 import '../../tools/model/thermal_model.dart';
+import '../model/lamina_engineering_sweep.dart';
 import '../widget/transversely_thermal_constants_row.dart';
 
 class LaminaEngineeringConstantsPage extends StatefulWidget {
@@ -113,10 +114,24 @@ class _LaminaEngineeringConstantsPageState
         return;
       }
 
+      final LaminaEngineeringSweep sweep;
+      try {
+        sweep = LaminaEngineeringSweep.calculate(
+          analysisType: analysisType,
+          material: transverselyIsotropicMaterial,
+          cte: transverselyIsotropicCTE,
+        );
+      } catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(S.of(context).Calculator_calculation_failed),
+        ));
+        return;
+      }
       var resultPage = LaminaEngineeringConstantsResultPage(
         analysisType: analysisType,
         transverselyIsotropicMaterial: transverselyIsotropicMaterial,
         transverselyIsotropicCTE: transverselyIsotropicCTE,
+        sweep: sweep,
       );
 
       Navigator.push(

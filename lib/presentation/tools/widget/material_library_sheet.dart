@@ -67,7 +67,28 @@ class _MaterialLibrarySheet extends StatefulWidget {
 }
 
 class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
+  final TextEditingController _searchController = TextEditingController();
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_updateQuery);
+  }
+
+  void _updateQuery() {
+    final query = _searchController.text;
+    if (_query == query) return;
+    setState(() => _query = query);
+  }
+
+  @override
+  void dispose() {
+    _searchController
+      ..removeListener(_updateQuery)
+      ..dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +100,10 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
         final query = _query.trim().toLowerCase();
         final materials = MaterialLibrary.instance
             .materials(widget.kind)
-            .where((m) => query.isEmpty || m.name.toLowerCase().contains(query))
+            .where((m) =>
+                query.isEmpty ||
+                m.name.toLowerCase().contains(query) ||
+                m.source.toLowerCase().contains(query))
             .toList();
         final custom = materials.where((m) => m.isCustom).toList();
         final builtIn = materials.where((m) => !m.isCustom).toList();
@@ -104,13 +128,21 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
               ),
               const SizedBox(height: 12),
               TextField(
-                decoration: const InputDecoration(
+                controller: _searchController,
+                decoration: InputDecoration(
                   isDense: true,
-                  prefixIcon: Icon(Icons.search_rounded),
+                  prefixIcon: const Icon(Icons.search_rounded),
                   hintText: 'Search materials',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: MaterialLocalizations.of(context)
+                              .clearButtonTooltip,
+                          onPressed: _searchController.clear,
+                          icon: const Icon(Icons.clear_rounded),
+                        ),
                 ),
-                onChanged: (value) => setState(() => _query = value),
               ),
               if (widget.saveCurrent != null) ...[
                 const SizedBox(height: 8),
@@ -127,13 +159,15 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
                 _sectionLabel(context, 'My materials'),
                 for (final material in custom) _tile(context, material, units),
               ],
-              _sectionLabel(context, 'Built-in'),
-              if (builtIn.isEmpty)
+              if (builtIn.isNotEmpty) ...[
+                _sectionLabel(context, 'Built-in'),
+                for (final material in builtIn) _tile(context, material, units),
+              ],
+              if (materials.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Text('No materials match your search.'),
                 ),
-              for (final material in builtIn) _tile(context, material, units),
             ],
           ),
         );
@@ -226,17 +260,26 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
     controller.dispose();
     if (!mounted || name == null || name.trim().isEmpty) return;
 
-    final material = saveCurrent(name.trim());
     final messenger = ScaffoldMessenger.of(context);
-    if (material == null) {
+    try {
+      final material = saveCurrent(name.trim());
+      if (material == null) {
+        messenger.showSnackBar(const SnackBar(
+          content: Text('Enter the elastic constants before saving.'),
+        ));
+        return;
+      }
+      await MaterialLibrary.instance.save(material);
+      if (!mounted || !messenger.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Saved "${material.name}" to your library.')),
+      );
+    } catch (error) {
+      if (!mounted || !messenger.mounted) return;
       messenger.showSnackBar(const SnackBar(
-        content: Text('Enter the elastic constants before saving.'),
+        content: Text(
+            'Could not save this material. Check its values and try again.'),
       ));
-      return;
     }
-    await MaterialLibrary.instance.save(material);
-    messenger.showSnackBar(
-      SnackBar(content: Text('Saved "${material.name}" to your library.')),
-    );
   }
 }

@@ -18,6 +18,7 @@ import '../widget/transversely_thermal_constants_row.dart';
 import 'package:provider/provider.dart';
 
 import '../model/calc_report.dart';
+import '../model/calculator_result_validation.dart';
 import '../model/material_library.dart';
 import '../model/unit_system.dart';
 
@@ -56,9 +57,12 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
 
   bool _moduliPlausible() {
     final limit = _units.maxPlausibleModulus;
-    return [fiberMaterial.e1, fiberMaterial.e2, fiberMaterial.g12,
-            matrixMaterial.e]
-        .every((value) => value == null || value <= limit);
+    return [
+      fiberMaterial.e1,
+      fiberMaterial.e2,
+      fiberMaterial.g12,
+      matrixMaterial.e
+    ].every((value) => value == null || value <= limit);
   }
 
   TransverselyIsotropicCTE transverselyIsotropicCTE =
@@ -168,7 +172,8 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
         _moduliPlausible() &&
         fiberVolumeFraction.isValid()) {
       if (analysisType == AnalysisType.thermalElastic &&
-          (!transverselyIsotropicCTE.isValid() || !isotropicCTE.isValid())) {
+          (!transverselyIsotropicCTE.isValid(includeShear: false) ||
+              !isotropicCTE.isValid())) {
         return;
       }
 
@@ -187,8 +192,17 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
         fiberVolumeFraction: fiberVolumeFraction.value ?? 0,
       );
 
-      UDFRCRulesOfMixtureOutput output =
-          UDFRCRulesOfMixtureCalculator.calculate(input);
+      final UDFRCRulesOfMixtureOutput output;
+      try {
+        output = UDFRCRulesOfMixtureCalculator.calculate(input);
+      } catch (error) {
+        _showCalculationError();
+        return;
+      }
+      if (!CalculatorResultValidation.rulesOfMixture(output)) {
+        _showCalculationError();
+        return;
+      }
 
       Navigator.push(
           context,
@@ -198,6 +212,12 @@ class _RulesOfMixturePageState extends State<RulesOfMixturePage> {
                     inputs: _reportInputs(),
                   )));
     }
+  }
+
+  void _showCalculationError() {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(S.of(context).Calculator_calculation_failed),
+    ));
   }
 
   List<ReportSection> _reportInputs() {

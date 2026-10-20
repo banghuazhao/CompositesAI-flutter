@@ -3,6 +3,8 @@ import 'unit_system.dart';
 validateModulus(double? value) {
   if (value == null) {
     return "Not a number";
+  } else if (!value.isFinite) {
+    return 'Enter a finite number';
   } else if (value <= 0) {
     return "Not > 0";
   } else {
@@ -13,6 +15,8 @@ validateModulus(double? value) {
 validateCTEs(double? value) {
   if (value == null) {
     return "Not a number";
+  } else if (!value.isFinite) {
+    return 'Enter a finite number';
   } else {
     return null;
   }
@@ -21,6 +25,8 @@ validateCTEs(double? value) {
 validateIsotropicPoissonRatio(double? value) {
   if (value == null) {
     return "Not a number";
+  } else if (!value.isFinite) {
+    return 'Enter a finite number';
   } else if (value <= -1.0 || value >= 0.5) {
     return "Not in (-1.0, 0.5)";
   } else {
@@ -31,6 +37,8 @@ validateIsotropicPoissonRatio(double? value) {
 validatePoissonRatio(double? value) {
   if (value == null) {
     return "Not a number";
+  } else if (!value.isFinite) {
+    return 'Enter a finite number';
   } else {
     return null;
   }
@@ -49,6 +57,7 @@ String? validateModulusIn(double? value, Units units) {
 
 String? validateStrength(double? value) {
   if (value == null) return "Not a number";
+  if (!value.isFinite) return 'Enter a finite number';
   if (value <= 0) return "Not > 0";
   return null;
 }

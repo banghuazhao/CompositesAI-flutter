@@ -17,6 +17,7 @@ import 'package:swiftcomp/presentation/tools/widget/plane_stress_strain_row.dart
 
 import '../../tools/widget/delta_temperature_row.dart';
 import '../model/calc_report.dart';
+import '../model/calculator_result_validation.dart';
 import '../model/unit_system.dart';
 import '../widget/lamina_inputs_mixin.dart';
 import '../widget/transversely_thermal_constants_row.dart';
@@ -147,7 +148,8 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage>
         layupAngle.isValid() &&
         mechanicalTensor.isValid()) {
       if (analysisType == AnalysisType.thermalElastic &&
-          !transverselyIsotropicCTE.isValid()) {
+          (!transverselyIsotropicCTE.isValid() ||
+              !deltaTemperature.isValid())) {
         return;
       }
 
@@ -185,8 +187,17 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage>
         input.sigma12 = sigma12;
       }
 
-      LaminaStressStrainOutput output =
-          LaminaStressStrainCalculator.calculate(input);
+      final LaminaStressStrainOutput output;
+      try {
+        output = LaminaStressStrainCalculator.calculate(input);
+      } catch (error) {
+        _showCalculationError();
+        return;
+      }
+      if (!CalculatorResultValidation.laminaStressStrain(output)) {
+        _showCalculationError();
+        return;
+      }
 
       final isThermal = analysisType == AnalysisType.thermalElastic;
       final applied = input.tensorType == TensorType.stress
@@ -205,8 +216,7 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage>
         if (isThermal) ReportInputs.cte(transverselyIsotropicCTE, units),
         ValuesSection('Loading', [
           ReportEntry('Layup angle', input.layupAngle, '°'),
-          if (isThermal)
-            ReportEntry('ΔT', input.deltaT, units.temperature),
+          if (isThermal) ReportEntry('ΔT', input.deltaT, units.temperature),
         ]),
         applied,
       ];
@@ -217,5 +227,11 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage>
               builder: (context) =>
                   LaminaStressStrainResult(output: output, inputs: inputs)));
     }
+  }
+
+  void _showCalculationError() {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(S.of(context).Calculator_calculation_failed),
+    ));
   }
 }

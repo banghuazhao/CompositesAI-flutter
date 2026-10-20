@@ -1,7 +1,5 @@
 class DeltaTemperature {
   double? value;
 
-  isValid() {
-    return value != null;
-  }
+  bool isValid() => value?.isFinite ?? false;
 }

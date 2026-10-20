@@ -231,26 +231,41 @@ class _LaminateStressStrainResultPageState
       LaminarStressStrainLineChat(
         title: "ε11 through the thickness",
         data: epsilon11_datas,
+        component: 'ε11',
+        depthUnit: units.length,
       ),
       LaminarStressStrainLineChat(
         title: "ε22 through the thickness",
         data: epsilon22_datas,
+        component: 'ε22',
+        depthUnit: units.length,
       ),
       LaminarStressStrainLineChat(
         title: "ε12 through the thickness",
         data: epsilon12_datas,
+        component: 'ε12',
+        depthUnit: units.length,
       ),
       LaminarStressStrainLineChat(
         title: "σ11 ($stress) through the thickness",
         data: sigma11_datas,
+        component: 'σ11',
+        depthUnit: units.length,
+        valueUnit: stress,
       ),
       LaminarStressStrainLineChat(
         title: "σ22 ($stress) through the thickness",
         data: sigma22_datas,
+        component: 'σ22',
+        depthUnit: units.length,
+        valueUnit: stress,
       ),
       LaminarStressStrainLineChat(
         title: "σ12 ($stress) through the thickness",
         data: sigma12_datas,
+        component: 'σ12',
+        depthUnit: units.length,
+        valueUnit: stress,
       )
     ];
   }
@@ -391,31 +406,185 @@ class ResultStressStrainWidget extends StatelessWidget {
   }
 }
 
-class LaminarStressStrainLineChat extends StatelessWidget {
+class LaminarStressStrainLineChat extends StatefulWidget {
   final String title;
   final List<FlSpot> data;
+  final String component;
+  final String depthUnit;
+  final String valueUnit;
 
   const LaminarStressStrainLineChat(
-      {Key? key, required this.title, required this.data})
+      {Key? key,
+      required this.title,
+      required this.data,
+      required this.component,
+      required this.depthUnit,
+      this.valueUnit = ''})
       : super(key: key);
 
   @override
+  State<LaminarStressStrainLineChat> createState() =>
+      _LaminarStressStrainLineChatState();
+}
+
+class _LaminarStressStrainLineChatState
+    extends State<LaminarStressStrainLineChat> {
+  final _rendererKey = GlobalKey();
+  int? _selectedIndex;
+  int _dataLength = 0;
+  double _minimumX = 0;
+  double _maximumX = 1;
+  double _minimumY = 0;
+  double _maximumY = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateBounds();
+  }
+
+  @override
+  void didUpdateWidget(covariant LaminarStressStrainLineChat oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.data != widget.data || widget.data.length != _dataLength) {
+      _selectedIndex = null;
+      _updateBounds();
+    }
+  }
+
+  void _updateBounds() {
+    final data = widget.data;
+    _dataLength = data.length;
+    if (data.isEmpty) return;
+    _minimumX = data.first.x;
+    _maximumX = data.last.x;
+    _minimumY = data.map((point) => point.y).reduce(min);
+    _maximumY = data.map((point) => point.y).reduce(max);
+    if (_maximumX == _minimumX) _maximumX = _minimumX + 1;
+    final range = _maximumY - _minimumY;
+    if (range == 0 || (range / _minimumY).abs() < 0.001) {
+      _maximumY = _minimumY + 1;
+    }
+  }
+
+  void _selectIndex(int? index) {
+    if (_selectedIndex == index) return;
+    setState(() => _selectedIndex = index);
+  }
+
+  void _inspectAt(Offset globalPosition, double minimum, double maximum) {
+    final box = _rendererKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || box.size.width <= 0) return;
+    final local = box.globalToLocal(globalPosition);
+    // Include the plot borders: the outermost ply surfaces lie exactly there.
+    if (local.dx < 0 ||
+        local.dx > box.size.width ||
+        local.dy < 0 ||
+        local.dy > box.size.height) {
+      _selectIndex(null);
+      return;
+    }
+    final depth = minimum + (maximum - minimum) * local.dx / box.size.width;
+    final data = widget.data;
+    // The samples are ordered from bottom to top. Binary search keeps hover
+    // work bounded even for a large laminate; each depth has at most two sides.
+    var lower = 0;
+    var upper = data.length;
+    while (lower < upper) {
+      final middle = lower + (upper - lower) ~/ 2;
+      if (data[middle].x < depth) {
+        lower = middle + 1;
+      } else {
+        upper = middle;
+      }
+    }
+    final next = lower.clamp(0, data.length - 1).toInt();
+    final previous = (lower - 1).clamp(0, data.length - 1).toInt();
+    _selectIndex(
+        (data[previous].x - depth).abs() <= (data[next].x - depth).abs()
+            ? previous
+            : next);
+  }
+
+  List<int> _surfaceIndices(int selected) {
+    final data = widget.data;
+    if (selected > 0 && data[selected - 1].x == data[selected].x) {
+      return [selected - 1, selected];
+    }
+    if (selected + 1 < data.length &&
+        data[selected + 1].x == data[selected].x) {
+      return [selected, selected + 1];
+    }
+    return [selected];
+  }
+
+  String _inspectionText(List<int> indices, S? strings, int precision) {
+    String number(double value) =>
+        CalcReport.formatNumber(value, precision: precision);
+    final depth = number(widget.data[indices.first].x);
+    return [
+      strings?.Calculator_chart_depth(depth, widget.depthUnit) ??
+          'Depth: $depth ${widget.depthUnit}',
+      for (final index in indices) ...[
+        () {
+          final surface = index.isEven
+              ? strings?.Calculator_surface_bottom ?? 'Bottom'
+              : strings?.Calculator_surface_top ?? 'Top';
+          final ply = index ~/ 2 + 1;
+          return strings?.Calculator_chart_ply_surface(ply, surface) ??
+              'Ply $ply · $surface';
+        }(),
+        '${widget.component}: ${number(widget.data[index].y)}'
+            '${widget.valueUnit.isEmpty ? '' : ' ${widget.valueUnit}'}',
+      ],
+    ].join('\n');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    double minX = data[0].x;
-    double maxX = data.last.x;
-    double minY = (data.map((e) => e.y)).reduce(min);
-    double maxY = (data.map((e) => e.y)).reduce(max);
-    if (maxX == minX) {
-      maxX = minX + 1;
+    final data = widget.data;
+    if (data.isEmpty) return const SizedBox.shrink();
+    final strings = S.maybeOf(context);
+    // Optional lookup keeps this chart usable in isolated widget previews.
+    final precision = (context.watch<NumberPrecisionHelper?>()?.precision ?? 5)
+        .clamp(0, 20)
+        .toInt();
+    final scheme = Theme.of(context).colorScheme;
+    const chartTitles = FlTitlesData();
+    const tooltipPadding = EdgeInsets.all(8);
+    const chartPadding = EdgeInsets.fromLTRB(5, 0, 25, 10);
+    var tooltipStyle = DefaultTextStyle.of(context)
+        .style
+        .merge(
+          TextStyle(color: scheme.onInverseSurface, fontSize: 12),
+        )
+        .copyWith(inherit: false);
+    if (MediaQuery.boldTextOf(context)) {
+      tooltipStyle = tooltipStyle.copyWith(fontWeight: FontWeight.bold);
     }
-    double deltaY = maxY - minY;
-    if (deltaY == 0 || ((deltaY / minY).abs() < 0.001)) {
-      maxY = minY + 1;
-    }
+    final minX = _minimumX;
+    final maxX = _maximumX;
+    final minY = _minimumY;
+    final maxY = _maximumY;
 
     double horizontalInterval = (maxX - minX) / 4;
     double verticalInterval = (maxY - minY) / 4;
-    print("minX, maxX, minY, maxY: $minX, $maxX, $minY, $maxY");
+    final selected = _selectedIndex;
+    final selectedSurfaces =
+        selected == null ? <int>[] : _surfaceIndices(selected);
+    final inspection = selectedSurfaces.isEmpty
+        ? null
+        : _inspectionText(selectedSurfaces, strings, precision);
+    final bar = LineChartBarData(
+      isCurved: false,
+      color: scheme.primary,
+      barWidth: 1,
+      isStrokeCapRound: true,
+      dotData: const FlDotData(show: false),
+      belowBarData: BarAreaData(show: false),
+      showingIndicators: selectedSurfaces,
+      spots: data,
+    );
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
@@ -423,70 +592,127 @@ class LaminarStressStrainLineChat extends StatelessWidget {
       child: Column(children: [
         ListTile(
           title: Text(
-            title,
+            widget.title,
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(5, 0, 25, 10),
-          height: 200,
-          child: LineChart(LineChartData(
-            lineTouchData: LineTouchData(enabled: false),
-            gridData: FlGridData(
-              show: true,
-              horizontalInterval:
-                  verticalInterval > 0 ? verticalInterval : null,
-              verticalInterval:
-                  horizontalInterval > 0 ? horizontalInterval : null,
-              drawHorizontalLine: true,
-              drawVerticalLine: true,
-            ),
-            titlesData: FlTitlesData(
-              show: true,
-              // rightTitles: SideTitles(showTitles: false),
-              // topTitles: SideTitles(showTitles: false),
-              // leftTitles: SideTitles(
-              //     showTitles: true,
-              //     reservedSize: 50,
-              //     interval: verticalInterval > 0 ? verticalInterval : null,
-              //     getTextStyles: (context, value) => const TextStyle(
-              //           fontSize: 10,
-              //         ),
-              //     getTitles: (value) {
-              //       return value.toStringAsExponential(2);
-              //     }),
-              // bottomTitles: SideTitles(
-              //     showTitles: true,
-              //     interval: horizontalInterval > 0 ? horizontalInterval : null,
-              //     getTextStyles: (context, value) => const TextStyle(
-              //           fontSize: 10,
-              //         ),
-              //     getTitles: (value) {
-              //       return value.toStringAsExponential(2);
-              //     }),
-            ),
-            borderData: FlBorderData(
-                show: true,
-                border: const Border(
-                    left: BorderSide(color: Colors.grey),
-                    bottom: BorderSide(color: Colors.grey))),
-            minX: minX,
-            maxX: maxX,
-            minY: minY,
-            maxY: maxY,
-            lineBarsData: [
-              LineChartBarData(
-                isCurved: false,
-                color: Theme.of(context).colorScheme.primary,
-                barWidth: 1,
-                isStrokeCapRound: true,
-                dotData: FlDotData(show: false),
-                belowBarData: BarAreaData(show: false),
-                spots: data,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Text(
+            strings?.Calculator_chart_inspection_hint ??
+                'Tap a point or hover to inspect ply values',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+        LayoutBuilder(builder: (context, constraints) {
+          // Measure using the same style, width and text scaler as fl_chart.
+          // Browser font metrics can wrap to more lines than native metrics.
+          final contentWidth = max(
+              20.0,
+              min(
+                220.0,
+                constraints.maxWidth -
+                    chartPadding.horizontal -
+                    chartTitles.leftTitles.sideTitles.reservedSize -
+                    chartTitles.rightTitles.sideTitles.reservedSize -
+                    tooltipPadding.horizontal -
+                    8,
+              ));
+          final scaler = MediaQuery.textScalerOf(context);
+          var height = 200.0 * max(1.0, scaler.scale(12) / 12);
+          if (inspection != null) {
+            final painter = TextPainter(
+              text: TextSpan(text: inspection, style: tooltipStyle),
+              textDirection: Directionality.of(context),
+              textScaler: scaler,
+            )..layout(maxWidth: contentWidth);
+            height = max(
+                height,
+                painter.height +
+                    tooltipPadding.vertical +
+                    chartTitles.topTitles.sideTitles.reservedSize +
+                    chartTitles.bottomTitles.sideTitles.reservedSize +
+                    chartPadding.vertical +
+                    8);
+            painter.dispose();
+          }
+          return Container(
+            padding: chartPadding,
+            height: height,
+            child: Semantics(
+              label: inspection,
+              child: MouseRegion(
+                onHover: (event) => _inspectAt(event.position, minX, maxX),
+                onExit: (_) => _selectIndex(null),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapUp: (details) =>
+                      _inspectAt(details.globalPosition, minX, maxX),
+                  onTapCancel: () => _selectIndex(null),
+                  // A tap-only detector lets the surrounding result list retain
+                  // vertical drags; fl_chart's own pan recognizer is bypassed.
+                  child: IgnorePointer(
+                      child: LineChart(
+                          LineChartData(
+                            lineTouchData: LineTouchData(
+                              enabled: false,
+                              handleBuiltInTouches: false,
+                              touchTooltipData: LineTouchTooltipData(
+                                fitInsideHorizontally: true,
+                                fitInsideVertically: true,
+                                maxContentWidth: contentWidth,
+                                tooltipPadding: tooltipPadding,
+                                getTooltipColor: (_) => scheme.inverseSurface,
+                                getTooltipItems: (spots) => [
+                                  for (var i = 0; i < spots.length; i++)
+                                    inspection == null
+                                        ? null
+                                        : LineTooltipItem(
+                                            inspection,
+                                            tooltipStyle,
+                                            textAlign: TextAlign.left,
+                                            textDirection:
+                                                Directionality.of(context),
+                                          ),
+                                ],
+                              ),
+                            ),
+                            showingTooltipIndicators: selected == null
+                                ? []
+                                : [
+                                    ShowingTooltipIndicators(
+                                        [LineBarSpot(bar, 0, data[selected])]),
+                                  ],
+                            gridData: FlGridData(
+                              show: true,
+                              horizontalInterval: verticalInterval > 0
+                                  ? verticalInterval
+                                  : null,
+                              verticalInterval: horizontalInterval > 0
+                                  ? horizontalInterval
+                                  : null,
+                              drawHorizontalLine: true,
+                              drawVerticalLine: true,
+                            ),
+                            titlesData: chartTitles,
+                            borderData: FlBorderData(
+                                show: true,
+                                border: const Border(
+                                    left: BorderSide(color: Colors.grey),
+                                    bottom: BorderSide(color: Colors.grey))),
+                            minX: minX,
+                            maxX: maxX,
+                            minY: minY,
+                            maxY: maxY,
+                            lineBarsData: [bar],
+                          ),
+                          chartRendererKey: _rendererKey,
+                          duration: Duration.zero)),
+                ),
               ),
-            ],
-          )),
-        )
+            ),
+          );
+        }),
       ]),
     );
   }

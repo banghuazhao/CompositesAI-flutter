@@ -1,6 +1,9 @@
 abstract class MechanicalTensor {
-  isValid();
+  bool isValid();
 }
+
+bool _allFinite(Iterable<double?> values) =>
+    values.every((value) => value?.isFinite ?? false);
 
 class PlaneStress extends MechanicalTensor {
   double? sigma11;
@@ -12,9 +15,7 @@ class PlaneStress extends MechanicalTensor {
   PlaneStress.from(this.sigma11, this.sigma22, this.sigma12);
 
   @override
-  isValid() {
-    return (sigma11 != null && sigma22 != null && sigma12 != null);
-  }
+  bool isValid() => _allFinite([sigma11, sigma22, sigma12]);
 }
 
 class PlaneStrain extends MechanicalTensor {
@@ -27,9 +28,7 @@ class PlaneStrain extends MechanicalTensor {
   PlaneStrain.from(this.epsilon11, this.epsilon22, this.gamma12);
 
   @override
-  isValid() {
-    return (epsilon11 != null && epsilon22 != null && gamma12 != null);
-  }
+  bool isValid() => _allFinite([epsilon11, epsilon22, gamma12]);
 }
 
 class LaminateStress extends MechanicalTensor {
@@ -53,14 +52,7 @@ class LaminateStress extends MechanicalTensor {
       this.N11, this.N22, this.N12, this.M11, this.M22, this.M12);
 
   @override
-  isValid() {
-    return (N11 != null &&
-        N22 != null &&
-        N12 != null &&
-        M11 != null &&
-        M22 != null &&
-        M12 != null);
-  }
+  bool isValid() => _allFinite([N11, N22, N12, M11, M22, M12]);
 
   @override
   String toString() {
@@ -89,14 +81,8 @@ class LaminateStrain extends MechanicalTensor {
       this.kappa11, this.kappa22, this.kappa12);
 
   @override
-  isValid() {
-    return (epsilon11 != null &&
-        epsilon22 != null &&
-        epsilon12 != null &&
-        kappa11 != null &&
-        kappa22 != null &&
-        kappa12 != null);
-  }
+  bool isValid() =>
+      _allFinite([epsilon11, epsilon22, epsilon12, kappa11, kappa22, kappa12]);
 
   @override
   String toString() {

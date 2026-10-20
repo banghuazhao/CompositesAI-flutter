@@ -18,8 +18,8 @@ class DeltaTemperatureRow extends StatefulWidget {
 
 class _DeltaTemperatureRowState extends State<DeltaTemperatureRow> {
   validateLayupAngle(double? value) {
-    if (value == null) {
-      return localizeCalculatorValidation(context, 'Not a number');
+    if (value == null || !value.isFinite) {
+      return localizeCalculatorValidation(context, 'Enter a finite number');
     } else {
       return null;
     }
@@ -54,7 +54,9 @@ class _DeltaTemperatureRowState extends State<DeltaTemperatureRow> {
                       ? validateLayupAngle(widget.deltaTemperature.value)
                       : null),
               onChanged: (value) {
-                widget.deltaTemperature.value = double.tryParse(value);
+                setState(() {
+                  widget.deltaTemperature.value = double.tryParse(value);
+                });
               },
             ),
           )

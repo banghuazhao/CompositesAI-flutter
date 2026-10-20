@@ -931,6 +931,56 @@ class S {
       args: [],
     );
   }
+
+  /// `Tap a point or hover to inspect ply values`
+  String get Calculator_chart_inspection_hint {
+    return Intl.message(
+      'Tap a point or hover to inspect ply values',
+      name: 'Calculator_chart_inspection_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Depth: {value} {unit}`
+  String Calculator_chart_depth(Object value, Object unit) {
+    return Intl.message(
+      'Depth: $value $unit',
+      name: 'Calculator_chart_depth',
+      desc: '',
+      args: [value, unit],
+    );
+  }
+
+  /// `Ply {ply} · {surface}`
+  String Calculator_chart_ply_surface(Object ply, Object surface) {
+    return Intl.message(
+      'Ply $ply · $surface',
+      name: 'Calculator_chart_ply_surface',
+      desc: '',
+      args: [ply, surface],
+    );
+  }
+
+  /// `Bottom`
+  String get Calculator_surface_bottom {
+    return Intl.message(
+      'Bottom',
+      name: 'Calculator_surface_bottom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Top`
+  String get Calculator_surface_top {
+    return Intl.message(
+      'Top',
+      name: 'Calculator_surface_top',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

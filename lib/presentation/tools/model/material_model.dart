@@ -37,7 +37,7 @@ class IsotropicMaterial extends MechanicalMaterial {
   IsotropicMaterial();
 
   isValid() {
-    if (e != null && nu != null) {
+    if ((e?.isFinite ?? false) && (nu?.isFinite ?? false)) {
       if (e! > 0 && nu! >= -1.0 && nu! < 0.5) {
         return true;
       }
@@ -64,7 +64,7 @@ class TransverselyIsotropicMaterial extends MechanicalMaterial {
   TransverselyIsotropicMaterial();
 
   isValidInPlane() {
-    if (e1 != null && e2 != null && g12 != null && nu12 != null) {
+    if ([e1, e2, g12, nu12].every((value) => value?.isFinite ?? false)) {
       if (e1! > 0 && e2! > 0 && g12! > 0) {
         return true;
       }
@@ -73,11 +73,7 @@ class TransverselyIsotropicMaterial extends MechanicalMaterial {
   }
 
   isValid() {
-    if (e1 != null &&
-        e2 != null &&
-        g12 != null &&
-        nu12 != null &&
-        nu23 != null) {
+    if ([e1, e2, g12, nu12, nu23].every((value) => value?.isFinite ?? false)) {
       if (e1! > 0 && e2! > 0 && g12! > 0) {
         return true;
       }

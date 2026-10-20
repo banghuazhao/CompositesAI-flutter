@@ -136,5 +136,22 @@
         "type": "int"
       }
     }
+  },
+  "Calculator_chart_inspection_hint": "點選或懸停資料點以查看各層數值",
+  "Calculator_chart_depth": "深度：{value} {unit}",
+  "Calculator_chart_ply_surface": "第 {ply} 層 · {surface}",
+  "Calculator_surface_bottom": "底面",
+  "Calculator_surface_top": "頂面",
+  "@Calculator_chart_depth": {
+    "placeholders": {
+      "value": {},
+      "unit": {}
+    }
+  },
+  "@Calculator_chart_ply_surface": {
+    "placeholders": {
+      "ply": {},
+      "surface": {}
+    }
   }
 }

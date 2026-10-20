@@ -10,6 +10,56 @@ import 'failure_criteria.dart';
 class CalculatorResultValidation {
   const CalculatorResultValidation._();
 
+  static bool laminaStressStrain(LaminaStressStrainOutput output) =>
+      _matrix(output.Q, 3) &&
+      _matrix(output.S, 3) &&
+      [
+        output.sigma11,
+        output.sigma22,
+        output.sigma12,
+        output.epsilon11,
+        output.epsilon22,
+        output.gamma12
+      ].every((value) => value.isFinite);
+
+  static bool engineeringConstants(LaminaEngineeringConstantsOutput output) =>
+      _matrix(output.Q, 3) &&
+      _matrix(output.S, 3) &&
+      [
+        output.E1,
+        output.E2,
+        output.G12,
+        output.nu12,
+        output.eta1_12,
+        output.eta2_12,
+        if (output.analysisType == AnalysisType.thermalElastic) ...[
+          output.alpha_11,
+          output.alpha_22,
+          output.alpha_12,
+        ]
+      ].every((value) => value.isFinite);
+
+  static bool rulesOfMixture(UDFRCRulesOfMixtureOutput output) => [
+        output.voigtRulesOfMixture,
+        output.reussRulesOfMixture,
+        output.hybirdRulesOfMixture
+      ].every((result) =>
+          _matrix(result.stiffness, 6) &&
+          _matrix(result.compliance, 6) &&
+          const [
+            'E1',
+            'E2',
+            'E3',
+            'G12',
+            'G13',
+            'G23',
+            'nu12',
+            'nu13',
+            'nu23'
+          ].every(
+              (key) => result.engineeringConstants[key]?.isFinite ?? false) &&
+          result.engineeringConstants.values.every((value) => value.isFinite));
+
   static bool _matrix(List<List<double>> values, int size) =>
       values.length == size &&
       values.every(

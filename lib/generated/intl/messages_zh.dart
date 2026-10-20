@@ -20,17 +20,21 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'zh';
 
-  static String m0(angles) => "铺层角度：${angles}";
+  static String m0(value, unit) => "深度：${value} ${unit}";
 
-  static String m1(unit) => "数值对于 ${unit} 过大，请检查单位";
+  static String m1(ply, surface) => "第 ${ply} 层 · ${surface}";
 
-  static String m2(count) => "另有 ${count} 层";
+  static String m2(angles) => "铺层角度：${angles}";
 
-  static String m3(count) => "${count} 层";
+  static String m3(unit) => "数值对于 ${unit} 过大，请检查单位";
 
-  static String m4(value, unit) => "总厚度：${value} ${unit}";
+  static String m4(count) => "另有 ${count} 层";
 
-  static String m5(modulus, stress, length, loads) =>
+  static String m5(count) => "${count} 层";
+
+  static String m6(value, unit) => "总厚度：${value} ${unit}";
+
+  static String m7(modulus, stress, length, loads) =>
       "模量 ${modulus} · 应力 ${stress} · 长度 ${length} · 载荷 ${loads}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -44,20 +48,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_calculation_failed": MessageLookupByLibrary.simpleMessage(
       "无法计算结果，请检查材料常数、载荷和厚度。",
     ),
+    "Calculator_chart_depth": m0,
+    "Calculator_chart_inspection_hint": MessageLookupByLibrary.simpleMessage(
+      "点击或悬停数据点以查看各层数值",
+    ),
+    "Calculator_chart_ply_surface": m1,
     "Calculator_clear_layup": MessageLookupByLibrary.simpleMessage("清除铺层次序"),
     "Calculator_copy_failed": MessageLookupByLibrary.simpleMessage(
       "无法复制结果，请重试。",
     ),
     "Calculator_copy_results": MessageLookupByLibrary.simpleMessage("复制结果"),
-    "Calculator_expanded_angles": m0,
+    "Calculator_expanded_angles": m2,
     "Calculator_export_failed": MessageLookupByLibrary.simpleMessage("无法导出结果。"),
     "Calculator_export_results": MessageLookupByLibrary.simpleMessage("导出结果"),
     "Calculator_finite_thickness": MessageLookupByLibrary.simpleMessage(
       "请输入有限数值",
     ),
-    "Calculator_modulus_too_large": m1,
-    "Calculator_more_plies": m2,
-    "Calculator_ply_count": m3,
+    "Calculator_modulus_too_large": m3,
+    "Calculator_more_plies": m4,
+    "Calculator_ply_count": m5,
     "Calculator_poisson_range": MessageLookupByLibrary.simpleMessage(
       "必须介于 -1 和 0.5 之间",
     ),
@@ -71,12 +80,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_share_csv": MessageLookupByLibrary.simpleMessage("分享 CSV 文件"),
     "Calculator_share_pdf": MessageLookupByLibrary.simpleMessage("分享 PDF 文件"),
     "Calculator_si_name": MessageLookupByLibrary.simpleMessage("国际单位制（SI）"),
+    "Calculator_surface_bottom": MessageLookupByLibrary.simpleMessage("底面"),
+    "Calculator_surface_top": MessageLookupByLibrary.simpleMessage("顶面"),
     "Calculator_thickness": MessageLookupByLibrary.simpleMessage("厚度"),
     "Calculator_too_many_layers": MessageLookupByLibrary.simpleMessage(
       "铺层数量过多",
     ),
-    "Calculator_total_thickness": m4,
-    "Calculator_unit_details": m5,
+    "Calculator_total_thickness": m6,
+    "Calculator_unit_details": m7,
     "Calculator_units": MessageLookupByLibrary.simpleMessage("计算器单位"),
     "Calculator_units_explanation": MessageLookupByLibrary.simpleMessage(
       "输入、结果和导出文件均使用这些单位。已输入的数值不会自动换算。",
