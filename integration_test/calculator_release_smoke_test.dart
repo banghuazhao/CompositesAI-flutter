@@ -15,6 +15,7 @@ import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart
 import 'package:swiftcomp/presentation/tools/model/calc_report.dart';
 import 'package:swiftcomp/presentation/tools/model/failure_criteria.dart';
 import 'package:swiftcomp/presentation/tools/model/material_library.dart';
+import 'package:swiftcomp/presentation/tools/model/material_library_export.dart';
 import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart';
 import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_page.dart';
@@ -771,6 +772,121 @@ void main() {
     expect(surfaces.last[2], 'Top');
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(minutes: 3)));
+  testWidgets('navigation polish native library sorting and HK controls',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si);
+    final alpha = _releaseMaterial('Alpha prepreg', id: 'order-alpha');
+    final zulu = _releaseMaterial('Zulu prepreg', id: 'order-zulu');
+    await MaterialLibrary.instance.save(alpha);
+    await MaterialLibrary.instance.save(zulu);
+    final stored =
+        SharedPreferencesHelper.localStorage.getString('Custom_Materials_v1');
+    final exported =
+        MaterialLibraryExport.toJson(MaterialLibrary.instance.customMaterials);
+    LibraryMaterial? selected;
+    await tester.pumpWidget(_calculatorApp(
+      locale: const Locale('zh', 'HK'),
+      home: Scaffold(
+        body: Center(
+          child: MaterialLibraryButton(
+            kind: MaterialKind.lamina,
+            onSelected: (material) => selected = material,
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.text('材料庫'));
+    final strings = S.of(tester.element(find.byType(DraggableScrollableSheet)));
+    List<String> configuredCustomNames() {
+      final list = tester.widget<ListView>(find.descendant(
+          of: find.byType(DraggableScrollableSheet),
+          matching: find.byType(ListView)));
+      final children =
+          (list.childrenDelegate as SliverChildListDelegate).children;
+      return [
+        for (final child in children)
+          if (child is Card && child.child is ListTile)
+            ((child.child! as ListTile).title! as Text).data!,
+      ].where((name) => name == alpha.name || name == zulu.name).toList();
+    }
+
+    expect(configuredCustomNames(), [zulu.name, alpha.name]);
+    await _tap(tester, find.byKey(const ValueKey('material-library-order')));
+    await _tap(
+        tester, find.text(strings.Calculator_material_alphabetical_order).last);
+    expect(configuredCustomNames(), [alpha.name, zulu.name]);
+    final search = find.byKey(const ValueKey('material-library-search'));
+    await _enterText(tester, search, 'Zulu');
+    expect(find.text(alpha.name), findsNothing);
+    expect(find.text(zulu.name), findsOneWidget);
+    await _tap(tester,
+        find.byTooltip(strings.Calculator_delete_material_tooltip(zulu.name)));
+    expect(find.text(strings.Calculator_delete_material_title), findsOneWidget);
+    final cancel =
+        MaterialLocalizations.of(tester.element(find.byType(AlertDialog)))
+            .cancelButtonLabel;
+    await _tap(tester, find.widgetWithText(TextButton, cancel));
+    await _tap(tester, find.text(zulu.name));
+    expect(selected, same(zulu));
+    expect(find.byType(DraggableScrollableSheet), findsNothing);
+    expect(
+        SharedPreferencesHelper.localStorage.getString('Custom_Materials_v1'),
+        stored);
+    expect(
+        MaterialLibraryExport.toJson(MaterialLibrary.instance.customMaterials),
+        exported);
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets(
+      'navigation polish native critical surface jump keeps full report',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si);
+    await tester.pumpWidget(_calculatorApp(
+        home: LaminateFailureResultPage(result: _filterFailureResult())));
+    await tester.pumpAndSettle();
+    await _tap(
+        tester, find.byKey(const ValueKey('failure-only-failed-filter')));
+    final scroll =
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+    scroll.jumpTo(0);
+    await tester.pumpAndSettle();
+    await _tap(tester, find.byKey(const ValueKey('failure-view-tsaiWu')));
+    DataTable table() => tester.widget<DataTable>(find.byType(DataTable));
+    expect(table().rows, hasLength(20));
+    expect(table().rows.where((row) => row.selected).single.key,
+        const ValueKey('failure-point-0'));
+    expect(table().columns, hasLength(6));
+    expect(
+        tester
+            .widget<SwitchListTile>(
+                find.byKey(const ValueKey('failure-only-failed-filter')))
+            .value,
+        isFalse);
+    scroll.jumpTo(0);
+    await tester.pumpAndSettle();
+    await _tap(tester, find.byKey(const ValueKey('failure-view-hashin')));
+    expect(table().rows, hasLength(6));
+    expect(table().rows.where((row) => row.selected).single.key,
+        const ValueKey('failure-point-45'));
+    await _tap(tester, find.byTooltip('Export results'));
+    await _tap(tester, find.text('Copy results'));
+    await _waitFor(tester, find.text('Results copied to clipboard'));
+    final copied = await Clipboard.getData(Clipboard.kTextPlain);
+    final lines = copied!.text!.split('\r\n');
+    final start = lines
+        .indexOf('Result: Ply stresses (material axes) and failure indices');
+    final rows = lines
+        .skip(start + 2)
+        .takeWhile((line) => line.isNotEmpty)
+        .map((line) => line.split('\t'))
+        .toList();
+    expect(start, greaterThanOrEqualTo(0));
+    expect(rows, hasLength(46));
+    expect(rows.every((row) => row.length == 11), isTrue);
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }
 
 LaminateFailureResult _filterFailureResult() => LaminateFailureResult(
@@ -876,14 +992,17 @@ LibraryMaterial _releaseMaterial(String name,
       nu12: 0.3,
     );
 
-Widget _calculatorApp({Widget home = const LaminatePlatePropertiesPage()}) =>
+Widget _calculatorApp({
+  Widget home = const LaminatePlatePropertiesPage(),
+  Locale locale = const Locale('en'),
+}) =>
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NumberPrecisionHelper()),
         ChangeNotifierProvider(create: (_) => UnitSettings()),
       ],
       child: MaterialApp(
-        locale: const Locale('en'),
+        locale: locale,
         supportedLocales: S.delegate.supportedLocales,
         localizationsDelegates: const [
           S.delegate,

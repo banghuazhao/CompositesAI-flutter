@@ -73,7 +73,8 @@ Future<void> _open(WidgetTester tester,
   await tester.pumpAndSettle();
   await tester.tap(find.text('Open host'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Library'));
+  final strings = S.of(tester.element(find.byType(MaterialLibraryButton)));
+  await tester.tap(find.text(strings.Calculator_library));
   await tester.pumpAndSettle();
 }
 

@@ -28,6 +28,8 @@ import 'message_list.dart';
 import 'chat_list.dart';
 import 'chat_welcome_view.dart';
 import 'knowledge_document_page.dart';
+import 'chat_latest_button.dart';
+import 'pending_image_attachment.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -174,7 +176,7 @@ class _ChatScreenState extends State<ChatScreen>
         TickerProviderStateMixin {
   @override
   bool get wantKeepAlive => true;
-  final TextEditingController textController = TextEditingController();
+  TextEditingController get textController => viewModel.composerTextController;
   final FocusNode focusNode = FocusNode();
   final GlobalKey _inputBarKey = GlobalKey();
   double _inputBarHeight = 120;
@@ -185,6 +187,14 @@ class _ChatScreenState extends State<ChatScreen>
   // Voice input
   final SpeechToText _speech = SpeechToText();
   bool _isListening = false;
+  bool _startingVoiceInput = false;
+  int _voiceInputRevision = 0;
+  Object? _voiceInputSession;
+  String? _voiceInputConversation;
+  Future<bool>? _voiceInitialization;
+  Future<void>? _voiceStopping;
+  SpeechErrorListener? _voiceErrorListener;
+  SpeechStatusListener? _voiceStatusListener;
   bool _isExporting = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -195,8 +205,9 @@ class _ChatScreenState extends State<ChatScreen>
     WidgetsBinding.instance.addObserver(this);
     viewModel = Provider.of<ChatViewModel>(context, listen: false);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       await viewModel.fetchAuthSessionNew();
-      if (viewModel.isLoggedIn) {
+      if (mounted && viewModel.isLoggedIn) {
         await Future.wait([
           viewModel.fetchChats(),
           viewModel.fetchTools(),
@@ -210,36 +221,85 @@ class _ChatScreenState extends State<ChatScreen>
     _pulseAnimation = Tween<double>(begin: 0.85, end: 1.15).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    viewModel.addListener(_onChatContextChanged);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    viewModel.removeListener(_onChatContextChanged);
+    _voiceInputRevision++;
+    if (identical(_speech.errorListener, _voiceErrorListener)) {
+      _speech.errorListener = null;
+    }
+    if (identical(_speech.statusListener, _voiceStatusListener)) {
+      _speech.statusListener = null;
+    }
     focusNode.dispose();
-    textController.dispose();
     _pulseController.dispose();
-    _speech.stop().catchError((Object error) {
+    _speech.cancel().catchError((Object error) {
       debugPrint('Stopping voice input failed: $error');
     });
     super.dispose();
   }
 
   Future<void> _startListening() async {
+    if (!mounted ||
+        !viewModel.isLoggedIn ||
+        _startingVoiceInput ||
+        _isListening) {
+      return;
+    }
+    final revision = ++_voiceInputRevision;
+    _voiceInputSession = viewModel.chatSessionKey;
+    _voiceInputConversation = viewModel.selectedChat?.id;
+    _startingVoiceInput = true;
+    void onError(Object _) {
+      if (!_isCurrentVoiceInput(revision)) return;
+      _invalidateVoiceInput();
+      _showVoiceInputError();
+    }
+
+    void onStatus(String status) {
+      if (!_isCurrentVoiceInput(revision)) return;
+      if (status == SpeechToText.doneStatus) {
+        // The plugin keeps its pause timer after a native done event. Retire
+        // it before a new attempt can replace that timer's handle.
+        _invalidateVoiceInput();
+      } else if (status == SpeechToText.notListeningStatus) {
+        _resetVoiceInput();
+      }
+    }
+
+    _voiceErrorListener = onError;
+    _voiceStatusListener = onStatus;
+    Future<bool>? initialization;
     try {
-      final available = await _speech.initialize(
-        onError: (_) {
-          _resetVoiceInput();
-          _showVoiceInputError();
-        },
-        onStatus: (status) {
-          if (status == SpeechToText.doneStatus ||
-              status == SpeechToText.notListeningStatus) {
-            _resetVoiceInput();
-          }
-        },
+      // A native Stop may emit notListening before its Future finishes. Wait
+      // for it to finish setting up the old final-result timer before a new
+      // listen cancels that timer and starts its own recognition session.
+      final stopping = _voiceStopping;
+      if (stopping != null) {
+        try {
+          await stopping;
+        } catch (_) {
+          // The originating Stop reports its own platform failure.
+        }
+        if (!mounted || !_isCurrentVoiceInput(revision)) return;
+      }
+      initialization = _voiceInitialization ??= _speech.initialize(
+        onError: onError,
+        onStatus: onStatus,
       );
-      if (!mounted) return;
+      final available = await initialization;
+      if (!mounted || !_isCurrentVoiceInput(revision)) return;
+      // The plugin caches successful initialization and retains its old
+      // callbacks. Refresh them for every recognition attempt, including when
+      // this attempt reused an initialization that began in another chat.
+      _speech.errorListener = onError;
+      _speech.statusListener = onStatus;
       if (!available) {
+        _invalidateVoiceInput();
         _showVoiceInputError();
         return;
       }
@@ -249,7 +309,7 @@ class _ChatScreenState extends State<ChatScreen>
       }
       await _speech.listen(
         onResult: (result) {
-          if (!mounted) return;
+          if (!_isCurrentVoiceInput(revision)) return;
           textController.text = result.recognizedWords;
           textController.selection = TextSelection.fromPosition(
             TextPosition(offset: textController.text.length),
@@ -263,19 +323,60 @@ class _ChatScreenState extends State<ChatScreen>
         ),
       );
     } catch (error) {
+      if (!_isCurrentVoiceInput(revision)) return;
       debugPrint('Voice input failed: $error');
       _resetVoiceInput();
       _showVoiceInputError();
+    } finally {
+      if (identical(_voiceInitialization, initialization)) {
+        _voiceInitialization = null;
+      }
+      if (revision == _voiceInputRevision) _startingVoiceInput = false;
     }
   }
 
+  bool _isCurrentVoiceInput(int revision) =>
+      mounted &&
+      revision == _voiceInputRevision &&
+      viewModel.isLoggedIn &&
+      _voiceInputSession == viewModel.chatSessionKey &&
+      _voiceInputConversation == viewModel.selectedChat?.id;
+
+  void _onChatContextChanged() {
+    // A recognizer may report notListening before its final result. Keep
+    // tracking that attempt until it is invalidated, even after its UI stops.
+    if (_voiceInputSession != null &&
+        !_isCurrentVoiceInput(_voiceInputRevision)) {
+      _invalidateVoiceInput();
+    }
+  }
+
+  void _invalidateVoiceInput() {
+    _voiceInputRevision++;
+    _voiceInputSession = null;
+    _voiceInputConversation = null;
+    _startingVoiceInput = false;
+    _resetVoiceInput();
+    _speech.cancel().catchError((Object error) {
+      debugPrint('Stopping voice input failed: $error');
+    });
+  }
+
   Future<void> _stopListening() async {
+    if (_voiceStopping != null) return;
+    final revision = _voiceInputRevision;
+    // Keep the current scope eligible for the recognizer's final result.
+    // A chat change or a subsequent attempt invalidates that result instead.
+    _startingVoiceInput = false;
+    final stopping = _speech.stop();
+    _voiceStopping = stopping;
     try {
-      await _speech.stop();
+      await stopping;
     } catch (error) {
       debugPrint('Stopping voice input failed: $error');
     } finally {
-      _resetVoiceInput();
+      if (identical(_voiceStopping, stopping)) _voiceStopping = null;
+      if (_isCurrentVoiceInput(revision)) _resetVoiceInput();
     }
   }
 
@@ -463,8 +564,16 @@ class _ChatScreenState extends State<ChatScreen>
                           ? const Center(
                               child: CircularProgressIndicator(),
                             )
-                          : MessageList(
-                              bottomContentPadding: _inputBarHeight + 20,
+                          : ChatLatestOverlay(
+                              scrollController: viewModel.scrollController,
+                              conversationId: viewModel.selectedChat?.id,
+                              sessionToken: viewModel.chatSessionKey,
+                              isConversationLoaded: viewModel.isLoggedIn &&
+                                  !viewModel.isLoadingMessages,
+                              bottomOffset: _inputBarHeight + 12,
+                              child: MessageList(
+                                bottomContentPadding: _inputBarHeight + 20,
+                              ),
                             ))
                       : ChatWelcomeView(
                           user: viewModel.user,
@@ -654,8 +763,14 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   void _scheduleInputBarMeasurement() {
+    final sessionKey = viewModel.chatSessionKey;
+    final conversationId = viewModel.selectedChat?.id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted ||
+          viewModel.chatSessionKey != sessionKey ||
+          viewModel.selectedChat?.id != conversationId) {
+        return;
+      }
       final renderObject =
           _inputBarKey.currentContext?.findRenderObject() as RenderBox?;
       if (renderObject == null || !renderObject.hasSize) return;
@@ -670,7 +785,12 @@ class _ChatScreenState extends State<ChatScreen>
 
       if (shouldKeepLatestMessageVisible) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted || !viewModel.scrollController.hasClients) return;
+          if (!mounted ||
+              viewModel.chatSessionKey != sessionKey ||
+              viewModel.selectedChat?.id != conversationId ||
+              !viewModel.scrollController.hasClients) {
+            return;
+          }
           viewModel.scrollController.jumpTo(
             viewModel.scrollController.position.maxScrollExtent,
           );
@@ -700,12 +820,17 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<void> _sendComposerMessage() async {
-    if (!_canSendMessage()) return;
-    await viewModel.sendInputMessage(
-      textController.text.trim(),
-      onMessageAccepted: textController.clear,
-    );
-    if (mounted) focusNode.requestFocus();
+    if (!mounted ||
+        !viewModel.isLoggedIn ||
+        ModalRoute.of(context)?.isCurrent != true ||
+        !_canSendMessage()) {
+      return;
+    }
+    if (_voiceInputSession != null) _invalidateVoiceInput();
+    // Keep keyboard focus at submission time; a late response must not focus
+    // the composer in a different conversation or a newly opened route.
+    focusNode.requestFocus();
+    await viewModel.sendComposerMessage();
   }
 
   bool _canSendMessage() {
@@ -1446,53 +1571,26 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildPendingImageThumb(ChatFile file) {
-    final scheme = Theme.of(context).colorScheme;
-    final bytes = viewModel.pendingImageBytes[file.id];
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: scheme.surfaceContainerHighest,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: bytes != null
-                ? Image.memory(bytes, fit: BoxFit.cover)
-                : const Center(child: Icon(Icons.image_outlined, size: 32)),
-          ),
-        ),
-        if (!viewModel.isSendingMessage)
-          Positioned(
-            top: 0,
-            right: 0,
-            child: IconButton(
-              tooltip: 'Remove ${file.name}',
-              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-              padding: const EdgeInsets.all(4),
-              onPressed: () {
-                AppHaptics.light();
-                viewModel.removePendingFile(file);
-              },
-              icon: Align(
-                alignment: Alignment.topRight,
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: scheme.inverseSurface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.close,
-                      size: 13, color: scheme.onInverseSurface),
-                ),
-              ),
-            ),
-          ),
-      ],
+    final sessionKey = viewModel.chatSessionKey;
+    return PendingImageAttachment(
+      file: file,
+      bytes: viewModel.pendingImageBytes[file.id],
+      sessionListenable: viewModel,
+      isAvailable: () =>
+          viewModel.isLoggedIn &&
+          viewModel.chatSessionKey == sessionKey &&
+          viewModel.pendingFiles.any((pending) => pending.id == file.id),
+      onRemove: viewModel.isSendingMessage
+          ? null
+          : () {
+              if (!viewModel.isLoggedIn ||
+                  viewModel.chatSessionKey != sessionKey ||
+                  viewModel.isSendingMessage) {
+                return;
+              }
+              AppHaptics.light();
+              viewModel.removePendingFile(file);
+            },
     );
   }
 

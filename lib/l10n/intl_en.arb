@@ -194,5 +194,77 @@
       "shown": {},
       "total": {}
     }
+  },
+  "Calculator_library": "Library",
+  "Calculator_material_library_title": "{kind} library",
+  "@Calculator_material_library_title": {
+    "placeholders": {
+      "kind": {}
+    }
+  },
+  "Calculator_material_library_help": "Values fill in as {units}. Typical published data for preliminary design; check your supplier data sheets.",
+  "@Calculator_material_library_help": {
+    "placeholders": {
+      "units": {}
+    }
+  },
+  "Calculator_search_materials": "Search materials",
+  "Calculator_save_current_material": "Save current inputs as a material",
+  "Calculator_my_materials": "My materials",
+  "Calculator_built_in_materials": "Built-in",
+  "Calculator_no_material_matches": "No materials match your search.",
+  "Calculator_delete_material_tooltip": "Delete {name}",
+  "@Calculator_delete_material_tooltip": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Calculator_delete_material_title": "Delete material?",
+  "Calculator_delete_material_message": "\"{name}\" will be removed from your library.",
+  "@Calculator_delete_material_message": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Calculator_save_material_title": "Save material",
+  "Calculator_material_name": "Material name",
+  "Calculator_material_elastic_required": "Enter the elastic constants before saving.",
+  "Calculator_material_saved": "Saved \"{name}\" to your library.",
+  "@Calculator_material_saved": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Calculator_material_save_failed": "Could not save this material. Check its values and try again.",
+  "Calculator_material_order": "Order",
+  "Calculator_material_original_order": "Original order",
+  "Calculator_material_alphabetical_order": "Name (A–Z)",
+  "Calculator_view_in_table": "View in table",
+  "Calculator_focused_surface": "Selected surface: ply {ply}, {surface}",
+  "@Calculator_focused_surface": {
+    "placeholders": {
+      "ply": {
+        "type": "int"
+      },
+      "surface": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_jump_to_latest": "Jump to latest",
+  "Chat_preview_image": "Preview {name}",
+  "@Chat_preview_image": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Chat_image_preview": "Image preview",
+  "Chat_image_preview_unavailable": "Image preview is unavailable.",
+  "Chat_close_image_preview": "Close image preview",
+  "Chat_remove_attachment": "Remove {name}",
+  "@Chat_remove_attachment": {
+    "placeholders": {
+      "name": {}
+    }
   }
 }

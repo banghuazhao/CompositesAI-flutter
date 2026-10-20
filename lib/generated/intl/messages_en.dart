@@ -24,25 +24,42 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m1(ply, surface) => "Ply ${ply} · ${surface}";
 
-  static String m2(angles) => "Angles: ${angles}";
+  static String m2(name) => "\"${name}\" will be removed from your library.";
 
-  static String m3(shown, total) =>
+  static String m3(name) => "Delete ${name}";
+
+  static String m4(angles) => "Angles: ${angles}";
+
+  static String m5(shown, total) =>
       "${shown} of ${total} surfaces shown. Exports include all surfaces.";
 
-  static String m4(unit) => "Too large for ${unit}; check units";
+  static String m6(ply, surface) => "Selected surface: ply ${ply}, ${surface}";
 
-  static String m5(count) => "+${count} more";
+  static String m7(units) =>
+      "Values fill in as ${units}. Typical published data for preliminary design; check your supplier data sheets.";
 
-  static String m6(count) =>
+  static String m8(kind) => "${kind} library";
+
+  static String m9(name) => "Saved \"${name}\" to your library.";
+
+  static String m10(unit) => "Too large for ${unit}; check units";
+
+  static String m11(count) => "+${count} more";
+
+  static String m12(count) =>
       "${Intl.plural(count, one: '1 ply', other: '${count} plies')}";
 
-  static String m7(name) =>
+  static String m13(name) =>
       "A saved material named \"${name}\" already exists. Replace its saved values or choose another name.";
 
-  static String m8(value, unit) => "Total thickness: ${value} ${unit}";
+  static String m14(value, unit) => "Total thickness: ${value} ${unit}";
 
-  static String m9(modulus, stress, length, loads) =>
+  static String m15(modulus, stress, length, loads) =>
       "Moduli ${modulus} · stress ${stress} · length ${length} · loads ${loads}";
+
+  static String m16(name) => "Preview ${name}";
+
+  static String m17(name) => "Remove ${name}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -64,6 +81,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_apply_material": MessageLookupByLibrary.simpleMessage(
       "Apply material",
     ),
+    "Calculator_built_in_materials": MessageLookupByLibrary.simpleMessage(
+      "Built-in",
+    ),
     "Calculator_calculation_failed": MessageLookupByLibrary.simpleMessage(
       "Could not calculate these results. Check the material constants, loads and thickness.",
     ),
@@ -84,7 +104,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_copy_results": MessageLookupByLibrary.simpleMessage(
       "Copy results",
     ),
-    "Calculator_expanded_angles": m2,
+    "Calculator_delete_material_message": m2,
+    "Calculator_delete_material_title": MessageLookupByLibrary.simpleMessage(
+      "Delete material?",
+    ),
+    "Calculator_delete_material_tooltip": m3,
+    "Calculator_expanded_angles": m4,
     "Calculator_export_failed": MessageLookupByLibrary.simpleMessage(
       "Could not export these results.",
     ),
@@ -106,10 +131,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_failure_exports_all": MessageLookupByLibrary.simpleMessage(
       "Exports always include every surface and criterion.",
     ),
-    "Calculator_failure_filter_summary": m3,
+    "Calculator_failure_filter_summary": m5,
     "Calculator_finite_thickness": MessageLookupByLibrary.simpleMessage(
       "Enter a finite number",
     ),
+    "Calculator_focused_surface": m6,
+    "Calculator_library": MessageLookupByLibrary.simpleMessage("Library"),
+    "Calculator_material_alphabetical_order":
+        MessageLookupByLibrary.simpleMessage("Name (A–Z)"),
     "Calculator_material_delete_failed": MessageLookupByLibrary.simpleMessage(
       "Could not delete this material. Please try again.",
     ),
@@ -118,6 +147,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "Calculator_material_elastic_properties":
         MessageLookupByLibrary.simpleMessage("Elastic properties"),
+    "Calculator_material_elastic_required":
+        MessageLookupByLibrary.simpleMessage(
+          "Enter the elastic constants before saving.",
+        ),
     "Calculator_material_export_empty": MessageLookupByLibrary.simpleMessage(
       "Save a custom material to enable JSON export.",
     ),
@@ -133,12 +166,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_material_kind_matrix": MessageLookupByLibrary.simpleMessage(
       "Matrix",
     ),
+    "Calculator_material_library_help": m7,
+    "Calculator_material_library_title": m8,
     "Calculator_material_missing_note": MessageLookupByLibrary.simpleMessage(
       "Missing elastic values keep the current inputs. Missing thermal or strength groups also keep the current inputs.",
+    ),
+    "Calculator_material_name": MessageLookupByLibrary.simpleMessage(
+      "Material name",
     ),
     "Calculator_material_not_provided": MessageLookupByLibrary.simpleMessage(
       "Not provided",
     ),
+    "Calculator_material_order": MessageLookupByLibrary.simpleMessage("Order"),
+    "Calculator_material_original_order": MessageLookupByLibrary.simpleMessage(
+      "Original order",
+    ),
+    "Calculator_material_save_failed": MessageLookupByLibrary.simpleMessage(
+      "Could not save this material. Check its values and try again.",
+    ),
+    "Calculator_material_saved": m9,
     "Calculator_material_source": MessageLookupByLibrary.simpleMessage(
       "Source",
     ),
@@ -156,15 +202,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_material_type": MessageLookupByLibrary.simpleMessage(
       "Material type",
     ),
-    "Calculator_modulus_too_large": m4,
-    "Calculator_more_plies": m5,
+    "Calculator_modulus_too_large": m10,
+    "Calculator_more_plies": m11,
+    "Calculator_my_materials": MessageLookupByLibrary.simpleMessage(
+      "My materials",
+    ),
     "Calculator_no_failed_surfaces": MessageLookupByLibrary.simpleMessage(
       "No failing surfaces match this criterion.",
     ),
     "Calculator_no_failure_results": MessageLookupByLibrary.simpleMessage(
       "No failure results are available.",
     ),
-    "Calculator_ply_count": m6,
+    "Calculator_no_material_matches": MessageLookupByLibrary.simpleMessage(
+      "No materials match your search.",
+    ),
+    "Calculator_ply_count": m12,
     "Calculator_poisson_range": MessageLookupByLibrary.simpleMessage(
       "Must be between -1 and 0.5",
     ),
@@ -177,12 +229,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_replace_material": MessageLookupByLibrary.simpleMessage(
       "Replace",
     ),
-    "Calculator_replace_material_message": m7,
+    "Calculator_replace_material_message": m13,
     "Calculator_replace_material_title": MessageLookupByLibrary.simpleMessage(
       "Replace saved material?",
     ),
     "Calculator_results_copied": MessageLookupByLibrary.simpleMessage(
       "Results copied to clipboard",
+    ),
+    "Calculator_save_current_material": MessageLookupByLibrary.simpleMessage(
+      "Save current inputs as a material",
+    ),
+    "Calculator_save_material_title": MessageLookupByLibrary.simpleMessage(
+      "Save material",
+    ),
+    "Calculator_search_materials": MessageLookupByLibrary.simpleMessage(
+      "Search materials",
     ),
     "Calculator_share_csv": MessageLookupByLibrary.simpleMessage(
       "Share as CSV",
@@ -197,8 +258,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_too_many_layers": MessageLookupByLibrary.simpleMessage(
       "Too many layers",
     ),
-    "Calculator_total_thickness": m8,
-    "Calculator_unit_details": m9,
+    "Calculator_total_thickness": m14,
+    "Calculator_unit_details": m15,
     "Calculator_units": MessageLookupByLibrary.simpleMessage(
       "Calculator units",
     ),
@@ -206,12 +267,27 @@ class MessageLookup extends MessageLookupByLibrary {
       "Inputs, results and exports use these units. Values you have already typed are not converted.",
     ),
     "Calculator_us_name": MessageLookupByLibrary.simpleMessage("US customary"),
+    "Calculator_view_in_table": MessageLookupByLibrary.simpleMessage(
+      "View in table",
+    ),
     "Calculator_volume_range": MessageLookupByLibrary.simpleMessage(
       "Must be between 0 and 1",
     ),
     "Calculator_wrong_layup": MessageLookupByLibrary.simpleMessage(
       "Wrong layup sequence",
     ),
+    "Chat_close_image_preview": MessageLookupByLibrary.simpleMessage(
+      "Close image preview",
+    ),
+    "Chat_image_preview": MessageLookupByLibrary.simpleMessage("Image preview"),
+    "Chat_image_preview_unavailable": MessageLookupByLibrary.simpleMessage(
+      "Image preview is unavailable.",
+    ),
+    "Chat_jump_to_latest": MessageLookupByLibrary.simpleMessage(
+      "Jump to latest",
+    ),
+    "Chat_preview_image": m16,
+    "Chat_remove_attachment": m17,
     "Compliance_Matrix_S": MessageLookupByLibrary.simpleMessage(
       "Compliance Matrix S",
     ),

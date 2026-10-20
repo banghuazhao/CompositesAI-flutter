@@ -54,7 +54,7 @@ class MaterialLibraryButton extends StatelessWidget {
         if (context.mounted && material != null) onSelected(material);
       },
       icon: const Icon(Icons.inventory_2_outlined, size: 18),
-      label: const Text('Library'),
+      label: Text(S.maybeOf(context)?.Calculator_library ?? 'Library'),
     );
   }
 }
@@ -72,6 +72,7 @@ class _MaterialLibrarySheet extends StatefulWidget {
 class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  _MaterialOrder _order = _MaterialOrder.original;
   bool _saving = false;
   bool _detailsOpen = false;
   bool _selectionMade = false;
@@ -101,6 +102,14 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
   Widget build(BuildContext context) {
     final units = context.watch<UnitSettings>().units;
     final theme = Theme.of(context);
+    final strings = S.maybeOf(context);
+    final kind = switch (widget.kind) {
+      MaterialKind.lamina =>
+        strings?.Calculator_material_kind_lamina ?? 'Unidirectional lamina',
+      MaterialKind.fiber => strings?.Calculator_material_kind_fiber ?? 'Fiber',
+      MaterialKind.matrix =>
+        strings?.Calculator_material_kind_matrix ?? 'Matrix',
+    };
     return ListenableBuilder(
       listenable: MaterialLibrary.instance,
       builder: (context, _) {
@@ -112,8 +121,8 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
                 m.name.toLowerCase().contains(query) ||
                 m.source.toLowerCase().contains(query))
             .toList();
-        final custom = materials.where((m) => m.isCustom).toList();
-        final builtIn = materials.where((m) => !m.isCustom).toList();
+        final custom = _ordered(materials.where((m) => m.isCustom));
+        final builtIn = _ordered(materials.where((m) => !m.isCustom));
 
         return DraggableScrollableSheet(
           expand: false,
@@ -124,22 +133,26 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             children: [
               Text(
-                '${widget.kind.label} library',
+                strings?.Calculator_material_library_title(kind) ??
+                    '$kind library',
                 style: theme.textTheme.titleLarge,
               ),
               const SizedBox(height: 4),
               Text(
-                'Values fill in as ${units.summary}. Typical published data '
-                'for preliminary design; check your supplier data sheets.',
+                strings?.Calculator_material_library_help(units.summary) ??
+                    'Values fill in as ${units.summary}. Typical published data '
+                        'for preliminary design; check your supplier data sheets.',
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
               TextField(
+                key: const ValueKey('material-library-search'),
                 controller: _searchController,
                 decoration: InputDecoration(
                   isDense: true,
                   prefixIcon: const Icon(Icons.search_rounded),
-                  hintText: 'Search materials',
+                  hintText: strings?.Calculator_search_materials ??
+                      'Search materials',
                   border: const OutlineInputBorder(),
                   suffixIcon: _query.isEmpty
                       ? null
@@ -151,6 +164,32 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
                         ),
                 ),
               ),
+              const SizedBox(height: 8),
+              Text(strings?.Calculator_material_order ?? 'Order'),
+              DropdownButton<_MaterialOrder>(
+                key: const ValueKey('material-library-order'),
+                value: _order,
+                isExpanded: true,
+                itemHeight: null,
+                items: [
+                  DropdownMenuItem(
+                    value: _MaterialOrder.original,
+                    child: Text(strings?.Calculator_material_original_order ??
+                        'Original order'),
+                  ),
+                  DropdownMenuItem(
+                    value: _MaterialOrder.name,
+                    child: Text(
+                        strings?.Calculator_material_alphabetical_order ??
+                            'Name (A–Z)'),
+                  ),
+                ],
+                onChanged: (order) {
+                  if (order != null && order != _order) {
+                    setState(() => _order = order);
+                  }
+                },
+              ),
               if (widget.saveCurrent != null) ...[
                 const SizedBox(height: 8),
                 Align(
@@ -158,30 +197,48 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
                   child: TextButton.icon(
                     onPressed: _saving ? null : _saveCurrent,
                     icon: const Icon(Icons.bookmark_add_outlined),
-                    label: const Text('Save current inputs as a material'),
+                    label: Text(strings?.Calculator_save_current_material ??
+                        'Save current inputs as a material'),
                   ),
                 ),
               ],
               const SizedBox(height: 8),
               const MaterialLibraryExportButton(),
               if (custom.isNotEmpty) ...[
-                _sectionLabel(context, 'My materials'),
+                _sectionLabel(context,
+                    strings?.Calculator_my_materials ?? 'My materials'),
                 for (final material in custom) _tile(context, material, units),
               ],
               if (builtIn.isNotEmpty) ...[
-                _sectionLabel(context, 'Built-in'),
+                _sectionLabel(context,
+                    strings?.Calculator_built_in_materials ?? 'Built-in'),
                 for (final material in builtIn) _tile(context, material, units),
               ],
               if (materials.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('No materials match your search.'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(strings?.Calculator_no_material_matches ??
+                      'No materials match your search.'),
                 ),
             ],
           ),
         );
       },
     );
+  }
+
+  List<LibraryMaterial> _ordered(Iterable<LibraryMaterial> materials) {
+    final indexed = materials.indexed.toList();
+    if (_order == _MaterialOrder.name) {
+      indexed.sort((a, b) {
+        final byName = a.$2.name
+            .trim()
+            .toLowerCase()
+            .compareTo(b.$2.name.trim().toLowerCase());
+        return byName == 0 ? a.$1.compareTo(b.$1) : byName;
+      });
+    }
+    return [for (final entry in indexed) entry.$2];
   }
 
   Widget _sectionLabel(BuildContext context, String text) {
@@ -220,7 +277,10 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
             ),
             if (material.isCustom)
               IconButton(
-                tooltip: 'Delete ${material.name}',
+                tooltip: S
+                        .maybeOf(context)
+                        ?.Calculator_delete_material_tooltip(material.name) ??
+                    'Delete ${material.name}',
                 icon: const Icon(Icons.delete_outline_rounded),
                 onPressed: _deleting.contains(material.id)
                     ? null
@@ -259,33 +319,50 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
   }
 
   Future<void> _confirmDelete(LibraryMaterial material) async {
-    if (!mounted || _deleting.contains(material.id)) return;
+    if (!mounted ||
+        _selectionMade ||
+        _deleting.contains(material.id) ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
     setState(() => _deleting.add(material.id));
     final messenger = ScaffoldMessenger.of(context);
+    final failureMessage =
+        S.maybeOf(context)?.Calculator_material_delete_failed ??
+            'Could not delete this material. Please try again.';
     var answered = false;
     try {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) {
+          final strings = S.maybeOf(dialogContext);
           void finish(bool confirmed) {
-            if (answered) return;
+            if (answered ||
+                !dialogContext.mounted ||
+                ModalRoute.of(dialogContext)?.isCurrent != true) {
+              return;
+            }
             answered = true;
             Navigator.of(dialogContext).pop(confirmed);
           }
 
           return AlertDialog(
             scrollable: true,
-            title: const Text('Delete material?'),
-            content:
-                Text('"${material.name}" will be removed from your library.'),
+            title: Text(strings?.Calculator_delete_material_title ??
+                'Delete material?'),
+            content: Text(
+                strings?.Calculator_delete_material_message(material.name) ??
+                    '"${material.name}" will be removed from your library.'),
             actions: [
               TextButton(
                 onPressed: () => finish(false),
-                child: const Text('Cancel'),
+                child: Text(
+                    MaterialLocalizations.of(dialogContext).cancelButtonLabel),
               ),
               TextButton(
                 onPressed: () => finish(true),
-                child: const Text('Delete'),
+                child: Text(MaterialLocalizations.of(dialogContext)
+                    .deleteButtonTooltip),
               ),
             ],
           );
@@ -296,19 +373,30 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
     } catch (_) {
       if (!mounted || !messenger.mounted) return;
       messenger.showSnackBar(SnackBar(
-        content: Text(S.maybeOf(context)?.Calculator_material_delete_failed ??
-            'Could not delete this material. Please try again.'),
+        content: Text(failureMessage),
       ));
     } finally {
+      answered = true;
       if (mounted) setState(() => _deleting.remove(material.id));
     }
   }
 
   Future<void> _saveCurrent() async {
     final saveCurrent = widget.saveCurrent;
-    if (!mounted || saveCurrent == null || _saving) return;
+    if (!mounted ||
+        saveCurrent == null ||
+        _saving ||
+        _selectionMade ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
     setState(() => _saving = true);
     final messenger = ScaffoldMessenger.of(context);
+    final strings = S.maybeOf(context);
+    final requiredMessage = strings?.Calculator_material_elastic_required ??
+        'Enter the elastic constants before saving.';
+    final failureMessage = strings?.Calculator_material_save_failed ??
+        'Could not save this material. Check its values and try again.';
     try {
       var enteredName = '';
       while (mounted) {
@@ -320,20 +408,22 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
         enteredName = name;
         final material = saveCurrent(name.trim());
         if (material == null) {
-          messenger.showSnackBar(const SnackBar(
-            content: Text('Enter the elastic constants before saving.'),
+          messenger.showSnackBar(SnackBar(
+            content: Text(requiredMessage),
           ));
           return;
         }
         LibraryMaterial? approvedReplacement;
+        final savedMessage =
+            strings?.Calculator_material_saved(material.name) ??
+                'Saved "${material.name}" to your library.';
         while (mounted) {
           try {
             await MaterialLibrary.instance
                 .save(material, replaceExisting: approvedReplacement);
             if (!mounted || !messenger.mounted) return;
             messenger.showSnackBar(
-              SnackBar(
-                  content: Text('Saved "${material.name}" to your library.')),
+              SnackBar(content: Text(savedMessage)),
             );
             return;
           } on MaterialNameConflict catch (conflict) {
@@ -349,9 +439,8 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
       }
     } catch (error) {
       if (!mounted || !messenger.mounted) return;
-      messenger.showSnackBar(const SnackBar(
-        content: Text(
-            'Could not save this material. Check its values and try again.'),
+      messenger.showSnackBar(SnackBar(
+        content: Text(failureMessage),
       ));
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -365,7 +454,11 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
       builder: (dialogContext) {
         final strings = S.maybeOf(dialogContext);
         void finish(_ReplacementChoice? choice) {
-          if (answered) return;
+          if (answered ||
+              !dialogContext.mounted ||
+              ModalRoute.of(dialogContext)?.isCurrent != true) {
+            return;
+          }
           answered = true;
           Navigator.of(dialogContext).pop(choice);
         }
@@ -398,9 +491,11 @@ class _MaterialLibrarySheetState extends State<_MaterialLibrarySheet> {
           ],
         );
       },
-    );
+    ).whenComplete(() => answered = true);
   }
 }
+
+enum _MaterialOrder { original, name }
 
 enum _ReplacementChoice { replace, rename }
 
@@ -427,7 +522,12 @@ class _MaterialNameDialogState extends State<_MaterialNameDialog> {
   }
 
   void _submit() {
-    if (_submitted || _controller.text.trim().isEmpty) return;
+    if (!mounted ||
+        _submitted ||
+        ModalRoute.of(context)?.isCurrent != true ||
+        _controller.text.trim().isEmpty) {
+      return;
+    }
     _submitted = true;
     Navigator.of(context).pop(_controller.text);
   }
@@ -441,19 +541,26 @@ class _MaterialNameDialogState extends State<_MaterialNameDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
         scrollable: true,
-        title: const Text('Save material'),
+        title: Text(S.maybeOf(context)?.Calculator_save_material_title ??
+            'Save material'),
         content: TextField(
           controller: _controller,
           autofocus: true,
           textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(labelText: 'Material name'),
+          decoration: InputDecoration(
+              labelText: S.maybeOf(context)?.Calculator_material_name ??
+                  'Material name'),
           onSubmitted: (_) => _submit(),
         ),
         actionsOverflowDirection: VerticalDirection.down,
         actions: [
           TextButton(
             onPressed: () {
-              if (_submitted) return;
+              if (!mounted ||
+                  _submitted ||
+                  ModalRoute.of(context)?.isCurrent != true) {
+                return;
+              }
               _submitted = true;
               Navigator.of(context).pop();
             },

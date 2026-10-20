@@ -12,8 +12,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../controllers/chat_attachment_controller.dart';
+import '../controllers/chat_composer_controller.dart';
 import '../controllers/chat_conversation_controller.dart';
 import '../model/chat_error.dart';
+import '../../../util/chat_limiter.dart';
 
 class ChatViewModel extends ChangeNotifier {
   /// Matches backend: skip = (page - 1) * 60, limit 60 when page is set.
@@ -34,6 +36,8 @@ class ChatViewModel extends ChangeNotifier {
   final UserUseCase _userUserCase;
   late final ChatConversationController _conversation;
   late final ChatAttachmentController _attachments;
+  final _composer = ChatComposerController();
+  Object? _composerSessionKey;
 
   bool isLoggedIn = false;
   User? user;
@@ -87,6 +91,7 @@ class ChatViewModel extends ChangeNotifier {
     required ChatUseCase chatUseCase,
     required AuthUseCase authUseCase,
     required UserUseCase userUserCase,
+    ChatLimiter? chatLimiter,
   })  : _chatUseCase = chatUseCase,
         _authUseCase = authUseCase,
         _userUserCase = userUserCase {
@@ -95,6 +100,7 @@ class ChatViewModel extends ChangeNotifier {
       onChatCreated: updateNewChat,
       onError: _reportError,
       onScrollRequested: ({required force}) => scrollToBottom(force: force),
+      chatLimiter: chatLimiter,
     )..addListener(_forwardConversationChange);
     _attachments = ChatAttachmentController(
       chatUseCase: chatUseCase,
@@ -102,13 +108,42 @@ class ChatViewModel extends ChangeNotifier {
       onError: _reportError,
     )..addListener(_forwardAttachmentChange);
     chatListScrollController.addListener(_onChatListScroll);
+    _composerSessionKey = chatSessionKey;
   }
 
   bool get isSendingMessage => _conversation.isSendingMessage;
   bool get isLoadingMessages => _conversation.isLoadingMessages;
   bool get isSubmittingFeedback => _conversation.isSubmittingFeedback;
   Chat? get selectedChat => _conversation.selectedChat;
-  set selectedChat(Chat? value) => _conversation.selectedChat = value;
+  set selectedChat(Chat? value) {
+    if (_isDisposed) return;
+    _syncComposerSession();
+    _conversation.selectedChat = value;
+    _composer.selectChat(value?.id);
+  }
+
+  /// Value equality is stable within the same account/session, including for
+  /// test fakes that assign public authentication fields directly.
+  Object get chatSessionKey =>
+      (_sessionGeneration, isLoggedIn, _userIdentity(user));
+
+  TextEditingController get composerTextController {
+    if (!_isDisposed) _syncComposerState();
+    return _composer.textController;
+  }
+
+  void _syncComposerSession() {
+    final key = chatSessionKey;
+    if (_composerSessionKey == key) return;
+    _composerSessionKey = key;
+    _composer.clear();
+  }
+
+  void _syncComposerState() {
+    _syncComposerSession();
+    _composer.selectChat(selectedChat?.id);
+  }
+
   List<Message> get messages => _conversation.messages;
   set messages(List<Message> value) => _conversation.messages = value;
   StreamController<Message> get threadResponseController =>
@@ -129,7 +164,10 @@ class ChatViewModel extends ChangeNotifier {
 
   @override
   void notifyListeners() {
-    if (!_isDisposed) super.notifyListeners();
+    if (!_isDisposed) {
+      _syncComposerState();
+      super.notifyListeners();
+    }
   }
 
   void _reportError(
@@ -294,6 +332,7 @@ class ChatViewModel extends ChangeNotifier {
   void dispose() {
     if (_isDisposed) return;
     _isDisposed = true;
+    _composer.dispose();
     chatListScrollController.removeListener(_onChatListScroll);
     _conversation.removeListener(_forwardConversationChange);
     _attachments.removeListener(_forwardAttachmentChange);
@@ -762,8 +801,16 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> updateNewChat(Chat newChat) async {
     final generation = _sessionGeneration;
+    final selection = _conversation.selectionRevision;
+    if (selectedChat?.id != newChat.id) return;
+    _syncComposerSession();
+    _composer.adoptNewChat(newChat.id);
     await fetchChats();
-    if (!_isCurrentSession(generation)) return;
+    if (!_isCurrentSession(generation) ||
+        _conversation.selectionRevision != selection ||
+        selectedChat?.id != newChat.id) {
+      return;
+    }
     final index = chats.indexWhere((chat) => chat.id == newChat.id);
     if (index >= 0) {
       selectedChat = chats[index];
@@ -783,6 +830,7 @@ class ChatViewModel extends ChangeNotifier {
     try {
       await _chatUseCase.deleteChat(chat);
       if (!_isCurrentSession(generation)) return;
+      _composer.removeChat(chat.id);
       _removeChatFromLists(chat.id);
       if (selectedChat?.id == chat.id) {
         onTapNewChat();
@@ -982,6 +1030,8 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> _clearPrivateChatState() async {
     _sessionGeneration++;
+    _composerSessionKey = chatSessionKey;
+    _composer.clear();
     _chatFilterRequestId++;
     final conversationReset = _conversation.reset();
     _attachments.reset();
@@ -1053,15 +1103,35 @@ class ChatViewModel extends ChangeNotifier {
     VoidCallback? onMessageAccepted,
   }) async {
     if (isUploadingFile || isSendingMessage) return;
+    final generation = _sessionGeneration;
+    final session = chatSessionKey;
     final attachments = List<ChatFile>.from(pendingFiles);
     await _conversation.sendMessage(
       text: text,
       attachments: attachments,
       toolIds: selectedToolIds.toList(growable: false),
       model: selectedModel,
+      isCurrentRequest: () =>
+          _isCurrentSession(generation) && chatSessionKey == session,
       onMessageAccepted: () {
+        if (!_isCurrentSession(generation) || chatSessionKey != session) return;
         _attachments.markPendingFilesSent();
         onMessageAccepted?.call();
+      },
+    );
+  }
+
+  /// Keeps the acceptance callback compatible with subclasses that override
+  /// sendInputMessage, while protecting the originating draft and session.
+  Future<void> sendComposerMessage() async {
+    if (_isDisposed) return;
+    _syncComposerState();
+    final session = chatSessionKey;
+    final ticket = _composer.takeTicket();
+    await sendInputMessage(
+      ticket.value.text.trim(),
+      onMessageAccepted: () {
+        if (!_isDisposed && chatSessionKey == session) _composer.accept(ticket);
       },
     );
   }

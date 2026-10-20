@@ -344,10 +344,14 @@ LibraryMaterial _entry(String name,
       nu12: 0.3,
     );
 
-Finder get _saveAction =>
-    find.widgetWithText(TextButton, 'Save current inputs as a material');
-Finder get _nameField => find.byWidgetPredicate((widget) =>
-    widget is TextField && widget.decoration?.labelText == 'Material name');
+Finder get _saveAction => find.ancestor(
+      of: find.byIcon(Icons.bookmark_add_outlined),
+      matching: find.byType(TextButton),
+    );
+Finder get _nameField => find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
 Finder _iconWithTooltip(String tooltip) => find.byWidgetPredicate(
     (widget) => widget is IconButton && widget.tooltip == tooltip);
 S _strings(WidgetTester tester) =>
@@ -385,7 +389,7 @@ Future<void> _open(WidgetTester tester,
     ),
   ));
   await tester.pumpAndSettle();
-  await _tap(tester, find.text('Library'));
+  await _tap(tester, find.text(_strings(tester).Calculator_library));
 }
 
 Future<void> _saveName(WidgetTester tester, String name) async {

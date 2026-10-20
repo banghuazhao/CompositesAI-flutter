@@ -194,5 +194,77 @@
       "shown": {},
       "total": {}
     }
+  },
+  "Calculator_library": "材料库",
+  "Calculator_material_library_title": "{kind}材料库",
+  "@Calculator_material_library_title": {
+    "placeholders": {
+      "kind": {}
+    }
+  },
+  "Calculator_material_library_help": "数值将以 {units} 填入。典型公开数据仅供初步设计参考，请核对供应商数据表。",
+  "@Calculator_material_library_help": {
+    "placeholders": {
+      "units": {}
+    }
+  },
+  "Calculator_search_materials": "搜索材料",
+  "Calculator_save_current_material": "将当前输入保存为材料",
+  "Calculator_my_materials": "我的材料",
+  "Calculator_built_in_materials": "内置材料",
+  "Calculator_no_material_matches": "没有符合搜索条件的材料。",
+  "Calculator_delete_material_tooltip": "删除 {name}",
+  "@Calculator_delete_material_tooltip": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Calculator_delete_material_title": "删除材料？",
+  "Calculator_delete_material_message": "“{name}”将从材料库中移除。",
+  "@Calculator_delete_material_message": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Calculator_save_material_title": "保存材料",
+  "Calculator_material_name": "材料名称",
+  "Calculator_material_elastic_required": "请先输入弹性常数，再保存材料。",
+  "Calculator_material_saved": "已将“{name}”保存到材料库。",
+  "@Calculator_material_saved": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Calculator_material_save_failed": "无法保存此材料，请检查数值后重试。",
+  "Calculator_material_order": "排序",
+  "Calculator_material_original_order": "原始顺序",
+  "Calculator_material_alphabetical_order": "名称（A–Z）",
+  "Calculator_view_in_table": "在表格中查看",
+  "Calculator_focused_surface": "选中的表面：第 {ply} 层，{surface}",
+  "@Calculator_focused_surface": {
+    "placeholders": {
+      "ply": {
+        "type": "int"
+      },
+      "surface": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_jump_to_latest": "跳至最新消息",
+  "Chat_preview_image": "预览 {name}",
+  "@Chat_preview_image": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Chat_image_preview": "图片预览",
+  "Chat_image_preview_unavailable": "无法预览此图片。",
+  "Chat_close_image_preview": "关闭图片预览",
+  "Chat_remove_attachment": "移除 {name}",
+  "@Chat_remove_attachment": {
+    "placeholders": {
+      "name": {}
+    }
   }
 }

@@ -48,7 +48,23 @@ class ChatConversationController extends ChangeNotifier {
   final ChatScrollCallback _onScrollRequested;
   final ChatLimiter _chatLimiter;
 
-  Chat? selectedChat;
+  Chat? _selectedChat;
+  Chat? get selectedChat => _selectedChat;
+  set selectedChat(Chat? chat) => _setSelectedChat(chat);
+
+  int _selectionRevision = 0;
+  int get selectionRevision => _selectionRevision;
+
+  void _setSelectedChat(Chat? chat, {bool preserveOperation = false}) {
+    if (_selectedChat?.id != chat?.id) {
+      _selectionRevision++;
+      _selectedChatRequestId++;
+      isLoadingMessages = false;
+      if (!preserveOperation) _invalidateActiveOperation();
+    }
+    _selectedChat = chat;
+  }
+
   List<Message> messages = <Message>[];
   bool isSendingMessage = false;
   bool isLoadingMessages = false;
@@ -60,6 +76,7 @@ class ChatConversationController extends ChangeNotifier {
   int _operationId = 0;
   int? _stopRequestedOperationId;
   bool _sendAdmissionInProgress = false;
+  int _admissionId = 0;
   bool _isDisposed = false;
   Timer? _streamUpdateTimer;
   StreamSubscription<ChatStreamEvent>? _activeResponseSubscription;
@@ -80,8 +97,8 @@ class ChatConversationController extends ChangeNotifier {
   Future<void> selectChat(Chat chat) async {
     if (_isDisposed) return;
     _invalidateActiveOperation();
-    final requestId = ++_selectedChatRequestId;
     selectedChat = chat;
+    final requestId = ++_selectedChatRequestId;
     isLoadingMessages = true;
     notifyListeners();
 
@@ -123,16 +140,31 @@ class ChatConversationController extends ChangeNotifier {
     required List<String> toolIds,
     ChatModel? model,
     VoidCallback? onMessageAccepted,
+    bool Function()? isCurrentRequest,
   }) async {
-    if (_isDisposed || isSendingMessage || _sendAdmissionInProgress) return;
+    if (_isDisposed ||
+        isSendingMessage ||
+        _sendAdmissionInProgress ||
+        isCurrentRequest?.call() == false) {
+      return;
+    }
 
+    final admission = ++_admissionId;
+    final operation = _operationId;
+    final selection = _selectionRevision;
+    bool currentAdmission() =>
+        _isCurrentAdmission(admission, operation, selection) &&
+        isCurrentRequest?.call() != false;
     _sendAdmissionInProgress = true;
     try {
-      if (await _chatLimiter.reachChatLimit()) {
+      final limited = await _chatLimiter.reachChatLimit();
+      if (!currentAdmission()) return;
+      if (limited) {
         _onError(ChatFailure.dailyLimit());
         return;
       }
     } catch (error) {
+      if (!currentAdmission()) return;
       if (kDebugMode) debugPrint('chat limit check error: $error');
       _onError(
         ChatErrorMapper.from(
@@ -141,19 +173,23 @@ class ChatConversationController extends ChangeNotifier {
           fallbackMessage:
               'Unable to start a chat right now. Please try again.',
         ),
-        retry: () => sendMessage(
-          text: text,
-          attachments: attachments,
-          toolIds: toolIds,
-          model: model,
-          onMessageAccepted: onMessageAccepted,
-        ),
+        retry: () async {
+          if (!currentAdmission()) return;
+          await sendMessage(
+            text: text,
+            attachments: attachments,
+            toolIds: toolIds,
+            model: model,
+            onMessageAccepted: onMessageAccepted,
+            isCurrentRequest: isCurrentRequest,
+          );
+        },
       );
       return;
     } finally {
-      _sendAdmissionInProgress = false;
+      if (admission == _admissionId) _sendAdmissionInProgress = false;
     }
-    if (_isDisposed) return;
+    if (!currentAdmission()) return;
 
     final prompt =
         text.trim().isEmpty ? _attachmentOnlyPrompt(attachments) : text.trim();
@@ -161,6 +197,12 @@ class ChatConversationController extends ChangeNotifier {
 
     final operationId = ++_operationId;
     onMessageAccepted?.call();
+    if (_isDisposed ||
+        operationId != _operationId ||
+        selection != _selectionRevision ||
+        isCurrentRequest?.call() == false) {
+      return;
+    }
     final userMessage = Message(
       role: 'user',
       content: prompt,
@@ -178,14 +220,22 @@ class ChatConversationController extends ChangeNotifier {
     try {
       if (selectedChat == null) {
         final newChat = await _chatUseCase.createChat(userMessage);
-        if (operationId != _operationId) return;
-        selectedChat = newChat;
+        if (operationId != _operationId || isCurrentRequest?.call() == false) {
+          return;
+        }
+        _setSelectedChat(newChat, preserveOperation: true);
         await _onChatCreated(newChat);
-        if (operationId != _operationId) return;
+        if (operationId != _operationId || isCurrentRequest?.call() == false) {
+          return;
+        }
       }
 
       final chat = selectedChat;
-      if (chat == null || operationId != _operationId) return;
+      if (chat == null ||
+          operationId != _operationId ||
+          isCurrentRequest?.call() == false) {
+        return;
+      }
       await _requestResponse(
         chat: chat,
         toolIds: toolIds,
@@ -193,7 +243,9 @@ class ChatConversationController extends ChangeNotifier {
         operationId: operationId,
       );
     } catch (error) {
-      if (operationId != _operationId) return;
+      if (operationId != _operationId || isCurrentRequest?.call() == false) {
+        return;
+      }
       if (kDebugMode) debugPrint('sendMessage error: $error');
       _setSendingMessage(false);
       _onError(
@@ -236,13 +288,19 @@ class ChatConversationController extends ChangeNotifier {
     if (_isDisposed || !canRegenerate || _sendAdmissionInProgress) return;
     final chat = selectedChat!;
 
+    final admission = ++_admissionId;
+    final operation = _operationId;
+    final selection = _selectionRevision;
     _sendAdmissionInProgress = true;
     try {
-      if (await _chatLimiter.reachChatLimit()) {
+      final limited = await _chatLimiter.reachChatLimit();
+      if (!_isCurrentAdmission(admission, operation, selection)) return;
+      if (limited) {
         _onError(ChatFailure.dailyLimit());
         return;
       }
     } catch (error) {
+      if (!_isCurrentAdmission(admission, operation, selection)) return;
       if (kDebugMode) debugPrint('chat limit check error: $error');
       _onError(
         ChatErrorMapper.from(
@@ -251,13 +309,20 @@ class ChatConversationController extends ChangeNotifier {
           fallbackMessage:
               'Unable to regenerate the response right now. Please try again.',
         ),
-        retry: () => regenerateLastResponse(toolIds: toolIds, model: model),
+        retry: () async {
+          if (!_isCurrentAdmission(admission, operation, selection)) return;
+          await regenerateLastResponse(toolIds: toolIds, model: model);
+        },
       );
       return;
     } finally {
-      _sendAdmissionInProgress = false;
+      if (admission == _admissionId) _sendAdmissionInProgress = false;
     }
-    if (_isDisposed || !canRegenerate || selectedChat?.id != chat.id) return;
+    if (!_isCurrentAdmission(admission, operation, selection) ||
+        !canRegenerate ||
+        selectedChat?.id != chat.id) {
+      return;
+    }
 
     if (messages.last.role == 'assistant') {
       messages.removeLast();
@@ -604,6 +669,8 @@ class ChatConversationController extends ChangeNotifier {
 
   void _invalidateActiveOperation() {
     _operationId++;
+    _admissionId++;
+    _sendAdmissionInProgress = false;
     _streamUpdateTimer?.cancel();
     _streamUpdateTimer = null;
     final completer = _activeResponseCompleter;
@@ -614,6 +681,12 @@ class ChatConversationController extends ChangeNotifier {
     if (subscription != null) unawaited(subscription.cancel());
     isSendingMessage = false;
   }
+
+  bool _isCurrentAdmission(int admission, int operation, int selection) =>
+      !_isDisposed &&
+      admission == _admissionId &&
+      operation == _operationId &&
+      selection == _selectionRevision;
 
   void _setSendingMessage(bool value) {
     if (isSendingMessage == value) return;

@@ -24,22 +24,38 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m1(ply, surface) => "第 ${ply} 层 · ${surface}";
 
-  static String m2(angles) => "铺层角度：${angles}";
+  static String m2(name) => "“${name}”将从材料库中移除。";
 
-  static String m3(shown, total) => "已显示 ${shown} / ${total} 个表面。导出包括所有表面。";
+  static String m3(name) => "删除 ${name}";
 
-  static String m4(unit) => "数值对于 ${unit} 过大，请检查单位";
+  static String m4(angles) => "铺层角度：${angles}";
 
-  static String m5(count) => "另有 ${count} 层";
+  static String m5(shown, total) => "已显示 ${shown} / ${total} 个表面。导出包括所有表面。";
 
-  static String m6(count) => "${count} 层";
+  static String m6(ply, surface) => "选中的表面：第 ${ply} 层，${surface}";
 
-  static String m7(name) => "已存在名为“${name}”的材料。您可以替换其已保存的数据，或选择其他名称。";
+  static String m7(units) => "数值将以 ${units} 填入。典型公开数据仅供初步设计参考，请核对供应商数据表。";
 
-  static String m8(value, unit) => "总厚度：${value} ${unit}";
+  static String m8(kind) => "${kind}材料库";
 
-  static String m9(modulus, stress, length, loads) =>
+  static String m9(name) => "已将“${name}”保存到材料库。";
+
+  static String m10(unit) => "数值对于 ${unit} 过大，请检查单位";
+
+  static String m11(count) => "另有 ${count} 层";
+
+  static String m12(count) => "${count} 层";
+
+  static String m13(name) => "已存在名为“${name}”的材料。您可以替换其已保存的数据，或选择其他名称。";
+
+  static String m14(value, unit) => "总厚度：${value} ${unit}";
+
+  static String m15(modulus, stress, length, loads) =>
       "模量 ${modulus} · 应力 ${stress} · 长度 ${length} · 载荷 ${loads}";
+
+  static String m16(name) => "预览 ${name}";
+
+  static String m17(name) => "移除 ${name}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -53,6 +69,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "所有准则",
     ),
     "Calculator_apply_material": MessageLookupByLibrary.simpleMessage("应用材料"),
+    "Calculator_built_in_materials": MessageLookupByLibrary.simpleMessage(
+      "内置材料",
+    ),
     "Calculator_calculation_failed": MessageLookupByLibrary.simpleMessage(
       "无法计算结果，请检查材料常数、载荷和厚度。",
     ),
@@ -69,7 +88,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "无法复制结果，请重试。",
     ),
     "Calculator_copy_results": MessageLookupByLibrary.simpleMessage("复制结果"),
-    "Calculator_expanded_angles": m2,
+    "Calculator_delete_material_message": m2,
+    "Calculator_delete_material_title": MessageLookupByLibrary.simpleMessage(
+      "删除材料？",
+    ),
+    "Calculator_delete_material_tooltip": m3,
+    "Calculator_expanded_angles": m4,
     "Calculator_export_failed": MessageLookupByLibrary.simpleMessage("无法导出结果。"),
     "Calculator_export_materials": MessageLookupByLibrary.simpleMessage(
       "导出我的材料（JSON）",
@@ -85,16 +109,22 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_failure_exports_all": MessageLookupByLibrary.simpleMessage(
       "导出始终包含所有表面和失效准则。",
     ),
-    "Calculator_failure_filter_summary": m3,
+    "Calculator_failure_filter_summary": m5,
     "Calculator_finite_thickness": MessageLookupByLibrary.simpleMessage(
       "请输入有限数值",
     ),
+    "Calculator_focused_surface": m6,
+    "Calculator_library": MessageLookupByLibrary.simpleMessage("材料库"),
+    "Calculator_material_alphabetical_order":
+        MessageLookupByLibrary.simpleMessage("名称（A–Z）"),
     "Calculator_material_delete_failed": MessageLookupByLibrary.simpleMessage(
       "无法删除此材料，请重试。",
     ),
     "Calculator_material_details": MessageLookupByLibrary.simpleMessage("材料详情"),
     "Calculator_material_elastic_properties":
         MessageLookupByLibrary.simpleMessage("弹性性能"),
+    "Calculator_material_elastic_required":
+        MessageLookupByLibrary.simpleMessage("请先输入弹性常数，再保存材料。"),
     "Calculator_material_export_empty": MessageLookupByLibrary.simpleMessage(
       "保存自定义材料后即可导出 JSON。",
     ),
@@ -110,12 +140,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_material_kind_matrix": MessageLookupByLibrary.simpleMessage(
       "基体",
     ),
+    "Calculator_material_library_help": m7,
+    "Calculator_material_library_title": m8,
     "Calculator_material_missing_note": MessageLookupByLibrary.simpleMessage(
       "未提供的弹性数值将保留当前输入。未提供的热膨胀或强度数据组也将保留当前输入。",
     ),
+    "Calculator_material_name": MessageLookupByLibrary.simpleMessage("材料名称"),
     "Calculator_material_not_provided": MessageLookupByLibrary.simpleMessage(
       "未提供",
     ),
+    "Calculator_material_order": MessageLookupByLibrary.simpleMessage("排序"),
+    "Calculator_material_original_order": MessageLookupByLibrary.simpleMessage(
+      "原始顺序",
+    ),
+    "Calculator_material_save_failed": MessageLookupByLibrary.simpleMessage(
+      "无法保存此材料，请检查数值后重试。",
+    ),
+    "Calculator_material_saved": m9,
     "Calculator_material_source": MessageLookupByLibrary.simpleMessage("来源"),
     "Calculator_material_strengths": MessageLookupByLibrary.simpleMessage("强度"),
     "Calculator_material_strengths_note": MessageLookupByLibrary.simpleMessage(
@@ -127,15 +168,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_material_thermal_properties":
         MessageLookupByLibrary.simpleMessage("热膨胀系数"),
     "Calculator_material_type": MessageLookupByLibrary.simpleMessage("材料类型"),
-    "Calculator_modulus_too_large": m4,
-    "Calculator_more_plies": m5,
+    "Calculator_modulus_too_large": m10,
+    "Calculator_more_plies": m11,
+    "Calculator_my_materials": MessageLookupByLibrary.simpleMessage("我的材料"),
     "Calculator_no_failed_surfaces": MessageLookupByLibrary.simpleMessage(
       "没有符合此准则的失效表面。",
     ),
     "Calculator_no_failure_results": MessageLookupByLibrary.simpleMessage(
       "暂无失效分析结果。",
     ),
-    "Calculator_ply_count": m6,
+    "Calculator_no_material_matches": MessageLookupByLibrary.simpleMessage(
+      "没有符合搜索条件的材料。",
+    ),
+    "Calculator_ply_count": m12,
     "Calculator_poisson_range": MessageLookupByLibrary.simpleMessage(
       "必须介于 -1 和 0.5 之间",
     ),
@@ -144,13 +189,20 @@ class MessageLookup extends MessageLookupByLibrary {
       "厚度必须大于零",
     ),
     "Calculator_replace_material": MessageLookupByLibrary.simpleMessage("替换"),
-    "Calculator_replace_material_message": m7,
+    "Calculator_replace_material_message": m13,
     "Calculator_replace_material_title": MessageLookupByLibrary.simpleMessage(
       "替换已保存的材料？",
     ),
     "Calculator_results_copied": MessageLookupByLibrary.simpleMessage(
       "结果已复制到剪贴板",
     ),
+    "Calculator_save_current_material": MessageLookupByLibrary.simpleMessage(
+      "将当前输入保存为材料",
+    ),
+    "Calculator_save_material_title": MessageLookupByLibrary.simpleMessage(
+      "保存材料",
+    ),
+    "Calculator_search_materials": MessageLookupByLibrary.simpleMessage("搜索材料"),
     "Calculator_share_csv": MessageLookupByLibrary.simpleMessage("分享 CSV 文件"),
     "Calculator_share_pdf": MessageLookupByLibrary.simpleMessage("分享 PDF 文件"),
     "Calculator_si_name": MessageLookupByLibrary.simpleMessage("国际单位制（SI）"),
@@ -160,17 +212,26 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_too_many_layers": MessageLookupByLibrary.simpleMessage(
       "铺层数量过多",
     ),
-    "Calculator_total_thickness": m8,
-    "Calculator_unit_details": m9,
+    "Calculator_total_thickness": m14,
+    "Calculator_unit_details": m15,
     "Calculator_units": MessageLookupByLibrary.simpleMessage("计算器单位"),
     "Calculator_units_explanation": MessageLookupByLibrary.simpleMessage(
       "输入、结果和导出文件均使用这些单位。已输入的数值不会自动换算。",
     ),
     "Calculator_us_name": MessageLookupByLibrary.simpleMessage("美制单位"),
+    "Calculator_view_in_table": MessageLookupByLibrary.simpleMessage("在表格中查看"),
     "Calculator_volume_range": MessageLookupByLibrary.simpleMessage(
       "必须介于 0 和 1 之间",
     ),
     "Calculator_wrong_layup": MessageLookupByLibrary.simpleMessage("铺层次序无效"),
+    "Chat_close_image_preview": MessageLookupByLibrary.simpleMessage("关闭图片预览"),
+    "Chat_image_preview": MessageLookupByLibrary.simpleMessage("图片预览"),
+    "Chat_image_preview_unavailable": MessageLookupByLibrary.simpleMessage(
+      "无法预览此图片。",
+    ),
+    "Chat_jump_to_latest": MessageLookupByLibrary.simpleMessage("跳至最新消息"),
+    "Chat_preview_image": m16,
+    "Chat_remove_attachment": m17,
     "Compliance_Matrix_S": MessageLookupByLibrary.simpleMessage("柔度矩阵 S"),
     "Composite_Material": MessageLookupByLibrary.simpleMessage("复合材料力学"),
     "Constitutive_relation_of_linear_elastic_material":

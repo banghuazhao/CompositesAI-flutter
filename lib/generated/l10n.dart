@@ -1281,6 +1281,276 @@ class S {
       args: [],
     );
   }
+
+  /// `Library`
+  String get Calculator_library {
+    return Intl.message(
+      'Library',
+      name: 'Calculator_library',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{kind} library`
+  String Calculator_material_library_title(Object kind) {
+    return Intl.message(
+      '$kind library',
+      name: 'Calculator_material_library_title',
+      desc: '',
+      args: [kind],
+    );
+  }
+
+  /// `Values fill in as {units}. Typical published data for preliminary design; check your supplier data sheets.`
+  String Calculator_material_library_help(Object units) {
+    return Intl.message(
+      'Values fill in as $units. Typical published data for preliminary design; check your supplier data sheets.',
+      name: 'Calculator_material_library_help',
+      desc: '',
+      args: [units],
+    );
+  }
+
+  /// `Search materials`
+  String get Calculator_search_materials {
+    return Intl.message(
+      'Search materials',
+      name: 'Calculator_search_materials',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save current inputs as a material`
+  String get Calculator_save_current_material {
+    return Intl.message(
+      'Save current inputs as a material',
+      name: 'Calculator_save_current_material',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `My materials`
+  String get Calculator_my_materials {
+    return Intl.message(
+      'My materials',
+      name: 'Calculator_my_materials',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Built-in`
+  String get Calculator_built_in_materials {
+    return Intl.message(
+      'Built-in',
+      name: 'Calculator_built_in_materials',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No materials match your search.`
+  String get Calculator_no_material_matches {
+    return Intl.message(
+      'No materials match your search.',
+      name: 'Calculator_no_material_matches',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Delete {name}`
+  String Calculator_delete_material_tooltip(Object name) {
+    return Intl.message(
+      'Delete $name',
+      name: 'Calculator_delete_material_tooltip',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Delete material?`
+  String get Calculator_delete_material_title {
+    return Intl.message(
+      'Delete material?',
+      name: 'Calculator_delete_material_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `"{name}" will be removed from your library.`
+  String Calculator_delete_material_message(Object name) {
+    return Intl.message(
+      '"$name" will be removed from your library.',
+      name: 'Calculator_delete_material_message',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Save material`
+  String get Calculator_save_material_title {
+    return Intl.message(
+      'Save material',
+      name: 'Calculator_save_material_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Material name`
+  String get Calculator_material_name {
+    return Intl.message(
+      'Material name',
+      name: 'Calculator_material_name',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter the elastic constants before saving.`
+  String get Calculator_material_elastic_required {
+    return Intl.message(
+      'Enter the elastic constants before saving.',
+      name: 'Calculator_material_elastic_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Saved "{name}" to your library.`
+  String Calculator_material_saved(Object name) {
+    return Intl.message(
+      'Saved "$name" to your library.',
+      name: 'Calculator_material_saved',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Could not save this material. Check its values and try again.`
+  String get Calculator_material_save_failed {
+    return Intl.message(
+      'Could not save this material. Check its values and try again.',
+      name: 'Calculator_material_save_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Order`
+  String get Calculator_material_order {
+    return Intl.message(
+      'Order',
+      name: 'Calculator_material_order',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Original order`
+  String get Calculator_material_original_order {
+    return Intl.message(
+      'Original order',
+      name: 'Calculator_material_original_order',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Name (A–Z)`
+  String get Calculator_material_alphabetical_order {
+    return Intl.message(
+      'Name (A–Z)',
+      name: 'Calculator_material_alphabetical_order',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View in table`
+  String get Calculator_view_in_table {
+    return Intl.message(
+      'View in table',
+      name: 'Calculator_view_in_table',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Selected surface: ply {ply}, {surface}`
+  String Calculator_focused_surface(int ply, String surface) {
+    return Intl.message(
+      'Selected surface: ply $ply, $surface',
+      name: 'Calculator_focused_surface',
+      desc: '',
+      args: [ply, surface],
+    );
+  }
+
+  /// `Jump to latest`
+  String get Chat_jump_to_latest {
+    return Intl.message(
+      'Jump to latest',
+      name: 'Chat_jump_to_latest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Preview {name}`
+  String Chat_preview_image(Object name) {
+    return Intl.message(
+      'Preview $name',
+      name: 'Chat_preview_image',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Image preview`
+  String get Chat_image_preview {
+    return Intl.message(
+      'Image preview',
+      name: 'Chat_image_preview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Image preview is unavailable.`
+  String get Chat_image_preview_unavailable {
+    return Intl.message(
+      'Image preview is unavailable.',
+      name: 'Chat_image_preview_unavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Close image preview`
+  String get Chat_close_image_preview {
+    return Intl.message(
+      'Close image preview',
+      name: 'Chat_close_image_preview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove {name}`
+  String Chat_remove_attachment(Object name) {
+    return Intl.message(
+      'Remove $name',
+      name: 'Chat_remove_attachment',
+      desc: '',
+      args: [name],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

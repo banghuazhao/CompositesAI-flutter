@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
@@ -10,7 +11,7 @@ import '../model/unit_system.dart';
 import '../widget/report_export_button.dart';
 import 'laminate_failure_page.dart';
 
-class LaminateFailureResultPage extends StatelessWidget {
+class LaminateFailureResultPage extends StatefulWidget {
   const LaminateFailureResultPage({
     super.key,
     required this.result,
@@ -19,6 +20,81 @@ class LaminateFailureResultPage extends StatelessWidget {
 
   final LaminateFailureResult result;
   final List<ReportSection> inputs;
+
+  @override
+  State<LaminateFailureResultPage> createState() =>
+      _LaminateFailureResultPageState();
+}
+
+class _LaminateFailureResultPageState extends State<LaminateFailureResultPage> {
+  final _scrollController = ScrollController();
+  final _summaryKey = GlobalKey();
+  final _tableKey = GlobalKey<_PlyTableCardState>();
+  _SurfaceFocusRequest? _focusRequest;
+
+  LaminateFailureResult get result => widget.result;
+  List<ReportSection> get inputs => widget.inputs;
+
+  @override
+  void didUpdateWidget(covariant LaminateFailureResultPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.result != result) _focusRequest = null;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  bool _isCurrentRequest(_SurfaceFocusRequest request) =>
+      mounted &&
+      identical(_focusRequest, request) &&
+      identical(result, request.result) &&
+      ModalRoute.of(context)?.isCurrent == true;
+
+  void _viewSurface(LaminateFailureResult expectedResult,
+      FailureCriterion criterion, int index) {
+    if (!mounted ||
+        !identical(result, expectedResult) ||
+        ModalRoute.of(context)?.isCurrent != true ||
+        index < 0 ||
+        index >= result.points.length ||
+        result.points[index].results[criterion] == null) {
+      return;
+    }
+    final request = _SurfaceFocusRequest(result, criterion, index);
+    setState(() => _focusRequest = request);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isCurrentRequest(request) || !_scrollController.hasClients) return;
+      // The table may not exist yet when a large summary fills the viewport.
+      // Reveal its boundary using the already-laid-out summary, then let the
+      // lazy list mount/layout the table before looking up the requested row.
+      final tableContext = _tableKey.currentContext;
+      final table = tableContext?.findRenderObject();
+      final summary = _summaryKey.currentContext?.findRenderObject();
+      if (tableContext != null && table != null && table.attached) {
+        Scrollable.ensureVisible(tableContext, alignment: 0);
+      } else if (summary is RenderBox && summary.attached && summary.hasSize) {
+        final viewport = RenderAbstractViewport.maybeOf(summary);
+        if (viewport != null) {
+          final offset = viewport.getOffsetToReveal(summary, 0).offset +
+              summary.size.height +
+              12;
+          final position = _scrollController.position;
+          _scrollController.jumpTo(offset
+              .clamp(position.minScrollExtent, position.maxScrollExtent)
+              .toDouble());
+        }
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_isCurrentRequest(request)) {
+          _tableKey.currentState?.revealFocusedSurface(request);
+        }
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
+    });
+  }
 
   static const List<String> _notes = [
     'Strength ratio R: factor on the applied loads that causes failure; '
@@ -119,6 +195,7 @@ class LaminateFailureResultPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayedResult = result;
     final units = context.watch<UnitSettings>().units;
     final precision = context.watch<NumberPrecisionHelper>().precision;
     String number(double value) => CalcReport.formatNumber(
@@ -147,11 +224,24 @@ class LaminateFailureResultPage extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListView(
+          controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
           children: [
-            _FirstPlyFailureCard(result: result, number: number),
+            _FirstPlyFailureCard(
+              key: _summaryKey,
+              result: result,
+              number: number,
+              onView: (criterion, index) =>
+                  _viewSurface(displayedResult, criterion, index),
+            ),
             const SizedBox(height: 12),
-            _PlyTableCard(result: result, units: units, number: number),
+            _PlyTableCard(
+              key: _tableKey,
+              result: result,
+              units: units,
+              number: number,
+              focusRequest: _focusRequest,
+            ),
             const SizedBox(height: 12),
             Card(
               child: Padding(
@@ -184,10 +274,16 @@ class LaminateFailureResultPage extends StatelessWidget {
 }
 
 class _FirstPlyFailureCard extends StatelessWidget {
-  const _FirstPlyFailureCard({required this.result, required this.number});
+  const _FirstPlyFailureCard({
+    super.key,
+    required this.result,
+    required this.number,
+    required this.onView,
+  });
 
   final LaminateFailureResult result;
   final String Function(double) number;
+  final void Function(FailureCriterion criterion, int index) onView;
 
   @override
   Widget build(BuildContext context) {
@@ -211,15 +307,16 @@ class _FirstPlyFailureCard extends StatelessWidget {
             if (result.points.isNotEmpty)
               for (final criterion in FailureCriterion.values) ...[
                 () {
-                  final critical = _criticalOutcome(result, criterion);
-                  if (critical == null) {
+                  final index = _criticalIndex(result, criterion);
+                  if (index == null) {
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(criterion.label),
                       subtitle: const Text('—'),
                     );
                   }
-                  final (point, outcome) = critical;
+                  final point = result.points[index];
+                  final outcome = point.results[criterion]!;
                   final fails = outcome.fails;
                   final ratio = number(outcome.strengthRatio);
                   return ListTile(
@@ -247,6 +344,17 @@ class _FirstPlyFailureCard extends StatelessWidget {
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TextButton.icon(
+                            key: ValueKey('failure-view-${criterion.name}'),
+                            onPressed: () => onView(criterion, index),
+                            icon: const Icon(Icons.table_rows_outlined),
+                            label: Text(
+                                S.maybeOf(context)?.Calculator_view_in_table ??
+                                    'View in table'),
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -259,16 +367,27 @@ class _FirstPlyFailureCard extends StatelessWidget {
   }
 }
 
+class _SurfaceFocusRequest {
+  const _SurfaceFocusRequest(this.result, this.criterion, this.index);
+
+  final LaminateFailureResult result;
+  final FailureCriterion criterion;
+  final int index;
+}
+
 class _PlyTableCard extends StatefulWidget {
   const _PlyTableCard({
+    super.key,
     required this.result,
     required this.units,
     required this.number,
+    this.focusRequest,
   });
 
   final LaminateFailureResult result;
   final Units units;
   final String Function(double) number;
+  final _SurfaceFocusRequest? focusRequest;
 
   @override
   State<_PlyTableCard> createState() => _PlyTableCardState();
@@ -282,22 +401,75 @@ class _PlyTableCardState extends State<_PlyTableCard>
   FailureCriterion? _criterion;
   bool _onlyFailing = false;
   int _revealRevision = 0;
+  int? _focusedOriginalIndex;
+  final _focusedCellKey = GlobalKey();
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _applyFocus(widget.focusRequest);
+  }
 
   @override
   void didUpdateWidget(covariant _PlyTableCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.result != widget.result) {
       _pageIndex = 0;
+      _focusedOriginalIndex = null;
       _revealTable();
     }
+    if (!identical(oldWidget.focusRequest, widget.focusRequest)) {
+      _applyFocus(widget.focusRequest);
+    }
+  }
+
+  void _applyFocus(_SurfaceFocusRequest? request) {
+    if (request == null ||
+        !identical(request.result, widget.result) ||
+        request.index < 0 ||
+        request.index >= widget.result.points.length) {
+      return;
+    }
+    final outcome =
+        widget.result.points[request.index].results[request.criterion];
+    if (outcome == null) return;
+    _revealRevision++;
+    _criterion = request.criterion;
+    _onlyFailing = _onlyFailing && outcome.fails;
+    var row = 0;
+    for (var index = 0; index < request.index; index++) {
+      if (!_onlyFailing ||
+          (widget.result.points[index].results[_criterion]?.fails ?? false)) {
+        row++;
+      }
+    }
+    _pageIndex = row ~/ _rowsPerPage;
+    _focusedOriginalIndex = request.index;
+  }
+
+  void revealFocusedSurface(_SurfaceFocusRequest request) {
+    if (!mounted ||
+        !identical(widget.focusRequest, request) ||
+        _focusedOriginalIndex != request.index) {
+      return;
+    }
+    final target = _focusedCellKey.currentContext;
+    final renderObject = target?.findRenderObject();
+    if (target == null || renderObject == null || !renderObject.attached) {
+      return;
+    }
+    Scrollable.ensureVisible(target, alignment: 0.5);
   }
 
   void _showPage(int target) {
     if (target == _pageIndex) return;
-    setState(() => _pageIndex = target);
+    setState(() {
+      _pageIndex = target;
+      _focusedOriginalIndex = null;
+    });
     _revealTable();
   }
 
@@ -306,6 +478,7 @@ class _PlyTableCardState extends State<_PlyTableCard>
     setState(() {
       _criterion = criterion;
       _pageIndex = 0;
+      _focusedOriginalIndex = null;
     });
     _revealTable();
   }
@@ -315,6 +488,7 @@ class _PlyTableCardState extends State<_PlyTableCard>
     setState(() {
       _onlyFailing = onlyFailing;
       _pageIndex = 0;
+      _focusedOriginalIndex = null;
     });
     _revealTable();
   }
@@ -419,6 +593,18 @@ class _PlyTableCardState extends State<_PlyTableCard>
                       onChanged: _selectCriterion,
                     ),
                   ),
+                  if (_focusedOriginalIndex case final index?)
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        S.maybeOf(context)?.Calculator_focused_surface(
+                                points[index].ply, points[index].position) ??
+                            'Selected surface: ply ${points[index].ply}, '
+                                '${points[index].position}',
+                        key: const ValueKey('failure-focused-surface'),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
                   SwitchListTile(
                     key: const ValueKey('failure-only-failed-filter'),
                     contentPadding: EdgeInsets.zero,
@@ -481,9 +667,14 @@ class _PlyTableCardState extends State<_PlyTableCard>
                       final point = points[originalIndex];
                       return DataRow(
                           key: ValueKey('failure-point-$originalIndex'),
+                          selected: originalIndex == _focusedOriginalIndex,
                           cells: [
-                            DataCell(
-                                Text('${point.ply} (${_angle(point.angle)})')),
+                            DataCell(Text(
+                              '${point.ply} (${_angle(point.angle)})',
+                              key: originalIndex == _focusedOriginalIndex
+                                  ? _focusedCellKey
+                                  : null,
+                            )),
                             DataCell(Text(point.position)),
                             for (final stress in point.materialStress)
                               DataCell(Text(widget.number(stress))),
@@ -562,13 +753,22 @@ class _PlyTableCardState extends State<_PlyTableCard>
 
 (PlyStressPoint, CriterionResult)? _criticalOutcome(
     LaminateFailureResult result, FailureCriterion criterion) {
-  (PlyStressPoint, CriterionResult)? critical;
-  for (final point in result.points) {
+  final index = _criticalIndex(result, criterion);
+  if (index == null) return null;
+  final point = result.points[index];
+  return (point, point.results[criterion]!);
+}
+
+int? _criticalIndex(LaminateFailureResult result, FailureCriterion criterion) {
+  int? critical;
+  for (var index = 0; index < result.points.length; index++) {
+    final point = result.points[index];
     final outcome = point.results[criterion];
     if (outcome != null &&
         (critical == null ||
-            outcome.strengthRatio < critical.$2.strengthRatio)) {
-      critical = (point, outcome);
+            outcome.strengthRatio <
+                result.points[critical].results[criterion]!.strengthRatio)) {
+      critical = index;
     }
   }
   return critical;
