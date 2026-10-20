@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:swiftcomp/presentation/tools/model/angle_model.dart';
+import 'calculator_validation_localization.dart';
 
 class LayupAngleRow extends StatefulWidget {
   final LayupAngle layupAngle;
@@ -16,7 +17,7 @@ class LayupAngleRow extends StatefulWidget {
 class _LayupAngleRowState extends State<LayupAngleRow> {
   validateLayupAngle(double? value) {
     if (value == null) {
-      return "Not a number";
+      return localizeCalculatorValidation(context, 'Not a number');
     } else {
       return null;
     }

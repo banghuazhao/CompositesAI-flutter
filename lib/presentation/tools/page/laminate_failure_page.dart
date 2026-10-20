@@ -3,6 +3,7 @@ import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 
 import '../model/calc_report.dart';
+import '../model/calculator_result_validation.dart';
 import '../model/failure_criteria.dart';
 import '../model/layer_thickness.dart';
 import '../model/layup_sequence_model.dart';
@@ -44,7 +45,8 @@ class LaminateFailurePage extends StatefulWidget {
 
 class _LaminateFailurePageState extends State<LaminateFailurePage>
     with LaminaInputsMixin {
-  final TransverselyIsotropicMaterial material = TransverselyIsotropicMaterial();
+  final TransverselyIsotropicMaterial material =
+      TransverselyIsotropicMaterial();
   final LaminaStrengths strengths = LaminaStrengths();
   final LayupSequence layupSequence = LayupSequence();
   final LayerThickness layerThickness = LayerThickness();
@@ -56,6 +58,12 @@ class _LaminateFailurePageState extends State<LaminateFailurePage>
 
   @override
   LaminaStrengths? get laminaStrengths => strengths;
+
+  @override
+  void dispose() {
+    layerThickness.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +81,10 @@ class _LaminateFailurePageState extends State<LaminateFailurePage>
         validate: validate,
         revision: inputRevision,
       ),
-      LayupSequenceRow(layupSequence: layupSequence, validate: validate),
+      LayupSequenceRow(
+          layupSequence: layupSequence,
+          validate: validate,
+          layerThickness: layerThickness),
       LayerThicknessPage(layerThickness: layerThickness, validate: validate),
       LaminateLoadsRow(loads: loads),
       DescriptionItem(content: laminateFailureDescription(context)),
@@ -151,10 +162,11 @@ class _LaminateFailurePageState extends State<LaminateFailurePage>
         strengths: strengths,
       );
     } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('The laminate stiffness matrix is singular; '
-            'check the material constants.'),
-      ));
+      _showCalculationError();
+      return;
+    }
+    if (!CalculatorResultValidation.failure(result)) {
+      _showCalculationError();
       return;
     }
 
@@ -188,5 +200,12 @@ class _LaminateFailurePageState extends State<LaminateFailurePage>
         ),
       ),
     );
+  }
+
+  void _showCalculationError() {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(S.maybeOf(context)?.Calculator_calculation_failed ??
+          'Could not calculate these results. Check the material constants, loads and thickness.'),
+    ));
   }
 }

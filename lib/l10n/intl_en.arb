@@ -71,5 +71,70 @@
   "Transversely_isotropic_material" : "Transversely isotropic material",
   "Orthotropic_material" : "Orthotropic material",
   "Monoclinic_material" : "Monoclinic material",
-  "Anisotropic_material" : "Anisotropic material"
+  "Anisotropic_material" : "Anisotropic material",
+  "Calculator_thickness": "Thickness",
+  "Calculator_finite_thickness": "Enter a finite number",
+  "Calculator_positive_thickness": "Thickness must be greater than zero",
+  "Calculator_export_results": "Export results",
+  "Calculator_copy_results": "Copy results",
+  "Calculator_share_csv": "Share as CSV",
+  "Calculator_share_pdf": "Share as PDF",
+  "Calculator_results_copied": "Results copied to clipboard",
+  "Calculator_copy_failed": "Could not copy these results. Please try again.",
+  "Calculator_export_failed": "Could not export these results.",
+  "Calculator_units": "Calculator units",
+  "Calculator_units_explanation": "Inputs, results and exports use these units. Values you have already typed are not converted.",
+  "Calculator_si_name": "SI",
+  "Calculator_us_name": "US customary",
+  "Calculator_unit_details": "Moduli {modulus} · stress {stress} · length {length} · loads {loads}",
+  "Calculator_positive_number": "Must be greater than zero",
+  "Calculator_poisson_range": "Must be between -1 and 0.5",
+  "Calculator_volume_range": "Must be between 0 and 1",
+  "Calculator_modulus_too_large": "Too large for {unit}; check units",
+  "Calculator_wrong_layup": "Wrong layup sequence",
+  "Calculator_too_many_layers": "Too many layers",
+  "Calculator_clear_layup": "Clear layup sequence",
+  "Calculator_ply_count": "{count, plural, one{1 ply} other{{count} plies}}",
+  "Calculator_total_thickness": "Total thickness: {value} {unit}",
+  "Calculator_expanded_angles": "Angles: {angles}",
+  "Calculator_more_plies": "+{count} more",
+  "Calculator_calculation_failed": "Could not calculate these results. Check the material constants, loads and thickness.",
+  "@Calculator_unit_details": {
+    "placeholders": {
+      "modulus": {},
+      "stress": {},
+      "length": {},
+      "loads": {}
+    }
+  },
+  "@Calculator_modulus_too_large": {
+    "placeholders": {
+      "unit": {}
+    }
+  },
+  "@Calculator_ply_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@Calculator_total_thickness": {
+    "placeholders": {
+      "value": {},
+      "unit": {}
+    }
+  },
+  "@Calculator_expanded_angles": {
+    "placeholders": {
+      "angles": {}
+    }
+  },
+  "@Calculator_more_plies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

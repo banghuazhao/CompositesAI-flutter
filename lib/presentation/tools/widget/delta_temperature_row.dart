@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/model/delta_t.dart';
+import 'calculator_validation_localization.dart';
 
 class DeltaTemperatureRow extends StatefulWidget {
   final DeltaTemperature deltaTemperature;
@@ -18,7 +19,7 @@ class DeltaTemperatureRow extends StatefulWidget {
 class _DeltaTemperatureRowState extends State<DeltaTemperatureRow> {
   validateLayupAngle(double? value) {
     if (value == null) {
-      return "Not a number";
+      return localizeCalculatorValidation(context, 'Not a number');
     } else {
       return null;
     }

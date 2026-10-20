@@ -1,6 +1,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import 'intl/messages_all.dart';
 
 // **************************************************************************
@@ -18,8 +19,10 @@ class S {
   static S? _current;
 
   static S get current {
-    assert(_current != null,
-        'No instance of S was loaded. Try to initialize the S delegate before accessing S.current.');
+    assert(
+      _current != null,
+      'No instance of S was loaded. Try to initialize the S delegate before accessing S.current.',
+    );
     return _current!;
   }
 
@@ -41,8 +44,10 @@ class S {
 
   static S of(BuildContext context) {
     final instance = S.maybeOf(context);
-    assert(instance != null,
-        'No instance of S present in the widget tree. Did you add S.delegate in localizationsDelegates?');
+    assert(
+      instance != null,
+      'No instance of S present in the widget tree. Did you add S.delegate in localizationsDelegates?',
+    );
     return instance!;
   }
 
@@ -52,12 +57,7 @@ class S {
 
   /// `More`
   String get More {
-    return Intl.message(
-      'More',
-      name: 'More',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('More', name: 'More', desc: '', args: []);
   }
 
   /// `My Favourite`
@@ -72,12 +72,7 @@ class S {
 
   /// `Feedback`
   String get Feedback {
-    return Intl.message(
-      'Feedback',
-      name: 'Feedback',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Feedback', name: 'Feedback', desc: '', args: []);
   }
 
   /// `Rate this App`
@@ -102,12 +97,7 @@ class S {
 
   /// `More Apps`
   String get MoreApps {
-    return Intl.message(
-      'More Apps',
-      name: 'MoreApps',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('More Apps', name: 'MoreApps', desc: '', args: []);
   }
 
   /// `Countdown Days`
@@ -132,62 +122,32 @@ class S {
 
   /// `Novels Hub`
   String get NovelsHub {
-    return Intl.message(
-      'Novels Hub',
-      name: 'NovelsHub',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Novels Hub', name: 'NovelsHub', desc: '', args: []);
   }
 
   /// `Finance Go`
   String get FinanceGo {
-    return Intl.message(
-      'Finance Go',
-      name: 'FinanceGo',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Finance Go', name: 'FinanceGo', desc: '', args: []);
   }
 
   /// `NASA Lover`
   String get NASALover {
-    return Intl.message(
-      'NASA Lover',
-      name: 'NASALover',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('NASA Lover', name: 'NASALover', desc: '', args: []);
   }
 
   /// `Settings`
   String get Settings {
-    return Intl.message(
-      'Settings',
-      name: 'Settings',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Settings', name: 'Settings', desc: '', args: []);
   }
 
   /// `Result`
   String get Result {
-    return Intl.message(
-      'Result',
-      name: 'Result',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Result', name: 'Result', desc: '', args: []);
   }
 
   /// `Results`
   String get Results {
-    return Intl.message(
-      'Results',
-      name: 'Results',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Results', name: 'Results', desc: '', args: []);
   }
 
   /// `Result Precision`
@@ -222,32 +182,17 @@ class S {
 
   /// `Calculate`
   String get Calculate {
-    return Intl.message(
-      'Calculate',
-      name: 'Calculate',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Calculate', name: 'Calculate', desc: '', args: []);
   }
 
   /// `Stress`
   String get Stress {
-    return Intl.message(
-      'Stress',
-      name: 'Stress',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Stress', name: 'Stress', desc: '', args: []);
   }
 
   /// `Strain`
   String get Strain {
-    return Intl.message(
-      'Strain',
-      name: 'Strain',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Strain', name: 'Strain', desc: '', args: []);
   }
 
   /// `Buckling Load`
@@ -262,12 +207,7 @@ class S {
 
   /// `Deflection`
   String get Deflection {
-    return Intl.message(
-      'Deflection',
-      name: 'Deflection',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Deflection', name: 'Deflection', desc: '', args: []);
   }
 
   /// `The Maximum Shear Stress`
@@ -332,22 +272,12 @@ class S {
 
   /// `Area`
   String get Area {
-    return Intl.message(
-      'Area',
-      name: 'Area',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Area', name: 'Area', desc: '', args: []);
   }
 
   /// `Inputs`
   String get Inputs {
-    return Intl.message(
-      'Inputs',
-      name: 'Inputs',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Inputs', name: 'Inputs', desc: '', args: []);
   }
 
   /// `Engineering Constants`
@@ -592,22 +522,12 @@ class S {
 
   /// `Description`
   String get Description {
-    return Intl.message(
-      'Description',
-      name: 'Description',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Description', name: 'Description', desc: '', args: []);
   }
 
   /// `Force`
   String get Force {
-    return Intl.message(
-      'Force',
-      name: 'Force',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Force', name: 'Force', desc: '', args: []);
   }
 
   /// `Angle of Rotation`
@@ -662,32 +582,17 @@ class S {
 
   /// `ME Toolkit`
   String get ME_Toolkit {
-    return Intl.message(
-      'ME Toolkit',
-      name: 'ME_Toolkit',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('ME Toolkit', name: 'ME_Toolkit', desc: '', args: []);
   }
 
   /// `Favorites`
   String get Favorites {
-    return Intl.message(
-      'Favorites',
-      name: 'Favorites',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Favorites', name: 'Favorites', desc: '', args: []);
   }
 
   /// `Slope`
   String get Slope {
-    return Intl.message(
-      'Slope',
-      name: 'Slope',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Slope', name: 'Slope', desc: '', args: []);
   }
 
   /// `Not a number`
@@ -702,12 +607,7 @@ class S {
 
   /// `Layup Angle`
   String get Layup_Angle {
-    return Intl.message(
-      'Layup Angle',
-      name: 'Layup_Angle',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Layup Angle', name: 'Layup_Angle', desc: '', args: []);
   }
 
   /// `Isotropic material`
@@ -755,6 +655,278 @@ class S {
     return Intl.message(
       'Anisotropic material',
       name: 'Anisotropic_material',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Thickness`
+  String get Calculator_thickness {
+    return Intl.message(
+      'Thickness',
+      name: 'Calculator_thickness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a finite number`
+  String get Calculator_finite_thickness {
+    return Intl.message(
+      'Enter a finite number',
+      name: 'Calculator_finite_thickness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Thickness must be greater than zero`
+  String get Calculator_positive_thickness {
+    return Intl.message(
+      'Thickness must be greater than zero',
+      name: 'Calculator_positive_thickness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Export results`
+  String get Calculator_export_results {
+    return Intl.message(
+      'Export results',
+      name: 'Calculator_export_results',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy results`
+  String get Calculator_copy_results {
+    return Intl.message(
+      'Copy results',
+      name: 'Calculator_copy_results',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Share as CSV`
+  String get Calculator_share_csv {
+    return Intl.message(
+      'Share as CSV',
+      name: 'Calculator_share_csv',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Share as PDF`
+  String get Calculator_share_pdf {
+    return Intl.message(
+      'Share as PDF',
+      name: 'Calculator_share_pdf',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Results copied to clipboard`
+  String get Calculator_results_copied {
+    return Intl.message(
+      'Results copied to clipboard',
+      name: 'Calculator_results_copied',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not copy these results. Please try again.`
+  String get Calculator_copy_failed {
+    return Intl.message(
+      'Could not copy these results. Please try again.',
+      name: 'Calculator_copy_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not export these results.`
+  String get Calculator_export_failed {
+    return Intl.message(
+      'Could not export these results.',
+      name: 'Calculator_export_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Calculator units`
+  String get Calculator_units {
+    return Intl.message(
+      'Calculator units',
+      name: 'Calculator_units',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inputs, results and exports use these units. Values you have already typed are not converted.`
+  String get Calculator_units_explanation {
+    return Intl.message(
+      'Inputs, results and exports use these units. Values you have already typed are not converted.',
+      name: 'Calculator_units_explanation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `SI`
+  String get Calculator_si_name {
+    return Intl.message('SI', name: 'Calculator_si_name', desc: '', args: []);
+  }
+
+  /// `US customary`
+  String get Calculator_us_name {
+    return Intl.message(
+      'US customary',
+      name: 'Calculator_us_name',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Moduli {modulus} · stress {stress} · length {length} · loads {loads}`
+  String Calculator_unit_details(
+    Object modulus,
+    Object stress,
+    Object length,
+    Object loads,
+  ) {
+    return Intl.message(
+      'Moduli $modulus · stress $stress · length $length · loads $loads',
+      name: 'Calculator_unit_details',
+      desc: '',
+      args: [modulus, stress, length, loads],
+    );
+  }
+
+  /// `Must be greater than zero`
+  String get Calculator_positive_number {
+    return Intl.message(
+      'Must be greater than zero',
+      name: 'Calculator_positive_number',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Must be between -1 and 0.5`
+  String get Calculator_poisson_range {
+    return Intl.message(
+      'Must be between -1 and 0.5',
+      name: 'Calculator_poisson_range',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Must be between 0 and 1`
+  String get Calculator_volume_range {
+    return Intl.message(
+      'Must be between 0 and 1',
+      name: 'Calculator_volume_range',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Too large for {unit}; check units`
+  String Calculator_modulus_too_large(Object unit) {
+    return Intl.message(
+      'Too large for $unit; check units',
+      name: 'Calculator_modulus_too_large',
+      desc: '',
+      args: [unit],
+    );
+  }
+
+  /// `Wrong layup sequence`
+  String get Calculator_wrong_layup {
+    return Intl.message(
+      'Wrong layup sequence',
+      name: 'Calculator_wrong_layup',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Too many layers`
+  String get Calculator_too_many_layers {
+    return Intl.message(
+      'Too many layers',
+      name: 'Calculator_too_many_layers',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear layup sequence`
+  String get Calculator_clear_layup {
+    return Intl.message(
+      'Clear layup sequence',
+      name: 'Calculator_clear_layup',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count, plural, one{1 ply} other{{count} plies}}`
+  String Calculator_ply_count(int count) {
+    return Intl.plural(
+      count,
+      one: '1 ply',
+      other: '$count plies',
+      name: 'Calculator_ply_count',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Total thickness: {value} {unit}`
+  String Calculator_total_thickness(Object value, Object unit) {
+    return Intl.message(
+      'Total thickness: $value $unit',
+      name: 'Calculator_total_thickness',
+      desc: '',
+      args: [value, unit],
+    );
+  }
+
+  /// `Angles: {angles}`
+  String Calculator_expanded_angles(Object angles) {
+    return Intl.message(
+      'Angles: $angles',
+      name: 'Calculator_expanded_angles',
+      desc: '',
+      args: [angles],
+    );
+  }
+
+  /// `+{count} more`
+  String Calculator_more_plies(int count) {
+    return Intl.message(
+      '+$count more',
+      name: 'Calculator_more_plies',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Could not calculate these results. Check the material constants, loads and thickness.`
+  String get Calculator_calculation_failed {
+    return Intl.message(
+      'Could not calculate these results. Check the material constants, loads and thickness.',
+      name: 'Calculator_calculation_failed',
       desc: '',
       args: [],
     );

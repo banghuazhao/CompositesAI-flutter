@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swiftcomp/presentation/tools/model/volume_fraction_model.dart';
 import 'package:swiftcomp/presentation/tools/model/explain.dart';
+import 'calculator_validation_localization.dart';
 
 class VolumeFractionRow extends StatefulWidget {
   final VolumeFraction volumeFraction;
@@ -17,9 +18,9 @@ class VolumeFractionRow extends StatefulWidget {
 class _VolumeFractionRowState extends State<VolumeFractionRow> {
   validateLayupAngle(double? value) {
     if (value == null) {
-      return "Not a number";
+      return localizeCalculatorValidation(context, 'Not a number');
     } else if (value < 0 || value > 1) {
-      return "Not in [0.0, 1.0]";
+      return localizeCalculatorValidation(context, 'Not in [0.0, 1.0]');
     } else {
       return null;
     }

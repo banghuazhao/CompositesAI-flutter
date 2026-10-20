@@ -1,7 +1,17 @@
-class LayerThickness {
-  double? value;
+import 'package:flutter/foundation.dart';
 
-  isValid() {
-    return value != null;
+class LayerThickness extends ChangeNotifier {
+  double? _value;
+
+  double? get value => _value;
+
+  set value(double? value) {
+    if (_value == value || (_value?.isNaN == true && value?.isNaN == true)) {
+      return;
+    }
+    _value = value;
+    notifyListeners();
   }
+
+  bool isValid() => _value != null && _value!.isFinite && _value! > 0;
 }

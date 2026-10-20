@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../model/unit_system.dart';
+import 'calculator_validation_localization.dart';
 
 /// Numeric input used by the calculator cards.
 ///
@@ -41,7 +42,7 @@ class NumberField extends StatelessWidget {
         contentPadding: const EdgeInsets.all(12),
         border: const OutlineInputBorder(),
         labelText: withUnit(label, unit),
-        errorText: errorText,
+        errorText: localizeCalculatorValidation(context, errorText),
         errorMaxLines: 2,
       ),
       onChanged: (text) => onChanged(double.tryParse(text.trim())),

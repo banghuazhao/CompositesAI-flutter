@@ -18,6 +18,7 @@ import 'package:swiftcomp/presentation/tools/widget/layer_thickness_row.dart';
 import 'package:swiftcomp/presentation/tools/widget/layup_sequence_row.dart';
 
 import 'laminate_stress_strain_result_page.dart';
+import '../model/calculator_result_validation.dart';
 
 class LaminateStressStrainPage extends StatefulWidget {
   const LaminateStressStrainPage({Key? key}) : super(key: key);
@@ -39,6 +40,12 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage>
   @override
   TransverselyIsotropicMaterial get laminaMaterial =>
       transverselyIsotropicMaterial;
+
+  @override
+  void dispose() {
+    layerThickness.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +96,10 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage>
         onMaterialSelected: applyLibraryMaterial,
         saveCurrent: saveCurrentMaterial,
       ),
-      LayupSequenceRow(layupSequence: layupSequence, validate: validate),
+      LayupSequenceRow(
+          layupSequence: layupSequence,
+          validate: validate,
+          layerThickness: layerThickness),
       LayerThicknessPage(layerThickness: layerThickness, validate: validate),
       LaminateStressStrainRow(
         mechanicalTensor: mechanicalTensor,
@@ -148,9 +158,19 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage>
       input.kappa12 = (mechanicalTensor as LaminateStrain).kappa12 ?? 0;
     }
 
-    List<Matrix> QMatrices = LaminarStressStrainCalculator.getQMatrices(input);
-    LaminarStressStrainOutput output =
-        LaminarStressStrainCalculator.calculate(input);
+    final List<Matrix> QMatrices;
+    final LaminarStressStrainOutput output;
+    try {
+      QMatrices = LaminarStressStrainCalculator.getQMatrices(input);
+      output = LaminarStressStrainCalculator.calculate(input);
+    } catch (error) {
+      _showCalculationError();
+      return;
+    }
+    if (!CalculatorResultValidation.stressStrain(input, output, QMatrices)) {
+      _showCalculationError();
+      return;
+    }
 
     Navigator.push(
         context,
@@ -162,8 +182,8 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage>
                   Q: QMatrices,
                   inputs: [
                     ReportInputs.lamina(transverselyIsotropicMaterial, units),
-                    ReportInputs.layup(layupSequence.stringValue,
-                        layerThickness.value, units),
+                    ReportInputs.layup(
+                        layupSequence.stringValue, layerThickness.value, units),
                     input.tensorType == TensorType.stress
                         ? ValuesSection('Applied stress resultants', [
                             ReportEntry('N11', input.N11, units.forceResultant),
@@ -186,5 +206,12 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage>
                           ]),
                   ],
                 )));
+  }
+
+  void _showCalculationError() {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(S.maybeOf(context)?.Calculator_calculation_failed ??
+          'Could not calculate these results. Check the material constants, loads and thickness.'),
+    ));
   }
 }

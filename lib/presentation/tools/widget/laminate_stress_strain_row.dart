@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart';
+import 'calculator_validation_localization.dart';
 
 class LaminateStressStrainRow extends StatefulWidget {
   final MechanicalTensor mechanicalTensor;
@@ -32,7 +33,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
 
   validateTensor(double? value) {
     if (value == null) {
-      return "Not a number";
+      return localizeCalculatorValidation(context, 'Not a number');
     } else {
       return null;
     }
@@ -105,8 +106,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText:
-                            dropValue == "Stress Resultants"
+                        labelText: dropValue == "Stress Resultants"
                             ? withUnit("N11", units.forceResultant)
                             : "ϵ11",
                         errorText: widget.validate
@@ -140,8 +140,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText:
-                            dropValue == "Stress Resultants"
+                        labelText: dropValue == "Stress Resultants"
                             ? withUnit("N22", units.forceResultant)
                             : "ϵ22",
                         errorText: widget.validate
@@ -182,8 +181,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText:
-                            dropValue == "Stress Resultants"
+                        labelText: dropValue == "Stress Resultants"
                             ? withUnit("N12", units.forceResultant)
                             : "ϵ12",
                         errorText: widget.validate
@@ -217,8 +215,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText:
-                            dropValue == "Stress Resultants"
+                        labelText: dropValue == "Stress Resultants"
                             ? withUnit("M11", units.momentResultant)
                             : withUnit("𝞳11", units.curvature),
                         errorText: widget.validate
@@ -259,8 +256,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText:
-                            dropValue == "Stress Resultants"
+                        labelText: dropValue == "Stress Resultants"
                             ? withUnit("M22", units.momentResultant)
                             : withUnit("𝞳22", units.curvature),
                         errorText: widget.validate
@@ -294,8 +290,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText:
-                            dropValue == "Stress Resultants"
+                        labelText: dropValue == "Stress Resultants"
                             ? withUnit("M12", units.momentResultant)
                             : withUnit("𝞳12", units.curvature),
                         errorText: widget.validate

@@ -100,6 +100,34 @@ void main() {
       const sequence = '[0/90/90/0]';
       expect(tester.widget<TextField>(layup).controller!.text, sequence);
 
+      await _show(tester, find.byKey(const ValueKey('layup-ply-count')));
+      expect(find.text('4 plies'), findsOneWidget);
+      expect(
+          find.text(
+              'Total thickness: ${system == UnitSystem.si ? '0.5 mm' : '0.019685 in'}'),
+          findsOneWidget);
+
+      if (system == UnitSystem.si) {
+        final thicknessField = _fieldWithLabel('Thickness (mm)');
+        for (final invalid in ['0', '-1', 'NaN', 'Infinity']) {
+          await _enterText(tester, thicknessField, invalid);
+          await _tap(tester, find.text('Calculate'));
+          expect(find.byType(LaminatePlatePropertiesResultPage), findsNothing);
+          await _show(tester, thicknessField);
+          expect(
+              find.text(invalid == '0' || invalid == '-1'
+                  ? 'Thickness must be greater than zero'
+                  : 'Enter a finite number'),
+              findsOneWidget);
+          expect(find.byKey(const ValueKey('layup-total-thickness')),
+              findsNothing);
+        }
+        await _enterText(tester, thicknessField, '0.25');
+        expect(find.text('Total thickness: 1 mm'), findsOneWidget);
+        await _enterText(tester, thicknessField, thickness.toString());
+        expect(find.text('Total thickness: 0.5 mm'), findsOneWidget);
+      }
+
       await _tap(tester, find.text('Calculate'));
       expect(find.byType(LaminatePlatePropertiesResultPage), findsOneWidget);
       expect(find.text('Results'), findsOneWidget);
@@ -138,7 +166,7 @@ void main() {
         expect(values[row], greaterThan(0));
       }
       expect(tester.takeException(), isNull);
-    }, timeout: const Timeout(Duration(minutes: 2)));
+    }, timeout: const Timeout(Duration(minutes: 3)));
   }
 }
 

@@ -16,6 +16,7 @@ import 'package:swiftcomp/presentation/tools/widget/layup_sequence_row.dart';
 import 'package:swiftcomp/presentation/tools/widget/transversely_thermal_constants_row.dart';
 
 import '../../tools/model/thermal_model.dart';
+import '../model/calculator_result_validation.dart';
 import 'laminate_3d_properties_result_page.dart';
 
 class Laminate3DPropertiesPage extends StatefulWidget {
@@ -45,6 +46,12 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage>
 
   @override
   TransverselyIsotropicCTE? get laminaCte => transverselyIsotropicCTE;
+
+  @override
+  void dispose() {
+    layerThickness.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +115,10 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage>
             material: transverselyIsotropicCTE,
             validate: validate,
             revision: inputRevision),
-      LayupSequenceRow(layupSequence: layupSequence, validate: validate),
+      LayupSequenceRow(
+          layupSequence: layupSequence,
+          validate: validate,
+          layerThickness: layerThickness),
       LayerThicknessPage(layerThickness: layerThickness, validate: validate),
       DescriptionItem(
           content: DescriptionModels.getDescription(
@@ -143,8 +153,17 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage>
       alpha12: transverselyIsotropicCTE.alpha12 ?? 0,
     );
 
-    Laminate3DPropertiesOutput output =
-        Laminate3DPropertiesCalculator.calculate(input);
+    final Laminate3DPropertiesOutput output;
+    try {
+      output = Laminate3DPropertiesCalculator.calculate(input);
+    } catch (error) {
+      _showCalculationError();
+      return;
+    }
+    if (!CalculatorResultValidation.threeDimensional(output)) {
+      _showCalculationError();
+      return;
+    }
 
     Navigator.push(
         context,
@@ -156,9 +175,16 @@ class _Laminate3DPropertiesPageState extends State<Laminate3DPropertiesPage>
                         includeNu23: true),
                     if (analysisType == AnalysisType.thermalElastic)
                       ReportInputs.cte(transverselyIsotropicCTE, units),
-                    ReportInputs.layup(layupSequence.stringValue,
-                        layerThickness.value, units),
+                    ReportInputs.layup(
+                        layupSequence.stringValue, layerThickness.value, units),
                   ],
                 )));
+  }
+
+  void _showCalculationError() {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(S.maybeOf(context)?.Calculator_calculation_failed ??
+          'Could not calculate these results. Check the material constants, loads and thickness.'),
+    ));
   }
 }

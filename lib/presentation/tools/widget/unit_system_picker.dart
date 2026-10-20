@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:swiftcomp/generated/l10n.dart';
 
 import '../model/unit_system.dart';
 
@@ -10,42 +11,48 @@ Future<void> showUnitSystemPicker(BuildContext context) {
     showDragHandle: true,
     builder: (context) {
       final settings = context.watch<UnitSettings>();
+      final strings = S.maybeOf(context);
       return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Calculator units',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Inputs, results and exports use these units. Values you '
-                'have already typed are not converted.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 8),
-              RadioGroup<UnitSystem>(
-                groupValue: settings.system,
-                onChanged: (value) {
-                  if (value != null) settings.setSystem(value);
-                },
-                child: Column(
-                  children: [
-                    for (final system in UnitSystem.values)
-                      RadioListTile<UnitSystem>(
-                        value: system,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(Units.of(system).name),
-                        subtitle: Text(_details(Units.of(system))),
-                      ),
-                  ],
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  strings?.Calculator_units ?? 'Calculator units',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  strings?.Calculator_units_explanation ??
+                      'Inputs, results and exports use these units. Values you '
+                          'have already typed are not converted.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                RadioGroup<UnitSystem>(
+                  groupValue: settings.system,
+                  onChanged: (value) {
+                    if (value != null) settings.setSystem(value);
+                  },
+                  child: Column(
+                    children: [
+                      for (final system in UnitSystem.values)
+                        RadioListTile<UnitSystem>(
+                          value: system,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(system == UnitSystem.si
+                              ? strings?.Calculator_si_name ?? Units.si.name
+                              : strings?.Calculator_us_name ?? Units.us.name),
+                          subtitle: Text(_details(Units.of(system), strings)),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -53,9 +60,15 @@ Future<void> showUnitSystemPicker(BuildContext context) {
   );
 }
 
-String _details(Units units) =>
+String _details(Units units, S? strings) =>
+    strings?.Calculator_unit_details(
+      units.modulus,
+      units.stress,
+      units.length,
+      units.forceResultant,
+    ) ??
     'Moduli ${units.modulus} · stress ${units.stress} · '
-    'length ${units.length} · loads ${units.forceResultant}';
+        'length ${units.length} · loads ${units.forceResultant}';
 
 /// Compact app bar button showing the current unit system.
 class UnitSystemButton extends StatelessWidget {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart';
+import 'calculator_validation_localization.dart';
 
 class PlaneStressStrainRow extends StatefulWidget {
   final MechanicalTensor mechanicalTensor;
@@ -28,7 +29,7 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
 
   validateTensor(double? value) {
     if (value == null) {
-      return "Not a number";
+      return localizeCalculatorValidation(context, 'Not a number');
     } else {
       return null;
     }
@@ -96,7 +97,9 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress" ? withUnit("σ11", units.stress) : "ε11",
+                        labelText: dropValue == "Stress"
+                            ? withUnit("σ11", units.stress)
+                            : "ε11",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress"
                                 ? (widget.mechanicalTensor as PlaneStress)
@@ -128,7 +131,9 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress" ? withUnit("σ22", units.stress) : "ε22",
+                        labelText: dropValue == "Stress"
+                            ? withUnit("σ22", units.stress)
+                            : "ε22",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress"
                                 ? (widget.mechanicalTensor as PlaneStress)
@@ -167,7 +172,9 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                         isDense: true,
                         contentPadding: const EdgeInsets.all(12),
                         border: const OutlineInputBorder(),
-                        labelText: dropValue == "Stress" ? withUnit("σ12", units.stress) : "γ12 (2ε12)",
+                        labelText: dropValue == "Stress"
+                            ? withUnit("σ12", units.stress)
+                            : "γ12 (2ε12)",
                         errorText: widget.validate
                             ? validateTensor(dropValue == "Stress"
                                 ? (widget.mechanicalTensor as PlaneStress)

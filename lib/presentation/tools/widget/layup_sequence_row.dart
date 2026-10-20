@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:swiftcomp/generated/l10n.dart';
+import 'package:swiftcomp/presentation/tools/model/layer_thickness.dart';
 import 'package:swiftcomp/presentation/tools/model/layup_sequence_model.dart';
 import 'package:swiftcomp/presentation/tools/model/explain.dart';
+
+import 'layup_preview.dart';
 
 class LayupSequenceRow extends StatefulWidget {
   final LayupSequence layupSequence;
   final bool validate;
+  final LayerThickness? layerThickness;
 
   const LayupSequenceRow(
-      {Key? key, required this.layupSequence, required this.validate})
+      {Key? key,
+      required this.layupSequence,
+      required this.validate,
+      this.layerThickness})
       : super(key: key);
 
   @override
@@ -54,8 +62,13 @@ class _LayupSequenceRowState extends State<LayupSequenceRow> {
   }
 
   String? get _validationError {
-    if (widget.layupSequence.exceedsLayerLimit) return 'Too many layers';
-    return widget.layupSequence.isValid() ? null : 'Wrong layup sequence';
+    final strings = S.maybeOf(context);
+    if (widget.layupSequence.exceedsLayerLimit) {
+      return strings?.Calculator_too_many_layers ?? 'Too many layers';
+    }
+    return widget.layupSequence.isValid()
+        ? null
+        : strings?.Calculator_wrong_layup ?? 'Wrong layup sequence';
   }
 
   @override
@@ -77,10 +90,11 @@ class _LayupSequenceRowState extends State<LayupSequenceRow> {
           ListTile(
             title: Row(
               children: [
-                Text(
-                  "Layup Sequence",
+                Flexible(
+                    child: Text(
+                  S.maybeOf(context)?.Layup_Sequence ?? 'Layup Sequence',
                   style: Theme.of(context).textTheme.titleMedium,
-                ),
+                )),
                 IconButton(
                   onPressed: () {
                     Dialog dialog = Dialog(
@@ -122,6 +136,10 @@ class _LayupSequenceRowState extends State<LayupSequenceRow> {
                           errorText: widget.validate ? _validationError : null,
                           suffixIcon: _textEditingController.text.isNotEmpty
                               ? IconButton(
+                                  tooltip: S
+                                          .maybeOf(context)
+                                          ?.Calculator_clear_layup ??
+                                      'Clear layup sequence',
                                   onPressed: _textEditingController.clear,
                                   icon: Icon(Icons.cancel, color: Colors.grey))
                               : null),
@@ -141,7 +159,11 @@ class _LayupSequenceRowState extends State<LayupSequenceRow> {
                             onPressed: () => _appendSymbol(']'),
                             child: Text("]")),
                       ],
-                    )
+                    ),
+                    LayupPreview(
+                      layups: widget.layupSequence.layups,
+                      layerThickness: widget.layerThickness,
+                    ),
                   ]))
         ],
       ),

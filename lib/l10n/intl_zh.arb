@@ -70,7 +70,71 @@
   "Transversely_isotropic_material" : "横向各向同性材料",
   "Orthotropic_material" : "正交各向异性材料",
   "Monoclinic_material" : "单斜材料",
-  "Anisotropic_material" : "各向异性材料"
-
-
+  "Anisotropic_material" : "各向异性材料",
+  "Calculator_thickness": "厚度",
+  "Calculator_finite_thickness": "请输入有限数值",
+  "Calculator_positive_thickness": "厚度必须大于零",
+  "Calculator_export_results": "导出结果",
+  "Calculator_copy_results": "复制结果",
+  "Calculator_share_csv": "分享 CSV 文件",
+  "Calculator_share_pdf": "分享 PDF 文件",
+  "Calculator_results_copied": "结果已复制到剪贴板",
+  "Calculator_copy_failed": "无法复制结果，请重试。",
+  "Calculator_export_failed": "无法导出结果。",
+  "Calculator_units": "计算器单位",
+  "Calculator_units_explanation": "输入、结果和导出文件均使用这些单位。已输入的数值不会自动换算。",
+  "Calculator_si_name": "国际单位制（SI）",
+  "Calculator_us_name": "美制单位",
+  "Calculator_unit_details": "模量 {modulus} · 应力 {stress} · 长度 {length} · 载荷 {loads}",
+  "Calculator_positive_number": "必须大于零",
+  "Calculator_poisson_range": "必须介于 -1 和 0.5 之间",
+  "Calculator_volume_range": "必须介于 0 和 1 之间",
+  "Calculator_modulus_too_large": "数值对于 {unit} 过大，请检查单位",
+  "Calculator_wrong_layup": "铺层次序无效",
+  "Calculator_too_many_layers": "铺层数量过多",
+  "Calculator_clear_layup": "清除铺层次序",
+  "Calculator_ply_count": "{count} 层",
+  "Calculator_total_thickness": "总厚度：{value} {unit}",
+  "Calculator_expanded_angles": "铺层角度：{angles}",
+  "Calculator_more_plies": "另有 {count} 层",
+  "Calculator_calculation_failed": "无法计算结果，请检查材料常数、载荷和厚度。",
+  "UDFRC_Properties": "单向纤维复合材料属性",
+  "@Calculator_unit_details": {
+    "placeholders": {
+      "modulus": {},
+      "stress": {},
+      "length": {},
+      "loads": {}
+    }
+  },
+  "@Calculator_modulus_too_large": {
+    "placeholders": {
+      "unit": {}
+    }
+  },
+  "@Calculator_ply_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@Calculator_total_thickness": {
+    "placeholders": {
+      "value": {},
+      "unit": {}
+    }
+  },
+  "@Calculator_expanded_angles": {
+    "placeholders": {
+      "angles": {}
+    }
+  },
+  "@Calculator_more_plies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
