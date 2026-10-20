@@ -107,8 +107,8 @@ void main() {
       expect(saved, isNotNull);
       await MaterialLibrary.instance.save(saved!);
 
-      final raw = SharedPreferencesHelper.localStorage
-          .getString('Custom_Materials_v1');
+      final raw =
+          SharedPreferencesHelper.localStorage.getString('Custom_Materials_v1');
       final stored = (jsonDecode(raw!) as List).single as Map;
       expect(stored['e1'], closeTo(137.9, 0.01)); // stored in GPa
 
@@ -198,9 +198,11 @@ void main() {
       expect(csv, contains('Symmetric laminates only.'));
     });
 
+    // Bundled font assets are available to VM tests; Flutter's Chrome unit-test
+    // runner leaves their application asset-channel requests unanswered.
     test('PDF export produces a document', () async {
       final bytes = await report().toPdf();
       expect(ascii.decode(bytes.sublist(0, 5)), '%PDF-');
-    });
+    }, testOn: 'vm');
   });
 }

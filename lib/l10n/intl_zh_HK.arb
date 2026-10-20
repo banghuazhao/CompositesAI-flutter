@@ -153,5 +153,15 @@
       "ply": {},
       "surface": {}
     }
-  }
+  },
+  "Calculator_replace_material_title": "取代已儲存的材料？",
+  "Calculator_replace_material_message": "已存在名為「{name}」的材料。您可以取代其已儲存的資料，或選擇其他名稱。",
+  "Calculator_replace_material": "取代",
+  "Calculator_choose_another_name": "選擇其他名稱",
+  "@Calculator_replace_material_message": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Calculator_material_delete_failed": "無法刪除此材料，請重試。"
 }

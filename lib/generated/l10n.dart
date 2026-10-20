@@ -981,6 +981,56 @@ class S {
       args: [],
     );
   }
+
+  /// `Replace saved material?`
+  String get Calculator_replace_material_title {
+    return Intl.message(
+      'Replace saved material?',
+      name: 'Calculator_replace_material_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A saved material named "{name}" already exists. Replace its saved values or choose another name.`
+  String Calculator_replace_material_message(Object name) {
+    return Intl.message(
+      'A saved material named "$name" already exists. Replace its saved values or choose another name.',
+      name: 'Calculator_replace_material_message',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Replace`
+  String get Calculator_replace_material {
+    return Intl.message(
+      'Replace',
+      name: 'Calculator_replace_material',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose another name`
+  String get Calculator_choose_another_name {
+    return Intl.message(
+      'Choose another name',
+      name: 'Calculator_choose_another_name',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not delete this material. Please try again.`
+  String get Calculator_material_delete_failed {
+    return Intl.message(
+      'Could not delete this material. Please try again.',
+      name: 'Calculator_material_delete_failed',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

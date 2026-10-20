@@ -32,9 +32,11 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m5(count) => "${count} 層";
 
-  static String m6(value, unit) => "總厚度：${value} ${unit}";
+  static String m6(name) => "已存在名為「${name}」的材料。您可以取代其已儲存的資料，或選擇其他名稱。";
 
-  static String m7(modulus, stress, length, loads) =>
+  static String m7(value, unit) => "總厚度：${value} ${unit}";
+
+  static String m8(modulus, stress, length, loads) =>
       "模量 ${modulus} · 應力 ${stress} · 長度 ${length} · 載荷 ${loads}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -53,6 +55,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "點選或懸停資料點以查看各層數值",
     ),
     "Calculator_chart_ply_surface": m1,
+    "Calculator_choose_another_name": MessageLookupByLibrary.simpleMessage(
+      "選擇其他名稱",
+    ),
     "Calculator_clear_layup": MessageLookupByLibrary.simpleMessage("清除鋪層次序"),
     "Calculator_copy_failed": MessageLookupByLibrary.simpleMessage(
       "無法複製結果，請重試。",
@@ -64,6 +69,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_finite_thickness": MessageLookupByLibrary.simpleMessage(
       "請輸入有限數值",
     ),
+    "Calculator_material_delete_failed": MessageLookupByLibrary.simpleMessage(
+      "無法刪除此材料，請重試。",
+    ),
     "Calculator_modulus_too_large": m3,
     "Calculator_more_plies": m4,
     "Calculator_ply_count": m5,
@@ -73,6 +81,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_positive_number": MessageLookupByLibrary.simpleMessage("必須大於零"),
     "Calculator_positive_thickness": MessageLookupByLibrary.simpleMessage(
       "厚度必須大於零",
+    ),
+    "Calculator_replace_material": MessageLookupByLibrary.simpleMessage("取代"),
+    "Calculator_replace_material_message": m6,
+    "Calculator_replace_material_title": MessageLookupByLibrary.simpleMessage(
+      "取代已儲存的材料？",
     ),
     "Calculator_results_copied": MessageLookupByLibrary.simpleMessage(
       "結果已複製到剪貼簿",
@@ -86,8 +99,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_too_many_layers": MessageLookupByLibrary.simpleMessage(
       "鋪層數量過多",
     ),
-    "Calculator_total_thickness": m6,
-    "Calculator_unit_details": m7,
+    "Calculator_total_thickness": m7,
+    "Calculator_unit_details": m8,
     "Calculator_units": MessageLookupByLibrary.simpleMessage("計算器單位"),
     "Calculator_units_explanation": MessageLookupByLibrary.simpleMessage(
       "輸入、結果和匯出檔案均使用這些單位。已輸入的數值不會自動換算。",

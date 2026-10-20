@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -84,6 +85,26 @@ class LibraryMaterial {
         yc,
         s12
       ].every((value) => value == null || value.isFinite);
+
+  LibraryMaterial _withId(String id) => LibraryMaterial(
+        id: id,
+        name: name,
+        kind: kind,
+        source: source,
+        isCustom: isCustom,
+        e1: e1,
+        e2: e2,
+        g12: g12,
+        nu12: nu12,
+        nu23: nu23,
+        alpha11: alpha11,
+        alpha22: alpha22,
+        xt: xt,
+        xc: xc,
+        yt: yt,
+        yc: yc,
+        s12: s12,
+      );
 
   /// One-line summary in the given units, e.g. "E1 181 GPa · E2 10.3 GPa".
   String summary(Units units) {
@@ -275,6 +296,17 @@ class LibraryMaterial {
   }
 }
 
+/// A save needs explicit approval for the current immutable saved record.
+class MaterialNameConflict implements Exception {
+  const MaterialNameConflict(this.existing);
+
+  final LibraryMaterial existing;
+
+  @override
+  String toString() =>
+      'A saved material named "${existing.name}" already exists.';
+}
+
 /// Built-in materials plus the user's saved materials.
 class MaterialLibrary extends ChangeNotifier {
   MaterialLibrary._();
@@ -284,6 +316,7 @@ class MaterialLibrary extends ChangeNotifier {
   static const String _storageKey = 'Custom_Materials_v1';
 
   List<LibraryMaterial>? _custom;
+  Future<void>? _pendingMutation;
 
   List<LibraryMaterial> get customMaterials =>
       List.unmodifiable(_custom ??= _load());
@@ -293,28 +326,57 @@ class MaterialLibrary extends ChangeNotifier {
         ...builtInMaterials.where((material) => material.kind == kind),
       ];
 
-  Future<void> save(LibraryMaterial material) async {
+  /// Saves a new custom name, or replaces the exact record explicitly approved
+  /// by the caller. A newer record requires fresh approval, even with the same ID.
+  Future<void> save(LibraryMaterial material,
+      {LibraryMaterial? replaceExisting}) async {
     if (!material._hasFiniteNumbers) {
       throw ArgumentError('Material values must be finite.');
     }
-    final custom = [..._custom ??= _load()];
-    custom.removeWhere(
-      (existing) =>
+    await _enqueueMutation(() async {
+      final custom = [...customMaterials];
+      final index = custom.indexWhere((existing) =>
           existing.kind == material.kind &&
-          existing.name.toLowerCase() == material.name.toLowerCase(),
-    );
-    custom.insert(0, material);
-    _custom = custom;
-    await _persist();
-    notifyListeners();
+          existing.name.trim().toLowerCase() ==
+              material.name.trim().toLowerCase());
+      if (index >= 0) {
+        final existing = custom[index];
+        if (!identical(existing, replaceExisting)) {
+          throw MaterialNameConflict(existing);
+        }
+        custom[index] = material._withId(existing.id);
+      } else {
+        custom.insert(0, material);
+      }
+      await _persist(custom);
+      _custom = custom;
+      notifyListeners();
+    });
   }
 
-  Future<void> remove(LibraryMaterial material) async {
-    final custom = [..._custom ??= _load()]
-      ..removeWhere((existing) => existing.id == material.id);
-    _custom = custom;
-    await _persist();
-    notifyListeners();
+  Future<void> remove(LibraryMaterial material) => _enqueueMutation(() async {
+        final custom = [...customMaterials]
+          ..removeWhere((existing) => existing.id == material.id);
+        await _persist(custom);
+        _custom = custom;
+        notifyListeners();
+      });
+
+  Future<void> _enqueueMutation(Future<void> Function() mutation) async {
+    final previous = _pendingMutation;
+    final completion = Completer<void>();
+    final pending = completion.future;
+    _pendingMutation = pending;
+    try {
+      if (previous != null) await previous;
+      await mutation();
+    } finally {
+      // Retain only active work, never a completed Future from an old zone.
+      // Completing the barrier successfully also lets a corrected write follow
+      // a failed write; the operation's own returned Future still reports it.
+      if (identical(_pendingMutation, pending)) _pendingMutation = null;
+      completion.complete();
+    }
   }
 
   List<LibraryMaterial> _load() {
@@ -334,11 +396,38 @@ class MaterialLibrary extends ChangeNotifier {
     }
   }
 
-  Future<void> _persist() async {
-    await SharedPreferencesHelper.localStorage.setString(
-      _storageKey,
-      jsonEncode(_custom!.map((material) => material.toJson()).toList()),
-    );
+  Future<void> _persist(List<LibraryMaterial> materials) async {
+    final storage = SharedPreferencesHelper.localStorage;
+    final previous = storage.get(_storageKey);
+    final encoded =
+        jsonEncode(materials.map((material) => material.toJson()).toList());
+    try {
+      if (!await storage.setString(_storageKey, encoded)) {
+        throw StateError('Could not persist materials.');
+      }
+    } catch (_) {
+      // Legacy SharedPreferences updates its in-memory cache before awaiting
+      // the platform write. Restore that cache as well as retaining our records.
+      try {
+        switch (previous) {
+          case null:
+            await storage.remove(_storageKey);
+          case String value:
+            await storage.setString(_storageKey, value);
+          case bool value:
+            await storage.setBool(_storageKey, value);
+          case int value:
+            await storage.setInt(_storageKey, value);
+          case double value:
+            await storage.setDouble(_storageKey, value);
+          case List<String> value:
+            await storage.setStringList(_storageKey, value);
+        }
+      } catch (_) {
+        // Preserve the original failure even if the platform remains unavailable.
+      }
+      rethrow;
+    }
   }
 
   @visibleForTesting

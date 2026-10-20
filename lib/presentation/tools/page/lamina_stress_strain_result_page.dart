@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:swiftcomp/presentation/tools/widget/legacy_staggered_grid.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
+import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
+import 'package:swiftcomp/util/result_precision.dart';
 
 import 'package:provider/provider.dart';
 
@@ -133,22 +135,24 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final precision = context.watch<NumberPrecisionHelper?>()?.precision ??
+        ResultPrecision.defaultValue;
     getResultString(int position) {
       if (isStress) {
         if (position == 0) {
-          return output.sigma11.toStringAsExponential(3);
+          return output.sigma11.toStringAsExponential(precision);
         } else if (position == 1) {
-          return output.sigma22.toStringAsExponential(3);
+          return output.sigma22.toStringAsExponential(precision);
         } else {
-          return output.sigma12.toStringAsExponential(3);
+          return output.sigma12.toStringAsExponential(precision);
         }
       } else {
         if (position == 0) {
-          return output.epsilon11.toStringAsExponential(3);
+          return output.epsilon11.toStringAsExponential(precision);
         } else if (position == 1) {
-          return output.epsilon22.toStringAsExponential(3);
+          return output.epsilon22.toStringAsExponential(precision);
         } else {
-          return output.gamma12.toStringAsExponential(3);
+          return output.gamma12.toStringAsExponential(precision);
         }
       }
     }
@@ -168,8 +172,10 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 8,
+              runSpacing: 16,
               children: [
                 Column(
                   children: [
@@ -184,9 +190,6 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodySmall)
                   ],
                 ),
-                const SizedBox(
-                  width: 8,
-                ),
                 Column(
                   children: [
                     Text(
@@ -199,9 +202,6 @@ class ResultPlaneStressStrainRow extends StatelessWidget {
                     Text(getResultString(1),
                         style: Theme.of(context).textTheme.bodySmall)
                   ],
-                ),
-                const SizedBox(
-                  width: 8,
                 ),
                 Column(
                   children: [

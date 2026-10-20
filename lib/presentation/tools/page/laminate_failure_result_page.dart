@@ -121,7 +121,7 @@ class LaminateFailureResultPage extends StatelessWidget {
     final precision = context.watch<NumberPrecisionHelper>().precision;
     String number(double value) => CalcReport.formatNumber(
           value,
-          precision: precision.clamp(1, 8),
+          precision: precision,
         );
 
     return Scaffold(
@@ -147,7 +147,7 @@ class LaminateFailureResultPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
           children: [
-            _FirstPlyFailureCard(result: result),
+            _FirstPlyFailureCard(result: result, number: number),
             const SizedBox(height: 12),
             _PlyTableCard(result: result, units: units, number: number),
             const SizedBox(height: 12),
@@ -182,9 +182,10 @@ class LaminateFailureResultPage extends StatelessWidget {
 }
 
 class _FirstPlyFailureCard extends StatelessWidget {
-  const _FirstPlyFailureCard({required this.result});
+  const _FirstPlyFailureCard({required this.result, required this.number});
 
   final LaminateFailureResult result;
+  final String Function(double) number;
 
   @override
   Widget build(BuildContext context) {
@@ -208,11 +209,10 @@ class _FirstPlyFailureCard extends StatelessWidget {
                 final point = result.critical(criterion);
                 final outcome = point.results[criterion]!;
                 final fails = outcome.fails;
-                final ratio = outcome.strengthRatio.isInfinite
-                    ? '∞'
-                    : outcome.strengthRatio.toStringAsFixed(3);
+                final ratio = number(outcome.strengthRatio);
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
+                  isThreeLine: true,
                   leading: Icon(
                     fails
                         ? Icons.error_outline_rounded
@@ -220,16 +220,22 @@ class _FirstPlyFailureCard extends StatelessWidget {
                     color: fails ? scheme.error : Colors.green.shade600,
                   ),
                   title: Text(criterion.label),
-                  subtitle: Text(
-                    'Ply ${point.ply} (${_angle(point.angle)}) '
-                    '${point.position.toLowerCase()} · ${outcome.mode}',
-                  ),
-                  trailing: Text(
-                    'R = $ratio',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: fails ? scheme.error : null,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ply ${point.ply} (${_angle(point.angle)}) '
+                        '${point.position.toLowerCase()} · ${outcome.mode}',
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'R = $ratio',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: fails ? scheme.error : null,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }(),
@@ -241,7 +247,7 @@ class _FirstPlyFailureCard extends StatelessWidget {
   }
 }
 
-class _PlyTableCard extends StatelessWidget {
+class _PlyTableCard extends StatefulWidget {
   const _PlyTableCard({
     required this.result,
     required this.units,
@@ -253,9 +259,50 @@ class _PlyTableCard extends StatelessWidget {
   final String Function(double) number;
 
   @override
+  State<_PlyTableCard> createState() => _PlyTableCardState();
+}
+
+class _PlyTableCardState extends State<_PlyTableCard>
+    with AutomaticKeepAliveClientMixin<_PlyTableCard> {
+  // An even page size keeps the bottom/top surface pair of each ply together.
+  static const _rowsPerPage = 20;
+  int _pageIndex = 0;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void didUpdateWidget(covariant _PlyTableCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.result != widget.result) _pageIndex = 0;
+  }
+
+  void _showPage(int target) {
+    if (target == _pageIndex) return;
+    final result = widget.result;
+    setState(() => _pageIndex = target);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _pageIndex != target || widget.result != result) return;
+      final renderObject = context.findRenderObject();
+      if (renderObject == null || !renderObject.attached) return;
+      // After a short last page replaces a full page, reveal its new rows
+      // instead of leaving the reader at the old footer's scroll position.
+      Scrollable.ensureVisible(context, alignment: 0);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final points = widget.result.points;
+    final rowCount = points.length;
+    final lastPage = rowCount == 0 ? 0 : (rowCount - 1) ~/ _rowsPerPage;
+    final page = _pageIndex.clamp(0, lastPage).toInt();
+    final start = page * _rowsPerPage;
+    final end = (start + _rowsPerPage).clamp(0, rowCount).toInt();
+    final localizations = MaterialLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -266,13 +313,14 @@ class _PlyTableCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'Ply stresses and failure indices',
+                key: const ValueKey('failure-table-heading'),
                 style: theme.textTheme.titleMedium,
               ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
               child: Text(
-                'Material axes, ${units.stress}. Failure index ≥ 1 means '
+                'Material axes, ${widget.units.stress}. Failure index ≥ 1 means '
                 'failure.',
                 style: theme.textTheme.bodySmall,
               ),
@@ -298,25 +346,79 @@ class _PlyTableCard extends StatelessWidget {
                     ),
                 ],
                 rows: [
-                  for (final point in result.points)
-                    DataRow(cells: [
-                      DataCell(Text('${point.ply} (${_angle(point.angle)})')),
-                      DataCell(Text(point.position)),
-                      for (final stress in point.materialStress)
-                        DataCell(Text(number(stress))),
-                      for (final criterion in FailureCriterion.values)
-                        DataCell(() {
-                          final index =
-                              point.results[criterion]!.failureIndex;
-                          return Text(
-                            index.toStringAsFixed(3),
-                            style: TextStyle(
-                              color: index >= 1 ? scheme.error : null,
-                              fontWeight: index >= 1 ? FontWeight.w600 : null,
-                            ),
-                          );
-                        }()),
-                    ]),
+                  for (var rowIndex = start; rowIndex < end; rowIndex++)
+                    () {
+                      final point = points[rowIndex];
+                      return DataRow(
+                          key: ValueKey('failure-point-$rowIndex'),
+                          cells: [
+                            DataCell(
+                                Text('${point.ply} (${_angle(point.angle)})')),
+                            DataCell(Text(point.position)),
+                            for (final stress in point.materialStress)
+                              DataCell(Text(widget.number(stress))),
+                            for (final criterion in FailureCriterion.values)
+                              DataCell(() {
+                                final index =
+                                    point.results[criterion]!.failureIndex;
+                                return Text(
+                                  widget.number(index),
+                                  style: TextStyle(
+                                    color: index >= 1 ? scheme.error : null,
+                                    fontWeight:
+                                        index >= 1 ? FontWeight.w600 : null,
+                                  ),
+                                );
+                              }()),
+                          ]);
+                    }(),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 4,
+                children: [
+                  Text(
+                    localizations.pageRowsInfoTitle(
+                        rowCount == 0 ? 0 : start + 1, end, rowCount, false),
+                    key: const ValueKey('failure-table-range'),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: const ValueKey('failure-table-first-page'),
+                        tooltip: localizations.firstPageTooltip,
+                        onPressed: page == 0 ? null : () => _showPage(0),
+                        icon: const Icon(Icons.first_page_rounded),
+                      ),
+                      IconButton(
+                        key: const ValueKey('failure-table-previous-page'),
+                        tooltip: localizations.previousPageTooltip,
+                        onPressed: page == 0 ? null : () => _showPage(page - 1),
+                        icon: const Icon(Icons.chevron_left_rounded),
+                      ),
+                      IconButton(
+                        key: const ValueKey('failure-table-next-page'),
+                        tooltip: localizations.nextPageTooltip,
+                        onPressed:
+                            page == lastPage ? null : () => _showPage(page + 1),
+                        icon: const Icon(Icons.chevron_right_rounded),
+                      ),
+                      IconButton(
+                        key: const ValueKey('failure-table-last-page'),
+                        tooltip: localizations.lastPageTooltip,
+                        onPressed:
+                            page == lastPage ? null : () => _showPage(lastPage),
+                        icon: const Icon(Icons.last_page_rounded),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

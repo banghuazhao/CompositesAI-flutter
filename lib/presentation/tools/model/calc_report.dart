@@ -6,6 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../util/export/pdf_fonts.dart';
+import '../../../util/result_precision.dart';
 import 'material_model.dart';
 import 'thermal_model.dart';
 import 'unit_system.dart';
@@ -97,7 +98,7 @@ class CalcReport {
     if (value == value.roundToDouble() && value.abs() < 1e5) {
       return value.toInt().toString();
     }
-    return value.toStringAsExponential(precision);
+    return value.toStringAsExponential(ResultPrecision.normalize(precision));
   }
 
   static String _cell(Object? value, int precision) {
@@ -208,6 +209,10 @@ class CalcReport {
   // ---------------------------------------------------------------- PDF
 
   Future<Uint8List> toPdf({int precision = 5}) async {
+    final displayPrecision = ResultPrecision.normalize(precision);
+    final hasWideTable = [...inputs, ...results].any(
+      (section) => section is TableSection && section.headers.length > 7,
+    );
     final fonts = await PdfFonts.load(sampleText: title);
     final document = pw.Document(
       title: title,
@@ -243,7 +248,7 @@ class CalcReport {
               headers: const ['Quantity', 'Value', 'Unit'],
               rows: [
                 for (final e in entries)
-                  [e.label, _cell(e.value, precision), e.unit],
+                  [e.label, _cell(e.value, displayPrecision), e.unit],
               ],
               fonts: fonts,
               numericColumns: const {1},
@@ -255,7 +260,7 @@ class CalcReport {
             _table(
               rows: [
                 for (final row in values)
-                  [for (final v in row) _cell(v, precision)],
+                  [for (final v in row) _cell(v, displayPrecision)],
               ],
               fonts: fonts,
               numericColumns: {for (var i = 0; i < values.first.length; i++) i},
@@ -267,7 +272,8 @@ class CalcReport {
             _table(
               headers: headers,
               rows: [
-                for (final row in rows) [for (final v in row) _cell(v, 3)],
+                for (final row in rows)
+                  [for (final v in row) _cell(v, displayPrecision)],
               ],
               fonts: fonts,
               numericColumns: {
@@ -292,7 +298,9 @@ class CalcReport {
 
     document.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
+        // Keep high-precision values intact in the wide ply-result tables.
+        pageFormat:
+            hasWideTable ? PdfPageFormat.a4.landscape : PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(40, 40, 40, 36),
         footer: (context) => pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,

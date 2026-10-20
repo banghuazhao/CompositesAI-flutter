@@ -8,14 +8,19 @@ import 'package:integration_test/integration_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swiftcomp/generated/l10n.dart';
+import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart';
+import 'package:swiftcomp/presentation/tools/model/calc_report.dart';
+import 'package:swiftcomp/presentation/tools/model/failure_criteria.dart';
 import 'package:swiftcomp/presentation/tools/model/material_library.dart';
 import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_page.dart';
 import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_result_page.dart';
 import 'package:swiftcomp/presentation/tools/page/laminate_plate_properties_page.dart';
+import 'package:swiftcomp/presentation/tools/page/laminate_failure_result_page.dart';
 import 'package:swiftcomp/presentation/tools/page/laminate_plate_properties_result_page.dart';
 import 'package:swiftcomp/presentation/tools/page/laminate_stress_strain_result_page.dart';
 import 'package:swiftcomp/presentation/tools/widget/layup_sequence_row.dart';
+import 'package:swiftcomp/presentation/tools/widget/material_library_sheet.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/others.dart';
 
@@ -289,19 +294,207 @@ void main() {
         isTrue);
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets(
+      'release precision controls, failure pagination and complete clipboard',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si,
+        extra: {'Number_Precision': 1000});
+    final result = _releaseFailureResult();
+    await tester.pumpWidget(
+        _calculatorApp(home: LaminateFailureResultPage(result: result)));
+    await tester.pumpAndSettle();
+
+    final add = find.widgetWithIcon(IconButton, Icons.add);
+    final remove = find.widgetWithIcon(IconButton, Icons.remove);
+    await _tap(tester, find.byTooltip('Result precision'));
+    expect(find.byType(ResultPrecisionPage), findsOneWidget);
+    expect(tester.widget<IconButton>(add).onPressed, isNull);
+    expect(find.text(123456789.toStringAsExponential(9)), findsOneWidget);
+    for (var step = 0; step < 8; step++) {
+      await _tap(tester, remove);
+    }
+    expect(tester.widget<IconButton>(remove).onPressed, isNull);
+    expect(find.text(123456789.toStringAsExponential(1)), findsOneWidget);
+    await _tap(tester, find.byType(BackButton));
+    expect(
+        find.text(
+            'R = ${CalcReport.formatNumber(_releaseRatio, precision: 1)}'),
+        findsNWidgets(4));
+
+    await _tap(tester, find.byTooltip('Result precision'));
+    for (var step = 0; step < 8; step++) {
+      await _tap(tester, add);
+    }
+    expect(tester.widget<IconButton>(add).onPressed, isNull);
+    expect(SharedPreferencesHelper.localStorage.getInt('Number_Precision'), 9);
+    await _tap(tester, find.byType(BackButton));
+    expect(
+        find.text(
+            'R = ${CalcReport.formatNumber(_releaseRatio, precision: 9)}'),
+        findsNWidgets(4));
+
+    final tableFinder = find.byType(DataTable);
+    if (tableFinder.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(tableFinder, 300,
+          scrollable: find.byType(Scrollable).first);
+    }
+    await _show(tester, tableFinder);
+    DataTable table() => tester.widget<DataTable>(tableFinder);
+    expect(table().rows, hasLength(20));
+    expect((table().rows.first.cells[2].child as Text).data,
+        CalcReport.formatNumber(_releaseStress, precision: 9));
+    final first = find.byKey(const ValueKey('failure-table-first-page'));
+    final last = find.byKey(const ValueKey('failure-table-last-page'));
+    final range = find.byKey(const ValueKey('failure-table-range'));
+    expect(tester.widget<IconButton>(first).onPressed, isNull);
+    await _tap(tester, last);
+    expect(tester.widget<Text>(range).data, '21–24 of 24');
+    expect(table().rows, hasLength(4));
+    expect((table().rows.first.cells.first.child as Text).data, '11 (0°)');
+    expect((table().rows.last.cells.first.child as Text).data, '12 (0°)');
+    expect((table().rows.last.cells[1].child as Text).data, 'Top');
+    expect(tester.widget<IconButton>(last).onPressed, isNull);
+    await _tap(tester, first);
+    expect(tester.widget<Text>(range).data, '1–20 of 24');
+    expect(table().rows, hasLength(20));
+
+    await _tap(tester, find.byTooltip('Export results'));
+    await _tap(tester, find.text('Copy results'));
+    await _waitFor(tester, find.text('Results copied to clipboard'));
+    final clipboard = await Clipboard.getData(Clipboard.kTextPlain);
+    final rows = clipboard!.text!.split('\r\n');
+    final section = rows
+        .indexOf('Result: Ply stresses (material axes) and failure indices');
+    expect(section, greaterThanOrEqualTo(0));
+    final copiedPoints = rows
+        .skip(section + 2)
+        .takeWhile((row) => row.isNotEmpty)
+        .map((row) => row.split('\t'))
+        .toList();
+    expect(copiedPoints, hasLength(24),
+        reason:
+            'Copy exports every surface, independently of the visible page.');
+    expect(copiedPoints.first[0], '1');
+    expect(copiedPoints.first[2], 'Bottom');
+    expect(copiedPoints.last[0], '12');
+    expect(copiedPoints.last[2], 'Top');
+    expect(copiedPoints.first[4], _releaseStress.toString(),
+        reason: 'Clipboard keeps full precision beyond the display setting.');
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets(
+      'release material replacement cancel preserves data and replace commits',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si);
+    final original =
+        _releaseMaterial('Release prepreg', id: 'release-original');
+    await MaterialLibrary.instance.save(original);
+    final before =
+        SharedPreferencesHelper.localStorage.getString('Custom_Materials_v1');
+    LibraryMaterial? selected;
+    await tester.pumpWidget(_calculatorApp(
+      home: Scaffold(
+        body: Center(
+          child: MaterialLibraryButton(
+            kind: MaterialKind.lamina,
+            onSelected: (material) => selected = material,
+            saveCurrent: (name) =>
+                _releaseMaterial(name, id: 'release-incoming', e1: 240),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.text('Library'));
+
+    Future<void> saveDuplicate() async {
+      await _tap(tester, find.text('Save current inputs as a material'));
+      await _enterText(
+          tester, _fieldWithLabel('Material name'), '  release PREPREG  ');
+      await _tap(tester, find.widgetWithText(TextButton, 'Save'));
+      expect(find.text('Replace saved material?'), findsOneWidget);
+    }
+
+    await saveDuplicate();
+    expect(MaterialLibrary.instance.customMaterials.single, same(original));
+    await _tap(tester, find.widgetWithText(TextButton, 'Cancel'));
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(MaterialLibrary.instance.customMaterials.single, same(original));
+    expect(
+        SharedPreferencesHelper.localStorage.getString('Custom_Materials_v1'),
+        before);
+
+    await saveDuplicate();
+    await _tap(tester, find.widgetWithText(TextButton, 'Replace'));
+    expect(find.byType(AlertDialog), findsNothing);
+    final replacement = MaterialLibrary.instance.customMaterials.single;
+    expect(replacement.id, original.id);
+    expect(replacement.e1, 240);
+    expect(replacement.name.toLowerCase(), original.name.toLowerCase());
+    MaterialLibrary.instance.resetForTest();
+    final reloaded = MaterialLibrary.instance.customMaterials.single;
+    expect(reloaded.id, original.id);
+    expect(reloaded.e1, 240);
+    await _tap(tester, find.widgetWithText(ListTile, replacement.name));
+    expect(selected?.id, original.id);
+    expect(selected?.e1, 240);
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }
 
-Future<void> _isolatedPreferences(UnitSystem system) async {
+Future<void> _isolatedPreferences(UnitSystem system,
+    {Map<String, Object> extra = const {}}) async {
   expect(kIsWeb, isFalse, reason: 'Run this smoke target on iOS or Android.');
   expect(
       defaultTargetPlatform, anyOf(TargetPlatform.iOS, TargetPlatform.android));
   SharedPreferences.setMockInitialValues({
     'Calculator_Unit_System': system.name,
+    ...extra,
   });
   await SharedPreferencesHelper.init();
   MaterialLibrary.instance.resetForTest();
   addTearDown(MaterialLibrary.instance.resetForTest);
 }
+
+const _releaseRatio = 1.23456789123;
+const _releaseStress = 12.3456789123;
+
+LaminateFailureResult _releaseFailureResult() => LaminateFailureResult(
+      points: [
+        for (var row = 0; row < 24; row++)
+          PlyStressPoint(
+            ply: row ~/ 2 + 1,
+            angle: 0,
+            isTop: row.isOdd,
+            z: -0.75 + (row ~/ 2 + (row.isOdd ? 1 : 0)) * 0.125,
+            globalStress: [_releaseStress, -0.123456789123, 0],
+            materialStress: [_releaseStress, -0.123456789123, 0],
+            results: {
+              for (final criterion in FailureCriterion.values)
+                criterion:
+                    const CriterionResult(_releaseRatio, 'Fiber tension'),
+            },
+          ),
+      ],
+      midplaneStrains: [0, 0, 0],
+      curvatures: [0, 0, 0],
+    );
+
+LibraryMaterial _releaseMaterial(String name,
+        {required String id, double e1 = 150}) =>
+    LibraryMaterial(
+      id: id,
+      name: name,
+      kind: MaterialKind.lamina,
+      isCustom: true,
+      source: 'Native release smoke fixture',
+      e1: e1,
+      e2: 10,
+      g12: 5,
+      nu12: 0.3,
+    );
 
 Widget _calculatorApp({Widget home = const LaminatePlatePropertiesPage()}) =>
     MultiProvider(

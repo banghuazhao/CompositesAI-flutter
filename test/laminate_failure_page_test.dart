@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swiftcomp/generated/l10n.dart';
+import 'package:swiftcomp/presentation/tools/model/failure_criteria.dart';
 import 'package:swiftcomp/presentation/tools/model/material_library.dart';
 import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/page/laminate_failure_page.dart';
@@ -75,7 +76,14 @@ void main() {
     expect(find.text('First-ply failure'), findsOneWidget);
     expect(find.textContaining('Matrix tension'), findsWidgets);
     expect(find.textContaining(RegExp(r'^R = ')), findsNWidgets(4));
-    expect(find.text('R = 1.871'), findsWidgets);
+    expect(find.text('R = 1.87139e+0'), findsNWidgets(2));
+    final resultPage = tester.widget<LaminateFailureResultPage>(
+      find.byType(LaminateFailureResultPage),
+    );
+    expect(
+      resultPage.result.firstPlyFailureFactor(FailureCriterion.maxStress),
+      closeTo(1.871392192428164, 1e-10),
+    );
   });
 
   testWidgets('switching to US units relabels inputs', (tester) async {

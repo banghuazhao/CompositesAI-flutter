@@ -153,5 +153,15 @@
       "ply": {},
       "surface": {}
     }
-  }
+  },
+  "Calculator_replace_material_title": "Replace saved material?",
+  "Calculator_replace_material_message": "A saved material named \"{name}\" already exists. Replace its saved values or choose another name.",
+  "Calculator_replace_material": "Replace",
+  "Calculator_choose_another_name": "Choose another name",
+  "@Calculator_replace_material_message": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "Calculator_material_delete_failed": "Could not delete this material. Please try again."
 }

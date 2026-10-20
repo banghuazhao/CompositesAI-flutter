@@ -33,9 +33,12 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m5(count) =>
       "${Intl.plural(count, one: '1 ply', other: '${count} plies')}";
 
-  static String m6(value, unit) => "Total thickness: ${value} ${unit}";
+  static String m6(name) =>
+      "A saved material named \"${name}\" already exists. Replace its saved values or choose another name.";
 
-  static String m7(modulus, stress, length, loads) =>
+  static String m7(value, unit) => "Total thickness: ${value} ${unit}";
+
+  static String m8(modulus, stress, length, loads) =>
       "Moduli ${modulus} · stress ${stress} · length ${length} · loads ${loads}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -60,6 +63,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Tap a point or hover to inspect ply values",
     ),
     "Calculator_chart_ply_surface": m1,
+    "Calculator_choose_another_name": MessageLookupByLibrary.simpleMessage(
+      "Choose another name",
+    ),
     "Calculator_clear_layup": MessageLookupByLibrary.simpleMessage(
       "Clear layup sequence",
     ),
@@ -79,6 +85,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_finite_thickness": MessageLookupByLibrary.simpleMessage(
       "Enter a finite number",
     ),
+    "Calculator_material_delete_failed": MessageLookupByLibrary.simpleMessage(
+      "Could not delete this material. Please try again.",
+    ),
     "Calculator_modulus_too_large": m3,
     "Calculator_more_plies": m4,
     "Calculator_ply_count": m5,
@@ -90,6 +99,13 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "Calculator_positive_thickness": MessageLookupByLibrary.simpleMessage(
       "Thickness must be greater than zero",
+    ),
+    "Calculator_replace_material": MessageLookupByLibrary.simpleMessage(
+      "Replace",
+    ),
+    "Calculator_replace_material_message": m6,
+    "Calculator_replace_material_title": MessageLookupByLibrary.simpleMessage(
+      "Replace saved material?",
     ),
     "Calculator_results_copied": MessageLookupByLibrary.simpleMessage(
       "Results copied to clipboard",
@@ -107,8 +123,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_too_many_layers": MessageLookupByLibrary.simpleMessage(
       "Too many layers",
     ),
-    "Calculator_total_thickness": m6,
-    "Calculator_unit_details": m7,
+    "Calculator_total_thickness": m7,
+    "Calculator_unit_details": m8,
     "Calculator_units": MessageLookupByLibrary.simpleMessage(
       "Calculator units",
     ),
