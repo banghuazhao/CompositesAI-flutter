@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:swiftcomp/generated/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../model/chat_citation.dart';
@@ -94,7 +95,12 @@ class AiMarkdownMessage extends StatelessWidget {
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open this link.')),
+        SnackBar(
+          content: Text(
+            S.maybeOf(context)?.Chat_open_link_failed ??
+                'Could not open this link.',
+          ),
+        ),
       );
     }
   }
@@ -127,7 +133,9 @@ class AiMarkdownMessage extends StatelessWidget {
     bool closed,
   ) {
     return _CodeBlock(
-      language: language.trim().isEmpty ? 'code' : language.trim(),
+      language: language.trim().isEmpty
+          ? (S.maybeOf(context)?.Chat_code ?? 'code')
+          : language.trim(),
       code: code,
       isStreaming: !closed,
     );
@@ -162,8 +170,10 @@ class _CodeBlockState extends State<_CodeBlock> {
 
   @override
   Widget build(BuildContext context) {
-    final languageLabel =
-        widget.isStreaming ? '${widget.language} - streaming' : widget.language;
+    final languageLabel = widget.isStreaming
+        ? (S.maybeOf(context)?.Chat_code_streaming(widget.language) ??
+            '${widget.language} - streaming')
+        : widget.language;
 
     return Container(
       width: double.infinity,
@@ -196,7 +206,9 @@ class _CodeBlockState extends State<_CodeBlock> {
                   ),
                 ),
                 IconButton(
-                  tooltip: _copied ? 'Copied' : 'Copy code',
+                  tooltip: _copied
+                      ? (S.maybeOf(context)?.Chat_copied ?? 'Copied')
+                      : (S.maybeOf(context)?.Chat_copy_code ?? 'Copy code'),
                   onPressed: widget.code.isEmpty ? null : _copyCode,
                   icon: Icon(
                     _copied ? Icons.check : Icons.copy,

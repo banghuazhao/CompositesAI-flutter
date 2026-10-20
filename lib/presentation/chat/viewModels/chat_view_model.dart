@@ -17,6 +17,32 @@ import '../controllers/chat_conversation_controller.dart';
 import '../model/chat_error.dart';
 import '../../../util/chat_limiter.dart';
 
+/// An opaque snapshot of the source question and the draft it may replace.
+class ChatDraftReuseRequest {
+  const ChatDraftReuseRequest._({
+    required Object session,
+    required int selection,
+    required String chatId,
+    required Message source,
+    required String text,
+    required ChatComposerTicket composer,
+  })  : _session = session,
+        _selection = selection,
+        _chatId = chatId,
+        _source = source,
+        _text = text,
+        _composer = composer;
+
+  final Object _session;
+  final int _selection;
+  final String _chatId;
+  final Message _source;
+  final String _text;
+  final ChatComposerTicket _composer;
+
+  bool get replacesDraft => _composer.value.text.isNotEmpty;
+}
+
 class ChatViewModel extends ChangeNotifier {
   /// Matches backend: skip = (page - 1) * 60, limit 60 when page is set.
   static const int chatListPageSize = 60;
@@ -38,6 +64,12 @@ class ChatViewModel extends ChangeNotifier {
   late final ChatAttachmentController _attachments;
   final _composer = ChatComposerController();
   Object? _composerSessionKey;
+  final _disposalNotifier = ValueNotifier(false);
+  int _composerReplacementRevision = 0;
+
+  bool get isDisposed => _isDisposed;
+  ValueListenable<bool> get disposalListenable => _disposalNotifier;
+  int get composerReplacementRevision => _composerReplacementRevision;
 
   bool isLoggedIn = false;
   User? user;
@@ -142,6 +174,48 @@ class ChatViewModel extends ChangeNotifier {
   void _syncComposerState() {
     _syncComposerSession();
     _composer.selectChat(selectedChat?.id);
+  }
+
+  bool canUseMessageAsDraft(Message message) =>
+      !_isDisposed &&
+      isLoggedIn &&
+      !isSendingMessage &&
+      !isLoadingMessages &&
+      selectedChat != null &&
+      message.role == 'user' &&
+      message.content.trim().isNotEmpty &&
+      messages.any((current) => identical(current, message));
+
+  ChatDraftReuseRequest? prepareMessageAsDraft(Message message) {
+    if (!canUseMessageAsDraft(message)) return null;
+    _syncComposerState();
+    return ChatDraftReuseRequest._(
+      session: chatSessionKey,
+      selection: _conversation.selectionRevision,
+      chatId: selectedChat!.id,
+      source: message,
+      text: message.content,
+      composer: _composer.takeTicket(),
+    );
+  }
+
+  bool isDraftReuseCurrent(ChatDraftReuseRequest request) =>
+      canUseMessageAsDraft(request._source) &&
+      chatSessionKey == request._session &&
+      selectedChat?.id == request._chatId &&
+      _conversation.selectionRevision == request._selection &&
+      request._source.content == request._text &&
+      _composer.isCurrent(request._composer);
+
+  bool applyMessageAsDraft(ChatDraftReuseRequest request) {
+    if (!isDraftReuseCurrent(request)) return false;
+    // Retire pending voice results before publishing the replacement text.
+    _composerReplacementRevision++;
+    if (!_composer.replaceIfCurrent(request._composer, request._text)) {
+      return false;
+    }
+    notifyListeners();
+    return true;
   }
 
   List<Message> get messages => _conversation.messages;
@@ -332,6 +406,8 @@ class ChatViewModel extends ChangeNotifier {
   void dispose() {
     if (_isDisposed) return;
     _isDisposed = true;
+    _disposalNotifier.value = true;
+    _disposalNotifier.dispose();
     _composer.dispose();
     chatListScrollController.removeListener(_onChatListScroll);
     _conversation.removeListener(_forwardConversationChange);

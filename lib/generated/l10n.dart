@@ -1551,6 +1551,1263 @@ class S {
       args: [name],
     );
   }
+
+  /// `Chat`
+  String get Chat_title {
+    return Intl.message('Chat', name: 'Chat_title', desc: '', args: []);
+  }
+
+  /// `Cancel`
+  String get Chat_cancel {
+    return Intl.message('Cancel', name: 'Chat_cancel', desc: '', args: []);
+  }
+
+  /// `Save`
+  String get Chat_save {
+    return Intl.message('Save', name: 'Chat_save', desc: '', args: []);
+  }
+
+  /// `Delete`
+  String get Chat_delete {
+    return Intl.message('Delete', name: 'Chat_delete', desc: '', args: []);
+  }
+
+  /// `Clear`
+  String get Chat_clear {
+    return Intl.message('Clear', name: 'Chat_clear', desc: '', args: []);
+  }
+
+  /// `Clear search`
+  String get Chat_clear_search {
+    return Intl.message(
+      'Clear search',
+      name: 'Chat_clear_search',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sign In`
+  String get Chat_sign_in {
+    return Intl.message('Sign In', name: 'Chat_sign_in', desc: '', args: []);
+  }
+
+  /// `Composite Calculators`
+  String get Chat_composite_calculators {
+    return Intl.message(
+      'Composite Calculators',
+      name: 'Chat_composite_calculators',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Account & settings`
+  String get Chat_account_settings {
+    return Intl.message(
+      'Account & settings',
+      name: 'Chat_account_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Composite expert`
+  String get Chat_composite_expert {
+    return Intl.message(
+      'Composite expert',
+      name: 'Chat_composite_expert',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Export conversation`
+  String get Chat_export_conversation {
+    return Intl.message(
+      'Export conversation',
+      name: 'Chat_export_conversation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Share as Markdown`
+  String get Chat_share_markdown {
+    return Intl.message(
+      'Share as Markdown',
+      name: 'Chat_share_markdown',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Share as PDF`
+  String get Chat_share_pdf {
+    return Intl.message(
+      'Share as PDF',
+      name: 'Chat_share_pdf',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not export this conversation.`
+  String get Chat_export_failed {
+    return Intl.message(
+      'Could not export this conversation.',
+      name: 'Chat_export_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ask about composites engineering…`
+  String get Chat_composer_hint {
+    return Intl.message(
+      'Ask about composites engineering…',
+      name: 'Chat_composer_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Voice input is unavailable. Please check microphone permissions.`
+  String get Chat_voice_unavailable {
+    return Intl.message(
+      'Voice input is unavailable. Please check microphone permissions.',
+      name: 'Chat_voice_unavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Stop generating`
+  String get Chat_stop_generating {
+    return Intl.message(
+      'Stop generating',
+      name: 'Chat_stop_generating',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Generating response. Stop generating`
+  String get Chat_generating_response_stop {
+    return Intl.message(
+      'Generating response. Stop generating',
+      name: 'Chat_generating_response_stop',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Stop voice input`
+  String get Chat_stop_voice_input {
+    return Intl.message(
+      'Stop voice input',
+      name: 'Chat_stop_voice_input',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Send message`
+  String get Chat_send_message {
+    return Intl.message(
+      'Send message',
+      name: 'Chat_send_message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Start voice input`
+  String get Chat_start_voice_input {
+    return Intl.message(
+      'Start voice input',
+      name: 'Chat_start_voice_input',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add attachment`
+  String get Chat_add_attachment {
+    return Intl.message(
+      'Add attachment',
+      name: 'Chat_add_attachment',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select model`
+  String get Chat_select_model {
+    return Intl.message(
+      'Select model',
+      name: 'Chat_select_model',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Models`
+  String get Chat_models {
+    return Intl.message('Models', name: 'Chat_models', desc: '', args: []);
+  }
+
+  /// `Photo Library`
+  String get Chat_photo_library {
+    return Intl.message(
+      'Photo Library',
+      name: 'Chat_photo_library',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Camera`
+  String get Chat_camera {
+    return Intl.message('Camera', name: 'Chat_camera', desc: '', args: []);
+  }
+
+  /// `Files`
+  String get Chat_files {
+    return Intl.message('Files', name: 'Chat_files', desc: '', args: []);
+  }
+
+  /// `Knowledge`
+  String get Chat_knowledge {
+    return Intl.message(
+      'Knowledge',
+      name: 'Chat_knowledge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Attach RAG sources`
+  String get Chat_attach_knowledge_sources {
+    return Intl.message(
+      'Attach RAG sources',
+      name: 'Chat_attach_knowledge_sources',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Refresh knowledge`
+  String get Chat_refresh_knowledge {
+    return Intl.message(
+      'Refresh knowledge',
+      name: 'Chat_refresh_knowledge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Search knowledge`
+  String get Chat_search_knowledge {
+    return Intl.message(
+      'Search knowledge',
+      name: 'Chat_search_knowledge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No knowledge sources found`
+  String get Chat_no_knowledge_sources {
+    return Intl.message(
+      'No knowledge sources found',
+      name: 'Chat_no_knowledge_sources',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} files`
+  String Chat_file_count(int count) {
+    return Intl.message(
+      '$count files',
+      name: 'Chat_file_count',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Processing failed: {error}`
+  String Chat_processing_failed_detail(String error) {
+    return Intl.message(
+      'Processing failed: $error',
+      name: 'Chat_processing_failed_detail',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Processing failed`
+  String get Chat_processing_failed {
+    return Intl.message(
+      'Processing failed',
+      name: 'Chat_processing_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Processing document…`
+  String get Chat_processing_document {
+    return Intl.message(
+      'Processing document…',
+      name: 'Chat_processing_document',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Read {name}`
+  String Chat_read_file(String name) {
+    return Intl.message(
+      'Read $name',
+      name: 'Chat_read_file',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `{count, plural, one{{count} attachment} other{{count} attachments}}`
+  String Chat_attachment_count(int count) {
+    return Intl.plural(
+      count,
+      one: '$count attachment',
+      other: '$count attachments',
+      name: 'Chat_attachment_count',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Sign in to access chat, or use the composite calculators without signing in.`
+  String get Chat_sign_in_description {
+    return Intl.message(
+      'Sign in to access chat, or use the composite calculators without signing in.',
+      name: 'Chat_sign_in_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sign In to Chat`
+  String get Chat_sign_in_to_chat {
+    return Intl.message(
+      'Sign In to Chat',
+      name: 'Chat_sign_in_to_chat',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open Composite Calculators`
+  String get Chat_open_calculators {
+    return Intl.message(
+      'Open Composite Calculators',
+      name: 'Chat_open_calculators',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Share chat`
+  String get Chat_share_chat {
+    return Intl.message(
+      'Share chat',
+      name: 'Chat_share_chat',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Messages you send after creating your link won’t be shared. Anyone with the URL can view this chat.`
+  String get Chat_share_chat_description {
+    return Intl.message(
+      'Messages you send after creating your link won’t be shared. Anyone with the URL can view this chat.',
+      name: 'Chat_share_chat_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy link`
+  String get Chat_copy_link {
+    return Intl.message(
+      'Copy link',
+      name: 'Chat_copy_link',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Link copied to clipboard`
+  String get Chat_link_copied {
+    return Intl.message(
+      'Link copied to clipboard',
+      name: 'Chat_link_copied',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rename chat`
+  String get Chat_rename_chat {
+    return Intl.message(
+      'Rename chat',
+      name: 'Chat_rename_chat',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Title`
+  String get Chat_chat_title {
+    return Intl.message('Title', name: 'Chat_chat_title', desc: '', args: []);
+  }
+
+  /// `Delete chat?`
+  String get Chat_delete_chat_title {
+    return Intl.message(
+      'Delete chat?',
+      name: 'Chat_delete_chat_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Delete “{name}”? This cannot be undone.`
+  String Chat_delete_chat_message(String name) {
+    return Intl.message(
+      'Delete “$name”? This cannot be undone.',
+      name: 'Chat_delete_chat_message',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Delete this chat? This cannot be undone.`
+  String get Chat_delete_untitled_chat_message {
+    return Intl.message(
+      'Delete this chat? This cannot be undone.',
+      name: 'Chat_delete_untitled_chat_message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move to folder`
+  String get Chat_move_to_folder {
+    return Intl.message(
+      'Move to folder',
+      name: 'Chat_move_to_folder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New folder`
+  String get Chat_new_folder {
+    return Intl.message(
+      'New folder',
+      name: 'Chat_new_folder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Folder name`
+  String get Chat_folder_name {
+    return Intl.message(
+      'Folder name',
+      name: 'Chat_folder_name',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove from folder`
+  String get Chat_remove_from_folder {
+    return Intl.message(
+      'Remove from folder',
+      name: 'Chat_remove_from_folder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No folders yet`
+  String get Chat_no_folders {
+    return Intl.message(
+      'No folders yet',
+      name: 'Chat_no_folders',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Untitled chat`
+  String get Chat_untitled_chat {
+    return Intl.message(
+      'Untitled chat',
+      name: 'Chat_untitled_chat',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Chat options`
+  String get Chat_chat_options {
+    return Intl.message(
+      'Chat options',
+      name: 'Chat_chat_options',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pin`
+  String get Chat_pin {
+    return Intl.message('Pin', name: 'Chat_pin', desc: '', args: []);
+  }
+
+  /// `Unpin`
+  String get Chat_unpin {
+    return Intl.message('Unpin', name: 'Chat_unpin', desc: '', args: []);
+  }
+
+  /// `Rename`
+  String get Chat_rename {
+    return Intl.message('Rename', name: 'Chat_rename', desc: '', args: []);
+  }
+
+  /// `Share`
+  String get Chat_share {
+    return Intl.message('Share', name: 'Chat_share', desc: '', args: []);
+  }
+
+  /// `Archive`
+  String get Chat_archive {
+    return Intl.message('Archive', name: 'Chat_archive', desc: '', args: []);
+  }
+
+  /// `No chats found`
+  String get Chat_no_chats_found {
+    return Intl.message(
+      'No chats found',
+      name: 'Chat_no_chats_found',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No matching chats`
+  String get Chat_no_matching_chats {
+    return Intl.message(
+      'No matching chats',
+      name: 'Chat_no_matching_chats',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No chats yet`
+  String get Chat_no_chats {
+    return Intl.message(
+      'No chats yet',
+      name: 'Chat_no_chats',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Start a new chat to begin a conversation.`
+  String get Chat_start_new_chat_help {
+    return Intl.message(
+      'Start a new chat to begin a conversation.',
+      name: 'Chat_start_new_chat_help',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pinned`
+  String get Chat_pinned {
+    return Intl.message('Pinned', name: 'Chat_pinned', desc: '', args: []);
+  }
+
+  /// `Chats`
+  String get Chat_chats {
+    return Intl.message('Chats', name: 'Chat_chats', desc: '', args: []);
+  }
+
+  /// `No chats in folder`
+  String get Chat_no_folder_chats {
+    return Intl.message(
+      'No chats in folder',
+      name: 'Chat_no_folder_chats',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Search chats`
+  String get Chat_search_chats {
+    return Intl.message(
+      'Search chats',
+      name: 'Chat_search_chats',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Search "{query}"`
+  String Chat_search_history_title(String query) {
+    return Intl.message(
+      'Search "$query"',
+      name: 'Chat_search_history_title',
+      desc: '',
+      args: [query],
+    );
+  }
+
+  /// `Archived`
+  String get Chat_archived {
+    return Intl.message('Archived', name: 'Chat_archived', desc: '', args: []);
+  }
+
+  /// `New chat`
+  String get Chat_new_chat {
+    return Intl.message('New chat', name: 'Chat_new_chat', desc: '', args: []);
+  }
+
+  /// `Welcome`
+  String get Chat_welcome {
+    return Intl.message('Welcome', name: 'Chat_welcome', desc: '', args: []);
+  }
+
+  /// `Welcome, {name}`
+  String Chat_welcome_name(String name) {
+    return Intl.message(
+      'Welcome, $name',
+      name: 'Chat_welcome_name',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Composites engineering copilot`
+  String get Chat_engineering_copilot {
+    return Intl.message(
+      'Composites engineering copilot',
+      name: 'Chat_engineering_copilot',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `What are you working on?`
+  String get Chat_working_on {
+    return Intl.message(
+      'What are you working on?',
+      name: 'Chat_working_on',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ask about materials, laminate design, failure analysis, manufacturing, or engineering calculations.`
+  String get Chat_welcome_description {
+    return Intl.message(
+      'Ask about materials, laminate design, failure analysis, manufacturing, or engineering calculations.',
+      name: 'Chat_welcome_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Suggested questions`
+  String get Chat_suggested_questions {
+    return Intl.message(
+      'Suggested questions',
+      name: 'Chat_suggested_questions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ask: {question}`
+  String Chat_ask_question(String question) {
+    return Intl.message(
+      'Ask: $question',
+      name: 'Chat_ask_question',
+      desc: '',
+      args: [question],
+    );
+  }
+
+  /// `Copy message`
+  String get Chat_copy_message {
+    return Intl.message(
+      'Copy message',
+      name: 'Chat_copy_message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copied`
+  String get Chat_copied {
+    return Intl.message('Copied', name: 'Chat_copied', desc: '', args: []);
+  }
+
+  /// `Get response`
+  String get Chat_get_response {
+    return Intl.message(
+      'Get response',
+      name: 'Chat_get_response',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Regenerate response`
+  String get Chat_regenerate_response {
+    return Intl.message(
+      'Regenerate response',
+      name: 'Chat_regenerate_response',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Good response`
+  String get Chat_good_response {
+    return Intl.message(
+      'Good response',
+      name: 'Chat_good_response',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Bad response`
+  String get Chat_bad_response {
+    return Intl.message(
+      'Bad response',
+      name: 'Chat_bad_response',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit positive feedback`
+  String get Chat_edit_positive_feedback {
+    return Intl.message(
+      'Edit positive feedback',
+      name: 'Chat_edit_positive_feedback',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit negative feedback`
+  String get Chat_edit_negative_feedback {
+    return Intl.message(
+      'Edit negative feedback',
+      name: 'Chat_edit_negative_feedback',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Feedback submitted`
+  String get Chat_feedback_submitted {
+    return Intl.message(
+      'Feedback submitted',
+      name: 'Chat_feedback_submitted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Knowledge file`
+  String get Chat_knowledge_file {
+    return Intl.message(
+      'Knowledge file',
+      name: 'Chat_knowledge_file',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Knowledge collection`
+  String get Chat_knowledge_collection {
+    return Intl.message(
+      'Knowledge collection',
+      name: 'Chat_knowledge_collection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Response interrupted`
+  String get Chat_response_interrupted {
+    return Intl.message(
+      'Response interrupted',
+      name: 'Chat_response_interrupted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use as draft`
+  String get Chat_use_as_draft {
+    return Intl.message(
+      'Use as draft',
+      name: 'Chat_use_as_draft',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Replace draft?`
+  String get Chat_replace_draft_title {
+    return Intl.message(
+      'Replace draft?',
+      name: 'Chat_replace_draft_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Replace the current unsent text with this message?`
+  String get Chat_replace_draft_message {
+    return Intl.message(
+      'Replace the current unsent text with this message?',
+      name: 'Chat_replace_draft_message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Replace draft`
+  String get Chat_replace_draft {
+    return Intl.message(
+      'Replace draft',
+      name: 'Chat_replace_draft',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Find in chat`
+  String get Chat_find_in_chat {
+    return Intl.message(
+      'Find in chat',
+      name: 'Chat_find_in_chat',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Search loaded messages`
+  String get Chat_search_loaded_messages {
+    return Intl.message(
+      'Search loaded messages',
+      name: 'Chat_search_loaded_messages',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter text to search this conversation.`
+  String get Chat_search_empty {
+    return Intl.message(
+      'Enter text to search this conversation.',
+      name: 'Chat_search_empty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No matching messages.`
+  String get Chat_search_no_matches {
+    return Intl.message(
+      'No matching messages.',
+      name: 'Chat_search_no_matches',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} matching messages`
+  String Chat_search_match_count(int count) {
+    return Intl.message(
+      '$count matching messages',
+      name: 'Chat_search_match_count',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Copy excerpt`
+  String get Chat_search_copy_excerpt {
+    return Intl.message(
+      'Copy excerpt',
+      name: 'Chat_search_copy_excerpt',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Excerpt copied`
+  String get Chat_search_excerpt_copied {
+    return Intl.message(
+      'Excerpt copied',
+      name: 'Chat_search_excerpt_copied',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You`
+  String get Chat_search_you {
+    return Intl.message('You', name: 'Chat_search_you', desc: '', args: []);
+  }
+
+  /// `Assistant`
+  String get Chat_search_assistant {
+    return Intl.message(
+      'Assistant',
+      name: 'Chat_search_assistant',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear search`
+  String get Chat_search_clear {
+    return Intl.message(
+      'Clear search',
+      name: 'Chat_search_clear',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not copy this excerpt.`
+  String get Chat_search_copy_failed {
+    return Intl.message(
+      'Could not copy this excerpt.',
+      name: 'Chat_search_copy_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rate this response`
+  String get Chat_feedback_title {
+    return Intl.message(
+      'Rate this response',
+      name: 'Chat_feedback_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your feedback helps improve answer quality.`
+  String get Chat_feedback_help {
+    return Intl.message(
+      'Your feedback helps improve answer quality.',
+      name: 'Chat_feedback_help',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Helpful`
+  String get Chat_feedback_helpful {
+    return Intl.message(
+      'Helpful',
+      name: 'Chat_feedback_helpful',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Needs work`
+  String get Chat_feedback_needs_work {
+    return Intl.message(
+      'Needs work',
+      name: 'Chat_feedback_needs_work',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Quality score`
+  String get Chat_feedback_quality_score {
+    return Intl.message(
+      'Quality score',
+      name: 'Chat_feedback_quality_score',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `1 · Poor`
+  String get Chat_feedback_poor {
+    return Intl.message(
+      '1 · Poor',
+      name: 'Chat_feedback_poor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `10 · Excellent`
+  String get Chat_feedback_excellent {
+    return Intl.message(
+      '10 · Excellent',
+      name: 'Chat_feedback_excellent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `What influenced your rating?`
+  String get Chat_feedback_reason_prompt {
+    return Intl.message(
+      'What influenced your rating?',
+      name: 'Chat_feedback_reason_prompt',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Additional details`
+  String get Chat_feedback_additional_details {
+    return Intl.message(
+      'Additional details',
+      name: 'Chat_feedback_additional_details',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Optional`
+  String get Chat_feedback_optional {
+    return Intl.message(
+      'Optional',
+      name: 'Chat_feedback_optional',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select at least one reason to continue.`
+  String get Chat_feedback_reason_required {
+    return Intl.message(
+      'Select at least one reason to continue.',
+      name: 'Chat_feedback_reason_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Feedback could not be saved. Try again.`
+  String get Chat_feedback_save_failed {
+    return Intl.message(
+      'Feedback could not be saved. Try again.',
+      name: 'Chat_feedback_save_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Submit feedback`
+  String get Chat_feedback_submit {
+    return Intl.message(
+      'Submit feedback',
+      name: 'Chat_feedback_submit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Update feedback`
+  String get Chat_feedback_update {
+    return Intl.message(
+      'Update feedback',
+      name: 'Chat_feedback_update',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Feedback saved.`
+  String get Chat_feedback_saved {
+    return Intl.message(
+      'Feedback saved.',
+      name: 'Chat_feedback_saved',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accurate`
+  String get Chat_feedback_accurate {
+    return Intl.message(
+      'Accurate',
+      name: 'Chat_feedback_accurate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear explanation`
+  String get Chat_feedback_clear_explanation {
+    return Intl.message(
+      'Clear explanation',
+      name: 'Chat_feedback_clear_explanation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Useful detail`
+  String get Chat_feedback_useful_detail {
+    return Intl.message(
+      'Useful detail',
+      name: 'Chat_feedback_useful_detail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Followed instructions`
+  String get Chat_feedback_followed_instructions {
+    return Intl.message(
+      'Followed instructions',
+      name: 'Chat_feedback_followed_instructions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Good structure`
+  String get Chat_feedback_good_structure {
+    return Intl.message(
+      'Good structure',
+      name: 'Chat_feedback_good_structure',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Other`
+  String get Chat_feedback_other {
+    return Intl.message(
+      'Other',
+      name: 'Chat_feedback_other',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inaccurate`
+  String get Chat_feedback_inaccurate {
+    return Intl.message(
+      'Inaccurate',
+      name: 'Chat_feedback_inaccurate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unclear`
+  String get Chat_feedback_unclear {
+    return Intl.message(
+      'Unclear',
+      name: 'Chat_feedback_unclear',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Too verbose`
+  String get Chat_feedback_too_verbose {
+    return Intl.message(
+      'Too verbose',
+      name: 'Chat_feedback_too_verbose',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not useful`
+  String get Chat_feedback_not_useful {
+    return Intl.message(
+      'Not useful',
+      name: 'Chat_feedback_not_useful',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Didn't follow instructions`
+  String get Chat_feedback_did_not_follow {
+    return Intl.message(
+      'Didn\'t follow instructions',
+      name: 'Chat_feedback_did_not_follow',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy code`
+  String get Chat_copy_code {
+    return Intl.message(
+      'Copy code',
+      name: 'Chat_copy_code',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `code`
+  String get Chat_code {
+    return Intl.message('code', name: 'Chat_code', desc: '', args: []);
+  }
+
+  /// `{language} - streaming`
+  String Chat_code_streaming(String language) {
+    return Intl.message(
+      '$language - streaming',
+      name: 'Chat_code_streaming',
+      desc: '',
+      args: [language],
+    );
+  }
+
+  /// `Could not open this link.`
+  String get Chat_open_link_failed {
+    return Intl.message(
+      'Could not open this link.',
+      name: 'Chat_open_link_failed',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

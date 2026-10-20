@@ -82,9 +82,7 @@ class _ChatModel extends ChatViewModel {
 final _a = Chat(id: 'native-a', title: 'Laminate A');
 final _b = Chat(id: 'native-b', title: 'Laminate B');
 const _file = ChatFile(id: 'native-image', name: 'layup.png', url: '');
-Finder get _composer => find.byWidgetPredicate((widget) =>
-    widget is TextField &&
-    widget.decoration?.hintText == 'Ask about composites engineering…');
+Finder get _composer => find.byKey(const Key('chat-composer'));
 
 Future<void> _mount(WidgetTester tester, _ChatModel model,
     {Locale locale = const Locale('en')}) async {
@@ -233,6 +231,141 @@ void main() {
     model.show(null);
     await tester.pumpAndSettle();
     expect(latest, findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native question reuse replaces only explicitly approved text',
+      (tester) async {
+    const historyFile =
+        ChatFile(id: 'native-source', name: 'original-layup.pdf', url: '');
+    final question = Message(
+      role: 'user',
+      content: '  碳纖維 [0/90] 🌍\n重新計算？  ',
+      files: [historyFile],
+    );
+    model.show(_a, history: [question]);
+    model.files.add(_file);
+    model.previews[_file.id] = png;
+    final originalQuestion = question.toJson();
+    await _mount(tester, model, locale: const Locale('zh', 'HK'));
+    await _enter(tester, '  保留這份草稿\n直到確認  ');
+    model.composerTextController.selection =
+        const TextSelection.collapsed(offset: 4);
+    final originalDraft = model.composerTextController.value;
+    final useAsDraft = find.byKey(ValueKey('chat-use-as-draft-${question.id}'));
+    await tester.ensureVisible(useAsDraft);
+    await tester.pumpAndSettle();
+    await tester.tap(useAsDraft);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('chat-replace-draft-dialog')),
+        findsOneWidget);
+    expect(model.composerTextController.value, originalDraft);
+    await tester.tap(find.byKey(const ValueKey('chat-replace-draft-cancel')));
+    await tester.pumpAndSettle();
+    expect(model.composerTextController.value, originalDraft);
+    expect(question.toJson(), originalQuestion);
+    expect(model.files, [_file]);
+    expect(model.previews, {_file.id: png});
+    expect(model.sent, isEmpty);
+
+    await tester.tap(useAsDraft);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('chat-replace-draft-confirm')));
+    await tester.pumpAndSettle();
+    await _hideKeyboard(tester);
+    expect(
+        find.byKey(const ValueKey('chat-replace-draft-dialog')), findsNothing);
+    expect(model.composerTextController.text, question.content);
+    expect(model.composerTextController.selection,
+        TextSelection.collapsed(offset: question.content.length));
+    expect(model.composerTextController.value.composing, TextRange.empty);
+    expect(model.messages, [question]);
+    expect(question.toJson(), originalQuestion);
+    expect(model.files, [_file]);
+    expect(model.previews, {_file.id: png});
+    expect(model.sent, isEmpty);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native loaded chat search refreshes and retires on logout',
+      (tester) async {
+    const query = '碳纖 α[0].* 🌍';
+    final question =
+        Message(role: 'user', content: 'Question: $query / SI units?');
+    final response = Message(role: 'assistant', content: 'Preparing answer…');
+    final nearMatch =
+        Message(role: 'user', content: 'Not literal: 碳纖 α0anything 🌍');
+    model.show(_a, history: [question, response, nearMatch]);
+    await _mount(tester, model, locale: const Locale('zh', 'HK'));
+    await _enter(tester, '  搜尋不應改動這份草稿  ');
+    final originalDraft = model.composerTextController.value;
+    final strings = S.of(tester.element(find.byType(ChatScreen)));
+    final findButton = find.byKey(const ValueKey('chat-find-in-chat'));
+    final searchField = find.byKey(const ValueKey('chat-search-field'));
+    final results = find.byKey(const ValueKey('chat-search-results'));
+    await tester.tap(findButton);
+    await tester.pumpAndSettle();
+    expect(find.text(strings.Chat_search_empty), findsOneWidget);
+    await tester.enterText(searchField, query);
+    await _hideKeyboard(tester);
+    expect(find.text(strings.Chat_search_match_count(1)), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat-search-result-0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat-search-result-2')), findsNothing);
+    expect(find.descendant(of: results, matching: find.text(question.content)),
+        findsOneWidget);
+
+    // The response keeps its identity as streamed tokens extend its content.
+    response.content = 'Answer: $query / current streamed value';
+    model.threadResponseController.add(response);
+    model.notifyListeners();
+    await tester.pumpAndSettle();
+    expect(find.text(strings.Chat_search_match_count(2)), findsOneWidget);
+    final streamedResult = find.byKey(const ValueKey('chat-search-result-1'));
+    if (streamedResult.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(streamedResult, 160,
+          scrollable: find
+              .descendant(of: results, matching: find.byType(Scrollable))
+              .first);
+    }
+    await tester.ensureVisible(streamedResult);
+    await tester.pumpAndSettle();
+    expect(
+        find.descendant(
+            of: streamedResult, matching: find.text(response.content)),
+        findsOneWidget);
+    expect(model.composerTextController.value, originalDraft);
+    expect(model.sent, isEmpty);
+    final close = find.byKey(const ValueKey('chat-search-close'));
+    if (close.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(close, -160,
+          scrollable: find
+              .descendant(of: results, matching: find.byType(Scrollable))
+              .first);
+    }
+    await tester.ensureVisible(close);
+    await tester.pumpAndSettle();
+    await tester.tap(close);
+    await tester.pumpAndSettle();
+    expect(searchField, findsNothing);
+    expect(model.composerTextController.value, originalDraft);
+
+    await tester.tap(findButton);
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(searchField).controller!.text, isEmpty);
+    await tester.enterText(searchField, query);
+    await _hideKeyboard(tester);
+    expect(find.text(strings.Chat_search_match_count(2)), findsOneWidget);
+    await model.clearChatStateOnLogout();
+    await tester.pumpAndSettle();
+    expect(searchField, findsNothing);
+    expect(results, findsNothing);
+    expect(find.byKey(const ValueKey('chat-search-result-0')), findsNothing);
+    expect(find.byKey(const ValueKey('chat-search-result-1')), findsNothing);
+    expect(_composer, findsNothing);
+    expect(model.composerTextController.text, isEmpty);
+    expect(model.sent, isEmpty);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   }, timeout: const Timeout(Duration(minutes: 3)));

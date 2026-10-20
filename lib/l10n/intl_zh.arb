@@ -266,5 +266,212 @@
     "placeholders": {
       "name": {}
     }
-  }
+  },
+  "Chat_title": "聊天",
+  "Chat_cancel": "取消",
+  "Chat_save": "保存",
+  "Chat_delete": "删除",
+  "Chat_clear": "清除",
+  "Chat_clear_search": "清除搜索",
+  "Chat_sign_in": "登录",
+  "Chat_composite_calculators": "复合材料计算器",
+  "Chat_account_settings": "账户与设置",
+  "Chat_composite_expert": "复合材料专家",
+  "Chat_export_conversation": "导出对话",
+  "Chat_share_markdown": "分享为 Markdown",
+  "Chat_share_pdf": "分享为 PDF",
+  "Chat_export_failed": "无法导出此对话。",
+  "Chat_composer_hint": "询问复合材料工程问题…",
+  "Chat_voice_unavailable": "语音输入不可用。请检查麦克风权限。",
+  "Chat_stop_generating": "停止生成",
+  "Chat_generating_response_stop": "正在生成回复。停止生成",
+  "Chat_stop_voice_input": "停止语音输入",
+  "Chat_send_message": "发送消息",
+  "Chat_start_voice_input": "开始语音输入",
+  "Chat_add_attachment": "添加附件",
+  "Chat_select_model": "选择模型",
+  "Chat_models": "模型",
+  "Chat_photo_library": "照片图库",
+  "Chat_camera": "相机",
+  "Chat_files": "文件",
+  "Chat_knowledge": "知识库",
+  "Chat_attach_knowledge_sources": "添加 RAG 来源",
+  "Chat_refresh_knowledge": "刷新知识库",
+  "Chat_search_knowledge": "搜索知识库",
+  "Chat_no_knowledge_sources": "未找到知识来源",
+  "Chat_file_count": "{count} 个文件",
+  "@Chat_file_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "Chat_processing_failed_detail": "处理失败：{error}",
+  "@Chat_processing_failed_detail": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_processing_failed": "处理失败",
+  "Chat_processing_document": "正在处理文档…",
+  "Chat_read_file": "阅读 {name}",
+  "@Chat_read_file": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_attachment_count": "{count} 个附件",
+  "@Chat_attachment_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "Chat_sign_in_description": "登录以使用聊天功能，也可免登录使用复合材料计算器。",
+  "Chat_sign_in_to_chat": "登录以聊天",
+  "Chat_open_calculators": "打开复合材料计算器",
+  "Chat_share_chat": "分享聊天",
+  "Chat_share_chat_description": "创建链接后发送的消息不会被分享。任何获得此链接的人都可以查看此聊天。",
+  "Chat_copy_link": "复制链接",
+  "Chat_link_copied": "链接已复制到剪贴板",
+  "Chat_rename_chat": "重命名聊天",
+  "Chat_chat_title": "标题",
+  "Chat_delete_chat_title": "删除聊天？",
+  "Chat_delete_chat_message": "删除“{name}”？此操作无法撤销。",
+  "@Chat_delete_chat_message": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_delete_untitled_chat_message": "删除此聊天？此操作无法撤销。",
+  "Chat_move_to_folder": "移至文件夹",
+  "Chat_new_folder": "新建文件夹",
+  "Chat_folder_name": "文件夹名称",
+  "Chat_remove_from_folder": "从文件夹移除",
+  "Chat_no_folders": "暂无文件夹",
+  "Chat_untitled_chat": "未命名聊天",
+  "Chat_chat_options": "聊天选项",
+  "Chat_pin": "置顶",
+  "Chat_unpin": "取消置顶",
+  "Chat_rename": "重命名",
+  "Chat_share": "分享",
+  "Chat_archive": "归档",
+  "Chat_no_chats_found": "未找到聊天",
+  "Chat_no_matching_chats": "没有匹配的聊天",
+  "Chat_no_chats": "暂无聊天",
+  "Chat_start_new_chat_help": "新建聊天以开始对话。",
+  "Chat_pinned": "已置顶",
+  "Chat_chats": "聊天",
+  "Chat_no_folder_chats": "文件夹中暂无聊天",
+  "Chat_search_chats": "搜索聊天",
+  "Chat_search_history_title": "搜索“{query}”",
+  "@Chat_search_history_title": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_archived": "已归档",
+  "Chat_new_chat": "新建聊天",
+  "Chat_welcome": "欢迎",
+  "Chat_welcome_name": "欢迎，{name}",
+  "@Chat_welcome_name": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_engineering_copilot": "复合材料工程助手",
+  "Chat_working_on": "您正在研究什么？",
+  "Chat_welcome_description": "询问有关材料、层合板设计、失效分析、制造或工程计算的问题。",
+  "Chat_suggested_questions": "建议问题",
+  "Chat_ask_question": "提问：{question}",
+  "@Chat_ask_question": {
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_copy_message": "复制消息",
+  "Chat_copied": "已复制",
+  "Chat_get_response": "获取回复",
+  "Chat_regenerate_response": "重新生成回复",
+  "Chat_good_response": "好的回复",
+  "Chat_bad_response": "不好的回复",
+  "Chat_edit_positive_feedback": "编辑正面反馈",
+  "Chat_edit_negative_feedback": "编辑负面反馈",
+  "Chat_feedback_submitted": "反馈已提交",
+  "Chat_knowledge_file": "知识文件",
+  "Chat_knowledge_collection": "知识集合",
+  "Chat_response_interrupted": "回复已中断",
+  "Chat_use_as_draft": "用作草稿",
+  "Chat_replace_draft_title": "替换草稿？",
+  "Chat_replace_draft_message": "用此消息替换当前尚未发送的文字？",
+  "Chat_replace_draft": "替换草稿",
+  "Chat_find_in_chat": "在聊天中查找",
+  "Chat_search_loaded_messages": "搜索已加载的消息",
+  "Chat_search_empty": "输入文字以搜索此对话。",
+  "Chat_search_no_matches": "没有匹配的消息。",
+  "Chat_search_match_count": "{count} 条匹配的消息",
+  "@Chat_search_match_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "Chat_search_copy_excerpt": "复制摘录",
+  "Chat_search_excerpt_copied": "摘录已复制",
+  "Chat_search_you": "您",
+  "Chat_search_assistant": "助手",
+  "Chat_search_clear": "清除搜索",
+  "Chat_search_copy_failed": "无法复制此摘录。",
+  "Chat_feedback_title": "评价此回复",
+  "Chat_feedback_help": "您的反馈有助于改善回答质量。",
+  "Chat_feedback_helpful": "有帮助",
+  "Chat_feedback_needs_work": "需要改进",
+  "Chat_feedback_quality_score": "质量评分",
+  "Chat_feedback_poor": "1 · 差",
+  "Chat_feedback_excellent": "10 · 优秀",
+  "Chat_feedback_reason_prompt": "哪些因素影响了您的评分？",
+  "Chat_feedback_additional_details": "补充说明",
+  "Chat_feedback_optional": "选填",
+  "Chat_feedback_reason_required": "请至少选择一个原因以继续。",
+  "Chat_feedback_save_failed": "无法保存反馈。请重试。",
+  "Chat_feedback_submit": "提交反馈",
+  "Chat_feedback_update": "更新反馈",
+  "Chat_feedback_saved": "反馈已保存。",
+  "Chat_feedback_accurate": "准确",
+  "Chat_feedback_clear_explanation": "解释清晰",
+  "Chat_feedback_useful_detail": "细节有用",
+  "Chat_feedback_followed_instructions": "遵循了指示",
+  "Chat_feedback_good_structure": "结构良好",
+  "Chat_feedback_other": "其他",
+  "Chat_feedback_inaccurate": "不准确",
+  "Chat_feedback_unclear": "不清晰",
+  "Chat_feedback_too_verbose": "过于冗长",
+  "Chat_feedback_not_useful": "没有帮助",
+  "Chat_feedback_did_not_follow": "未遵循指示",
+  "Chat_copy_code": "复制代码",
+  "Chat_code": "代码",
+  "Chat_code_streaming": "{language} - 生成中",
+  "@Chat_code_streaming": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_open_link_failed": "无法打开此链接。"
 }

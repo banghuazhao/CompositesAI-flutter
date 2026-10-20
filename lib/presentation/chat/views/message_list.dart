@@ -5,19 +5,25 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
+import 'package:swiftcomp/generated/l10n.dart';
 
 import '../model/chat_citation.dart';
 import '../viewModels/chat_view_model.dart';
 import 'ai_markdown_message.dart';
 import 'chat_progress_indicator.dart';
+import 'chat_use_as_draft_button.dart';
 import 'response_feedback_sheet.dart';
 
 class MessageList extends StatefulWidget {
   final double bottomContentPadding;
+  final VoidCallback? onBeforeReuse;
+  final VoidCallback? onDraftApplied;
 
   const MessageList({
     super.key,
     required this.bottomContentPadding,
+    this.onBeforeReuse,
+    this.onDraftApplied,
   });
 
   @override
@@ -171,8 +177,12 @@ class _MessageListState extends State<MessageList> {
   }
 
   String _attachedFileDetail(ChatFile file) {
-    if (file.isKnowledgeCollection) return 'Knowledge collection';
-    if (file.isKnowledgeFile) return 'Knowledge file';
+    final strings = S.maybeOf(context);
+    if (file.isKnowledgeCollection) {
+      return strings?.Chat_knowledge_collection ?? 'Knowledge collection';
+    }
+    if (file.isKnowledgeFile)
+      return strings?.Chat_knowledge_file ?? 'Knowledge file';
     if (file.size > 0) return _formatFileSize(file.size);
     return '';
   }
@@ -228,18 +238,27 @@ class _MessageListState extends State<MessageList> {
     final isUnansweredLast = viewModel.messages.isNotEmpty &&
         viewModel.messages.last == message &&
         viewModel.canRegenerate;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         if (isUnansweredLast)
-          buildRegenerateButton(viewModel, label: 'Get response'),
+          buildRegenerateButton(viewModel,
+              label: S.maybeOf(context)?.Chat_get_response ?? 'Get response'),
         buildCopyIconButton(viewModel, message),
+        if (message.content.trim().isNotEmpty)
+          ChatUseAsDraftButton(
+            viewModel: viewModel,
+            message: message,
+            onBeforeUse: widget.onBeforeReuse,
+            onApplied: widget.onDraftApplied,
+          ),
       ],
     );
   }
 
   Widget buildRegenerateButton(ChatViewModel viewModel, {String? label}) {
-    const tooltip = 'Regenerate response';
+    final tooltip =
+        S.maybeOf(context)?.Chat_regenerate_response ?? 'Regenerate response';
     final onPressed = viewModel.canRegenerate
         ? () => viewModel.regenerateLastResponse()
         : null;
@@ -267,7 +286,9 @@ class _MessageListState extends State<MessageList> {
 
   Widget buildCopyIconButton(ChatViewModel viewModel, Message message) {
     return IconButton(
-      tooltip: viewModel.isMessageCopying(message) ? 'Copied' : 'Copy message',
+      tooltip: viewModel.isMessageCopying(message)
+          ? S.maybeOf(context)?.Chat_copied ?? 'Copied'
+          : S.maybeOf(context)?.Chat_copy_message ?? 'Copy message',
       icon: viewModel.isMessageCopying(message)
           ? const Icon(Icons.check, size: 15)
           : const Icon(Icons.copy, size: 15),
@@ -291,8 +312,9 @@ class _MessageListState extends State<MessageList> {
     final isLast =
         viewModel.messages.isNotEmpty && viewModel.messages.last == message;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    final strings = S.maybeOf(context);
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         buildCopyIconButton(viewModel, message),
         if (isLast && viewModel.canRegenerate) buildRegenerateButton(viewModel),
@@ -307,7 +329,10 @@ class _MessageListState extends State<MessageList> {
           )
         else ...[
           IconButton(
-            tooltip: liked ? 'Edit positive feedback' : 'Good response',
+            tooltip: liked
+                ? strings?.Chat_edit_positive_feedback ??
+                    'Edit positive feedback'
+                : strings?.Chat_good_response ?? 'Good response',
             icon: Icon(
               liked ? Icons.thumb_up_alt_rounded : Icons.thumb_up_alt_outlined,
               size: 18,
@@ -328,7 +353,10 @@ class _MessageListState extends State<MessageList> {
             ),
           ),
           IconButton(
-            tooltip: disliked ? 'Edit negative feedback' : 'Bad response',
+            tooltip: disliked
+                ? strings?.Chat_edit_negative_feedback ??
+                    'Edit negative feedback'
+                : strings?.Chat_bad_response ?? 'Bad response',
             icon: Icon(
               disliked
                   ? Icons.thumb_down_alt_rounded
@@ -355,7 +383,7 @@ class _MessageListState extends State<MessageList> {
           Padding(
             padding: const EdgeInsets.only(left: 2),
             child: Tooltip(
-              message: 'Feedback submitted',
+              message: strings?.Chat_feedback_submitted ?? 'Feedback submitted',
               child: Icon(
                 Icons.check_circle_rounded,
                 size: 16,
@@ -451,7 +479,8 @@ class _MessageListState extends State<MessageList> {
             color: Theme.of(context).colorScheme.error,
           ),
           const SizedBox(width: 8),
-          const Text('Response interrupted'),
+          Text(S.maybeOf(context)?.Chat_response_interrupted ??
+              'Response interrupted'),
         ],
       );
     }

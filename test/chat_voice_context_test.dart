@@ -6,6 +6,7 @@ import 'package:domain/auth/mocks/auth_use_case_mock.dart';
 import 'package:domain/auth/mocks/user_use_case_mock.dart';
 import 'package:domain/chat/chat_use_case.dart';
 import 'package:domain/chat/entities/chat.dart';
+import 'package:domain/chat/entities/message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -21,9 +22,7 @@ import 'package:swiftcomp/presentation/chat/views/chat_screen.dart';
 final _chatA = Chat(id: 'voice-a', title: 'Voice A');
 final _chatB = Chat(id: 'voice-b', title: 'Voice B');
 
-Finder get _composer => find.byWidgetPredicate((widget) =>
-    widget is TextField &&
-    widget.decoration?.hintText == 'Ask about composites engineering…');
+Finder get _composer => find.byKey(const Key('chat-composer'));
 
 Future<void> _mount(WidgetTester tester, _VoiceModel model) async {
   tester.view.physicalSize = const Size(390, 820);
@@ -271,6 +270,39 @@ void main() {
     } finally {
       if (!stopGate.isCompleted) stopGate.complete();
       await tester.pumpAndSettle();
+      await _cleanup(tester);
+    }
+  });
+
+  testWidgets(
+      'reusing a question retires active and visually stopped voice results',
+      (tester) async {
+    try {
+      final question =
+          Message(role: 'user', content: 'Reuse this earlier question');
+      model.messages = [question];
+      await _mount(tester, model);
+      for (final visuallyStopped in [false, true]) {
+        await tester.enterText(_composer, '');
+        await _start(tester);
+        speech.result('A voice draft before reuse');
+        if (visuallyStopped) speech.status(SpeechToText.notListeningStatus);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Use as draft'));
+        await tester.pumpAndSettle();
+        expect(find.byTooltip('Stop voice input'), findsNothing);
+        await tester
+            .tap(find.byKey(const ValueKey('chat-replace-draft-confirm')));
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.text, question.content);
+        speech.result('Old final must not replace the reused question',
+            finalResult: true);
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.text, question.content);
+        expect(model.sent, isEmpty);
+      }
+      expect(tester.takeException(), isNull);
+    } finally {
       await _cleanup(tester);
     }
   });

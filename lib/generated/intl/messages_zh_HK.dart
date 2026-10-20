@@ -53,9 +53,29 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m15(modulus, stress, length, loads) =>
       "模量 ${modulus} · 應力 ${stress} · 長度 ${length} · 載荷 ${loads}";
 
-  static String m16(name) => "預覽 ${name}";
+  static String m16(question) => "提問：${question}";
 
-  static String m17(name) => "移除 ${name}";
+  static String m17(count) => "${count} 個附件";
+
+  static String m18(language) => "${language} - 生成中";
+
+  static String m19(name) => "刪除「${name}」？此操作無法還原。";
+
+  static String m20(count) => "${count} 個檔案";
+
+  static String m21(name) => "預覽 ${name}";
+
+  static String m22(error) => "處理失敗：${error}";
+
+  static String m23(name) => "閱讀 ${name}";
+
+  static String m24(name) => "移除 ${name}";
+
+  static String m25(query) => "搜尋「${query}」";
+
+  static String m26(count) => "${count} 則符合的訊息";
+
+  static String m27(name) => "歡迎，${name}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -224,14 +244,199 @@ class MessageLookup extends MessageLookupByLibrary {
       "必須介於 0 和 1 之間",
     ),
     "Calculator_wrong_layup": MessageLookupByLibrary.simpleMessage("鋪層次序無效"),
+    "Chat_account_settings": MessageLookupByLibrary.simpleMessage("帳戶與設定"),
+    "Chat_add_attachment": MessageLookupByLibrary.simpleMessage("加入附件"),
+    "Chat_archive": MessageLookupByLibrary.simpleMessage("封存"),
+    "Chat_archived": MessageLookupByLibrary.simpleMessage("已封存"),
+    "Chat_ask_question": m16,
+    "Chat_attach_knowledge_sources": MessageLookupByLibrary.simpleMessage(
+      "加入 RAG 來源",
+    ),
+    "Chat_attachment_count": m17,
+    "Chat_bad_response": MessageLookupByLibrary.simpleMessage("不佳回覆"),
+    "Chat_camera": MessageLookupByLibrary.simpleMessage("相機"),
+    "Chat_cancel": MessageLookupByLibrary.simpleMessage("取消"),
+    "Chat_chat_options": MessageLookupByLibrary.simpleMessage("對話選項"),
+    "Chat_chat_title": MessageLookupByLibrary.simpleMessage("標題"),
+    "Chat_chats": MessageLookupByLibrary.simpleMessage("對話"),
+    "Chat_clear": MessageLookupByLibrary.simpleMessage("清除"),
+    "Chat_clear_search": MessageLookupByLibrary.simpleMessage("清除搜尋"),
     "Chat_close_image_preview": MessageLookupByLibrary.simpleMessage("關閉圖片預覽"),
+    "Chat_code": MessageLookupByLibrary.simpleMessage("程式碼"),
+    "Chat_code_streaming": m18,
+    "Chat_composer_hint": MessageLookupByLibrary.simpleMessage("詢問複合材料工程問題…"),
+    "Chat_composite_calculators": MessageLookupByLibrary.simpleMessage(
+      "複合材料計算器",
+    ),
+    "Chat_composite_expert": MessageLookupByLibrary.simpleMessage("複合材料專家"),
+    "Chat_copied": MessageLookupByLibrary.simpleMessage("已複製"),
+    "Chat_copy_code": MessageLookupByLibrary.simpleMessage("複製程式碼"),
+    "Chat_copy_link": MessageLookupByLibrary.simpleMessage("複製連結"),
+    "Chat_copy_message": MessageLookupByLibrary.simpleMessage("複製訊息"),
+    "Chat_delete": MessageLookupByLibrary.simpleMessage("刪除"),
+    "Chat_delete_chat_message": m19,
+    "Chat_delete_chat_title": MessageLookupByLibrary.simpleMessage("刪除對話？"),
+    "Chat_delete_untitled_chat_message": MessageLookupByLibrary.simpleMessage(
+      "刪除此對話？此操作無法還原。",
+    ),
+    "Chat_edit_negative_feedback": MessageLookupByLibrary.simpleMessage(
+      "編輯負面意見",
+    ),
+    "Chat_edit_positive_feedback": MessageLookupByLibrary.simpleMessage(
+      "編輯正面意見",
+    ),
+    "Chat_engineering_copilot": MessageLookupByLibrary.simpleMessage(
+      "複合材料工程助手",
+    ),
+    "Chat_export_conversation": MessageLookupByLibrary.simpleMessage("匯出對話"),
+    "Chat_export_failed": MessageLookupByLibrary.simpleMessage("無法匯出此對話。"),
+    "Chat_feedback_accurate": MessageLookupByLibrary.simpleMessage("準確"),
+    "Chat_feedback_additional_details": MessageLookupByLibrary.simpleMessage(
+      "補充說明",
+    ),
+    "Chat_feedback_clear_explanation": MessageLookupByLibrary.simpleMessage(
+      "解釋清晰",
+    ),
+    "Chat_feedback_did_not_follow": MessageLookupByLibrary.simpleMessage(
+      "未遵循指示",
+    ),
+    "Chat_feedback_excellent": MessageLookupByLibrary.simpleMessage("10 · 優秀"),
+    "Chat_feedback_followed_instructions": MessageLookupByLibrary.simpleMessage(
+      "遵循了指示",
+    ),
+    "Chat_feedback_good_structure": MessageLookupByLibrary.simpleMessage(
+      "結構良好",
+    ),
+    "Chat_feedback_help": MessageLookupByLibrary.simpleMessage("您的意見有助改善回答質素。"),
+    "Chat_feedback_helpful": MessageLookupByLibrary.simpleMessage("有幫助"),
+    "Chat_feedback_inaccurate": MessageLookupByLibrary.simpleMessage("不準確"),
+    "Chat_feedback_needs_work": MessageLookupByLibrary.simpleMessage("需要改善"),
+    "Chat_feedback_not_useful": MessageLookupByLibrary.simpleMessage("沒有幫助"),
+    "Chat_feedback_optional": MessageLookupByLibrary.simpleMessage("選填"),
+    "Chat_feedback_other": MessageLookupByLibrary.simpleMessage("其他"),
+    "Chat_feedback_poor": MessageLookupByLibrary.simpleMessage("1 · 差"),
+    "Chat_feedback_quality_score": MessageLookupByLibrary.simpleMessage("質素評分"),
+    "Chat_feedback_reason_prompt": MessageLookupByLibrary.simpleMessage(
+      "哪些因素影響了您的評分？",
+    ),
+    "Chat_feedback_reason_required": MessageLookupByLibrary.simpleMessage(
+      "請至少選擇一個原因以繼續。",
+    ),
+    "Chat_feedback_save_failed": MessageLookupByLibrary.simpleMessage(
+      "無法儲存意見。請再試一次。",
+    ),
+    "Chat_feedback_saved": MessageLookupByLibrary.simpleMessage("意見已儲存。"),
+    "Chat_feedback_submit": MessageLookupByLibrary.simpleMessage("提交意見"),
+    "Chat_feedback_submitted": MessageLookupByLibrary.simpleMessage("意見已提交"),
+    "Chat_feedback_title": MessageLookupByLibrary.simpleMessage("評價此回覆"),
+    "Chat_feedback_too_verbose": MessageLookupByLibrary.simpleMessage("過於冗長"),
+    "Chat_feedback_unclear": MessageLookupByLibrary.simpleMessage("不清晰"),
+    "Chat_feedback_update": MessageLookupByLibrary.simpleMessage("更新意見"),
+    "Chat_feedback_useful_detail": MessageLookupByLibrary.simpleMessage("細節有用"),
+    "Chat_file_count": m20,
+    "Chat_files": MessageLookupByLibrary.simpleMessage("檔案"),
+    "Chat_find_in_chat": MessageLookupByLibrary.simpleMessage("在對話中尋找"),
+    "Chat_folder_name": MessageLookupByLibrary.simpleMessage("資料夾名稱"),
+    "Chat_generating_response_stop": MessageLookupByLibrary.simpleMessage(
+      "正在生成回覆。停止生成",
+    ),
+    "Chat_get_response": MessageLookupByLibrary.simpleMessage("取得回覆"),
+    "Chat_good_response": MessageLookupByLibrary.simpleMessage("良好回覆"),
     "Chat_image_preview": MessageLookupByLibrary.simpleMessage("圖片預覽"),
     "Chat_image_preview_unavailable": MessageLookupByLibrary.simpleMessage(
       "無法預覽此圖片。",
     ),
     "Chat_jump_to_latest": MessageLookupByLibrary.simpleMessage("跳至最新訊息"),
-    "Chat_preview_image": m16,
-    "Chat_remove_attachment": m17,
+    "Chat_knowledge": MessageLookupByLibrary.simpleMessage("知識庫"),
+    "Chat_knowledge_collection": MessageLookupByLibrary.simpleMessage("知識集合"),
+    "Chat_knowledge_file": MessageLookupByLibrary.simpleMessage("知識檔案"),
+    "Chat_link_copied": MessageLookupByLibrary.simpleMessage("連結已複製到剪貼簿"),
+    "Chat_models": MessageLookupByLibrary.simpleMessage("模型"),
+    "Chat_move_to_folder": MessageLookupByLibrary.simpleMessage("移至資料夾"),
+    "Chat_new_chat": MessageLookupByLibrary.simpleMessage("新增對話"),
+    "Chat_new_folder": MessageLookupByLibrary.simpleMessage("新增資料夾"),
+    "Chat_no_chats": MessageLookupByLibrary.simpleMessage("尚未有對話"),
+    "Chat_no_chats_found": MessageLookupByLibrary.simpleMessage("找不到對話"),
+    "Chat_no_folder_chats": MessageLookupByLibrary.simpleMessage("資料夾內沒有對話"),
+    "Chat_no_folders": MessageLookupByLibrary.simpleMessage("尚未有資料夾"),
+    "Chat_no_knowledge_sources": MessageLookupByLibrary.simpleMessage(
+      "找不到知識來源",
+    ),
+    "Chat_no_matching_chats": MessageLookupByLibrary.simpleMessage("沒有符合的對話"),
+    "Chat_open_calculators": MessageLookupByLibrary.simpleMessage("開啟複合材料計算器"),
+    "Chat_open_link_failed": MessageLookupByLibrary.simpleMessage("無法開啟此連結。"),
+    "Chat_photo_library": MessageLookupByLibrary.simpleMessage("相片圖庫"),
+    "Chat_pin": MessageLookupByLibrary.simpleMessage("置頂"),
+    "Chat_pinned": MessageLookupByLibrary.simpleMessage("已置頂"),
+    "Chat_preview_image": m21,
+    "Chat_processing_document": MessageLookupByLibrary.simpleMessage("正在處理文件…"),
+    "Chat_processing_failed": MessageLookupByLibrary.simpleMessage("處理失敗"),
+    "Chat_processing_failed_detail": m22,
+    "Chat_read_file": m23,
+    "Chat_refresh_knowledge": MessageLookupByLibrary.simpleMessage("重新整理知識庫"),
+    "Chat_regenerate_response": MessageLookupByLibrary.simpleMessage("重新生成回覆"),
+    "Chat_remove_attachment": m24,
+    "Chat_remove_from_folder": MessageLookupByLibrary.simpleMessage("從資料夾移除"),
+    "Chat_rename": MessageLookupByLibrary.simpleMessage("重新命名"),
+    "Chat_rename_chat": MessageLookupByLibrary.simpleMessage("重新命名對話"),
+    "Chat_replace_draft": MessageLookupByLibrary.simpleMessage("取代草稿"),
+    "Chat_replace_draft_message": MessageLookupByLibrary.simpleMessage(
+      "以此訊息取代目前尚未傳送的文字？",
+    ),
+    "Chat_replace_draft_title": MessageLookupByLibrary.simpleMessage("取代草稿？"),
+    "Chat_response_interrupted": MessageLookupByLibrary.simpleMessage("回覆已中斷"),
+    "Chat_save": MessageLookupByLibrary.simpleMessage("儲存"),
+    "Chat_search_assistant": MessageLookupByLibrary.simpleMessage("助手"),
+    "Chat_search_chats": MessageLookupByLibrary.simpleMessage("搜尋對話"),
+    "Chat_search_clear": MessageLookupByLibrary.simpleMessage("清除搜尋"),
+    "Chat_search_copy_excerpt": MessageLookupByLibrary.simpleMessage("複製摘錄"),
+    "Chat_search_copy_failed": MessageLookupByLibrary.simpleMessage("無法複製此摘錄。"),
+    "Chat_search_empty": MessageLookupByLibrary.simpleMessage("輸入文字以搜尋此對話。"),
+    "Chat_search_excerpt_copied": MessageLookupByLibrary.simpleMessage("摘錄已複製"),
+    "Chat_search_history_title": m25,
+    "Chat_search_knowledge": MessageLookupByLibrary.simpleMessage("搜尋知識庫"),
+    "Chat_search_loaded_messages": MessageLookupByLibrary.simpleMessage(
+      "搜尋已載入的訊息",
+    ),
+    "Chat_search_match_count": m26,
+    "Chat_search_no_matches": MessageLookupByLibrary.simpleMessage("沒有符合的訊息。"),
+    "Chat_search_you": MessageLookupByLibrary.simpleMessage("您"),
+    "Chat_select_model": MessageLookupByLibrary.simpleMessage("選擇模型"),
+    "Chat_send_message": MessageLookupByLibrary.simpleMessage("傳送訊息"),
+    "Chat_share": MessageLookupByLibrary.simpleMessage("分享"),
+    "Chat_share_chat": MessageLookupByLibrary.simpleMessage("分享對話"),
+    "Chat_share_chat_description": MessageLookupByLibrary.simpleMessage(
+      "建立連結後傳送的訊息不會被分享。任何取得此連結的人都可以檢視此對話。",
+    ),
+    "Chat_share_markdown": MessageLookupByLibrary.simpleMessage(
+      "以 Markdown 分享",
+    ),
+    "Chat_share_pdf": MessageLookupByLibrary.simpleMessage("以 PDF 分享"),
+    "Chat_sign_in": MessageLookupByLibrary.simpleMessage("登入"),
+    "Chat_sign_in_description": MessageLookupByLibrary.simpleMessage(
+      "登入以使用對話功能，亦可免登入使用複合材料計算器。",
+    ),
+    "Chat_sign_in_to_chat": MessageLookupByLibrary.simpleMessage("登入以開始對話"),
+    "Chat_start_new_chat_help": MessageLookupByLibrary.simpleMessage(
+      "新增對話以開始交談。",
+    ),
+    "Chat_start_voice_input": MessageLookupByLibrary.simpleMessage("開始語音輸入"),
+    "Chat_stop_generating": MessageLookupByLibrary.simpleMessage("停止生成"),
+    "Chat_stop_voice_input": MessageLookupByLibrary.simpleMessage("停止語音輸入"),
+    "Chat_suggested_questions": MessageLookupByLibrary.simpleMessage("建議問題"),
+    "Chat_title": MessageLookupByLibrary.simpleMessage("對話"),
+    "Chat_unpin": MessageLookupByLibrary.simpleMessage("取消置頂"),
+    "Chat_untitled_chat": MessageLookupByLibrary.simpleMessage("未命名對話"),
+    "Chat_use_as_draft": MessageLookupByLibrary.simpleMessage("用作草稿"),
+    "Chat_voice_unavailable": MessageLookupByLibrary.simpleMessage(
+      "無法使用語音輸入。請檢查咪高峰權限。",
+    ),
+    "Chat_welcome": MessageLookupByLibrary.simpleMessage("歡迎"),
+    "Chat_welcome_description": MessageLookupByLibrary.simpleMessage(
+      "詢問有關材料、層合板設計、失效分析、製造或工程計算的問題。",
+    ),
+    "Chat_welcome_name": m27,
+    "Chat_working_on": MessageLookupByLibrary.simpleMessage("您正在研究甚麼？"),
     "Compliance_Matrix_S": MessageLookupByLibrary.simpleMessage("柔度矩陣 S"),
     "Composite_Material": MessageLookupByLibrary.simpleMessage("複合材料力學"),
     "Constitutive_relation_of_linear_elastic_material":

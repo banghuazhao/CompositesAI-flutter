@@ -1,5 +1,6 @@
 import 'package:domain/auth/entities/user.dart';
 import 'package:flutter/material.dart';
+import 'package:swiftcomp/generated/l10n.dart';
 
 import '../../../util/app_interactions.dart';
 import '../../../util/context_extension_screen_width.dart';
@@ -25,8 +26,10 @@ class ChatWelcomeView extends StatelessWidget {
     final name = (user?.name ?? '').trim();
     final email = (user?.email ?? '').trim();
     final greetingTarget = name.isNotEmpty ? name : email;
-    final greeting =
-        greetingTarget.isNotEmpty ? 'Welcome, $greetingTarget' : 'Welcome';
+    final greeting = greetingTarget.isNotEmpty
+        ? (S.maybeOf(context)?.Chat_welcome_name(greetingTarget) ??
+            'Welcome, $greetingTarget')
+        : (S.maybeOf(context)?.Chat_welcome ?? 'Welcome');
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
@@ -64,7 +67,8 @@ class ChatWelcomeView extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'Composites engineering copilot',
+                            S.maybeOf(context)?.Chat_engineering_copilot ??
+                                'Composites engineering copilot',
                             style: theme.textTheme.titleLarge,
                           ),
                         ],
@@ -74,20 +78,22 @@ class ChatWelcomeView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'What are you working on?',
+                  S.maybeOf(context)?.Chat_working_on ??
+                      'What are you working on?',
                   style: theme.textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Ask about materials, laminate design, failure analysis, '
-                  'manufacturing, or engineering calculations.',
+                  S.maybeOf(context)?.Chat_welcome_description ??
+                      'Ask about materials, laminate design, failure analysis, manufacturing, or engineering calculations.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Suggested questions',
+                  S.maybeOf(context)?.Chat_suggested_questions ??
+                      'Suggested questions',
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -159,7 +165,8 @@ class _SuggestionCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Semantics(
       button: true,
-      label: 'Ask: $question',
+      label:
+          S.maybeOf(context)?.Chat_ask_question(question) ?? 'Ask: $question',
       child: Card(
         color: scheme.surfaceContainerLow,
         clipBehavior: Clip.antiAlias,
@@ -176,11 +183,7 @@ class _SuggestionCard extends StatelessWidget {
                     color: scheme.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 20,
-                    color: scheme.onPrimaryContainer,
-                  ),
+                  child: Icon(icon, size: 20, color: scheme.onPrimaryContainer),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

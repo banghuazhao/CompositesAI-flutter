@@ -80,9 +80,7 @@ class _FeatureModel extends ChatViewModel {
 final _chatA = Chat(id: 'a', title: 'Laminate A');
 final _chatB = Chat(id: 'b', title: 'Laminate B');
 const _image = ChatFile(id: 'image-a', name: 'layup.png', url: '');
-Finder get _composer => find.byWidgetPredicate((widget) =>
-    widget is TextField &&
-    widget.decoration?.hintText == 'Ask about composites engineering…');
+Finder get _composer => find.byKey(const Key('chat-composer'));
 
 Future<void> _pump(WidgetTester tester, _FeatureModel model,
     {Locale locale = const Locale('en'), double scale = 1}) async {

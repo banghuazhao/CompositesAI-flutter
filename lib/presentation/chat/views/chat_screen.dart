@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:swiftcomp/app/injection_container.dart';
+import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/util/app_interactions.dart';
 import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
@@ -29,6 +30,7 @@ import 'chat_list.dart';
 import 'chat_welcome_view.dart';
 import 'knowledge_document_page.dart';
 import 'chat_latest_button.dart';
+import 'chat_search_sheet.dart';
 import 'pending_image_attachment.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -71,7 +73,10 @@ class _KnowledgePickerCard extends StatelessWidget {
                   subtitle: Text(
                     knowledge.description.isNotEmpty
                         ? knowledge.description
-                        : '${knowledge.files.length} files',
+                        : (S
+                                .maybeOf(context)
+                                ?.Chat_file_count(knowledge.files.length) ??
+                            '${knowledge.files.length} files'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -84,25 +89,30 @@ class _KnowledgePickerCard extends StatelessWidget {
                   },
                 ),
                 if (knowledge.files.isNotEmpty) ...[
-                  Divider(
-                    height: 1,
-                    indent: 56,
-                    endIndent: 16,
-                  ),
+                  Divider(height: 1, indent: 56, endIndent: 16),
                   ...knowledge.files.map((file) {
                     final selected = chat.isKnowledgeSelected(file.id);
                     final unavailable = !file.isSelectableKnowledgeFile;
                     final statusText = file.hasProcessingFailed
                         ? file.processingError.isNotEmpty
-                            ? 'Processing failed: ${file.processingError}'
-                            : 'Processing failed'
+                            ? (S
+                                    .maybeOf(context)
+                                    ?.Chat_processing_failed_detail(
+                                      file.processingError,
+                                    ) ??
+                                'Processing failed: ${file.processingError}')
+                            : S.maybeOf(context)?.Chat_processing_failed ??
+                                'Processing failed'
                         : file.isProcessing
-                            ? 'Processing document…'
+                            ? S.maybeOf(context)?.Chat_processing_document ??
+                                'Processing document…'
                             : null;
                     return ListTile(
                       dense: true,
-                      contentPadding:
-                          const EdgeInsets.only(left: 56, right: 16),
+                      contentPadding: const EdgeInsets.only(
+                        left: 56,
+                        right: 16,
+                      ),
                       leading: Icon(
                         file.hasProcessingFailed
                             ? Icons.error_outline_rounded
@@ -131,7 +141,9 @@ class _KnowledgePickerCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            tooltip: 'Read ${file.name}',
+                            tooltip:
+                                S.maybeOf(context)?.Chat_read_file(file.name) ??
+                                    'Read ${file.name}',
                             icon: const Icon(Icons.menu_book_outlined),
                             onPressed: () {
                               Navigator.of(context, rootNavigator: true).push(
@@ -191,6 +203,7 @@ class _ChatScreenState extends State<ChatScreen>
   int _voiceInputRevision = 0;
   Object? _voiceInputSession;
   String? _voiceInputConversation;
+  int? _voiceComposerReplacementRevision;
   Future<bool>? _voiceInitialization;
   Future<void>? _voiceStopping;
   SpeechErrorListener? _voiceErrorListener;
@@ -208,10 +221,7 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
       await viewModel.fetchAuthSessionNew();
       if (mounted && viewModel.isLoggedIn) {
-        await Future.wait([
-          viewModel.fetchChats(),
-          viewModel.fetchTools(),
-        ]);
+        await Future.wait([viewModel.fetchChats(), viewModel.fetchTools()]);
       }
     });
     _pulseController = AnimationController(
@@ -253,6 +263,7 @@ class _ChatScreenState extends State<ChatScreen>
     final revision = ++_voiceInputRevision;
     _voiceInputSession = viewModel.chatSessionKey;
     _voiceInputConversation = viewModel.selectedChat?.id;
+    _voiceComposerReplacementRevision = viewModel.composerReplacementRevision;
     _startingVoiceInput = true;
     void onError(Object _) {
       if (!_isCurrentVoiceInput(revision)) return;
@@ -337,10 +348,13 @@ class _ChatScreenState extends State<ChatScreen>
 
   bool _isCurrentVoiceInput(int revision) =>
       mounted &&
+      !viewModel.isDisposed &&
       revision == _voiceInputRevision &&
       viewModel.isLoggedIn &&
       _voiceInputSession == viewModel.chatSessionKey &&
-      _voiceInputConversation == viewModel.selectedChat?.id;
+      _voiceInputConversation == viewModel.selectedChat?.id &&
+      _voiceComposerReplacementRevision ==
+          viewModel.composerReplacementRevision;
 
   void _onChatContextChanged() {
     // A recognizer may report notListening before its final result. Keep
@@ -355,6 +369,7 @@ class _ChatScreenState extends State<ChatScreen>
     _voiceInputRevision++;
     _voiceInputSession = null;
     _voiceInputConversation = null;
+    _voiceComposerReplacementRevision = null;
     _startingVoiceInput = false;
     _resetVoiceInput();
     _speech.cancel().catchError((Object error) {
@@ -389,9 +404,10 @@ class _ChatScreenState extends State<ChatScreen>
   void _showVoiceInputError() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
-          'Voice input is unavailable. Please check microphone permissions.',
+          S.maybeOf(context)?.Chat_voice_unavailable ??
+              'Voice input is unavailable. Please check microphone permissions.',
         ),
       ),
     );
@@ -442,7 +458,7 @@ class _ChatScreenState extends State<ChatScreen>
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text("Chat"),
+            title: Text(S.maybeOf(context)?.Chat_title ?? "Chat"),
             actionsPadding: const EdgeInsetsDirectional.only(end: 12),
             actions: [
               Builder(
@@ -453,12 +469,15 @@ class _ChatScreenState extends State<ChatScreen>
                       children: [
                         IconButton(
                           icon: const Icon(Icons.manage_accounts),
-                          tooltip: "Sign In",
+                          tooltip:
+                              S.maybeOf(context)?.Chat_sign_in ?? "Sign In",
                           onPressed: _openLogin,
                         ),
                         IconButton(
                           icon: const Icon(Icons.calculate_outlined),
-                          tooltip: 'Composite Calculators',
+                          tooltip:
+                              S.maybeOf(context)?.Chat_composite_calculators ??
+                                  'Composite Calculators',
                           onPressed: _openCompositeCalculators,
                         ),
                       ],
@@ -469,11 +488,23 @@ class _ChatScreenState extends State<ChatScreen>
                       mainAxisSize: MainAxisSize.min, // Keep it compact
                       children: [
                         if (viewModel.selectedChat != null &&
+                            !viewModel.isLoadingMessages &&
+                            viewModel.messages.isNotEmpty)
+                          IconButton(
+                            key: const ValueKey('chat-find-in-chat'),
+                            tooltip: S.maybeOf(context)?.Chat_find_in_chat ??
+                                'Find in chat',
+                            icon: const Icon(Icons.search_rounded),
+                            onPressed: () =>
+                                showChatSearchSheet(context, viewModel),
+                          ),
+                        if (viewModel.selectedChat != null &&
                             viewModel.messages.isNotEmpty)
                           _buildExportMenu(),
                         // Avatar or Profile Button
                         IconButton(
-                          tooltip: 'Account & settings',
+                          tooltip: S.maybeOf(context)?.Chat_account_settings ??
+                              'Account & settings',
                           constraints: const BoxConstraints.tightFor(
                             width: 48,
                             height: 48,
@@ -510,7 +541,8 @@ class _ChatScreenState extends State<ChatScreen>
                                           .isNotEmpty
                                       ? ClipOval(
                                           child: Base64Image(
-                                              viewModel.user!.avatarUrl!),
+                                            viewModel.user!.avatarUrl!,
+                                          ),
                                         )
                                       : const Icon(
                                           Icons.account_circle,
@@ -522,22 +554,25 @@ class _ChatScreenState extends State<ChatScreen>
                                     end: -2,
                                     bottom: -2,
                                     child: Semantics(
-                                      label: 'Composite expert',
+                                      label: S
+                                              .maybeOf(context)
+                                              ?.Chat_composite_expert ??
+                                          'Composite expert',
                                       child: Container(
                                         width: 16,
                                         height: 16,
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surface,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.surface,
                                           shape: BoxShape.circle,
                                         ),
                                         alignment: Alignment.center,
                                         child: Icon(
                                           Icons.verified,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
                                           size: 14,
                                         ),
                                       ),
@@ -561,9 +596,7 @@ class _ChatScreenState extends State<ChatScreen>
                 Positioned.fill(
                   child: viewModel.selectedChat != null
                       ? (viewModel.isLoadingMessages
-                          ? const Center(
-                              child: CircularProgressIndicator(),
-                            )
+                          ? const Center(child: CircularProgressIndicator())
                           : ChatLatestOverlay(
                               scrollController: viewModel.scrollController,
                               conversationId: viewModel.selectedChat?.id,
@@ -572,6 +605,19 @@ class _ChatScreenState extends State<ChatScreen>
                                   !viewModel.isLoadingMessages,
                               bottomOffset: _inputBarHeight + 12,
                               child: MessageList(
+                                onBeforeReuse: () {
+                                  if (_voiceInputSession != null) {
+                                    _invalidateVoiceInput();
+                                  }
+                                },
+                                onDraftApplied: () {
+                                  if (mounted &&
+                                      viewModel.isLoggedIn &&
+                                      ModalRoute.of(context)?.isCurrent ==
+                                          true) {
+                                    focusNode.requestFocus();
+                                  }
+                                },
                                 bottomContentPadding: _inputBarHeight + 20,
                               ),
                             ))
@@ -583,14 +629,9 @@ class _ChatScreenState extends State<ChatScreen>
                               viewModel.onDefaultQuestionsTapped,
                         ),
                 ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: inputBar(),
-                )
+                Positioned(left: 0, right: 0, bottom: 0, child: inputBar()),
               ] else
-                noLoginView()
+                noLoginView(),
             ],
           ),
         );
@@ -600,7 +641,8 @@ class _ChatScreenState extends State<ChatScreen>
 
   Widget _buildExportMenu() {
     return PopupMenuButton<_ExportFormat>(
-      tooltip: 'Export conversation',
+      tooltip:
+          S.maybeOf(context)?.Chat_export_conversation ?? 'Export conversation',
       icon: _isExporting
           ? const SizedBox(
               width: 18,
@@ -610,20 +652,22 @@ class _ChatScreenState extends State<ChatScreen>
           : const Icon(Icons.ios_share_rounded),
       enabled: !_isExporting && !viewModel.isSendingMessage,
       onSelected: _exportConversation,
-      itemBuilder: (context) => const [
+      itemBuilder: (context) => [
         PopupMenuItem(
           value: _ExportFormat.markdown,
           child: ListTile(
-            leading: Icon(Icons.notes_rounded),
-            title: Text('Share as Markdown'),
+            leading: const Icon(Icons.notes_rounded),
+            title: Text(
+              S.maybeOf(context)?.Chat_share_markdown ?? 'Share as Markdown',
+            ),
             contentPadding: EdgeInsets.zero,
           ),
         ),
         PopupMenuItem(
           value: _ExportFormat.pdf,
           child: ListTile(
-            leading: Icon(Icons.picture_as_pdf_outlined),
-            title: Text('Share as PDF'),
+            leading: const Icon(Icons.picture_as_pdf_outlined),
+            title: Text(S.maybeOf(context)?.Chat_share_pdf ?? 'Share as PDF'),
             contentPadding: EdgeInsets.zero,
           ),
         ),
@@ -636,6 +680,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (chat == null || _isExporting) return;
     final messages = List<Message>.from(viewModel.messages);
     final messenger = ScaffoldMessenger.of(context);
+    final exportFailureMessage = S.maybeOf(context)?.Chat_export_failed ??
+        'Could not export this conversation.';
     setState(() => _isExporting = true);
     try {
       switch (format) {
@@ -648,8 +694,10 @@ class _ChatScreenState extends State<ChatScreen>
             subject: chat.title,
           );
         case _ExportFormat.pdf:
-          final bytes =
-              await ChatExport.toPdf(title: chat.title, messages: messages);
+          final bytes = await ChatExport.toPdf(
+            title: chat.title,
+            messages: messages,
+          );
           if (!mounted) return;
           await FileShare.shareBytes(
             context,
@@ -661,9 +709,7 @@ class _ChatScreenState extends State<ChatScreen>
       }
     } catch (error) {
       debugPrint('Export conversation failed: $error');
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Could not export this conversation.')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(exportFailureMessage)));
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -707,10 +753,12 @@ class _ChatScreenState extends State<ChatScreen>
                   canRequestFocus: false,
                   onKeyEvent: _handleComposerKeyEvent,
                   child: TextField(
+                    key: const Key('chat-composer'),
                     controller: textController,
                     focusNode: focusNode,
                     decoration: InputDecoration(
-                      hintText: 'Ask about composites engineering…',
+                      hintText: S.maybeOf(context)?.Chat_composer_hint ??
+                          'Ask about composites engineering…',
                       filled: false,
                       fillColor: Colors.transparent,
                       border: InputBorder.none,
@@ -843,7 +891,9 @@ class _ChatScreenState extends State<ChatScreen>
   Widget _buildModelPickerButton() {
     final scheme = Theme.of(context).colorScheme;
     final selectedModel = viewModel.selectedModel;
-    final label = selectedModel?.name ?? 'Select model';
+    final label = selectedModel?.name ??
+        S.maybeOf(context)?.Chat_select_model ??
+        'Select model';
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -863,8 +913,10 @@ class _ChatScreenState extends State<ChatScreen>
                     },
               borderRadius: BorderRadius.circular(18),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -921,7 +973,7 @@ class _ChatScreenState extends State<ChatScreen>
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                'Models',
+                S.maybeOf(context)?.Chat_models ?? 'Models',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -941,11 +993,12 @@ class _ChatScreenState extends State<ChatScreen>
     final scheme = Theme.of(context).colorScheme;
     if (viewModel.isSendingMessage) {
       return Tooltip(
-        message: 'Stop generating',
+        message: S.maybeOf(context)?.Chat_stop_generating ?? 'Stop generating',
         child: Semantics(
           button: true,
           liveRegion: true,
-          label: 'Generating response. Stop generating',
+          label: S.maybeOf(context)?.Chat_generating_response_stop ??
+              'Generating response. Stop generating',
           child: Pressable(
             haptic: true,
             borderRadius: BorderRadius.circular(22),
@@ -999,10 +1052,12 @@ class _ChatScreenState extends State<ChatScreen>
         ),
       );
       final accessibleStopButton = Tooltip(
-        message: 'Stop voice input',
+        message:
+            S.maybeOf(context)?.Chat_stop_voice_input ?? 'Stop voice input',
         child: Semantics(
           button: true,
-          label: 'Stop voice input',
+          label:
+              S.maybeOf(context)?.Chat_stop_voice_input ?? 'Stop voice input',
           child: stopButton,
         ),
       );
@@ -1014,10 +1069,10 @@ class _ChatScreenState extends State<ChatScreen>
     }
     if (_canSendMessage()) {
       return Tooltip(
-        message: 'Send message',
+        message: S.maybeOf(context)?.Chat_send_message ?? 'Send message',
         child: Semantics(
           button: true,
-          label: 'Send message',
+          label: S.maybeOf(context)?.Chat_send_message ?? 'Send message',
           child: Pressable(
             haptic: true,
             borderRadius: BorderRadius.circular(17),
@@ -1029,18 +1084,23 @@ class _ChatScreenState extends State<ChatScreen>
                 color: scheme.primary,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.arrow_upward_rounded,
-                  color: scheme.onPrimary, size: 22),
+              child: Icon(
+                Icons.arrow_upward_rounded,
+                color: scheme.onPrimary,
+                size: 22,
+              ),
             ),
           ),
         ),
       );
     }
     return Tooltip(
-      message: 'Start voice input',
+      message:
+          S.maybeOf(context)?.Chat_start_voice_input ?? 'Start voice input',
       child: Semantics(
         button: true,
-        label: 'Start voice input',
+        label:
+            S.maybeOf(context)?.Chat_start_voice_input ?? 'Start voice input',
         child: Pressable(
           borderRadius: BorderRadius.circular(17),
           haptic: true,
@@ -1066,10 +1126,10 @@ class _ChatScreenState extends State<ChatScreen>
   Widget _buildAttachButton() {
     final scheme = Theme.of(context).colorScheme;
     return Tooltip(
-      message: 'Add attachment',
+      message: S.maybeOf(context)?.Chat_add_attachment ?? 'Add attachment',
       child: Semantics(
         button: true,
-        label: 'Add attachment',
+        label: S.maybeOf(context)?.Chat_add_attachment ?? 'Add attachment',
         child: Pressable(
           borderRadius: BorderRadius.circular(17),
           haptic: true,
@@ -1111,9 +1171,9 @@ class _ChatScreenState extends State<ChatScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Select model',
-                  style: TextStyle(
+                Text(
+                  S.maybeOf(context)?.Chat_select_model ?? 'Select model',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1148,8 +1208,9 @@ class _ChatScreenState extends State<ChatScreen>
                           final showId = model.id != model.name;
 
                           return ListTile(
-                            contentPadding:
-                                const EdgeInsets.symmetric(horizontal: 20),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                            ),
                             title: Text(
                               model.name,
                               maxLines: 1,
@@ -1171,8 +1232,9 @@ class _ChatScreenState extends State<ChatScreen>
                             trailing: isSelected
                                 ? Icon(
                                     Icons.check_rounded,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   )
                                 : null,
                             onTap: () {
@@ -1214,7 +1276,9 @@ class _ChatScreenState extends State<ChatScreen>
               const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Photo Library'),
+                title: Text(
+                  S.maybeOf(context)?.Chat_photo_library ?? 'Photo Library',
+                ),
                 onTap: () {
                   _closeSheet(sheetContext);
                   viewModel.pickAndUploadImages(ImageSource.gallery);
@@ -1222,7 +1286,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Camera'),
+                title: Text(S.maybeOf(context)?.Chat_camera ?? 'Camera'),
                 onTap: () {
                   _closeSheet(sheetContext);
                   viewModel.pickAndUploadImages(ImageSource.camera);
@@ -1230,7 +1294,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.insert_drive_file_outlined),
-                title: const Text('Files'),
+                title: Text(S.maybeOf(context)?.Chat_files ?? 'Files'),
                 onTap: () {
                   _closeSheet(sheetContext);
                   viewModel.pickAndUploadFiles();
@@ -1243,8 +1307,11 @@ class _ChatScreenState extends State<ChatScreen>
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.library_books_outlined),
-                title: const Text('Knowledge'),
-                subtitle: const Text('Attach RAG sources'),
+                title: Text(S.maybeOf(context)?.Chat_knowledge ?? 'Knowledge'),
+                subtitle: Text(
+                  S.maybeOf(context)?.Chat_attach_knowledge_sources ??
+                      'Attach RAG sources',
+                ),
                 enabled: !viewModel.isLoadingKnowledge,
                 onTap: () {
                   _closeSheet(sheetContext);
@@ -1311,17 +1378,21 @@ class _ChatScreenState extends State<ChatScreen>
                               children: [
                                 Row(
                                   children: [
-                                    const Expanded(
+                                    Expanded(
                                       child: Text(
-                                        'Knowledge',
-                                        style: TextStyle(
+                                        S.maybeOf(context)?.Chat_knowledge ??
+                                            'Knowledge',
+                                        style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
                                     IconButton(
-                                      tooltip: 'Refresh knowledge',
+                                      tooltip: S
+                                              .maybeOf(context)
+                                              ?.Chat_refresh_knowledge ??
+                                          'Refresh knowledge',
                                       icon: const Icon(Icons.refresh_rounded),
                                       onPressed: chat.isLoadingKnowledge
                                           ? null
@@ -1333,15 +1404,23 @@ class _ChatScreenState extends State<ChatScreen>
                                 TextField(
                                   controller: searchController,
                                   decoration: InputDecoration(
-                                    hintText: 'Search knowledge',
-                                    prefixIcon:
-                                        const Icon(Icons.search_rounded),
+                                    hintText: S
+                                            .maybeOf(context)
+                                            ?.Chat_search_knowledge ??
+                                        'Search knowledge',
+                                    prefixIcon: const Icon(
+                                      Icons.search_rounded,
+                                    ),
                                     suffixIcon: query.isEmpty
                                         ? null
                                         : IconButton(
-                                            tooltip: 'Clear search',
-                                            icon:
-                                                const Icon(Icons.close_rounded),
+                                            tooltip: S
+                                                    .maybeOf(context)
+                                                    ?.Chat_clear_search ??
+                                                'Clear search',
+                                            icon: const Icon(
+                                              Icons.close_rounded,
+                                            ),
                                             onPressed: () {
                                               searchController.clear();
                                               setSheetState(() => query = '');
@@ -1368,8 +1447,9 @@ class _ChatScreenState extends State<ChatScreen>
                             const SliverToBoxAdapter(
                               child: SizedBox(
                                 height: 96,
-                                child:
-                                    Center(child: CircularProgressIndicator()),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
                               ),
                             )
                           else if (knowledgeItems.isEmpty)
@@ -1378,11 +1458,15 @@ class _ChatScreenState extends State<ChatScreen>
                                 child: Padding(
                                   padding: const EdgeInsets.all(24),
                                   child: Text(
-                                    'No knowledge sources found',
+                                    S
+                                            .maybeOf(context)
+                                            ?.Chat_no_knowledge_sources ??
+                                        'No knowledge sources found',
                                     style: TextStyle(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1452,7 +1536,10 @@ class _ChatScreenState extends State<ChatScreen>
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '$attachmentCount attachment${attachmentCount == 1 ? '' : 's'}',
+                    S
+                            .maybeOf(context)
+                            ?.Chat_attachment_count(attachmentCount) ??
+                        '$attachmentCount attachment${attachmentCount == 1 ? '' : 's'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -1470,7 +1557,7 @@ class _ChatScreenState extends State<ChatScreen>
                       visualDensity: VisualDensity.compact,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
-                    child: const Text('Clear'),
+                    child: Text(S.maybeOf(context)?.Chat_clear ?? 'Clear'),
                   ),
               ],
             ),
@@ -1491,8 +1578,9 @@ class _ChatScreenState extends State<ChatScreen>
               spacing: 8,
               runSpacing: 6,
               children: [
-                ...viewModel.uploadingFileNames
-                    .map(_buildUploadingAttachmentChip),
+                ...viewModel.uploadingFileNames.map(
+                  _buildUploadingAttachmentChip,
+                ),
                 ...files.map(_buildPendingFileChip),
               ],
             ),
@@ -1507,11 +1595,7 @@ class _ChatScreenState extends State<ChatScreen>
         dimension: 16,
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
-      label: Text(
-        name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      label: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
       visualDensity: VisualDensity.compact,
     );
   }
@@ -1526,19 +1610,16 @@ class _ChatScreenState extends State<ChatScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              file.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
             if (detail.isNotEmpty)
               Text(
                 detail,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
           ],
         ),
@@ -1550,8 +1631,11 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   String _pendingFileDetail(ChatFile file) {
-    if (file.isKnowledgeCollection) return 'Knowledge collection';
-    if (file.isKnowledgeFile) return 'Knowledge file';
+    if (file.isKnowledgeCollection)
+      return S.maybeOf(context)?.Chat_knowledge_collection ??
+          'Knowledge collection';
+    if (file.isKnowledgeFile)
+      return S.maybeOf(context)?.Chat_knowledge_file ?? 'Knowledge file';
     if (file.size > 0) return _formatFileSize(file.size);
     return '';
   }
@@ -1605,19 +1689,16 @@ class _ChatScreenState extends State<ChatScreen>
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                'images/app_icon.png',
-                width: 60,
-                height: 60,
-              ),
+              child: Image.asset('images/app_icon.png', width: 60, height: 60),
             ),
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: const Text(
-                "Sign in to access chat, or use the composite calculators without signing in.",
+              child: Text(
+                S.maybeOf(context)?.Chat_sign_in_description ??
+                    "Sign in to access chat, or use the composite calculators without signing in.",
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1627,16 +1708,19 @@ class _ChatScreenState extends State<ChatScreen>
             FilledButton.icon(
               onPressed: _openLogin,
               icon: const Icon(Icons.manage_accounts, size: 22),
-              label: const Text(
-                'Sign In to Chat',
-                style: TextStyle(fontSize: 16),
+              label: Text(
+                S.maybeOf(context)?.Chat_sign_in_to_chat ?? 'Sign In to Chat',
+                style: const TextStyle(fontSize: 16),
               ),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: _openCompositeCalculators,
               icon: const Icon(Icons.calculate_outlined, size: 22),
-              label: const Text('Open Composite Calculators'),
+              label: Text(
+                S.maybeOf(context)?.Chat_open_calculators ??
+                    'Open Composite Calculators',
+              ),
             ),
           ],
         ),
@@ -1662,9 +1746,6 @@ class _ChatScreenState extends State<ChatScreen>
     AppHaptics.light();
     await viewModel.checkAuthStatus();
     if (!mounted || !viewModel.isLoggedIn) return;
-    await Future.wait([
-      viewModel.fetchChats(),
-      viewModel.fetchTools(),
-    ]);
+    await Future.wait([viewModel.fetchChats(), viewModel.fetchTools()]);
   }
 }

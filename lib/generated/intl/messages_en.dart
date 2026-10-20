@@ -57,9 +57,30 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m15(modulus, stress, length, loads) =>
       "Moduli ${modulus} · stress ${stress} · length ${length} · loads ${loads}";
 
-  static String m16(name) => "Preview ${name}";
+  static String m16(question) => "Ask: ${question}";
 
-  static String m17(name) => "Remove ${name}";
+  static String m17(count) =>
+      "${Intl.plural(count, one: '${count} attachment', other: '${count} attachments')}";
+
+  static String m18(language) => "${language} - streaming";
+
+  static String m19(name) => "Delete “${name}”? This cannot be undone.";
+
+  static String m20(count) => "${count} files";
+
+  static String m21(name) => "Preview ${name}";
+
+  static String m22(error) => "Processing failed: ${error}";
+
+  static String m23(name) => "Read ${name}";
+
+  static String m24(name) => "Remove ${name}";
+
+  static String m25(query) => "Search \"${query}\"";
+
+  static String m26(count) => "${count} matching messages";
+
+  static String m27(name) => "Welcome, ${name}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -276,9 +297,146 @@ class MessageLookup extends MessageLookupByLibrary {
     "Calculator_wrong_layup": MessageLookupByLibrary.simpleMessage(
       "Wrong layup sequence",
     ),
+    "Chat_account_settings": MessageLookupByLibrary.simpleMessage(
+      "Account & settings",
+    ),
+    "Chat_add_attachment": MessageLookupByLibrary.simpleMessage(
+      "Add attachment",
+    ),
+    "Chat_archive": MessageLookupByLibrary.simpleMessage("Archive"),
+    "Chat_archived": MessageLookupByLibrary.simpleMessage("Archived"),
+    "Chat_ask_question": m16,
+    "Chat_attach_knowledge_sources": MessageLookupByLibrary.simpleMessage(
+      "Attach RAG sources",
+    ),
+    "Chat_attachment_count": m17,
+    "Chat_bad_response": MessageLookupByLibrary.simpleMessage("Bad response"),
+    "Chat_camera": MessageLookupByLibrary.simpleMessage("Camera"),
+    "Chat_cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
+    "Chat_chat_options": MessageLookupByLibrary.simpleMessage("Chat options"),
+    "Chat_chat_title": MessageLookupByLibrary.simpleMessage("Title"),
+    "Chat_chats": MessageLookupByLibrary.simpleMessage("Chats"),
+    "Chat_clear": MessageLookupByLibrary.simpleMessage("Clear"),
+    "Chat_clear_search": MessageLookupByLibrary.simpleMessage("Clear search"),
     "Chat_close_image_preview": MessageLookupByLibrary.simpleMessage(
       "Close image preview",
     ),
+    "Chat_code": MessageLookupByLibrary.simpleMessage("code"),
+    "Chat_code_streaming": m18,
+    "Chat_composer_hint": MessageLookupByLibrary.simpleMessage(
+      "Ask about composites engineering…",
+    ),
+    "Chat_composite_calculators": MessageLookupByLibrary.simpleMessage(
+      "Composite Calculators",
+    ),
+    "Chat_composite_expert": MessageLookupByLibrary.simpleMessage(
+      "Composite expert",
+    ),
+    "Chat_copied": MessageLookupByLibrary.simpleMessage("Copied"),
+    "Chat_copy_code": MessageLookupByLibrary.simpleMessage("Copy code"),
+    "Chat_copy_link": MessageLookupByLibrary.simpleMessage("Copy link"),
+    "Chat_copy_message": MessageLookupByLibrary.simpleMessage("Copy message"),
+    "Chat_delete": MessageLookupByLibrary.simpleMessage("Delete"),
+    "Chat_delete_chat_message": m19,
+    "Chat_delete_chat_title": MessageLookupByLibrary.simpleMessage(
+      "Delete chat?",
+    ),
+    "Chat_delete_untitled_chat_message": MessageLookupByLibrary.simpleMessage(
+      "Delete this chat? This cannot be undone.",
+    ),
+    "Chat_edit_negative_feedback": MessageLookupByLibrary.simpleMessage(
+      "Edit negative feedback",
+    ),
+    "Chat_edit_positive_feedback": MessageLookupByLibrary.simpleMessage(
+      "Edit positive feedback",
+    ),
+    "Chat_engineering_copilot": MessageLookupByLibrary.simpleMessage(
+      "Composites engineering copilot",
+    ),
+    "Chat_export_conversation": MessageLookupByLibrary.simpleMessage(
+      "Export conversation",
+    ),
+    "Chat_export_failed": MessageLookupByLibrary.simpleMessage(
+      "Could not export this conversation.",
+    ),
+    "Chat_feedback_accurate": MessageLookupByLibrary.simpleMessage("Accurate"),
+    "Chat_feedback_additional_details": MessageLookupByLibrary.simpleMessage(
+      "Additional details",
+    ),
+    "Chat_feedback_clear_explanation": MessageLookupByLibrary.simpleMessage(
+      "Clear explanation",
+    ),
+    "Chat_feedback_did_not_follow": MessageLookupByLibrary.simpleMessage(
+      "Didn\'t follow instructions",
+    ),
+    "Chat_feedback_excellent": MessageLookupByLibrary.simpleMessage(
+      "10 · Excellent",
+    ),
+    "Chat_feedback_followed_instructions": MessageLookupByLibrary.simpleMessage(
+      "Followed instructions",
+    ),
+    "Chat_feedback_good_structure": MessageLookupByLibrary.simpleMessage(
+      "Good structure",
+    ),
+    "Chat_feedback_help": MessageLookupByLibrary.simpleMessage(
+      "Your feedback helps improve answer quality.",
+    ),
+    "Chat_feedback_helpful": MessageLookupByLibrary.simpleMessage("Helpful"),
+    "Chat_feedback_inaccurate": MessageLookupByLibrary.simpleMessage(
+      "Inaccurate",
+    ),
+    "Chat_feedback_needs_work": MessageLookupByLibrary.simpleMessage(
+      "Needs work",
+    ),
+    "Chat_feedback_not_useful": MessageLookupByLibrary.simpleMessage(
+      "Not useful",
+    ),
+    "Chat_feedback_optional": MessageLookupByLibrary.simpleMessage("Optional"),
+    "Chat_feedback_other": MessageLookupByLibrary.simpleMessage("Other"),
+    "Chat_feedback_poor": MessageLookupByLibrary.simpleMessage("1 · Poor"),
+    "Chat_feedback_quality_score": MessageLookupByLibrary.simpleMessage(
+      "Quality score",
+    ),
+    "Chat_feedback_reason_prompt": MessageLookupByLibrary.simpleMessage(
+      "What influenced your rating?",
+    ),
+    "Chat_feedback_reason_required": MessageLookupByLibrary.simpleMessage(
+      "Select at least one reason to continue.",
+    ),
+    "Chat_feedback_save_failed": MessageLookupByLibrary.simpleMessage(
+      "Feedback could not be saved. Try again.",
+    ),
+    "Chat_feedback_saved": MessageLookupByLibrary.simpleMessage(
+      "Feedback saved.",
+    ),
+    "Chat_feedback_submit": MessageLookupByLibrary.simpleMessage(
+      "Submit feedback",
+    ),
+    "Chat_feedback_submitted": MessageLookupByLibrary.simpleMessage(
+      "Feedback submitted",
+    ),
+    "Chat_feedback_title": MessageLookupByLibrary.simpleMessage(
+      "Rate this response",
+    ),
+    "Chat_feedback_too_verbose": MessageLookupByLibrary.simpleMessage(
+      "Too verbose",
+    ),
+    "Chat_feedback_unclear": MessageLookupByLibrary.simpleMessage("Unclear"),
+    "Chat_feedback_update": MessageLookupByLibrary.simpleMessage(
+      "Update feedback",
+    ),
+    "Chat_feedback_useful_detail": MessageLookupByLibrary.simpleMessage(
+      "Useful detail",
+    ),
+    "Chat_file_count": m20,
+    "Chat_files": MessageLookupByLibrary.simpleMessage("Files"),
+    "Chat_find_in_chat": MessageLookupByLibrary.simpleMessage("Find in chat"),
+    "Chat_folder_name": MessageLookupByLibrary.simpleMessage("Folder name"),
+    "Chat_generating_response_stop": MessageLookupByLibrary.simpleMessage(
+      "Generating response. Stop generating",
+    ),
+    "Chat_get_response": MessageLookupByLibrary.simpleMessage("Get response"),
+    "Chat_good_response": MessageLookupByLibrary.simpleMessage("Good response"),
     "Chat_image_preview": MessageLookupByLibrary.simpleMessage("Image preview"),
     "Chat_image_preview_unavailable": MessageLookupByLibrary.simpleMessage(
       "Image preview is unavailable.",
@@ -286,8 +444,152 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_jump_to_latest": MessageLookupByLibrary.simpleMessage(
       "Jump to latest",
     ),
-    "Chat_preview_image": m16,
-    "Chat_remove_attachment": m17,
+    "Chat_knowledge": MessageLookupByLibrary.simpleMessage("Knowledge"),
+    "Chat_knowledge_collection": MessageLookupByLibrary.simpleMessage(
+      "Knowledge collection",
+    ),
+    "Chat_knowledge_file": MessageLookupByLibrary.simpleMessage(
+      "Knowledge file",
+    ),
+    "Chat_link_copied": MessageLookupByLibrary.simpleMessage(
+      "Link copied to clipboard",
+    ),
+    "Chat_models": MessageLookupByLibrary.simpleMessage("Models"),
+    "Chat_move_to_folder": MessageLookupByLibrary.simpleMessage(
+      "Move to folder",
+    ),
+    "Chat_new_chat": MessageLookupByLibrary.simpleMessage("New chat"),
+    "Chat_new_folder": MessageLookupByLibrary.simpleMessage("New folder"),
+    "Chat_no_chats": MessageLookupByLibrary.simpleMessage("No chats yet"),
+    "Chat_no_chats_found": MessageLookupByLibrary.simpleMessage(
+      "No chats found",
+    ),
+    "Chat_no_folder_chats": MessageLookupByLibrary.simpleMessage(
+      "No chats in folder",
+    ),
+    "Chat_no_folders": MessageLookupByLibrary.simpleMessage("No folders yet"),
+    "Chat_no_knowledge_sources": MessageLookupByLibrary.simpleMessage(
+      "No knowledge sources found",
+    ),
+    "Chat_no_matching_chats": MessageLookupByLibrary.simpleMessage(
+      "No matching chats",
+    ),
+    "Chat_open_calculators": MessageLookupByLibrary.simpleMessage(
+      "Open Composite Calculators",
+    ),
+    "Chat_open_link_failed": MessageLookupByLibrary.simpleMessage(
+      "Could not open this link.",
+    ),
+    "Chat_photo_library": MessageLookupByLibrary.simpleMessage("Photo Library"),
+    "Chat_pin": MessageLookupByLibrary.simpleMessage("Pin"),
+    "Chat_pinned": MessageLookupByLibrary.simpleMessage("Pinned"),
+    "Chat_preview_image": m21,
+    "Chat_processing_document": MessageLookupByLibrary.simpleMessage(
+      "Processing document…",
+    ),
+    "Chat_processing_failed": MessageLookupByLibrary.simpleMessage(
+      "Processing failed",
+    ),
+    "Chat_processing_failed_detail": m22,
+    "Chat_read_file": m23,
+    "Chat_refresh_knowledge": MessageLookupByLibrary.simpleMessage(
+      "Refresh knowledge",
+    ),
+    "Chat_regenerate_response": MessageLookupByLibrary.simpleMessage(
+      "Regenerate response",
+    ),
+    "Chat_remove_attachment": m24,
+    "Chat_remove_from_folder": MessageLookupByLibrary.simpleMessage(
+      "Remove from folder",
+    ),
+    "Chat_rename": MessageLookupByLibrary.simpleMessage("Rename"),
+    "Chat_rename_chat": MessageLookupByLibrary.simpleMessage("Rename chat"),
+    "Chat_replace_draft": MessageLookupByLibrary.simpleMessage("Replace draft"),
+    "Chat_replace_draft_message": MessageLookupByLibrary.simpleMessage(
+      "Replace the current unsent text with this message?",
+    ),
+    "Chat_replace_draft_title": MessageLookupByLibrary.simpleMessage(
+      "Replace draft?",
+    ),
+    "Chat_response_interrupted": MessageLookupByLibrary.simpleMessage(
+      "Response interrupted",
+    ),
+    "Chat_save": MessageLookupByLibrary.simpleMessage("Save"),
+    "Chat_search_assistant": MessageLookupByLibrary.simpleMessage("Assistant"),
+    "Chat_search_chats": MessageLookupByLibrary.simpleMessage("Search chats"),
+    "Chat_search_clear": MessageLookupByLibrary.simpleMessage("Clear search"),
+    "Chat_search_copy_excerpt": MessageLookupByLibrary.simpleMessage(
+      "Copy excerpt",
+    ),
+    "Chat_search_copy_failed": MessageLookupByLibrary.simpleMessage(
+      "Could not copy this excerpt.",
+    ),
+    "Chat_search_empty": MessageLookupByLibrary.simpleMessage(
+      "Enter text to search this conversation.",
+    ),
+    "Chat_search_excerpt_copied": MessageLookupByLibrary.simpleMessage(
+      "Excerpt copied",
+    ),
+    "Chat_search_history_title": m25,
+    "Chat_search_knowledge": MessageLookupByLibrary.simpleMessage(
+      "Search knowledge",
+    ),
+    "Chat_search_loaded_messages": MessageLookupByLibrary.simpleMessage(
+      "Search loaded messages",
+    ),
+    "Chat_search_match_count": m26,
+    "Chat_search_no_matches": MessageLookupByLibrary.simpleMessage(
+      "No matching messages.",
+    ),
+    "Chat_search_you": MessageLookupByLibrary.simpleMessage("You"),
+    "Chat_select_model": MessageLookupByLibrary.simpleMessage("Select model"),
+    "Chat_send_message": MessageLookupByLibrary.simpleMessage("Send message"),
+    "Chat_share": MessageLookupByLibrary.simpleMessage("Share"),
+    "Chat_share_chat": MessageLookupByLibrary.simpleMessage("Share chat"),
+    "Chat_share_chat_description": MessageLookupByLibrary.simpleMessage(
+      "Messages you send after creating your link won’t be shared. Anyone with the URL can view this chat.",
+    ),
+    "Chat_share_markdown": MessageLookupByLibrary.simpleMessage(
+      "Share as Markdown",
+    ),
+    "Chat_share_pdf": MessageLookupByLibrary.simpleMessage("Share as PDF"),
+    "Chat_sign_in": MessageLookupByLibrary.simpleMessage("Sign In"),
+    "Chat_sign_in_description": MessageLookupByLibrary.simpleMessage(
+      "Sign in to access chat, or use the composite calculators without signing in.",
+    ),
+    "Chat_sign_in_to_chat": MessageLookupByLibrary.simpleMessage(
+      "Sign In to Chat",
+    ),
+    "Chat_start_new_chat_help": MessageLookupByLibrary.simpleMessage(
+      "Start a new chat to begin a conversation.",
+    ),
+    "Chat_start_voice_input": MessageLookupByLibrary.simpleMessage(
+      "Start voice input",
+    ),
+    "Chat_stop_generating": MessageLookupByLibrary.simpleMessage(
+      "Stop generating",
+    ),
+    "Chat_stop_voice_input": MessageLookupByLibrary.simpleMessage(
+      "Stop voice input",
+    ),
+    "Chat_suggested_questions": MessageLookupByLibrary.simpleMessage(
+      "Suggested questions",
+    ),
+    "Chat_title": MessageLookupByLibrary.simpleMessage("Chat"),
+    "Chat_unpin": MessageLookupByLibrary.simpleMessage("Unpin"),
+    "Chat_untitled_chat": MessageLookupByLibrary.simpleMessage("Untitled chat"),
+    "Chat_use_as_draft": MessageLookupByLibrary.simpleMessage("Use as draft"),
+    "Chat_voice_unavailable": MessageLookupByLibrary.simpleMessage(
+      "Voice input is unavailable. Please check microphone permissions.",
+    ),
+    "Chat_welcome": MessageLookupByLibrary.simpleMessage("Welcome"),
+    "Chat_welcome_description": MessageLookupByLibrary.simpleMessage(
+      "Ask about materials, laminate design, failure analysis, manufacturing, or engineering calculations.",
+    ),
+    "Chat_welcome_name": m27,
+    "Chat_working_on": MessageLookupByLibrary.simpleMessage(
+      "What are you working on?",
+    ),
     "Compliance_Matrix_S": MessageLookupByLibrary.simpleMessage(
       "Compliance Matrix S",
     ),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:domain/chat/entities/chat.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:swiftcomp/generated/l10n.dart';
 
 import '../viewModels/chat_view_model.dart';
 
@@ -15,26 +16,32 @@ Future<void> showShareChatDialog(
   await showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: const Text('Share chat'),
-      content: const Text(
-        'Messages you send after creating your link won’t be shared. '
-        'Anyone with the URL can view this chat.',
+      scrollable: true,
+      title: Text(S.maybeOf(context)?.Chat_share_chat ?? 'Share chat'),
+      content: Text(
+        S.maybeOf(context)?.Chat_share_chat_description ??
+            'Messages you send after creating your link won’t be shared. Anyone with the URL can view this chat.',
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('Cancel'),
+          child: Text(S.maybeOf(context)?.Chat_cancel ?? 'Cancel'),
         ),
         FilledButton.icon(
           icon: const Icon(Icons.link, size: 18),
-          label: const Text('Copy link'),
+          label: Text(S.maybeOf(context)?.Chat_copy_link ?? 'Copy link'),
           onPressed: () async {
             final success = await viewModel.copyShareLink(chat);
             if (!dialogContext.mounted) return;
             Navigator.of(dialogContext).pop();
             if (!context.mounted || !success) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Link copied to clipboard')),
+              SnackBar(
+                content: Text(
+                  S.maybeOf(context)?.Chat_link_copied ??
+                      'Link copied to clipboard',
+                ),
+              ),
             );
           },
         ),
@@ -52,12 +59,13 @@ Future<String?> showRenameDialog(
   return showDialog<String>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: const Text('Rename chat'),
+      scrollable: true,
+      title: Text(S.maybeOf(context)?.Chat_rename_chat ?? 'Rename chat'),
       content: TextField(
         controller: controller,
-        decoration: const InputDecoration(
-          labelText: 'Title',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: S.maybeOf(context)?.Chat_chat_title ?? 'Title',
+          border: const OutlineInputBorder(),
         ),
         autofocus: true,
         textCapitalization: TextCapitalization.sentences,
@@ -67,12 +75,12 @@ Future<String?> showRenameDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('Cancel'),
+          child: Text(S.maybeOf(context)?.Chat_cancel ?? 'Cancel'),
         ),
         FilledButton(
           onPressed: () =>
               Navigator.of(dialogContext).pop(controller.text.trim()),
-          child: const Text('Save'),
+          child: Text(S.maybeOf(context)?.Chat_save ?? 'Save'),
         ),
       ],
     ),
@@ -80,18 +88,22 @@ Future<String?> showRenameDialog(
 }
 
 Future<bool> _confirmDeleteChat(BuildContext context, Chat chat) async {
-  final title = chat.title.trim().isEmpty ? 'this chat' : '“${chat.title}”';
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: const Text('Delete chat?'),
+      scrollable: true,
+      title: Text(S.maybeOf(context)?.Chat_delete_chat_title ?? 'Delete chat?'),
       content: Text(
-        'Delete $title? This cannot be undone.',
+        chat.title.trim().isEmpty
+            ? (S.maybeOf(context)?.Chat_delete_untitled_chat_message ??
+                'Delete this chat? This cannot be undone.')
+            : (S.maybeOf(context)?.Chat_delete_chat_message(chat.title) ??
+                'Delete “${chat.title}”? This cannot be undone.'),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Cancel'),
+          child: Text(S.maybeOf(context)?.Chat_cancel ?? 'Cancel'),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -99,7 +111,7 @@ Future<bool> _confirmDeleteChat(BuildContext context, Chat chat) async {
             foregroundColor: Theme.of(dialogContext).colorScheme.onError,
           ),
           onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('Delete'),
+          child: Text(S.maybeOf(context)?.Chat_delete ?? 'Delete'),
         ),
       ],
     ),
@@ -117,6 +129,7 @@ Future<String?> _showTextInputDialog(
   return showDialog<String>(
     context: context,
     builder: (dialogContext) => AlertDialog(
+      scrollable: true,
       title: Text(title),
       content: TextField(
         controller: controller,
@@ -132,12 +145,12 @@ Future<String?> _showTextInputDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('Cancel'),
+          child: Text(S.maybeOf(context)?.Chat_cancel ?? 'Cancel'),
         ),
         FilledButton(
           onPressed: () =>
               Navigator.of(dialogContext).pop(controller.text.trim()),
-          child: const Text('Save'),
+          child: Text(S.maybeOf(context)?.Chat_save ?? 'Save'),
         ),
       ],
     ),
@@ -159,21 +172,21 @@ Future<void> _showMoveToFolderSheet(
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
           children: [
-            const ListTile(
+            ListTile(
               title: Text(
-                'Move to folder',
-                style: TextStyle(fontWeight: FontWeight.w700),
+                S.maybeOf(context)?.Chat_move_to_folder ?? 'Move to folder',
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
             ListTile(
               leading: const Icon(Icons.create_new_folder_outlined),
-              title: const Text('New folder'),
+              title: Text(S.maybeOf(context)?.Chat_new_folder ?? 'New folder'),
               onTap: () async {
                 Navigator.pop(sheetContext);
                 final name = await _showTextInputDialog(
                   context,
-                  title: 'New folder',
-                  label: 'Folder name',
+                  title: S.maybeOf(context)?.Chat_new_folder ?? 'New folder',
+                  label: S.maybeOf(context)?.Chat_folder_name ?? 'Folder name',
                 );
                 if (name != null && name.trim().isNotEmpty) {
                   await viewModel.createFolderAndMoveChat(chat, name);
@@ -182,7 +195,10 @@ Future<void> _showMoveToFolderSheet(
             ),
             ListTile(
               leading: const Icon(Icons.folder_off_outlined),
-              title: const Text('Remove from folder'),
+              title: Text(
+                S.maybeOf(context)?.Chat_remove_from_folder ??
+                    'Remove from folder',
+              ),
               enabled: chat.folderId != null && chat.folderId!.isNotEmpty,
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -194,7 +210,7 @@ Future<void> _showMoveToFolderSheet(
               ListTile(
                 enabled: false,
                 title: Text(
-                  'No folders yet',
+                  S.maybeOf(context)?.Chat_no_folders ?? 'No folders yet',
                   style: TextStyle(
                     color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                   ),
@@ -263,7 +279,9 @@ class _ChatListTile extends StatelessWidget {
           : null,
       horizontalTitleGap: isPinned ? 8 : null,
       title: Text(
-        chat.title.trim().isEmpty ? 'Untitled chat' : chat.title,
+        chat.title.trim().isEmpty
+            ? S.maybeOf(context)?.Chat_untitled_chat ?? 'Untitled chat'
+            : chat.title,
         overflow: TextOverflow.ellipsis,
         maxLines: 1,
         style: TextStyle(
@@ -271,47 +289,47 @@ class _ChatListTile extends StatelessWidget {
         ),
       ),
       trailing: PopupMenuButton<String>(
-        tooltip: 'Chat options',
+        tooltip: S.maybeOf(context)?.Chat_chat_options ?? 'Chat options',
         padding: EdgeInsets.zero,
-        icon: Icon(
-          Icons.more_vert_rounded,
-          color: scheme.onSurfaceVariant,
-        ),
+        icon: Icon(Icons.more_vert_rounded, color: scheme.onSurfaceVariant),
         onSelected: onAction,
         itemBuilder: (context) => [
           PopupMenuItem(
             value: 'pin',
             child: _MenuRow(
               icon: Icons.push_pin_outlined,
-              label: isPinned ? 'Unpin' : 'Pin',
+              label: isPinned
+                  ? S.maybeOf(context)?.Chat_unpin ?? 'Unpin'
+                  : S.maybeOf(context)?.Chat_pin ?? 'Pin',
             ),
           ),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'rename',
             child: _MenuRow(
               icon: Icons.edit_outlined,
-              label: 'Rename',
+              label: S.maybeOf(context)?.Chat_rename ?? 'Rename',
             ),
           ),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'share',
             child: _MenuRow(
               icon: Icons.ios_share_outlined,
-              label: 'Share',
+              label: S.maybeOf(context)?.Chat_share ?? 'Share',
             ),
           ),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'folder',
             child: _MenuRow(
               icon: Icons.drive_file_move_outline,
-              label: 'Move to folder',
+              label:
+                  S.maybeOf(context)?.Chat_move_to_folder ?? 'Move to folder',
             ),
           ),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'archive',
             child: _MenuRow(
               icon: Icons.archive_outlined,
-              label: 'Archive',
+              label: S.maybeOf(context)?.Chat_archive ?? 'Archive',
             ),
           ),
           const PopupMenuDivider(),
@@ -319,7 +337,7 @@ class _ChatListTile extends StatelessWidget {
             value: 'delete',
             child: _MenuRow(
               icon: Icons.delete_outline_rounded,
-              label: 'Delete',
+              label: S.maybeOf(context)?.Chat_delete ?? 'Delete',
               color: scheme.error,
             ),
           ),
@@ -331,11 +349,7 @@ class _ChatListTile extends StatelessWidget {
 }
 
 class _MenuRow extends StatelessWidget {
-  const _MenuRow({
-    required this.icon,
-    required this.label,
-    this.color,
-  });
+  const _MenuRow({required this.icon, required this.label, this.color});
 
   final IconData icon;
   final String label;
@@ -347,7 +361,9 @@ class _MenuRow extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: color),
         const SizedBox(width: 12),
-        Text(label, style: TextStyle(color: color)),
+        Flexible(
+          child: Text(label, style: TextStyle(color: color)),
+        ),
       ],
     );
   }
@@ -593,7 +609,16 @@ class _ChatListState extends State<ChatList> {
               else if (chatViewModel.hasActiveChatFilter)
                 _chatSection(
                   context: context,
-                  title: chatViewModel.activeChatFilterLabel,
+                  title: chatViewModel.chatSearchQuery.trim().isNotEmpty
+                      ? (S.maybeOf(context)?.Chat_search_history_title(
+                                chatViewModel.chatSearchQuery.trim(),
+                              ) ??
+                          'Search "${chatViewModel.chatSearchQuery.trim()}"')
+                      : chatViewModel.selectedChatFolder?.name ??
+                          (chatViewModel.showingArchivedChats
+                              ? (S.maybeOf(context)?.Chat_archived ??
+                                  'Archived')
+                              : (S.maybeOf(context)?.Chat_chats ?? 'Chats')),
                   initiallyExpanded: true,
                   children: [
                     if (chatViewModel.isLoadingChatFilters)
@@ -605,8 +630,10 @@ class _ChatListState extends State<ChatList> {
                       _emptySectionLabel(
                         context,
                         chatViewModel.chatSearchQuery.trim().isEmpty
-                            ? 'No chats found'
-                            : 'No matching chats',
+                            ? S.maybeOf(context)?.Chat_no_chats_found ??
+                                'No chats found'
+                            : S.maybeOf(context)?.Chat_no_matching_chats ??
+                                'No matching chats',
                       )
                     else
                       ...chatViewModel.filteredChats.map(
@@ -631,12 +658,13 @@ class _ChatListState extends State<ChatList> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No chats yet',
+                        S.maybeOf(context)?.Chat_no_chats ?? 'No chats yet',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Start a new chat to begin a conversation.',
+                        S.maybeOf(context)?.Chat_start_new_chat_help ??
+                            'Start a new chat to begin a conversation.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: scheme.onSurfaceVariant,
@@ -649,7 +677,7 @@ class _ChatListState extends State<ChatList> {
                 if (chatViewModel.pinnedChats.isNotEmpty)
                   _chatSection(
                     context: context,
-                    title: 'Pinned',
+                    title: S.maybeOf(context)?.Chat_pinned ?? 'Pinned',
                     initiallyExpanded: true,
                     children: chatViewModel.pinnedChats
                         .map(
@@ -670,7 +698,11 @@ class _ChatListState extends State<ChatList> {
                       initiallyExpanded: folder.isExpanded,
                       children: [
                         if (folder.chats.isEmpty)
-                          _emptySectionLabel(context, 'No chats in folder')
+                          _emptySectionLabel(
+                            context,
+                            S.maybeOf(context)?.Chat_no_folder_chats ??
+                                'No chats in folder',
+                          )
                         else
                           ...folder.chats.map(
                             (chat) => _buildChatTile(
@@ -685,11 +717,14 @@ class _ChatListState extends State<ChatList> {
                   ),
                 _chatSection(
                   context: context,
-                  title: 'Chats',
+                  title: S.maybeOf(context)?.Chat_chats ?? 'Chats',
                   initiallyExpanded: true,
                   children: [
                     if (loosePreviousChats.isEmpty)
-                      _emptySectionLabel(context, 'No chats yet')
+                      _emptySectionLabel(
+                        context,
+                        S.maybeOf(context)?.Chat_no_chats ?? 'No chats yet',
+                      )
                     else
                       ...loosePreviousChats.map(
                         (chat) => _buildChatTile(
@@ -743,7 +778,7 @@ class _ChatSearchField extends StatelessWidget {
         controller: controller,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'Search chats',
+          hintText: S.maybeOf(context)?.Chat_search_chats ?? 'Search chats',
           prefixIcon: const Icon(Icons.search_rounded),
           suffixIcon: isSearching
               ? const Padding(
@@ -756,7 +791,8 @@ class _ChatSearchField extends StatelessWidget {
               : controller.text.isEmpty
                   ? null
                   : IconButton(
-                      tooltip: 'Clear search',
+                      tooltip: S.maybeOf(context)?.Chat_clear_search ??
+                          'Clear search',
                       icon: const Icon(Icons.close_rounded),
                       onPressed: onClear,
                     ),
@@ -800,7 +836,7 @@ class _ChatFilterBar extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: ActionChip(
                 avatar: const Icon(Icons.close_rounded, size: 18),
-                label: const Text('Clear'),
+                label: Text(S.maybeOf(context)?.Chat_clear ?? 'Clear'),
                 onPressed: viewModel.clearChatFilters,
               ),
             ),
@@ -808,7 +844,7 @@ class _ChatFilterBar extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
               avatar: const Icon(Icons.archive_outlined, size: 18),
-              label: const Text('Archived'),
+              label: Text(S.maybeOf(context)?.Chat_archived ?? 'Archived'),
               selected: viewModel.showingArchivedChats,
               onSelected: (selected) {
                 if (selected) {
@@ -867,16 +903,16 @@ class _ChatDrawerHeader extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Chats',
+                S.maybeOf(context)?.Chat_chats ?? 'Chats',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
             IconButton.filledTonal(
-              tooltip: 'New chat',
+              tooltip: S.maybeOf(context)?.Chat_new_chat ?? 'New chat',
               onPressed: onNewChat,
               icon: const Icon(Icons.add_rounded, size: 20),
               style: IconButton.styleFrom(

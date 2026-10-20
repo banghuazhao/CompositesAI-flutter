@@ -266,5 +266,212 @@
     "placeholders": {
       "name": {}
     }
-  }
+  },
+  "Chat_title": "Chat",
+  "Chat_cancel": "Cancel",
+  "Chat_save": "Save",
+  "Chat_delete": "Delete",
+  "Chat_clear": "Clear",
+  "Chat_clear_search": "Clear search",
+  "Chat_sign_in": "Sign In",
+  "Chat_composite_calculators": "Composite Calculators",
+  "Chat_account_settings": "Account & settings",
+  "Chat_composite_expert": "Composite expert",
+  "Chat_export_conversation": "Export conversation",
+  "Chat_share_markdown": "Share as Markdown",
+  "Chat_share_pdf": "Share as PDF",
+  "Chat_export_failed": "Could not export this conversation.",
+  "Chat_composer_hint": "Ask about composites engineering…",
+  "Chat_voice_unavailable": "Voice input is unavailable. Please check microphone permissions.",
+  "Chat_stop_generating": "Stop generating",
+  "Chat_generating_response_stop": "Generating response. Stop generating",
+  "Chat_stop_voice_input": "Stop voice input",
+  "Chat_send_message": "Send message",
+  "Chat_start_voice_input": "Start voice input",
+  "Chat_add_attachment": "Add attachment",
+  "Chat_select_model": "Select model",
+  "Chat_models": "Models",
+  "Chat_photo_library": "Photo Library",
+  "Chat_camera": "Camera",
+  "Chat_files": "Files",
+  "Chat_knowledge": "Knowledge",
+  "Chat_attach_knowledge_sources": "Attach RAG sources",
+  "Chat_refresh_knowledge": "Refresh knowledge",
+  "Chat_search_knowledge": "Search knowledge",
+  "Chat_no_knowledge_sources": "No knowledge sources found",
+  "Chat_file_count": "{count} files",
+  "@Chat_file_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "Chat_processing_failed_detail": "Processing failed: {error}",
+  "@Chat_processing_failed_detail": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_processing_failed": "Processing failed",
+  "Chat_processing_document": "Processing document…",
+  "Chat_read_file": "Read {name}",
+  "@Chat_read_file": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_attachment_count": "{count, plural, one{{count} attachment} other{{count} attachments}}",
+  "@Chat_attachment_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "Chat_sign_in_description": "Sign in to access chat, or use the composite calculators without signing in.",
+  "Chat_sign_in_to_chat": "Sign In to Chat",
+  "Chat_open_calculators": "Open Composite Calculators",
+  "Chat_share_chat": "Share chat",
+  "Chat_share_chat_description": "Messages you send after creating your link won’t be shared. Anyone with the URL can view this chat.",
+  "Chat_copy_link": "Copy link",
+  "Chat_link_copied": "Link copied to clipboard",
+  "Chat_rename_chat": "Rename chat",
+  "Chat_chat_title": "Title",
+  "Chat_delete_chat_title": "Delete chat?",
+  "Chat_delete_chat_message": "Delete “{name}”? This cannot be undone.",
+  "@Chat_delete_chat_message": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_delete_untitled_chat_message": "Delete this chat? This cannot be undone.",
+  "Chat_move_to_folder": "Move to folder",
+  "Chat_new_folder": "New folder",
+  "Chat_folder_name": "Folder name",
+  "Chat_remove_from_folder": "Remove from folder",
+  "Chat_no_folders": "No folders yet",
+  "Chat_untitled_chat": "Untitled chat",
+  "Chat_chat_options": "Chat options",
+  "Chat_pin": "Pin",
+  "Chat_unpin": "Unpin",
+  "Chat_rename": "Rename",
+  "Chat_share": "Share",
+  "Chat_archive": "Archive",
+  "Chat_no_chats_found": "No chats found",
+  "Chat_no_matching_chats": "No matching chats",
+  "Chat_no_chats": "No chats yet",
+  "Chat_start_new_chat_help": "Start a new chat to begin a conversation.",
+  "Chat_pinned": "Pinned",
+  "Chat_chats": "Chats",
+  "Chat_no_folder_chats": "No chats in folder",
+  "Chat_search_chats": "Search chats",
+  "Chat_search_history_title": "Search \"{query}\"",
+  "@Chat_search_history_title": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_archived": "Archived",
+  "Chat_new_chat": "New chat",
+  "Chat_welcome": "Welcome",
+  "Chat_welcome_name": "Welcome, {name}",
+  "@Chat_welcome_name": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_engineering_copilot": "Composites engineering copilot",
+  "Chat_working_on": "What are you working on?",
+  "Chat_welcome_description": "Ask about materials, laminate design, failure analysis, manufacturing, or engineering calculations.",
+  "Chat_suggested_questions": "Suggested questions",
+  "Chat_ask_question": "Ask: {question}",
+  "@Chat_ask_question": {
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_copy_message": "Copy message",
+  "Chat_copied": "Copied",
+  "Chat_get_response": "Get response",
+  "Chat_regenerate_response": "Regenerate response",
+  "Chat_good_response": "Good response",
+  "Chat_bad_response": "Bad response",
+  "Chat_edit_positive_feedback": "Edit positive feedback",
+  "Chat_edit_negative_feedback": "Edit negative feedback",
+  "Chat_feedback_submitted": "Feedback submitted",
+  "Chat_knowledge_file": "Knowledge file",
+  "Chat_knowledge_collection": "Knowledge collection",
+  "Chat_response_interrupted": "Response interrupted",
+  "Chat_use_as_draft": "Use as draft",
+  "Chat_replace_draft_title": "Replace draft?",
+  "Chat_replace_draft_message": "Replace the current unsent text with this message?",
+  "Chat_replace_draft": "Replace draft",
+  "Chat_find_in_chat": "Find in chat",
+  "Chat_search_loaded_messages": "Search loaded messages",
+  "Chat_search_empty": "Enter text to search this conversation.",
+  "Chat_search_no_matches": "No matching messages.",
+  "Chat_search_match_count": "{count} matching messages",
+  "@Chat_search_match_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "Chat_search_copy_excerpt": "Copy excerpt",
+  "Chat_search_excerpt_copied": "Excerpt copied",
+  "Chat_search_you": "You",
+  "Chat_search_assistant": "Assistant",
+  "Chat_search_clear": "Clear search",
+  "Chat_search_copy_failed": "Could not copy this excerpt.",
+  "Chat_feedback_title": "Rate this response",
+  "Chat_feedback_help": "Your feedback helps improve answer quality.",
+  "Chat_feedback_helpful": "Helpful",
+  "Chat_feedback_needs_work": "Needs work",
+  "Chat_feedback_quality_score": "Quality score",
+  "Chat_feedback_poor": "1 · Poor",
+  "Chat_feedback_excellent": "10 · Excellent",
+  "Chat_feedback_reason_prompt": "What influenced your rating?",
+  "Chat_feedback_additional_details": "Additional details",
+  "Chat_feedback_optional": "Optional",
+  "Chat_feedback_reason_required": "Select at least one reason to continue.",
+  "Chat_feedback_save_failed": "Feedback could not be saved. Try again.",
+  "Chat_feedback_submit": "Submit feedback",
+  "Chat_feedback_update": "Update feedback",
+  "Chat_feedback_saved": "Feedback saved.",
+  "Chat_feedback_accurate": "Accurate",
+  "Chat_feedback_clear_explanation": "Clear explanation",
+  "Chat_feedback_useful_detail": "Useful detail",
+  "Chat_feedback_followed_instructions": "Followed instructions",
+  "Chat_feedback_good_structure": "Good structure",
+  "Chat_feedback_other": "Other",
+  "Chat_feedback_inaccurate": "Inaccurate",
+  "Chat_feedback_unclear": "Unclear",
+  "Chat_feedback_too_verbose": "Too verbose",
+  "Chat_feedback_not_useful": "Not useful",
+  "Chat_feedback_did_not_follow": "Didn't follow instructions",
+  "Chat_copy_code": "Copy code",
+  "Chat_code": "code",
+  "Chat_code_streaming": "{language} - streaming",
+  "@Chat_code_streaming": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_open_link_failed": "Could not open this link."
 }

@@ -266,5 +266,212 @@
     "placeholders": {
       "name": {}
     }
-  }
+  },
+  "Chat_title": "對話",
+  "Chat_cancel": "取消",
+  "Chat_save": "儲存",
+  "Chat_delete": "刪除",
+  "Chat_clear": "清除",
+  "Chat_clear_search": "清除搜尋",
+  "Chat_sign_in": "登入",
+  "Chat_composite_calculators": "複合材料計算器",
+  "Chat_account_settings": "帳戶與設定",
+  "Chat_composite_expert": "複合材料專家",
+  "Chat_export_conversation": "匯出對話",
+  "Chat_share_markdown": "以 Markdown 分享",
+  "Chat_share_pdf": "以 PDF 分享",
+  "Chat_export_failed": "無法匯出此對話。",
+  "Chat_composer_hint": "詢問複合材料工程問題…",
+  "Chat_voice_unavailable": "無法使用語音輸入。請檢查咪高峰權限。",
+  "Chat_stop_generating": "停止生成",
+  "Chat_generating_response_stop": "正在生成回覆。停止生成",
+  "Chat_stop_voice_input": "停止語音輸入",
+  "Chat_send_message": "傳送訊息",
+  "Chat_start_voice_input": "開始語音輸入",
+  "Chat_add_attachment": "加入附件",
+  "Chat_select_model": "選擇模型",
+  "Chat_models": "模型",
+  "Chat_photo_library": "相片圖庫",
+  "Chat_camera": "相機",
+  "Chat_files": "檔案",
+  "Chat_knowledge": "知識庫",
+  "Chat_attach_knowledge_sources": "加入 RAG 來源",
+  "Chat_refresh_knowledge": "重新整理知識庫",
+  "Chat_search_knowledge": "搜尋知識庫",
+  "Chat_no_knowledge_sources": "找不到知識來源",
+  "Chat_file_count": "{count} 個檔案",
+  "@Chat_file_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "Chat_processing_failed_detail": "處理失敗：{error}",
+  "@Chat_processing_failed_detail": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_processing_failed": "處理失敗",
+  "Chat_processing_document": "正在處理文件…",
+  "Chat_read_file": "閱讀 {name}",
+  "@Chat_read_file": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_attachment_count": "{count} 個附件",
+  "@Chat_attachment_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "Chat_sign_in_description": "登入以使用對話功能，亦可免登入使用複合材料計算器。",
+  "Chat_sign_in_to_chat": "登入以開始對話",
+  "Chat_open_calculators": "開啟複合材料計算器",
+  "Chat_share_chat": "分享對話",
+  "Chat_share_chat_description": "建立連結後傳送的訊息不會被分享。任何取得此連結的人都可以檢視此對話。",
+  "Chat_copy_link": "複製連結",
+  "Chat_link_copied": "連結已複製到剪貼簿",
+  "Chat_rename_chat": "重新命名對話",
+  "Chat_chat_title": "標題",
+  "Chat_delete_chat_title": "刪除對話？",
+  "Chat_delete_chat_message": "刪除「{name}」？此操作無法還原。",
+  "@Chat_delete_chat_message": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_delete_untitled_chat_message": "刪除此對話？此操作無法還原。",
+  "Chat_move_to_folder": "移至資料夾",
+  "Chat_new_folder": "新增資料夾",
+  "Chat_folder_name": "資料夾名稱",
+  "Chat_remove_from_folder": "從資料夾移除",
+  "Chat_no_folders": "尚未有資料夾",
+  "Chat_untitled_chat": "未命名對話",
+  "Chat_chat_options": "對話選項",
+  "Chat_pin": "置頂",
+  "Chat_unpin": "取消置頂",
+  "Chat_rename": "重新命名",
+  "Chat_share": "分享",
+  "Chat_archive": "封存",
+  "Chat_no_chats_found": "找不到對話",
+  "Chat_no_matching_chats": "沒有符合的對話",
+  "Chat_no_chats": "尚未有對話",
+  "Chat_start_new_chat_help": "新增對話以開始交談。",
+  "Chat_pinned": "已置頂",
+  "Chat_chats": "對話",
+  "Chat_no_folder_chats": "資料夾內沒有對話",
+  "Chat_search_chats": "搜尋對話",
+  "Chat_search_history_title": "搜尋「{query}」",
+  "@Chat_search_history_title": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_archived": "已封存",
+  "Chat_new_chat": "新增對話",
+  "Chat_welcome": "歡迎",
+  "Chat_welcome_name": "歡迎，{name}",
+  "@Chat_welcome_name": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_engineering_copilot": "複合材料工程助手",
+  "Chat_working_on": "您正在研究甚麼？",
+  "Chat_welcome_description": "詢問有關材料、層合板設計、失效分析、製造或工程計算的問題。",
+  "Chat_suggested_questions": "建議問題",
+  "Chat_ask_question": "提問：{question}",
+  "@Chat_ask_question": {
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_copy_message": "複製訊息",
+  "Chat_copied": "已複製",
+  "Chat_get_response": "取得回覆",
+  "Chat_regenerate_response": "重新生成回覆",
+  "Chat_good_response": "良好回覆",
+  "Chat_bad_response": "不佳回覆",
+  "Chat_edit_positive_feedback": "編輯正面意見",
+  "Chat_edit_negative_feedback": "編輯負面意見",
+  "Chat_feedback_submitted": "意見已提交",
+  "Chat_knowledge_file": "知識檔案",
+  "Chat_knowledge_collection": "知識集合",
+  "Chat_response_interrupted": "回覆已中斷",
+  "Chat_use_as_draft": "用作草稿",
+  "Chat_replace_draft_title": "取代草稿？",
+  "Chat_replace_draft_message": "以此訊息取代目前尚未傳送的文字？",
+  "Chat_replace_draft": "取代草稿",
+  "Chat_find_in_chat": "在對話中尋找",
+  "Chat_search_loaded_messages": "搜尋已載入的訊息",
+  "Chat_search_empty": "輸入文字以搜尋此對話。",
+  "Chat_search_no_matches": "沒有符合的訊息。",
+  "Chat_search_match_count": "{count} 則符合的訊息",
+  "@Chat_search_match_count": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "Chat_search_copy_excerpt": "複製摘錄",
+  "Chat_search_excerpt_copied": "摘錄已複製",
+  "Chat_search_you": "您",
+  "Chat_search_assistant": "助手",
+  "Chat_search_clear": "清除搜尋",
+  "Chat_search_copy_failed": "無法複製此摘錄。",
+  "Chat_feedback_title": "評價此回覆",
+  "Chat_feedback_help": "您的意見有助改善回答質素。",
+  "Chat_feedback_helpful": "有幫助",
+  "Chat_feedback_needs_work": "需要改善",
+  "Chat_feedback_quality_score": "質素評分",
+  "Chat_feedback_poor": "1 · 差",
+  "Chat_feedback_excellent": "10 · 優秀",
+  "Chat_feedback_reason_prompt": "哪些因素影響了您的評分？",
+  "Chat_feedback_additional_details": "補充說明",
+  "Chat_feedback_optional": "選填",
+  "Chat_feedback_reason_required": "請至少選擇一個原因以繼續。",
+  "Chat_feedback_save_failed": "無法儲存意見。請再試一次。",
+  "Chat_feedback_submit": "提交意見",
+  "Chat_feedback_update": "更新意見",
+  "Chat_feedback_saved": "意見已儲存。",
+  "Chat_feedback_accurate": "準確",
+  "Chat_feedback_clear_explanation": "解釋清晰",
+  "Chat_feedback_useful_detail": "細節有用",
+  "Chat_feedback_followed_instructions": "遵循了指示",
+  "Chat_feedback_good_structure": "結構良好",
+  "Chat_feedback_other": "其他",
+  "Chat_feedback_inaccurate": "不準確",
+  "Chat_feedback_unclear": "不清晰",
+  "Chat_feedback_too_verbose": "過於冗長",
+  "Chat_feedback_not_useful": "沒有幫助",
+  "Chat_feedback_did_not_follow": "未遵循指示",
+  "Chat_copy_code": "複製程式碼",
+  "Chat_code": "程式碼",
+  "Chat_code_streaming": "{language} - 生成中",
+  "@Chat_code_streaming": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "Chat_open_link_failed": "無法開啟此連結。"
 }

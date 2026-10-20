@@ -82,6 +82,29 @@ class ChatComposerController {
     return ChatComposerTicket._(_epoch, _chatId, draft);
   }
 
+  bool isCurrent(ChatComposerTicket ticket) =>
+      !_disposed &&
+      ticket._epoch == _epoch &&
+      ticket._chatId == _chatId &&
+      identical(_drafts[_chatId]?.revision, ticket._draft.revision);
+
+  bool replaceIfCurrent(ChatComposerTicket ticket, String text) {
+    if (!isCurrent(ticket)) return false;
+    final value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    // A deliberate replacement is a new draft even when its text is identical.
+    _store(_chatId, _Draft(value));
+    _restoring = true;
+    try {
+      textController.value = value;
+    } finally {
+      _restoring = false;
+    }
+    return true;
+  }
+
   /// Accepted sends may clear only the exact draft that initiated the request.
   void accept(ChatComposerTicket ticket) {
     if (_disposed ||
