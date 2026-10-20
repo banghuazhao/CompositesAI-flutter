@@ -1,106 +1,93 @@
-import 'package:flutter/foundation.dart';
-
 class LayupSequence {
+  static const int maxLayers = 1000000;
+  // Preserve whitespace around numeric repeats, while rejecting bare suffix
+  // whitespace that the downstream calculator parser cannot consume.
+  static final RegExp _bracketedSequence = RegExp(
+      r'^\s*\[([^\[\]]+)\](?:(\s*\+?\d+\s*)?s(\s*\+?\d+\s*)?|(\s*\+?\d+\s*))?$');
+
   List<double>? layups;
-  String stringValue = "";
+  String stringValue = '';
+  bool _exceedsLayerLimit = false;
 
-  // set 方法
+  bool get exceedsLayerLimit => _exceedsLayerLimit;
+
+  /// Parses `[xx/xx]msn`: repeat m times, mirror if s is present, then repeat n
+  /// times. Unbracketed angle lists are also accepted.
   set value(String value) {
-    layups = [];
-    String baseLayup = "";
-    int rBefore = 1;
-    bool symmetry = false;
-    int rAfter = 1;
+    stringValue = value;
+    layups = null;
+    _exceedsLayerLimit = false;
+    final text = value;
+    if (text.trim().isEmpty) return;
 
-    if (value.split("]").length == 2 && value.split("]")[1] != "") {
-      baseLayup = value.split("]")[0].replaceAll("[", "");
-      String msn = value.split("]")[1];
-      if (msn.contains('s')) {
-        // symmetry
-        symmetry = true;
-        var r = msn.split('s');
+    String baseLayup = text;
+    int repeatBefore = 1;
+    int repeatAfter = 1;
+    bool symmetric = false;
 
-        if (r.length == 2) {
-          if (r[0] != "") {
-            int? rBeforeTemp = int.tryParse(r[0]);
-            if (rBeforeTemp != null) {
-              rBefore = rBeforeTemp;
-            } else {
-              layups = null;
-              return;
-            }
-          }
-          if (r[1] != "") {
-            int? rAfterTemp = int.tryParse(r[1]);
-            if (rAfterTemp != null) {
-              rAfter = rAfterTemp;
-            } else {
-              layups = null;
-              return;
-            }
-          }
-        }
-      } else {
-        // not symmetry
-        symmetry = false;
-        int? rBeforeTemp = int.tryParse(msn);
-        if (rBeforeTemp != null) {
-          rBefore = rBeforeTemp;
-        } else {
-          layups = null;
+    if (text.contains('[') || text.contains(']')) {
+      final match = _bracketedSequence.firstMatch(text);
+      if (match == null || match.end != text.length) return;
+      baseLayup = match.group(1)!;
+      symmetric = text.substring(text.indexOf(']') + 1).contains('s');
+      final before = _repeatCount(match.group(2) ?? match.group(4));
+      final after = _repeatCount(match.group(3));
+      if (before == null || after == null) return;
+      repeatBefore = before;
+      repeatAfter = after;
+    }
+
+    // Check the base count before splitting or expanding the input.
+    int baseCount = 1;
+    for (var i = 0; i < baseLayup.length; i++) {
+      if (baseLayup.codeUnitAt(i) == 47) {
+        baseCount++;
+        if (baseCount > maxLayers) {
+          _exceedsLayerLimit = true;
           return;
         }
       }
-    } else {
-      baseLayup = value.replaceAll("[", "").replaceAll("]", '');
     }
 
-    for (String angleString in baseLayup.split('/')) {
-      double? angle = double.tryParse(angleString);
-      if (angle == null) {
-        layups = null;
+    int totalCount = baseCount;
+    for (final factor in [repeatBefore, if (symmetric) 2, repeatAfter]) {
+      // Division avoids overflowing when input contains very large repeats.
+      if (factor > maxLayers ~/ totalCount) {
+        _exceedsLayerLimit = true;
         return;
       }
-      layups?.add(angle);
+      totalCount *= factor;
     }
 
-    var layupsTemp = [...layups!];
-
-    for (var i = 1; i < rBefore; i++) {
-      for (var layup in layupsTemp) {
-        layups?.add(layup);
-      }
+    final baseAngles = <double>[];
+    for (final angleText in baseLayup.split('/')) {
+      final angle = double.tryParse(angleText.trim());
+      if (angle == null || !angle.isFinite) return;
+      baseAngles.add(angle);
     }
 
-    layupsTemp = [...layups!];
-
-    if (symmetry) {
-      var layupsTempReversed = layupsTemp.reversed;
-      for (var layup in layupsTempReversed) {
-        layups?.add(layup);
-      }
-    }
-
-    layupsTemp = [...layups!];
-
-    for (var i = 1; i < rAfter; i++) {
-      for (var layup in layupsTemp) {
-        layups?.add(layup);
-      }
-    }
-    if (kDebugMode) {
-      print(baseLayup);
-      print(layups);
-    }
+    final halfLength = baseCount * repeatBefore;
+    final blockLength = symmetric ? halfLength * 2 : halfLength;
+    layups = List<double>.generate(totalCount, (index) {
+      final blockIndex = index % blockLength;
+      // The mirrored half runs backwards through the repeated base sequence.
+      final angleIndex = symmetric && blockIndex >= halfLength
+          ? blockLength - 1 - blockIndex
+          : blockIndex;
+      return baseAngles[angleIndex % baseCount];
+    });
   }
 
-  isValid() {
-    if (layups == null) {
-      return false;
-    } else if (layups!.length > 1000000) {
-      return false;
-    } else {
-      return true;
+  int? _repeatCount(String? text) {
+    if (text == null) return 1;
+    final count = int.tryParse(text);
+    if (count == null || count > maxLayers) {
+      _exceedsLayerLimit = true;
+      return null;
     }
+    return count > 0 ? count : null;
   }
+
+  bool isValid() =>
+      layups != null && layups!.isNotEmpty && layups!.length <= maxLayers;
 }

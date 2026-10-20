@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../util/NumberPrecisionHelper.dart';
 import '../../../util/export/file_share.dart';
 import '../model/calc_report.dart';
 
-enum _ReportFormat { csv, pdf }
+enum _ReportFormat { copy, csv, pdf }
 
-/// App bar action that shares a calculator result as CSV or PDF.
+/// App bar action that copies a calculator report or shares it as CSV or PDF.
 class ReportExportButton extends StatefulWidget {
   const ReportExportButton({super.key, required this.buildReport});
 
@@ -24,11 +25,17 @@ class _ReportExportButtonState extends State<ReportExportButton> {
   Future<void> _export(_ReportFormat format) async {
     if (_busy) return;
     final messenger = ScaffoldMessenger.of(context);
-    final precision = context.read<NumberPrecisionHelper>().precision;
     setState(() => _busy = true);
     try {
       final report = widget.buildReport();
       switch (format) {
+        case _ReportFormat.copy:
+          await Clipboard.setData(
+              ClipboardData(text: report.toClipboardText()));
+          if (!mounted || !messenger.mounted) return;
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Results copied to clipboard')),
+          );
         case _ReportFormat.csv:
           await FileShare.shareText(
             context,
@@ -38,6 +45,7 @@ class _ReportExportButtonState extends State<ReportExportButton> {
             subject: report.title,
           );
         case _ReportFormat.pdf:
+          final precision = context.read<NumberPrecisionHelper>().precision;
           final bytes = await report.toPdf(precision: precision);
           if (!mounted) return;
           await FileShare.shareBytes(
@@ -50,8 +58,13 @@ class _ReportExportButtonState extends State<ReportExportButton> {
       }
     } catch (error) {
       debugPrint('Result export failed: $error');
+      if (!mounted || !messenger.mounted) return;
       messenger.showSnackBar(
-        const SnackBar(content: Text('Could not export these results.')),
+        SnackBar(
+          content: Text(format == _ReportFormat.copy
+              ? 'Could not copy these results. Please try again.'
+              : 'Could not export these results.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -71,6 +84,14 @@ class _ReportExportButtonState extends State<ReportExportButton> {
           : const Icon(Icons.ios_share_rounded),
       onSelected: _export,
       itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: _ReportFormat.copy,
+          child: ListTile(
+            leading: Icon(Icons.copy_rounded),
+            title: Text('Copy results'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
         PopupMenuItem(
           value: _ReportFormat.csv,
           child: ListTile(

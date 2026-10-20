@@ -15,17 +15,56 @@ class LayupSequenceRow extends StatefulWidget {
 }
 
 class _LayupSequenceRowState extends State<LayupSequenceRow> {
-  validateLayupSequence(List<double>? layups) {
-    if (layups == null) {
-      return "Wrong layup sequence";
-    } else if (layups.length > 1000000) {
-      return "Too many layers";
-    } else {
-      return null;
+  late final TextEditingController _textEditingController;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.layupSequence.value = widget.layupSequence.stringValue;
+    _textEditingController =
+        TextEditingController(text: widget.layupSequence.stringValue)
+          ..addListener(_updateLayup);
+  }
+
+  @override
+  void didUpdateWidget(covariant LayupSequenceRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.layupSequence != widget.layupSequence) {
+      widget.layupSequence.value = widget.layupSequence.stringValue;
+      _textEditingController.value = TextEditingValue(
+        text: widget.layupSequence.stringValue,
+        selection: TextSelection.collapsed(
+            offset: widget.layupSequence.stringValue.length),
+      );
     }
   }
 
-  var _textEditingController = TextEditingController();
+  void _updateLayup() {
+    final text = _textEditingController.text;
+    if (text == widget.layupSequence.stringValue) return;
+    setState(() => widget.layupSequence.value = text);
+  }
+
+  void _appendSymbol(String symbol) {
+    final text = _textEditingController.text + symbol;
+    _textEditingController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  String? get _validationError {
+    if (widget.layupSequence.exceedsLayerLimit) return 'Too many layers';
+    return widget.layupSequence.isValid() ? null : 'Wrong layup sequence';
+  }
+
+  @override
+  void dispose() {
+    _textEditingController
+      ..removeListener(_updateLayup)
+      ..dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,57 +119,26 @@ class _LayupSequenceRowState extends State<LayupSequenceRow> {
                           contentPadding: const EdgeInsets.all(12),
                           border: const OutlineInputBorder(),
                           labelText: "[xx/xx/xx/xx]msn",
-                          errorText: widget.validate
-                              ? validateLayupSequence(
-                                  widget.layupSequence.layups)
-                              : null,
-                          suffixIcon: _textEditingController.text.length > 0
+                          errorText: widget.validate ? _validationError : null,
+                          suffixIcon: _textEditingController.text.isNotEmpty
                               ? IconButton(
-                                  onPressed: () {
-                                    _textEditingController.clear();
-                                    setState(() {});
-                                  },
+                                  onPressed: _textEditingController.clear,
                                   icon: Icon(Icons.cancel, color: Colors.grey))
                               : null),
-                      onChanged: (value) {
-                        setState(() {
-                          widget.layupSequence.value = value;
-                          widget.layupSequence.stringValue = value;
-                        });
-                      },
                     ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        // ElevatedButton(onPressed: onPressed, child: child)
                         ElevatedButton(
-                            onPressed: () {
-                              final updatedText =
-                                  _textEditingController.text + '/';
-                              setState(() {
-                                _textEditingController.text = updatedText;
-                              });
-                            },
+                            onPressed: () => _appendSymbol('/'),
                             child: Text("/")),
                         const SizedBox(width: 6),
                         ElevatedButton(
-                            onPressed: () {
-                              final updatedText =
-                                  _textEditingController.text + '[';
-                              setState(() {
-                                _textEditingController.text = updatedText;
-                              });
-                            },
+                            onPressed: () => _appendSymbol('['),
                             child: Text("[")),
                         const SizedBox(width: 6),
                         ElevatedButton(
-                            onPressed: () {
-                              final updatedText =
-                                  _textEditingController.text + ']';
-                              setState(() {
-                                _textEditingController.text = updatedText;
-                              });
-                            },
+                            onPressed: () => _appendSymbol(']'),
                             child: Text("]")),
                       ],
                     )

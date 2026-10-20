@@ -69,7 +69,7 @@ class ChartSection extends ReportSection {
   final List<ChartSeries> series;
 }
 
-/// Inputs and results of one calculation, exportable as CSV or PDF.
+/// Inputs and results of one calculation, exportable as text, CSV or PDF.
 class CalcReport {
   CalcReport({
     required this.title,
@@ -112,6 +112,18 @@ class CalcReport {
   /// CSV with a UTF-8 byte order mark so spreadsheet apps read symbols such
   /// as ν and · correctly. Numbers keep full precision.
   String toCsv() {
+    final rows = _spreadsheetRows();
+    return '\uFEFF${rows.map((row) => row.map(_csvEscape).join(',')).join('\r\n')}\r\n';
+  }
+
+  /// Tab-separated text for pasting into spreadsheets or reports. Includes
+  /// inputs, units and notes, and keeps the same full precision as CSV export.
+  String toClipboardText() {
+    final rows = _spreadsheetRows();
+    return '${rows.map((row) => row.map(_tsvEscape).join('\t')).join('\r\n')}\r\n';
+  }
+
+  List<List<String>> _spreadsheetRows() {
     final rows = <List<String>>[
       [title],
       ['Units', '${units.name} (${units.summary})'],
@@ -165,7 +177,7 @@ class CalcReport {
         rows.add([note]);
       }
     }
-    return '\uFEFF${rows.map((row) => row.map(_csvEscape).join(',')).join('\r\n')}\r\n';
+    return rows;
   }
 
   /// Shortest round-trip representation for spreadsheets; text passes
@@ -181,6 +193,13 @@ class CalcReport {
 
   static String _csvEscape(String value) {
     if (value.contains(RegExp(r'[",\r\n]'))) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
+  }
+
+  static String _tsvEscape(String value) {
+    if (value.contains(RegExp(r'["\t\r\n]'))) {
       return '"${value.replaceAll('"', '""')}"';
     }
     return value;
@@ -407,7 +426,8 @@ class CalcReport {
           children: [
             pw.Text(
               'x: ${chart.xLabel}   y: ${chart.yLabel}',
-              style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
+              style:
+                  const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
             ),
             for (var i = 0; i < chart.series.length; i++)
               pw.Row(
@@ -442,8 +462,8 @@ class CalcReport {
     final magnitude =
         math.pow(10, (math.log(rawStep) / math.ln10).floor()).toDouble();
     final step = [1.0, 2.0, 2.5, 5.0, 10.0]
-            .map((factor) => factor * magnitude)
-            .firstWhere((candidate) => candidate >= rawStep);
+        .map((factor) => factor * magnitude)
+        .firstWhere((candidate) => candidate >= rawStep);
     final first = (min / step).floor();
     final last = (max / step).ceil();
     return [
@@ -485,8 +505,8 @@ class ReportInputs {
     ]);
   }
 
-  static ValuesSection layup(String sequence, double? plyThickness,
-      Units units) {
+  static ValuesSection layup(
+      String sequence, double? plyThickness, Units units) {
     return ValuesSection('Layup', [
       ReportEntry('Layup sequence', sequence),
       ReportEntry('Ply thickness', plyThickness, units.length),
