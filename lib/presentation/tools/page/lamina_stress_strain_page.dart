@@ -38,7 +38,15 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage>
       TransverselyIsotropicCTE();
   LayupAngle layupAngle = LayupAngle();
   DeltaTemperature deltaTemperature = DeltaTemperature();
-  MechanicalTensor mechanicalTensor = PlaneStress();
+  final PlaneStress _stressDraft = PlaneStress();
+  final PlaneStrain _strainDraft = PlaneStrain();
+  final List<TextEditingController> _stressControllers =
+      List.generate(3, (_) => TextEditingController());
+  final List<TextEditingController> _strainControllers =
+      List.generate(3, (_) => TextEditingController());
+  bool _stressMode = true;
+  MechanicalTensor get mechanicalTensor =>
+      _stressMode ? _stressDraft : _strainDraft;
   bool validate = false;
 
   @override
@@ -47,6 +55,14 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage>
 
   @override
   TransverselyIsotropicCTE? get laminaCte => transverselyIsotropicCTE;
+
+  @override
+  void dispose() {
+    for (final controller in [..._stressControllers, ..._strainControllers]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,15 +141,13 @@ class _LaminaStressStrainPageState extends State<LaminaStressStrainPage>
       ),
       PlaneStressStrainRow(
         mechanicalTensor: mechanicalTensor,
+        controllers: _stressMode ? _stressControllers : _strainControllers,
         validate: validate,
         callback: (value) {
-          setState(() {
-            if (value == "Stress") {
-              mechanicalTensor = PlaneStress();
-            } else {
-              mechanicalTensor = PlaneStrain();
-            }
-          });
+          if (value != 'Stress' && value != 'Strain') return;
+          final stressMode = value == 'Stress';
+          if (stressMode == _stressMode) return;
+          setState(() => _stressMode = stressMode);
         },
       ),
       DescriptionItem(

@@ -34,7 +34,15 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage>
       TransverselyIsotropicMaterial();
   LayupSequence layupSequence = LayupSequence();
   LayerThickness layerThickness = LayerThickness();
-  MechanicalTensor mechanicalTensor = LaminateStress();
+  final LaminateStress _stressDraft = LaminateStress();
+  final LaminateStrain _strainDraft = LaminateStrain();
+  final List<TextEditingController> _stressControllers =
+      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _strainControllers =
+      List.generate(6, (_) => TextEditingController());
+  bool _stressMode = true;
+  MechanicalTensor get mechanicalTensor =>
+      _stressMode ? _stressDraft : _strainDraft;
   bool validate = false;
 
   @override
@@ -43,6 +51,9 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage>
 
   @override
   void dispose() {
+    for (final controller in [..._stressControllers, ..._strainControllers]) {
+      controller.dispose();
+    }
     layerThickness.dispose();
     super.dispose();
   }
@@ -103,15 +114,16 @@ class _LaminateStressStrainPageState extends State<LaminateStressStrainPage>
       LayerThicknessPage(layerThickness: layerThickness, validate: validate),
       LaminateStressStrainRow(
         mechanicalTensor: mechanicalTensor,
+        controllers: _stressMode ? _stressControllers : _strainControllers,
         validate: validate,
         callback: (value) {
-          setState(() {
-            if (value == "Stress Resultants") {
-              mechanicalTensor = LaminateStress();
-            } else {
-              mechanicalTensor = LaminateStrain();
-            }
-          });
+          if (value != 'Stress Resultants' &&
+              value != 'Plate Strains/Curvatures') {
+            return;
+          }
+          final stressMode = value == 'Stress Resultants';
+          if (stressMode == _stressMode) return;
+          setState(() => _stressMode = stressMode);
         },
       ),
       DescriptionItem(

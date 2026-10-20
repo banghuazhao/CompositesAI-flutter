@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../util/others.dart';
@@ -16,8 +18,7 @@ enum UnitSystem { si, us }
 class Units {
   const Units._(this.system);
 
-  factory Units.of(UnitSystem system) =>
-      system == UnitSystem.si ? si : us;
+  factory Units.of(UnitSystem system) => system == UnitSystem.si ? si : us;
 
   static const Units si = Units._(UnitSystem.si);
   static const Units us = Units._(UnitSystem.us);
@@ -74,10 +75,14 @@ class Units {
 /// Persists the selected unit system and notifies listeners on change.
 class UnitSettings extends ChangeNotifier {
   static const String _key = 'Calculator_Unit_System';
+  UnitSystem? _selectedSystem;
+  Future<void>? _pendingWrite;
 
   UnitSystem get system {
+    final selected = _selectedSystem;
+    if (selected != null) return selected;
     try {
-      final stored = SharedPreferencesHelper.localStorage.getString(_key);
+      final stored = SharedPreferencesHelper.localStorage.get(_key);
       return stored == UnitSystem.us.name ? UnitSystem.us : UnitSystem.si;
     } catch (_) {
       return UnitSystem.si;
@@ -87,9 +92,30 @@ class UnitSettings extends ChangeNotifier {
   Units get units => Units.of(system);
 
   Future<void> setSystem(UnitSystem system) async {
-    if (system == this.system) return;
-    await SharedPreferencesHelper.localStorage.setString(_key, system.name);
-    notifyListeners();
+    final previous = this.system;
+    _selectedSystem = system;
+
+    // Register this write before notifying: a listener can select another unit.
+    final previousWrite = _pendingWrite;
+    final completion = Completer<void>();
+    final pending = completion.future;
+    _pendingWrite = pending;
+    try {
+      if (system != previous) notifyListeners();
+      if (previousWrite != null) await previousWrite;
+      try {
+        if (!await SharedPreferencesHelper.localStorage
+            .setString(_key, system.name)) {
+          throw StateError('Could not persist calculator units.');
+        }
+      } catch (_) {
+        // Keep the selected session units when storage is unavailable or fails.
+      }
+    } finally {
+      // Retain only active work, including when a write fails or we are disposed.
+      if (identical(_pendingWrite, pending)) _pendingWrite = null;
+      completion.complete();
+    }
   }
 }
 

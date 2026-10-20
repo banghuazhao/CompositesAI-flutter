@@ -9,23 +9,73 @@ class PlaneStressStrainRow extends StatefulWidget {
   final bool validate;
   final Function(String) callback;
 
+  /// When supplied, the screen owns these controllers and their raw drafts.
+  final List<TextEditingController>? controllers;
+
   const PlaneStressStrainRow(
       {Key? key,
       required this.mechanicalTensor,
       required this.validate,
-      required this.callback})
-      : super(key: key);
+      required this.callback,
+      this.controllers})
+      : assert(controllers == null || controllers.length == 3),
+        super(key: key);
 
   @override
   _PlaneStressStrainRowState createState() => _PlaneStressStrainRowState();
 }
 
 class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
-  String dropValue = "Stress";
+  String get dropValue =>
+      widget.mechanicalTensor is PlaneStress ? 'Stress' : 'Strain';
+  List<TextEditingController>? _ownedControllers;
+  List<TextEditingController> get _controllers =>
+      widget.controllers ?? _ownedControllers!;
+  TextEditingController get textEditingController1 => _controllers[0];
+  TextEditingController get textEditingController2 => _controllers[1];
+  TextEditingController get textEditingController3 => _controllers[2];
 
-  TextEditingController textEditingController1 = TextEditingController();
-  TextEditingController textEditingController2 = TextEditingController();
-  TextEditingController textEditingController3 = TextEditingController();
+  List<double?> get _values => switch (widget.mechanicalTensor) {
+        PlaneStress tensor => [tensor.sigma11, tensor.sigma22, tensor.sigma12],
+        PlaneStrain tensor => [
+            tensor.epsilon11,
+            tensor.epsilon22,
+            tensor.gamma12
+          ],
+        _ => List.filled(3, null),
+      };
+
+  void _syncOwnedControllers() {
+    final values = _values;
+    _ownedControllers ??= List.generate(3, (_) => TextEditingController());
+    for (var index = 0; index < values.length; index++) {
+      _ownedControllers![index].text = values[index]?.toString() ?? '';
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.controllers == null) _syncOwnedControllers();
+  }
+
+  @override
+  void didUpdateWidget(covariant PlaneStressStrainRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controllers == null &&
+        (oldWidget.controllers != null ||
+            oldWidget.mechanicalTensor != widget.mechanicalTensor)) {
+      _syncOwnedControllers();
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _ownedControllers ?? <TextEditingController>[]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   validateTensor(double? value) {
     if (value == null || !value.isFinite) {
@@ -54,8 +104,18 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                   "Input",
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                DropdownButton<String>(
+                const SizedBox(width: 12),
+                Expanded(
+                    child: DropdownButton<String>(
                   value: dropValue,
+                  isExpanded: true,
+                  itemHeight: null,
+                  selectedItemBuilder: (context) => ['Stress', 'Strain']
+                      .map((value) => Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(value,
+                              maxLines: 1, overflow: TextOverflow.ellipsis)))
+                      .toList(),
                   icon: const Icon(Icons.arrow_downward),
                   iconSize: 24,
                   elevation: 16,
@@ -65,13 +125,8 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                     color: Colors.deepPurpleAccent,
                   ),
                   onChanged: (String? newValue) {
-                    setState(() {
-                      dropValue = newValue!;
-                      widget.callback(dropValue);
-                      textEditingController1.clear();
-                      textEditingController2.clear();
-                      textEditingController3.clear();
-                    });
+                    if (newValue == null || newValue == dropValue) return;
+                    widget.callback(newValue);
                   },
                   items: <String>["Stress", "Strain"]
                       .map<DropdownMenuItem<String>>((String value) {
@@ -80,7 +135,7 @@ class _PlaneStressStrainRowState extends State<PlaneStressStrainRow> {
                       child: Text(value),
                     );
                   }).toList(),
-                ),
+                )),
               ],
             ),
           ),

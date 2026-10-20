@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../util/others.dart';
 import 'failure_criteria.dart';
@@ -314,12 +315,23 @@ class MaterialLibrary extends ChangeNotifier {
   static final MaterialLibrary instance = MaterialLibrary._();
 
   static const String _storageKey = 'Custom_Materials_v1';
+  // Immutable snapshots are kept under this versioned key, then .1, .2, ... .
+  // Never replace an older recovery copy, even when its contents are damaged.
+  static const String _recoveryKey = 'Custom_Materials_Recovery_v1';
 
   List<LibraryMaterial>? _custom;
   Future<void>? _pendingMutation;
 
-  List<LibraryMaterial> get customMaterials =>
-      List.unmodifiable(_custom ??= _load());
+  List<LibraryMaterial> get customMaterials {
+    try {
+      return List.unmodifiable(_custom ??= _load());
+    } catch (error) {
+      // Do not cache an unknown source as an empty library. A later read or
+      // mutation must retry the load rather than silently dropping its records.
+      if (kDebugMode) debugPrint('Failed to load custom materials: $error');
+      return const [];
+    }
+  }
 
   List<LibraryMaterial> materials(MaterialKind kind) => [
         ...customMaterials.where((material) => material.kind == kind),
@@ -334,7 +346,7 @@ class MaterialLibrary extends ChangeNotifier {
       throw ArgumentError('Material values must be finite.');
     }
     await _enqueueMutation(() async {
-      final custom = [...customMaterials];
+      final custom = [..._custom ??= _load()];
       final index = custom.indexWhere((existing) =>
           existing.kind == material.kind &&
           existing.name.trim().toLowerCase() ==
@@ -355,7 +367,7 @@ class MaterialLibrary extends ChangeNotifier {
   }
 
   Future<void> remove(LibraryMaterial material) => _enqueueMutation(() async {
-        final custom = [...customMaterials]
+        final custom = [..._custom ??= _load()]
           ..removeWhere((existing) => existing.id == material.id);
         await _persist(custom);
         _custom = custom;
@@ -379,20 +391,89 @@ class MaterialLibrary extends ChangeNotifier {
     }
   }
 
-  List<LibraryMaterial> _load() {
+  List<LibraryMaterial> _load() =>
+      _decodeStored(SharedPreferencesHelper.localStorage.get(_storageKey))
+          .materials;
+
+  static ({List<LibraryMaterial> materials, bool degraded}) _decodeStored(
+      Object? source) {
+    if (source == null) return (materials: [], degraded: false);
+    if (source is! String) return (materials: [], degraded: true);
+    final Object? decoded;
     try {
-      final raw = SharedPreferencesHelper.localStorage.getString(_storageKey);
-      if (raw == null || raw.isEmpty) return [];
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) return [];
-      return decoded
-          .whereType<Map<String, dynamic>>()
-          .map(LibraryMaterial.fromJson)
-          .whereType<LibraryMaterial>()
-          .toList();
-    } catch (error) {
-      if (kDebugMode) debugPrint('Failed to load custom materials: $error');
-      return [];
+      decoded = jsonDecode(source);
+    } catch (_) {
+      return (materials: [], degraded: true);
+    }
+    if (decoded is! List) return (materials: [], degraded: true);
+
+    final materials = <LibraryMaterial>[];
+    var degraded = false;
+    for (final record in decoded) {
+      try {
+        if (record is! Map<String, dynamic>) {
+          degraded = true;
+          continue;
+        }
+        final name = record['name'];
+        final kind = record['kind'];
+        if (name is! String ||
+            name.trim().isEmpty ||
+            (kind != null &&
+                !MaterialKind.values.any((item) => item.name == kind))) {
+          degraded = true;
+          continue;
+        }
+        final material = LibraryMaterial.fromJson(record);
+        if (material == null || !material._hasFiniteNumbers) {
+          degraded = true;
+        } else {
+          materials.add(material);
+        }
+      } catch (_) {
+        // One malformed record must not hide independent valid materials.
+        degraded = true;
+      }
+    }
+    return (materials: materials, degraded: degraded);
+  }
+
+  Future<void> _preserveRecovery(
+      SharedPreferences storage, Object source) async {
+    final (type, value) = switch (source) {
+      String value => ('string', value),
+      bool value => ('bool', value),
+      int value => ('int', value.toString()),
+      double value => ('double', value.toString()),
+      List<String> value => ('stringList', value),
+      _ => throw StateError('Unsupported material preference type.'),
+    };
+    // Numeric strings preserve large integers and nonfinite raw doubles without
+    // making the recovery envelope itself invalid JSON.
+    final snapshot = jsonEncode({
+      'version': 1,
+      'sourceKey': _storageKey,
+      'type': type,
+      'value': value,
+    });
+    var key = _recoveryKey;
+    var suffix = 0;
+    while (storage.get(key) != null) {
+      key = '$_recoveryKey.${++suffix}';
+    }
+    try {
+      if (!await storage.setString(key, snapshot)) {
+        throw StateError('Could not preserve material recovery data.');
+      }
+    } catch (_) {
+      // SharedPreferences may update its cache before a failed platform write.
+      // Only this newly allocated key can be removed; older copies are intact.
+      try {
+        await storage.remove(key);
+      } catch (_) {
+        // The main source is still untouched, even if cleanup also fails.
+      }
+      rethrow;
     }
   }
 
@@ -401,6 +482,9 @@ class MaterialLibrary extends ChangeNotifier {
     final previous = storage.get(_storageKey);
     final encoded =
         jsonEncode(materials.map((material) => material.toJson()).toList());
+    if (_decodeStored(previous).degraded) {
+      await _preserveRecovery(storage, previous!);
+    }
     try {
       if (!await storage.setString(_storageKey, encoded)) {
         throw StateError('Could not persist materials.');

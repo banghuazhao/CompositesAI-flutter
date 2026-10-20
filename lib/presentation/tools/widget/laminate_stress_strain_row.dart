@@ -9,12 +9,17 @@ class LaminateStressStrainRow extends StatefulWidget {
   final bool validate;
   final Function(String) callback;
 
+  /// When supplied, the screen owns these controllers and their raw drafts.
+  final List<TextEditingController>? controllers;
+
   const LaminateStressStrainRow(
       {Key? key,
       required this.mechanicalTensor,
       required this.validate,
-      required this.callback})
-      : super(key: key);
+      required this.callback,
+      this.controllers})
+      : assert(controllers == null || controllers.length == 6),
+        super(key: key);
 
   @override
   _LaminateStressStrainRowState createState() =>
@@ -22,14 +27,70 @@ class LaminateStressStrainRow extends StatefulWidget {
 }
 
 class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
-  String dropValue = "Stress Resultants";
+  String get dropValue => widget.mechanicalTensor is LaminateStress
+      ? 'Stress Resultants'
+      : 'Plate Strains/Curvatures';
+  List<TextEditingController>? _ownedControllers;
+  List<TextEditingController> get _controllers =>
+      widget.controllers ?? _ownedControllers!;
+  TextEditingController get textEditingController1 => _controllers[0];
+  TextEditingController get textEditingController2 => _controllers[1];
+  TextEditingController get textEditingController3 => _controllers[2];
+  TextEditingController get textEditingController4 => _controllers[3];
+  TextEditingController get textEditingController5 => _controllers[4];
+  TextEditingController get textEditingController6 => _controllers[5];
 
-  TextEditingController textEditingController1 = TextEditingController();
-  TextEditingController textEditingController2 = TextEditingController();
-  TextEditingController textEditingController3 = TextEditingController();
-  TextEditingController textEditingController4 = TextEditingController();
-  TextEditingController textEditingController5 = TextEditingController();
-  TextEditingController textEditingController6 = TextEditingController();
+  List<double?> get _values => switch (widget.mechanicalTensor) {
+        LaminateStress tensor => [
+            tensor.N11,
+            tensor.N22,
+            tensor.N12,
+            tensor.M11,
+            tensor.M22,
+            tensor.M12
+          ],
+        LaminateStrain tensor => [
+            tensor.epsilon11,
+            tensor.epsilon22,
+            tensor.epsilon12,
+            tensor.kappa11,
+            tensor.kappa22,
+            tensor.kappa12
+          ],
+        _ => List.filled(6, null),
+      };
+
+  void _syncOwnedControllers() {
+    final values = _values;
+    _ownedControllers ??= List.generate(6, (_) => TextEditingController());
+    for (var index = 0; index < values.length; index++) {
+      _ownedControllers![index].text = values[index]?.toString() ?? '';
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.controllers == null) _syncOwnedControllers();
+  }
+
+  @override
+  void didUpdateWidget(covariant LaminateStressStrainRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controllers == null &&
+        (oldWidget.controllers != null ||
+            oldWidget.mechanicalTensor != widget.mechanicalTensor)) {
+      _syncOwnedControllers();
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _ownedControllers ?? <TextEditingController>[]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   validateTensor(double? value) {
     if (value == null || !value.isFinite) {
@@ -58,8 +119,21 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                   "Input",
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                DropdownButton<String>(
+                const SizedBox(width: 12),
+                Expanded(
+                    child: DropdownButton<String>(
                   value: dropValue,
+                  isExpanded: true,
+                  itemHeight: null,
+                  selectedItemBuilder: (context) => [
+                    'Stress Resultants',
+                    'Plate Strains/Curvatures'
+                  ]
+                      .map((value) => Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(value,
+                              maxLines: 1, overflow: TextOverflow.ellipsis)))
+                      .toList(),
                   icon: const Icon(Icons.arrow_downward),
                   iconSize: 24,
                   elevation: 16,
@@ -69,16 +143,8 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                     color: Colors.deepPurpleAccent,
                   ),
                   onChanged: (String? newValue) {
-                    setState(() {
-                      dropValue = newValue!;
-                      widget.callback(dropValue);
-                      textEditingController1.clear();
-                      textEditingController2.clear();
-                      textEditingController3.clear();
-                      textEditingController4.clear();
-                      textEditingController5.clear();
-                      textEditingController6.clear();
-                    });
+                    if (newValue == null || newValue == dropValue) return;
+                    widget.callback(newValue);
                   },
                   items: <String>[
                     "Stress Resultants",
@@ -89,7 +155,7 @@ class _LaminateStressStrainRowState extends State<LaminateStressStrainRow> {
                       child: Text(value),
                     );
                   }).toList(),
-                ),
+                )),
               ],
             ),
           ),

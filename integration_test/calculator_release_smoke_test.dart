@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,7 @@ import 'package:swiftcomp/presentation/settings/views/result_precision_page.dart
 import 'package:swiftcomp/presentation/tools/model/calc_report.dart';
 import 'package:swiftcomp/presentation/tools/model/failure_criteria.dart';
 import 'package:swiftcomp/presentation/tools/model/material_library.dart';
+import 'package:swiftcomp/presentation/tools/model/mechanical_tensor_model.dart';
 import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_page.dart';
 import 'package:swiftcomp/presentation/tools/page/lamina_stress_strain_result_page.dart';
@@ -19,8 +22,10 @@ import 'package:swiftcomp/presentation/tools/page/laminate_plate_properties_page
 import 'package:swiftcomp/presentation/tools/page/laminate_failure_result_page.dart';
 import 'package:swiftcomp/presentation/tools/page/laminate_plate_properties_result_page.dart';
 import 'package:swiftcomp/presentation/tools/page/laminate_stress_strain_result_page.dart';
+import 'package:swiftcomp/presentation/tools/page/laminate_stress_strain_page.dart';
 import 'package:swiftcomp/presentation/tools/widget/layup_sequence_row.dart';
 import 'package:swiftcomp/presentation/tools/widget/material_library_sheet.dart';
+import 'package:swiftcomp/presentation/tools/widget/unit_system_picker.dart';
 import 'package:swiftcomp/util/NumberPrecisionHelper.dart';
 import 'package:swiftcomp/util/others.dart';
 
@@ -442,6 +447,192 @@ void main() {
     expect(selected?.e1, 240);
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(minutes: 3)));
+  testWidgets(
+      'recovery release keeps valid materials and backs up damaged data',
+      (tester) async {
+    final original = _releaseMaterial('Recovered prepreg', id: 'recovered');
+    final damaged = jsonEncode([
+      original.toJson(),
+      {'name': 'Damaged record', 'e1': 'not-a-number', 'nu12': 0.3},
+    ]);
+    await _isolatedPreferences(UnitSystem.si,
+        extra: {'Custom_Materials_v1': damaged});
+    expect(MaterialLibrary.instance.customMaterials.single.id, original.id);
+    LibraryMaterial? selected;
+    await tester.pumpWidget(_calculatorApp(
+      home: Scaffold(
+        body: Center(
+          child: MaterialLibraryButton(
+            kind: MaterialKind.lamina,
+            onSelected: (material) => selected = material,
+            saveCurrent: (name) => _releaseMaterial(name, id: 'new-recovered'),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.text('Library'));
+    await _tap(tester, find.text(original.name));
+    expect(selected?.id, original.id);
+    await _tap(tester, find.text('Library'));
+    await _tap(tester, find.text('Save current inputs as a material'));
+    await _enterText(tester, _fieldWithLabel('Material name'), 'New prepreg');
+    await _tap(tester, find.widgetWithText(TextButton, 'Save'));
+    expect(MaterialLibrary.instance.customMaterials, hasLength(2));
+    final storage = SharedPreferencesHelper.localStorage;
+    final backup =
+        jsonDecode(storage.getString('Custom_Materials_Recovery_v1')!) as Map;
+    expect(backup['value'], damaged);
+    MaterialLibrary.instance.resetForTest();
+    expect(
+        MaterialLibrary.instance.customMaterials.map((material) => material.id),
+        containsAll(['recovered', 'new-recovered']));
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('recovery release unit picker survives a failed preference write',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si);
+    final original = SharedPreferencesHelper.localStorage;
+    SharedPreferencesHelper.localStorage = _FailingUnitPreferences(original);
+    addTearDown(() => SharedPreferencesHelper.localStorage = original);
+    await tester.pumpWidget(_calculatorApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          appBar: AppBar(actions: const [UnitSystemButton()]),
+          body:
+              Center(child: Text(context.watch<UnitSettings>().units.summary)),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.widgetWithText(TextButton, 'SI'));
+    await _tap(tester, find.text('US customary'));
+    expect(find.text(Units.us.summary), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'US'), findsOneWidget);
+    expect(original.getString('Calculator_Unit_System'), 'si');
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 2)));
+
+  testWidgets('recovery release lamina keeps separate stress and strain drafts',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si);
+    await tester.pumpWidget(_calculatorApp(home: LaminaStressStrainPage()));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.text('Library'));
+    await _tap(tester, find.text('T300/5208 carbon/epoxy'));
+    await _enterText(tester, _fieldWithLabel('(-90 <= Angle <= 90)'), '0');
+    await _enterText(tester, _fieldWithLabel('σ11 (MPa)'), '100.00');
+    await _enterText(tester, _fieldWithLabel('σ22 (MPa)'), '0');
+    await _enterText(tester, _fieldWithLabel('σ12 (MPa)'), '0');
+    await _selectTensorMode(tester, 'Strain');
+    expect(_enteredText(tester, _fieldWithLabel('ε11')), isEmpty);
+    await _enterText(tester, _fieldWithLabel('ε11'), '0.0010');
+    await _enterText(tester, _fieldWithLabel('ε22'), '0');
+    await _enterText(tester, _fieldWithLabel('γ12 (2ε12)'), '0');
+    await _selectTensorMode(tester, 'Stress');
+    expect(_enteredText(tester, _fieldWithLabel('σ11 (MPa)')), '100.00');
+    await _selectTensorMode(tester, 'Strain');
+    expect(_enteredText(tester, _fieldWithLabel('ε11')), '0.0010');
+    await _tap(tester, find.text('Calculate'));
+    final result = tester.widget<LaminaStressStrainResult>(
+        find.byType(LaminaStressStrainResult));
+    expect(result.output.tensorType.name, 'stress');
+    expect(
+        result.inputs
+            .whereType<ValuesSection>()
+            .expand((section) => section.entries)
+            .singleWhere((entry) => entry.label == 'ε11')
+            .value,
+        0.001);
+    expect(result.output.sigma11, greaterThan(100));
+    await _tap(
+        tester, find.widgetWithIcon(IconButton, Icons.arrow_back_ios_outlined));
+    expect(_enteredText(tester, _fieldWithLabel('ε11')), '0.0010');
+    await _selectTensorMode(tester, 'Stress');
+    expect(_enteredText(tester, _fieldWithLabel('σ11 (MPa)')), '100.00');
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('recovery release laminate keeps separate load and strain drafts',
+      (tester) async {
+    await _isolatedPreferences(UnitSystem.si);
+    await tester
+        .pumpWidget(_calculatorApp(home: const LaminateStressStrainPage()));
+    await tester.pumpAndSettle();
+    await _tap(tester, find.text('Library'));
+    await _tap(tester, find.text('T300/5208 carbon/epoxy'));
+    await _enterText(tester, _fieldWithLabel('[xx/xx/xx/xx]msn'), '[0/90]s');
+    await _enterText(tester, _fieldWithLabel('Thickness (mm)'), '0.125');
+    for (final label in [
+      'N11 (N/mm)',
+      'N22 (N/mm)',
+      'N12 (N/mm)',
+      'M11 (N·mm/mm)',
+      'M22 (N·mm/mm)',
+      'M12 (N·mm/mm)'
+    ]) {
+      await _enterText(tester, _fieldWithLabel(label),
+          label.startsWith('N11') ? '100.00' : '0');
+    }
+    await _selectTensorMode(tester, 'Plate Strains/Curvatures');
+    expect(_enteredText(tester, _fieldWithLabel('ϵ11')), isEmpty);
+    for (final label in [
+      'ϵ11',
+      'ϵ22',
+      'ϵ12',
+      '𝞳11 (1/mm)',
+      '𝞳22 (1/mm)',
+      '𝞳12 (1/mm)'
+    ]) {
+      await _enterText(
+          tester, _fieldWithLabel(label), label == 'ϵ11' ? '0.0010' : '0');
+    }
+    await _selectTensorMode(tester, 'Stress Resultants');
+    expect(_enteredText(tester, _fieldWithLabel('N11 (N/mm)')), '100.00');
+    await _selectTensorMode(tester, 'Plate Strains/Curvatures');
+    expect(_enteredText(tester, _fieldWithLabel('ϵ11')), '0.0010');
+    await _tap(tester, find.text('Calculate'));
+    final result = tester.widget<LaminateStressStrainResultPage>(
+        find.byType(LaminateStressStrainResultPage));
+    expect(result.inputTensor, isA<LaminateStrain>());
+    expect((result.inputTensor as LaminateStrain).epsilon11, 0.001);
+    await _tap(
+        tester, find.widgetWithIcon(IconButton, Icons.arrow_back_ios_outlined));
+    expect(_enteredText(tester, _fieldWithLabel('ϵ11')), '0.0010');
+    await _selectTensorMode(tester, 'Stress Resultants');
+    expect(_enteredText(tester, _fieldWithLabel('N11 (N/mm)')), '100.00');
+    expect(tester.takeException(), isNull);
+  }, timeout: const Timeout(Duration(minutes: 3)));
+}
+
+class _FailingUnitPreferences extends Fake implements SharedPreferences {
+  _FailingUnitPreferences(this.backing);
+
+  final SharedPreferences backing;
+
+  @override
+  Object? get(String key) => backing.get(key);
+
+  @override
+  String? getString(String key) => backing.getString(key);
+
+  @override
+  Future<bool> setString(String key, String value) async {
+    if (key == 'Calculator_Unit_System') {
+      throw StateError('Simulated write failure');
+    }
+    return backing.setString(key, value);
+  }
+}
+
+Future<void> _selectTensorMode(WidgetTester tester, String label) async {
+  await _tap(tester, find.byType(DropdownButton<String>));
+  await _tap(tester, find.text(label).last);
 }
 
 Future<void> _isolatedPreferences(UnitSystem system,

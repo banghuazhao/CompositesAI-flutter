@@ -24,8 +24,8 @@ class _AnalysisTypeRowState extends State<AnalysisTypeRow> {
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
                       "Analysis Type",
@@ -33,6 +33,16 @@ class _AnalysisTypeRowState extends State<AnalysisTypeRow> {
                     ),
                     DropdownButton<AnalysisType>(
                       value: widget.analysisType,
+                      isExpanded: true,
+                      itemHeight: null,
+                      selectedItemBuilder: (context) => AnalysisType.values
+                          .map((value) => Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(value.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                              ))
+                          .toList(),
                       icon: const Icon(Icons.arrow_downward),
                       iconSize: 24,
                       elevation: 16,
