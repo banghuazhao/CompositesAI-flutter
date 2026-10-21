@@ -266,6 +266,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_close_image_preview": MessageLookupByLibrary.simpleMessage("关闭图片预览"),
     "Chat_code": MessageLookupByLibrary.simpleMessage("代码"),
     "Chat_code_streaming": m18,
+    "Chat_collapse_answer": MessageLookupByLibrary.simpleMessage("收起回答"),
+    "Chat_composer_done": MessageLookupByLibrary.simpleMessage("完成"),
     "Chat_composer_hint": MessageLookupByLibrary.simpleMessage("询问复合材料工程问题…"),
     "Chat_composite_calculators": MessageLookupByLibrary.simpleMessage(
       "复合材料计算器",
@@ -291,6 +293,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_engineering_copilot": MessageLookupByLibrary.simpleMessage(
       "复合材料工程助手",
     ),
+    "Chat_expand_answer": MessageLookupByLibrary.simpleMessage("展开回答"),
+    "Chat_expand_composer": MessageLookupByLibrary.simpleMessage("展开输入框"),
+    "Chat_expanded_composer": MessageLookupByLibrary.simpleMessage("编辑问题"),
     "Chat_export_conversation": MessageLookupByLibrary.simpleMessage("导出对话"),
     "Chat_export_failed": MessageLookupByLibrary.simpleMessage("无法导出此对话。"),
     "Chat_feedback_accurate": MessageLookupByLibrary.simpleMessage("准确"),

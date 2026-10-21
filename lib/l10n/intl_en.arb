@@ -482,5 +482,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "Chat_expand_composer": "Expand composer",
+  "Chat_expanded_composer": "Edit question",
+  "Chat_composer_done": "Done",
+  "Chat_collapse_answer": "Collapse answer",
+  "Chat_expand_answer": "Expand answer"
 }

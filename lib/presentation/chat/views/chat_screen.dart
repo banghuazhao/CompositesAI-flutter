@@ -25,6 +25,7 @@ import '../../../util/export/file_share.dart';
 import '../model/chat_export.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_error_snack_bar.dart';
+import 'chat_expanded_composer.dart';
 import 'chat_header_title.dart';
 import 'message_list.dart';
 import 'chat_list.dart';
@@ -210,6 +211,8 @@ class _ChatScreenState extends State<ChatScreen>
   SpeechErrorListener? _voiceErrorListener;
   SpeechStatusListener? _voiceStatusListener;
   bool _isExporting = false;
+  bool _isSearchOpen = false;
+  bool _isComposerExpanded = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -256,7 +259,10 @@ class _ChatScreenState extends State<ChatScreen>
 
   Future<void> _startListening() async {
     if (!mounted ||
+        viewModel.isDisposed ||
         !viewModel.isLoggedIn ||
+        _isComposerExpanded ||
+        ModalRoute.of(context)?.isCurrent != true ||
         _startingVoiceInput ||
         _isListening) {
       return;
@@ -431,6 +437,7 @@ class _ChatScreenState extends State<ChatScreen>
     return Consumer<ChatViewModel>(
       //Consumer widget dynamically rebuilds the UI whenever the ChatViewModel changes
       builder: (context, viewModel, _) {
+        if (viewModel.isDisposed) return const SizedBox.shrink();
         if (viewModel.isLoggedIn) _scheduleInputBarMeasurement();
 
         final activeError = viewModel.activeError;
@@ -457,183 +464,190 @@ class _ChatScreenState extends State<ChatScreen>
           });
         }
 
-        return Scaffold(
-          appBar: AppBar(
-            title: ChatHeaderTitle(viewModel: viewModel),
-            actionsPadding: const EdgeInsetsDirectional.only(end: 12),
-            actions: [
-              Builder(
-                builder: (context) {
-                  if (!viewModel.isLoggedIn) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.manage_accounts),
-                          tooltip:
-                              S.maybeOf(context)?.Chat_sign_in ?? "Sign In",
-                          onPressed: _openLogin,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.calculate_outlined),
-                          tooltip:
-                              S.maybeOf(context)?.Chat_composite_calculators ??
-                                  'Composite Calculators',
-                          onPressed: _openCompositeCalculators,
-                        ),
-                      ],
-                    );
-                  } else {
-                    // If the user is logged in, show profile info
-                    return Row(
-                      mainAxisSize: MainAxisSize.min, // Keep it compact
-                      children: [
-                        if (viewModel.selectedChat != null &&
-                            !viewModel.isLoadingMessages &&
-                            viewModel.messages.isNotEmpty)
+        return Focus(
+          autofocus: true,
+          skipTraversal: true,
+          includeSemantics: false,
+          onKeyEvent: _handleChatKeyEvent,
+          child: Scaffold(
+            appBar: AppBar(
+              title: ChatHeaderTitle(viewModel: viewModel),
+              actionsPadding: const EdgeInsetsDirectional.only(end: 12),
+              actions: [
+                Builder(
+                  builder: (context) {
+                    if (!viewModel.isLoggedIn) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           IconButton(
-                            key: const ValueKey('chat-find-in-chat'),
-                            tooltip: S.maybeOf(context)?.Chat_find_in_chat ??
-                                'Find in chat',
-                            icon: const Icon(Icons.search_rounded),
-                            onPressed: () =>
-                                showChatSearchSheet(context, viewModel),
+                            icon: const Icon(Icons.manage_accounts),
+                            tooltip:
+                                S.maybeOf(context)?.Chat_sign_in ?? "Sign In",
+                            onPressed: _openLogin,
                           ),
-                        if (viewModel.selectedChat != null &&
-                            viewModel.messages.isNotEmpty)
-                          _buildExportMenu(),
-                        // Avatar or Profile Button
-                        IconButton(
-                          tooltip: S.maybeOf(context)?.Chat_account_settings ??
-                              'Account & settings',
-                          constraints: const BoxConstraints.tightFor(
-                            width: 48,
-                            height: 48,
+                          IconButton(
+                            icon: const Icon(Icons.calculate_outlined),
+                            tooltip: S
+                                    .maybeOf(context)
+                                    ?.Chat_composite_calculators ??
+                                'Composite Calculators',
+                            onPressed: _openCompositeCalculators,
                           ),
-                          padding: const EdgeInsets.all(8),
-                          onPressed: () async {
-                            AppHaptics.light();
-                            final result = await Navigator.push<String>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SettingsPage(),
-                              ),
-                            );
-                            if (!context.mounted) return;
-                            await viewModel.checkAuthStatus();
-                            if (viewModel.isLoggedIn) {
-                              await Future.wait([
-                                viewModel.fetchChats(),
-                                viewModel.fetchTools(),
-                              ]);
-                            }
-                            if (result == "refresh" && mounted) {
-                              setState(() {});
-                            }
-                          },
-                          icon: SizedBox.square(
-                            dimension: 32,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Positioned.fill(
-                                  child: (viewModel.user?.avatarUrl ?? '')
-                                          .trim()
-                                          .isNotEmpty
-                                      ? ClipOval(
-                                          child: Base64Image(
-                                            viewModel.user!.avatarUrl!,
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.account_circle,
-                                          size: 32,
-                                        ),
+                        ],
+                      );
+                    } else {
+                      // If the user is logged in, show profile info
+                      return Row(
+                        mainAxisSize: MainAxisSize.min, // Keep it compact
+                        children: [
+                          if (viewModel.selectedChat != null &&
+                              !viewModel.isLoadingMessages &&
+                              viewModel.messages.isNotEmpty)
+                            IconButton(
+                              key: const ValueKey('chat-find-in-chat'),
+                              tooltip: S.maybeOf(context)?.Chat_find_in_chat ??
+                                  'Find in chat',
+                              icon: const Icon(Icons.search_rounded),
+                              onPressed: _openChatSearch,
+                            ),
+                          if (viewModel.selectedChat != null &&
+                              viewModel.messages.isNotEmpty)
+                            _buildExportMenu(),
+                          // Avatar or Profile Button
+                          IconButton(
+                            tooltip:
+                                S.maybeOf(context)?.Chat_account_settings ??
+                                    'Account & settings',
+                            constraints: const BoxConstraints.tightFor(
+                              width: 48,
+                              height: 48,
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            onPressed: () async {
+                              AppHaptics.light();
+                              final result = await Navigator.push<String>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SettingsPage(),
                                 ),
-                                if (viewModel.user?.isCompositeExpert == true)
-                                  PositionedDirectional(
-                                    end: -2,
-                                    bottom: -2,
-                                    child: Semantics(
-                                      label: S
-                                              .maybeOf(context)
-                                              ?.Chat_composite_expert ??
-                                          'Composite expert',
-                                      child: Container(
-                                        width: 16,
-                                        height: 16,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.surface,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Icon(
-                                          Icons.verified,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          size: 14,
+                              );
+                              if (!context.mounted) return;
+                              await viewModel.checkAuthStatus();
+                              if (viewModel.isLoggedIn) {
+                                await Future.wait([
+                                  viewModel.fetchChats(),
+                                  viewModel.fetchTools(),
+                                ]);
+                              }
+                              if (result == "refresh" && mounted) {
+                                setState(() {});
+                              }
+                            },
+                            icon: SizedBox.square(
+                              dimension: 32,
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Positioned.fill(
+                                    child: (viewModel.user?.avatarUrl ?? '')
+                                            .trim()
+                                            .isNotEmpty
+                                        ? ClipOval(
+                                            child: Base64Image(
+                                              viewModel.user!.avatarUrl!,
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.account_circle,
+                                            size: 32,
+                                          ),
+                                  ),
+                                  if (viewModel.user?.isCompositeExpert == true)
+                                    PositionedDirectional(
+                                      end: -2,
+                                      bottom: -2,
+                                      child: Semantics(
+                                        label: S
+                                                .maybeOf(context)
+                                                ?.Chat_composite_expert ??
+                                            'Composite expert',
+                                        child: Container(
+                                          width: 16,
+                                          height: 16,
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.surface,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Icon(
+                                            Icons.verified,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            size: 14,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-          drawer: viewModel.isLoggedIn ? ChatList() : null,
-          body: Stack(
-            children: [
-              if (viewModel.isLoggedIn) ...[
-                Positioned.fill(
-                  child: viewModel.selectedChat != null
-                      ? (viewModel.isLoadingMessages
-                          ? const Center(child: CircularProgressIndicator())
-                          : ChatLatestOverlay(
-                              scrollController: viewModel.scrollController,
-                              conversationId: viewModel.selectedChat?.id,
-                              sessionToken: viewModel.chatSessionKey,
-                              isConversationLoaded: viewModel.isLoggedIn &&
-                                  !viewModel.isLoadingMessages,
-                              bottomOffset: _inputBarHeight + 12,
-                              child: MessageList(
-                                onBeforeReuse: () {
-                                  if (_voiceInputSession != null) {
-                                    _invalidateVoiceInput();
-                                  }
-                                },
-                                onDraftApplied: () {
-                                  if (mounted &&
-                                      viewModel.isLoggedIn &&
-                                      ModalRoute.of(context)?.isCurrent ==
-                                          true) {
-                                    focusNode.requestFocus();
-                                  }
-                                },
-                                bottomContentPadding: _inputBarHeight + 20,
-                              ),
-                            ))
-                      : ChatWelcomeView(
-                          user: viewModel.user,
-                          questions: viewModel.defaultQuestions,
-                          bottomPadding: _inputBarHeight,
-                          onQuestionSelected:
-                              viewModel.onDefaultQuestionsTapped,
-                        ),
+                        ],
+                      );
+                    }
+                  },
                 ),
-                Positioned(left: 0, right: 0, bottom: 0, child: inputBar()),
-              ] else
-                noLoginView(),
-            ],
+              ],
+            ),
+            drawer: viewModel.isLoggedIn ? ChatList() : null,
+            body: Stack(
+              children: [
+                if (viewModel.isLoggedIn) ...[
+                  Positioned.fill(
+                    child: viewModel.selectedChat != null
+                        ? (viewModel.isLoadingMessages
+                            ? const Center(child: CircularProgressIndicator())
+                            : ChatLatestOverlay(
+                                scrollController: viewModel.scrollController,
+                                conversationId: viewModel.selectedChat?.id,
+                                sessionToken: viewModel.chatSessionKey,
+                                isConversationLoaded: viewModel.isLoggedIn &&
+                                    !viewModel.isLoadingMessages,
+                                bottomOffset: _inputBarHeight + 12,
+                                child: MessageList(
+                                  onBeforeReuse: () {
+                                    if (_voiceInputSession != null) {
+                                      _invalidateVoiceInput();
+                                    }
+                                  },
+                                  onDraftApplied: () {
+                                    if (mounted &&
+                                        viewModel.isLoggedIn &&
+                                        ModalRoute.of(context)?.isCurrent ==
+                                            true) {
+                                      focusNode.requestFocus();
+                                    }
+                                  },
+                                  bottomContentPadding: _inputBarHeight + 20,
+                                ),
+                              ))
+                        : ChatWelcomeView(
+                            user: viewModel.user,
+                            questions: viewModel.defaultQuestions,
+                            bottomPadding: _inputBarHeight,
+                            onQuestionSelected:
+                                viewModel.onDefaultQuestionsTapped,
+                          ),
+                  ),
+                  Positioned(left: 0, right: 0, bottom: 0, child: inputBar()),
+                ] else
+                  noLoginView(),
+              ],
+            ),
           ),
         );
       },
@@ -757,6 +771,9 @@ class _ChatScreenState extends State<ChatScreen>
                     key: const Key('chat-composer'),
                     controller: textController,
                     focusNode: focusNode,
+                    readOnly: _isComposerExpanded,
+                    canRequestFocus: !_isComposerExpanded,
+                    selectAllOnFocus: false,
                     decoration: InputDecoration(
                       hintText: S.maybeOf(context)?.Chat_composer_hint ??
                           'Ask about composites engineering…',
@@ -782,6 +799,13 @@ class _ChatScreenState extends State<ChatScreen>
                 Row(
                   children: [
                     _buildAttachButton(),
+                    IconButton(
+                      key: const Key('chat-expand-composer'),
+                      tooltip: S.maybeOf(context)?.Chat_expand_composer ??
+                          'Expand composer',
+                      onPressed: _isComposerExpanded ? null : _expandComposer,
+                      icon: const Icon(Icons.open_in_full_rounded),
+                    ),
                     if (viewModel.isAdmin) ...[
                       const SizedBox(width: 8),
                       Expanded(
@@ -812,10 +836,12 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   void _scheduleInputBarMeasurement() {
+    if (!mounted || viewModel.isDisposed) return;
     final sessionKey = viewModel.chatSessionKey;
     final conversationId = viewModel.selectedChat?.id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted ||
+          viewModel.isDisposed ||
           viewModel.chatSessionKey != sessionKey ||
           viewModel.selectedChat?.id != conversationId) {
         return;
@@ -835,6 +861,7 @@ class _ChatScreenState extends State<ChatScreen>
       if (shouldKeepLatestMessageVisible) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted ||
+              viewModel.isDisposed ||
               viewModel.chatSessionKey != sessionKey ||
               viewModel.selectedChat?.id != conversationId ||
               !viewModel.scrollController.hasClients) {
@@ -868,9 +895,91 @@ class _ChatScreenState extends State<ChatScreen>
     return KeyEventResult.handled;
   }
 
+  bool get _canFindInChat =>
+      mounted &&
+      !viewModel.isDisposed &&
+      viewModel.isLoggedIn &&
+      viewModel.selectedChat != null &&
+      !viewModel.isLoadingMessages &&
+      viewModel.messages.isNotEmpty &&
+      !_isSearchOpen &&
+      !_isComposerExpanded &&
+      ModalRoute.of(context)?.isCurrent == true;
+
+  KeyEventResult _handleChatKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.keyF) {
+      return KeyEventResult.ignored;
+    }
+    final keyboard = HardwareKeyboard.instance;
+    if (keyboard.isShiftPressed ||
+        keyboard.isAltPressed ||
+        keyboard.isControlPressed == keyboard.isMetaPressed ||
+        !_canFindInChat) {
+      return KeyEventResult.ignored;
+    }
+    final composing = textController.value.composing;
+    if (composing.isValid && !composing.isCollapsed) {
+      return KeyEventResult.ignored;
+    }
+    unawaited(_openChatSearch());
+    return KeyEventResult.handled;
+  }
+
+  Future<void> _openChatSearch() async {
+    if (!_canFindInChat) return;
+    _isSearchOpen = true;
+    try {
+      await showChatSearchSheet(context, viewModel);
+    } finally {
+      _isSearchOpen = false;
+    }
+  }
+
+  Future<void> _expandComposer() async {
+    if (!mounted ||
+        viewModel.isDisposed ||
+        !viewModel.isLoggedIn ||
+        _isComposerExpanded ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    if (_voiceInputSession != null) _invalidateVoiceInput();
+    final session = viewModel.chatSessionKey;
+    final selection = viewModel.chatSelectionRevision;
+    setState(() => _isComposerExpanded = true);
+    try {
+      await showExpandedChatComposer(context, viewModel);
+    } finally {
+      if (mounted) {
+        setState(() => _isComposerExpanded = false);
+        _scheduleInputBarMeasurement();
+        if (!viewModel.isDisposed &&
+            viewModel.isLoggedIn &&
+            viewModel.chatSessionKey == session &&
+            viewModel.chatSelectionRevision == selection &&
+            ModalRoute.of(context)?.isCurrent == true) {
+          // The inline field must first rebuild with canRequestFocus restored.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted &&
+                !viewModel.isDisposed &&
+                viewModel.isLoggedIn &&
+                !_isComposerExpanded &&
+                viewModel.chatSessionKey == session &&
+                viewModel.chatSelectionRevision == selection &&
+                ModalRoute.of(context)?.isCurrent == true) {
+              focusNode.requestFocus();
+            }
+          });
+        }
+      }
+    }
+  }
+
   Future<void> _sendComposerMessage() async {
     if (!mounted ||
+        viewModel.isDisposed ||
         !viewModel.isLoggedIn ||
+        _isComposerExpanded ||
         ModalRoute.of(context)?.isCurrent != true ||
         !_canSendMessage()) {
       return;

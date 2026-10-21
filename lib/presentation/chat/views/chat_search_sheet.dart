@@ -43,13 +43,15 @@ Future<void> showChatSearchSheet(
 class _SearchLifetime extends ChangeNotifier {
   _SearchLifetime(this.ownerContext, this.viewModel, this.navigator)
       : _session = viewModel.chatSessionKey,
-        _chatId = viewModel.selectedChat?.id;
+        _chatId = viewModel.selectedChat?.id,
+        _selection = viewModel.chatSelectionRevision;
 
   final BuildContext ownerContext;
   final ChatViewModel viewModel;
   final NavigatorState navigator;
   final Object _session;
   final String? _chatId;
+  final int _selection;
   late final ModalBottomSheetRoute<void> route;
   bool _active = true;
   bool _closing = false;
@@ -62,7 +64,8 @@ class _SearchLifetime extends ChangeNotifier {
       viewModel.isLoggedIn &&
       !viewModel.isLoadingMessages &&
       viewModel.chatSessionKey == _session &&
-      viewModel.selectedChat?.id == _chatId;
+      viewModel.selectedChat?.id == _chatId &&
+      viewModel.chatSelectionRevision == _selection;
 
   bool get canCopy => available && route.isCurrent;
 
@@ -233,6 +236,7 @@ class _ChatSearchSheetState extends State<_ChatSearchSheet> {
                     TextField(
                       key: const Key('chat-search-field'),
                       controller: _query,
+                      autofocus: true,
                       decoration: InputDecoration(
                         labelText: strings?.Chat_search_loaded_messages ??
                             'Search loaded messages',

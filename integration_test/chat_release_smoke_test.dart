@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:domain/auth/entities/user.dart';
@@ -17,6 +19,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
+import 'package:swiftcomp/presentation/chat/views/ai_markdown_message.dart';
 import 'package:swiftcomp/presentation/chat/views/chat_screen.dart';
 
 // No auth, upload or response requests are made. This target exercises the real
@@ -116,6 +119,34 @@ Future<void> _enter(WidgetTester tester, String text) async {
   await tester.pump();
   await _hideKeyboard(tester);
   expect(tester.widget<TextField>(_composer).controller!.text, text);
+}
+
+Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _findShortcut(WidgetTester tester, {bool shift = false}) async {
+  final modifier = defaultTargetPlatform == TargetPlatform.iOS
+      ? LogicalKeyboardKey.metaLeft
+      : LogicalKeyboardKey.controlLeft;
+  final pressed = <LogicalKeyboardKey>[];
+  try {
+    await tester.sendKeyDownEvent(modifier);
+    pressed.add(modifier);
+    if (shift) {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      pressed.add(LogicalKeyboardKey.shiftLeft);
+    }
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+  } finally {
+    for (final key in pressed.reversed) {
+      await tester.sendKeyUpEvent(key);
+    }
+  }
+  await tester.pumpAndSettle();
 }
 
 Future<void> _openDrawer(WidgetTester tester) async {
@@ -580,5 +611,257 @@ void main() {
     expect(model.sent, isEmpty);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets(
+    'native expanded editor preserves raw drafts and retires on chat change',
+    (tester) async {
+      const bDraft = '  B 草稿 α\n保持原樣  ';
+      const original = '  A question α [0/90]\nSecond line 🌍  ';
+      const edited = '  A revised question β\n[45/-45] 🌍\nTrailing spaces  ';
+      const laterEdit = '  A latest unsent value γ\nAfter reopening  ';
+      final expand = find.byKey(const Key('chat-expand-composer'));
+      final dialog = find.byKey(const Key('chat-expanded-composer-dialog'));
+      final editor = find.byKey(const Key('chat-expanded-composer'));
+      final done = find.byKey(const Key('chat-expanded-composer-done'));
+      try {
+        model.show(_b);
+        await _mount(tester, model, locale: const Locale('zh', 'HK'));
+        await _enter(tester, bDraft);
+        final bValue = model.composerTextController.value;
+        model.show(_a);
+        await tester.pumpAndSettle();
+        await _enter(tester, original);
+        model.composerTextController.selection = const TextSelection(
+          baseOffset: 2,
+          extentOffset: 12,
+        );
+        final originalValue = model.composerTextController.value;
+
+        // Two taps before the next frame must still create just one editor.
+        await tester.tap(expand);
+        await tester.tap(expand, warnIfMissed: false);
+        await tester.pumpAndSettle();
+        expect(dialog, findsOneWidget);
+        expect(editor, findsOneWidget);
+        expect(
+          tester.widget<TextField>(editor).controller!.value,
+          originalValue,
+        );
+        await tester.tap(editor);
+        await tester.pumpAndSettle();
+        await tester.enterText(editor, edited);
+        await tester.pump();
+        await _hideKeyboard(tester);
+        final editedValue = tester.widget<TextField>(editor).controller!.value;
+        expect(editedValue.text, edited);
+        expect(
+          editedValue.selection,
+          TextSelection.collapsed(offset: edited.length),
+        );
+        await _tapVisible(tester, done);
+        await _hideKeyboard(tester);
+        expect(dialog, findsNothing);
+        expect(model.composerTextController.value, editedValue);
+        expect(
+          tester.widget<TextField>(_composer).controller!.value,
+          editedValue,
+        );
+        expect(model.sent, isEmpty);
+
+        await _tapVisible(tester, expand);
+        expect(tester.widget<TextField>(editor).controller!.value, editedValue);
+        await tester.tap(editor);
+        await tester.pumpAndSettle();
+        await tester.enterText(editor, laterEdit);
+        await tester.pump();
+        await _hideKeyboard(tester);
+        final latestValue = tester.widget<TextField>(editor).controller!.value;
+        model.show(_b);
+        await tester.pumpAndSettle();
+        expect(dialog, findsNothing);
+        expect(editor, findsNothing);
+        expect(model.composerTextController.value, bValue);
+        model.show(_a);
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.value, latestValue);
+        expect(model.composerTextController.text, laterEdit);
+        expect(model.files, isEmpty);
+        expect(model.sent, isEmpty);
+        expect(tester.takeException(), isNull);
+      } finally {
+        await _hideKeyboard(tester);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  testWidgets(
+    'native find shortcut respects focus, modifiers and one search route',
+    (tester) async {
+      const draft = '  Keep this draft α\nShortcut must not send  ';
+      final question = Message(
+        role: 'user',
+        content: 'Searchable laminate α data',
+      );
+      final search = find.byKey(const ValueKey('chat-search-field'));
+      final close = find.byKey(const ValueKey('chat-search-close'));
+      try {
+        model.show(_a, history: [question]);
+        await _mount(tester, model, locale: const Locale('zh', 'HK'));
+        await _enter(tester, draft);
+        await tester.tap(_composer);
+        await tester.pumpAndSettle();
+        final draftValue = model.composerTextController.value;
+        await _findShortcut(tester, shift: true);
+        expect(search, findsNothing);
+        expect(model.composerTextController.value, draftValue);
+        await _findShortcut(tester);
+        expect(search, findsOneWidget);
+        expect(close, findsOneWidget);
+        await _findShortcut(tester);
+        expect(search, findsOneWidget);
+        expect(close, findsOneWidget);
+        await tester.tap(search);
+        await tester.pumpAndSettle();
+        await tester.enterText(search, 'laminate α');
+        await _hideKeyboard(tester);
+        expect(
+          find.byKey(const ValueKey('chat-search-result-0')),
+          findsOneWidget,
+        );
+        await _tapVisible(tester, close);
+        expect(search, findsNothing);
+        expect(model.composerTextController.value, draftValue);
+
+        // A new unsaved conversation has no loaded history to search.
+        model.show(null);
+        await tester.pumpAndSettle();
+        await tester.tap(_composer);
+        await tester.pumpAndSettle();
+        await _findShortcut(tester);
+        expect(search, findsNothing);
+        await _hideKeyboard(tester);
+        model.show(_a, history: [question]);
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.value, draftValue);
+        expect(model.sent, isEmpty);
+        expect(tester.takeException(), isNull);
+      } finally {
+        await _hideKeyboard(tester);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  testWidgets('native editor closes safely when its chat model is disposed',
+      (tester) async {
+    model.show(_a);
+    await _mount(tester, model);
+    await _enter(tester, 'Draft before disposing the model');
+    await tester.tap(find.byKey(const Key('chat-expand-composer')));
+    await tester.pumpAndSettle();
+    final editor = find.byKey(const Key('chat-expanded-composer'));
+    await tester.enterText(editor, 'Expanded draft before disposal');
+    model.dispose();
+    await tester.pumpAndSettle();
+    expect(editor, findsNothing);
+    expect(_composer, findsNothing);
+    await _hideKeyboard(tester);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native answer folding keeps full clipboard and Markdown file', (
+    tester,
+  ) async {
+    final content = '  # Native laminate answer α\n\n'
+        '```text\n[0/90/45/-45]\n```\n\n'
+        '${List.generate(24, (index) => 'Layer $index: retain the complete carbon-fibre explanation β and all calculation detail.').join('\n')}\n'
+        'NATIVE_FULL_ANSWER_END 🌍  ';
+    final answer = Message(role: 'assistant', content: content)..isDone = true;
+    final original = answer.toJson();
+    final toggle = find.byKey(ValueKey('chat-answer-toggle-${answer.id}'));
+    final preview = find.byKey(ValueKey('chat-answer-preview-${answer.id}'));
+    const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final calls = <MethodCall>[];
+    File? exportedFile;
+    // Leave SharePlus and XFile serialization intact; intercept only the final
+    // system share sheet so the smoke run can inspect the actual device file.
+    messenger.setMockMethodCallHandler(shareChannel, (call) async {
+      calls.add(call);
+      return '';
+    });
+    try {
+      model.show(_a, history: [answer]);
+      await _mount(tester, model, locale: const Locale('zh', 'HK'));
+      final strings = S.of(tester.element(find.byType(ChatScreen)));
+      expect(toggle, findsOneWidget);
+      expect(preview, findsNothing);
+      expect(
+        tester
+            .widget<AiMarkdownMessage>(find.byType(AiMarkdownMessage))
+            .markdown,
+        content,
+      );
+      expect(find.text(strings.Chat_collapse_answer), findsOneWidget);
+      await _tapVisible(tester, toggle);
+      expect(preview, findsOneWidget);
+      expect(find.byType(AiMarkdownMessage), findsNothing);
+      expect(find.text(strings.Chat_expand_answer), findsOneWidget);
+      expect(answer.toJson(), original);
+
+      await _tapVisible(tester, find.byTooltip(strings.Chat_copy_message));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect((await Clipboard.getData(Clipboard.kTextPlain))?.text, content);
+      await _tapVisible(
+        tester,
+        find.byTooltip(strings.Chat_export_conversation),
+      );
+      await _tapVisible(tester, find.text(strings.Chat_share_markdown));
+      for (var attempt = 0; attempt < 100 && calls.isEmpty; attempt++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(calls, hasLength(1));
+      final request = calls.single.arguments as Map;
+      exportedFile = File((request['paths'] as List).single as String);
+      expect(calls.single.method, 'share');
+      expect(request['mimeTypes'], ['text/markdown']);
+      expect(request['originWidth'], greaterThan(0));
+      expect(request['originHeight'], greaterThan(0));
+      expect(exportedFile.uri.pathSegments.last, 'Laminate_A.md');
+      final exported = utf8.decode(await exportedFile.readAsBytes());
+      expect(exported, contains(content.trim()));
+      expect(exported, contains('Layer 23:'));
+      expect(exported, contains('NATIVE_FULL_ANSWER_END 🌍'));
+      expect(answer.toJson(), original);
+      expect(preview, findsOneWidget);
+
+      await _tapVisible(tester, toggle);
+      expect(preview, findsNothing);
+      expect(
+        tester
+            .widget<AiMarkdownMessage>(find.byType(AiMarkdownMessage))
+            .markdown,
+        content,
+      );
+      expect(model.sent, isEmpty);
+      expect(tester.takeException(), isNull);
+    } finally {
+      messenger.setMockMethodCallHandler(shareChannel, null);
+      if (exportedFile != null && await exportedFile.exists()) {
+        await exportedFile.delete();
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
   }, timeout: const Timeout(Duration(minutes: 3)));
 }

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import 'package:swiftcomp/generated/l10n.dart';
@@ -10,6 +11,7 @@ import 'package:swiftcomp/generated/l10n.dart';
 import '../model/chat_citation.dart';
 import '../viewModels/chat_view_model.dart';
 import 'ai_markdown_message.dart';
+import 'chat_answer_collapse_state.dart';
 import 'chat_message_timestamp.dart';
 import 'chat_progress_indicator.dart';
 import 'chat_use_as_draft_button.dart';
@@ -32,9 +34,84 @@ class MessageList extends StatefulWidget {
 }
 
 class _MessageListState extends State<MessageList> {
+  final _answerCollapse = ChatAnswerCollapseState();
+  ChatViewModel? _observedModel;
+  bool _rebuildScheduled = false;
+  int _answerControlRevision = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final model = context.read<ChatViewModel>();
+    if (!identical(model, _observedModel)) {
+      _stopObserving();
+      _observedModel = model;
+      _answerControlRevision++;
+      if (!model.isDisposed) {
+        model.addListener(_onConversationChanged);
+        model.disposalListenable.addListener(_onConversationChanged);
+      }
+      _answerCollapse.clear();
+    }
+    _synchronizeAnswers(model);
+  }
+
+  Object _answerScope(ChatViewModel model) => (
+        model,
+        model.chatSessionKey,
+        model.selectedChat?.id,
+        model.chatSelectionRevision,
+      );
+
+  void _synchronizeAnswers(ChatViewModel model) {
+    _answerCollapse.synchronize(
+      scope: _answerScope(model),
+      available:
+          !model.isDisposed && model.isLoggedIn && !model.isLoadingMessages,
+      messages: model.messages,
+      streamingMessage: model.isSendingMessage && model.messages.isNotEmpty
+          ? model.messages.last
+          : null,
+    );
+  }
+
+  void _onConversationChanged() {
+    final model = _observedModel;
+    if (model == null || !mounted) return;
+    _answerControlRevision++;
+    _synchronizeAnswers(model);
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      if (_rebuildScheduled) return;
+      _rebuildScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _rebuildScheduled = false;
+        if (mounted) setState(() {});
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
+    } else {
+      setState(() {});
+    }
+  }
+
+  void _stopObserving() {
+    _observedModel?.removeListener(_onConversationChanged);
+    _observedModel?.disposalListenable.removeListener(_onConversationChanged);
+    _observedModel = null;
+  }
+
+  @override
+  void dispose() {
+    _stopObserving();
+    _answerCollapse.clear();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatViewModel = context.watch<ChatViewModel>();
+    _synchronizeAnswers(chatViewModel);
+    if (chatViewModel.isDisposed) return const SizedBox.shrink();
     final messages = chatViewModel.messages;
 
     return ListView.separated(
@@ -431,6 +508,14 @@ class _MessageListState extends State<MessageList> {
     final isLast =
         viewModel.messages.isNotEmpty && viewModel.messages.last == message;
     final isStreaming = isLast && viewModel.isSendingMessage;
+    // Loaded legacy messages may omit `done`; use the same terminal-display
+    // policy as message actions rather than hiding folding from those histories.
+    final canFold = !viewModel.isDisposed &&
+        viewModel.isLoggedIn &&
+        !viewModel.isLoadingMessages &&
+        !isStreaming &&
+        ChatAnswerCollapseState.isLongAnswer(message);
+    final collapsed = canFold && _answerCollapse.isCollapsed(message);
     final activity = ChatResponseActivity(
       message: message,
       isStreaming: isStreaming,
@@ -463,14 +548,27 @@ class _MessageListState extends State<MessageList> {
           spacing: 4,
           children: [
             if (hasVisibleActivity) activity,
+            if (canFold)
+              buildAnswerToggle(viewModel, message, collapsed: collapsed),
             if (message.content.isNotEmpty)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 2),
-                child: AiMarkdownMessage(
-                  markdown: message.content,
-                  citations: citations,
-                ),
+                child: collapsed
+                    ? Text(
+                        '${message.content.characters.take(280).toString().replaceAll(RegExp(r'\s+'), ' ').trim()}…',
+                        key: ValueKey('chat-answer-preview-${message.id}'),
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontSize: 15,
+                              height: 1.5,
+                            ),
+                      )
+                    : AiMarkdownMessage(
+                        markdown: message.content,
+                        citations: citations,
+                      ),
               ),
             if (message.content.isNotEmpty)
               buildMessageTimestamp(viewModel, message),
@@ -484,6 +582,55 @@ class _MessageListState extends State<MessageList> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildAnswerToggle(
+    ChatViewModel model,
+    Message message, {
+    required bool collapsed,
+  }) {
+    final scope = _answerScope(model);
+    final revision = _answerControlRevision;
+    final content = message.content;
+    final strings = S.maybeOf(context);
+    final label = collapsed
+        ? strings?.Chat_expand_answer ?? 'Expand answer'
+        : strings?.Chat_collapse_answer ?? 'Collapse answer';
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Semantics(
+        expanded: !collapsed,
+        child: TextButton.icon(
+          key: ValueKey('chat-answer-toggle-${message.id}'),
+          onPressed: () {
+            if (!mounted ||
+                !identical(model, _observedModel) ||
+                model.isDisposed ||
+                !model.isLoggedIn ||
+                model.isLoadingMessages ||
+                _answerControlRevision != revision ||
+                _answerScope(model) != scope ||
+                ModalRoute.of(context)?.isCurrent != true ||
+                !model.messages.any((current) => identical(current, message)) ||
+                message.content != content ||
+                (model.isSendingMessage &&
+                    identical(model.messages.lastOrNull, message)) ||
+                !ChatAnswerCollapseState.isLongAnswer(message)) {
+              return;
+            }
+            setState(() => _answerCollapse.toggle(message));
+          },
+          style: TextButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            tapTargetSize: MaterialTapTargetSize.padded,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+          icon: Icon(collapsed ? Icons.expand_more : Icons.expand_less),
+          label: Text(label, textAlign: TextAlign.start),
         ),
       ),
     );

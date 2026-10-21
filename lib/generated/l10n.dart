@@ -2823,6 +2823,51 @@ class S {
       args: [dateTime],
     );
   }
+
+  /// `Expand composer`
+  String get Chat_expand_composer {
+    return Intl.message(
+      'Expand composer',
+      name: 'Chat_expand_composer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit question`
+  String get Chat_expanded_composer {
+    return Intl.message(
+      'Edit question',
+      name: 'Chat_expanded_composer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Done`
+  String get Chat_composer_done {
+    return Intl.message('Done', name: 'Chat_composer_done', desc: '', args: []);
+  }
+
+  /// `Collapse answer`
+  String get Chat_collapse_answer {
+    return Intl.message(
+      'Collapse answer',
+      name: 'Chat_collapse_answer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Expand answer`
+  String get Chat_expand_answer {
+    return Intl.message(
+      'Expand answer',
+      name: 'Chat_expand_answer',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

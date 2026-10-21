@@ -482,5 +482,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "Chat_expand_composer": "展開輸入框",
+  "Chat_expanded_composer": "編輯問題",
+  "Chat_composer_done": "完成",
+  "Chat_collapse_answer": "收起回答",
+  "Chat_expand_answer": "展開回答"
 }

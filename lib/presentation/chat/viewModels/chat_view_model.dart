@@ -159,6 +159,9 @@ class ChatViewModel extends ChangeNotifier {
   Object get chatSessionKey =>
       (_sessionGeneration, isLoggedIn, _userIdentity(user));
 
+  /// Invalidates UI scoped to a selection even after a switch away and back.
+  int get chatSelectionRevision => _conversation.selectionRevision;
+
   TextEditingController get composerTextController {
     if (!_isDisposed) _syncComposerState();
     return _composer.textController;

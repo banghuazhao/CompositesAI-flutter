@@ -325,6 +325,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "Chat_code": MessageLookupByLibrary.simpleMessage("code"),
     "Chat_code_streaming": m18,
+    "Chat_collapse_answer": MessageLookupByLibrary.simpleMessage(
+      "Collapse answer",
+    ),
+    "Chat_composer_done": MessageLookupByLibrary.simpleMessage("Done"),
     "Chat_composer_hint": MessageLookupByLibrary.simpleMessage(
       "Ask about composites engineering…",
     ),
@@ -355,6 +359,13 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "Chat_engineering_copilot": MessageLookupByLibrary.simpleMessage(
       "Composites engineering copilot",
+    ),
+    "Chat_expand_answer": MessageLookupByLibrary.simpleMessage("Expand answer"),
+    "Chat_expand_composer": MessageLookupByLibrary.simpleMessage(
+      "Expand composer",
+    ),
+    "Chat_expanded_composer": MessageLookupByLibrary.simpleMessage(
+      "Edit question",
     ),
     "Chat_export_conversation": MessageLookupByLibrary.simpleMessage(
       "Export conversation",

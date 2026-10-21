@@ -18,6 +18,7 @@ import 'package:speech_to_text_platform_interface/speech_to_text_platform_interf
     show SpeechToTextPlatform;
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:swiftcomp/presentation/chat/views/chat_screen.dart';
+import 'package:swiftcomp/util/app_interactions.dart';
 
 final _chatA = Chat(id: 'voice-a', title: 'Voice A');
 final _chatB = Chat(id: 'voice-b', title: 'Voice B');
@@ -270,6 +271,68 @@ void main() {
     } finally {
       if (!stopGate.isCompleted) stopGate.complete();
       await tester.pumpAndSettle();
+      await _cleanup(tester);
+    }
+  });
+
+  testWidgets(
+      'expanded editing retires active and visually stopped voice results',
+      (tester) async {
+    try {
+      await _mount(tester, model);
+      for (final visuallyStopped in [false, true]) {
+        await tester.enterText(_composer, '');
+        await _start(tester);
+        speech.result('Voice draft before expanding');
+        if (visuallyStopped) speech.status(SpeechToText.notListeningStatus);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('chat-expand-composer')));
+        await tester.pumpAndSettle();
+        final editor = find.byKey(const Key('chat-expanded-composer'));
+        await tester.enterText(editor, 'Keep this expanded question');
+        model.composerTextController.selection =
+            const TextSelection(baseOffset: 2, extentOffset: 11);
+        final before = model.composerTextController.value;
+        speech.result('Late voice result must not replace the question',
+            finalResult: true);
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.value, before);
+        await tester.tap(find.byKey(const Key('chat-expanded-composer-done')));
+        await tester.pumpAndSettle();
+        speech.result('Late voice result after closing', finalResult: true);
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.value, before);
+        expect(model.sent, isEmpty);
+      }
+      expect(tester.takeException(), isNull);
+    } finally {
+      await _cleanup(tester);
+    }
+  });
+
+  testWidgets('an old inline mic callback cannot start speech over the editor',
+      (tester) async {
+    try {
+      await _mount(tester, model);
+      final mic = find.byTooltip('Start voice input');
+      final staleStart = tester
+          .widget<Pressable>(
+              find.descendant(of: mic, matching: find.byType(Pressable)))
+          .onTap!;
+      final listensBefore = speech.listens;
+      await tester.tap(find.byKey(const Key('chat-expand-composer')));
+      // Exercise the old callback before the expanded route's first frame.
+      staleStart();
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.byKey(const Key('chat-expanded-composer')), 'Expanded draft');
+      staleStart();
+      await tester.pumpAndSettle();
+      expect(speech.listens, listensBefore);
+      expect(model.composerTextController.text, 'Expanded draft');
+      expect(model.sent, isEmpty);
+      expect(tester.takeException(), isNull);
+    } finally {
       await _cleanup(tester);
     }
   });
