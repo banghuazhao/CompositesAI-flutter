@@ -10,6 +10,7 @@ import 'package:swiftcomp/generated/l10n.dart';
 import '../model/chat_citation.dart';
 import '../viewModels/chat_view_model.dart';
 import 'ai_markdown_message.dart';
+import 'chat_message_timestamp.dart';
 import 'chat_progress_indicator.dart';
 import 'chat_use_as_draft_button.dart';
 import 'response_feedback_sheet.dart';
@@ -98,8 +99,27 @@ class _MessageListState extends State<MessageList> {
               ),
             ),
           ),
+        if (message.content.isNotEmpty || message.files.isNotEmpty)
+          buildMessageTimestamp(viewModel, message),
         buildMessageActions(viewModel, message),
       ],
+    );
+  }
+
+  Widget buildMessageTimestamp(ChatViewModel viewModel, Message message) {
+    return KeyedSubtree(
+      // Retire any visible tooltip when its conversation/account is replaced,
+      // including histories that reuse message IDs in another conversation.
+      key: ValueKey((
+        viewModel.chatSessionKey,
+        viewModel.selectedChat?.id,
+        message.id,
+        message.timestamp,
+      )),
+      child: ChatMessageTimestamp(
+        key: ValueKey('chat-message-time-${message.id}'),
+        timestamp: message.timestamp,
+      ),
     );
   }
 
@@ -135,34 +155,36 @@ class _MessageListState extends State<MessageList> {
               runSpacing: 4,
               alignment: WrapAlignment.end,
               children: files
-                  .map((file) => Chip(
-                        avatar: Icon(_attachedFileIcon(file), size: 16),
-                        label: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 220),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                  .map(
+                    (file) => Chip(
+                      avatar: Icon(_attachedFileIcon(file), size: 16),
+                      label: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 220),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              file.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (_attachedFileDetail(file).isNotEmpty)
                               Text(
-                                file.name,
+                                _attachedFileDetail(file),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                              ),
-                              if (_attachedFileDetail(file).isNotEmpty)
-                                Text(
-                                  _attachedFileDetail(file),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                  ),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
                                 ),
-                            ],
-                          ),
+                              ),
+                          ],
                         ),
-                        visualDensity: VisualDensity.compact,
-                      ))
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -211,8 +233,11 @@ class _MessageListState extends State<MessageList> {
           child: bytes != null
               ? Image.memory(bytes, fit: BoxFit.cover)
               : const Center(
-                  child:
-                      Icon(Icons.image_outlined, size: 36, color: Colors.grey),
+                  child: Icon(
+                    Icons.image_outlined,
+                    size: 36,
+                    color: Colors.grey,
+                  ),
                 ),
         ),
       ),
@@ -226,9 +251,7 @@ class _MessageListState extends State<MessageList> {
         backgroundColor: Colors.transparent,
         child: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: InteractiveViewer(
-            child: Image.memory(bytes),
-          ),
+          child: InteractiveViewer(child: Image.memory(bytes)),
         ),
       ),
     );
@@ -242,8 +265,10 @@ class _MessageListState extends State<MessageList> {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         if (isUnansweredLast)
-          buildRegenerateButton(viewModel,
-              label: S.maybeOf(context)?.Chat_get_response ?? 'Get response'),
+          buildRegenerateButton(
+            viewModel,
+            label: S.maybeOf(context)?.Chat_get_response ?? 'Get response',
+          ),
         buildCopyIconButton(viewModel, message),
         if (message.content.trim().isNotEmpty)
           ChatUseAsDraftButton(
@@ -305,7 +330,10 @@ class _MessageListState extends State<MessageList> {
   }
 
   Widget buildAssistantMessageActions(
-      ChatViewModel viewModel, Message message, int messageIndex) {
+    ChatViewModel viewModel,
+    Message message,
+    int messageIndex,
+  ) {
     final isSubmitting = viewModel.isSubmittingFeedbackFor(message);
     final liked = message.feedbackRating == 1;
     final disliked = message.feedbackRating == -1;
@@ -396,7 +424,10 @@ class _MessageListState extends State<MessageList> {
   }
 
   Widget buildAssistantMessage(
-      ChatViewModel viewModel, Message message, int messageIndex) {
+    ChatViewModel viewModel,
+    Message message,
+    int messageIndex,
+  ) {
     final isLast =
         viewModel.messages.isNotEmpty && viewModel.messages.last == message;
     final isStreaming = isLast && viewModel.isSendingMessage;
@@ -441,6 +472,8 @@ class _MessageListState extends State<MessageList> {
                   citations: citations,
                 ),
               ),
+            if (message.content.isNotEmpty)
+              buildMessageTimestamp(viewModel, message),
             if (!isStreaming)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
@@ -458,16 +491,20 @@ class _MessageListState extends State<MessageList> {
 
   StreamBuilder<Message> messageStream(ChatViewModel viewModel) {
     return StreamBuilder<Message>(
-        stream: viewModel.threadResponseController.stream,
-        builder: (context, snapshot) {
-          return Align(
-              alignment: Alignment.centerLeft,
-              child: streamWidget(snapshot, viewModel));
-        });
+      stream: viewModel.threadResponseController.stream,
+      builder: (context, snapshot) {
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: streamWidget(snapshot, viewModel),
+        );
+      },
+    );
   }
 
   Widget streamWidget(
-      AsyncSnapshot<Message> snapshot, ChatViewModel viewModel) {
+    AsyncSnapshot<Message> snapshot,
+    ChatViewModel viewModel,
+  ) {
     // Thinking/knowledge status is rendered on the assistant message itself.
     if (snapshot.hasError) {
       return Row(
@@ -479,8 +516,10 @@ class _MessageListState extends State<MessageList> {
             color: Theme.of(context).colorScheme.error,
           ),
           const SizedBox(width: 8),
-          Text(S.maybeOf(context)?.Chat_response_interrupted ??
-              'Response interrupted'),
+          Text(
+            S.maybeOf(context)?.Chat_response_interrupted ??
+                'Response interrupted',
+          ),
         ],
       );
     }

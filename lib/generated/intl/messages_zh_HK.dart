@@ -63,19 +63,21 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m20(count) => "${count} 個檔案";
 
-  static String m21(name) => "預覽 ${name}";
+  static String m21(dateTime) => "訊息時間：${dateTime}";
 
-  static String m22(error) => "處理失敗：${error}";
+  static String m22(name) => "預覽 ${name}";
 
-  static String m23(name) => "閱讀 ${name}";
+  static String m23(error) => "處理失敗：${error}";
 
-  static String m24(name) => "移除 ${name}";
+  static String m24(name) => "閱讀 ${name}";
 
-  static String m25(query) => "搜尋「${query}」";
+  static String m25(name) => "移除 ${name}";
 
-  static String m26(count) => "${count} 則符合的訊息";
+  static String m26(query) => "搜尋「${query}」";
 
-  static String m27(name) => "歡迎，${name}";
+  static String m27(count) => "${count} 則符合的訊息";
+
+  static String m28(name) => "歡迎，${name}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -279,6 +281,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_delete_untitled_chat_message": MessageLookupByLibrary.simpleMessage(
       "刪除此對話？此操作無法還原。",
     ),
+    "Chat_draft": MessageLookupByLibrary.simpleMessage("草稿"),
     "Chat_edit_negative_feedback": MessageLookupByLibrary.simpleMessage(
       "編輯負面意見",
     ),
@@ -351,6 +354,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_knowledge_collection": MessageLookupByLibrary.simpleMessage("知識集合"),
     "Chat_knowledge_file": MessageLookupByLibrary.simpleMessage("知識檔案"),
     "Chat_link_copied": MessageLookupByLibrary.simpleMessage("連結已複製到剪貼簿"),
+    "Chat_message_time": m21,
     "Chat_models": MessageLookupByLibrary.simpleMessage("模型"),
     "Chat_move_to_folder": MessageLookupByLibrary.simpleMessage("移至資料夾"),
     "Chat_new_chat": MessageLookupByLibrary.simpleMessage("新增對話"),
@@ -368,14 +372,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_photo_library": MessageLookupByLibrary.simpleMessage("相片圖庫"),
     "Chat_pin": MessageLookupByLibrary.simpleMessage("置頂"),
     "Chat_pinned": MessageLookupByLibrary.simpleMessage("已置頂"),
-    "Chat_preview_image": m21,
+    "Chat_preview_image": m22,
     "Chat_processing_document": MessageLookupByLibrary.simpleMessage("正在處理文件…"),
     "Chat_processing_failed": MessageLookupByLibrary.simpleMessage("處理失敗"),
-    "Chat_processing_failed_detail": m22,
-    "Chat_read_file": m23,
+    "Chat_processing_failed_detail": m23,
+    "Chat_read_file": m24,
     "Chat_refresh_knowledge": MessageLookupByLibrary.simpleMessage("重新整理知識庫"),
     "Chat_regenerate_response": MessageLookupByLibrary.simpleMessage("重新生成回覆"),
-    "Chat_remove_attachment": m24,
+    "Chat_remove_attachment": m25,
     "Chat_remove_from_folder": MessageLookupByLibrary.simpleMessage("從資料夾移除"),
     "Chat_rename": MessageLookupByLibrary.simpleMessage("重新命名"),
     "Chat_rename_chat": MessageLookupByLibrary.simpleMessage("重新命名對話"),
@@ -393,12 +397,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_search_copy_failed": MessageLookupByLibrary.simpleMessage("無法複製此摘錄。"),
     "Chat_search_empty": MessageLookupByLibrary.simpleMessage("輸入文字以搜尋此對話。"),
     "Chat_search_excerpt_copied": MessageLookupByLibrary.simpleMessage("摘錄已複製"),
-    "Chat_search_history_title": m25,
+    "Chat_search_history_title": m26,
     "Chat_search_knowledge": MessageLookupByLibrary.simpleMessage("搜尋知識庫"),
     "Chat_search_loaded_messages": MessageLookupByLibrary.simpleMessage(
       "搜尋已載入的訊息",
     ),
-    "Chat_search_match_count": m26,
+    "Chat_search_match_count": m27,
     "Chat_search_no_matches": MessageLookupByLibrary.simpleMessage("沒有符合的訊息。"),
     "Chat_search_you": MessageLookupByLibrary.simpleMessage("您"),
     "Chat_select_model": MessageLookupByLibrary.simpleMessage("選擇模型"),
@@ -435,7 +439,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_welcome_description": MessageLookupByLibrary.simpleMessage(
       "詢問有關材料、層合板設計、失效分析、製造或工程計算的問題。",
     ),
-    "Chat_welcome_name": m27,
+    "Chat_welcome_name": m28,
     "Chat_working_on": MessageLookupByLibrary.simpleMessage("您正在研究甚麼？"),
     "Compliance_Matrix_S": MessageLookupByLibrary.simpleMessage("柔度矩陣 S"),
     "Composite_Material": MessageLookupByLibrary.simpleMessage("複合材料力學"),

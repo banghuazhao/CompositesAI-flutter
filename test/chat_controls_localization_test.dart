@@ -147,7 +147,7 @@ void main() {
       try {
         await _mount(tester, model, locale);
         final strings = _strings(tester);
-        expect(find.text(strings.Chat_title), findsOneWidget);
+        expect(find.text(model.conversation.title), findsOneWidget);
         expect(find.byTooltip(strings.Chat_account_settings), findsOneWidget);
         expect(
             find.byTooltip(strings.Chat_export_conversation), findsOneWidget);

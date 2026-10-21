@@ -25,6 +25,7 @@ import '../../../util/export/file_share.dart';
 import '../model/chat_export.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_error_snack_bar.dart';
+import 'chat_header_title.dart';
 import 'message_list.dart';
 import 'chat_list.dart';
 import 'chat_welcome_view.dart';
@@ -458,7 +459,7 @@ class _ChatScreenState extends State<ChatScreen>
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(S.maybeOf(context)?.Chat_title ?? "Chat"),
+            title: ChatHeaderTitle(viewModel: viewModel),
             actionsPadding: const EdgeInsetsDirectional.only(end: 12),
             actions: [
               Builder(

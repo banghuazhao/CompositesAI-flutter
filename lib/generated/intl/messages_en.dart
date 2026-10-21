@@ -68,19 +68,21 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m20(count) => "${count} files";
 
-  static String m21(name) => "Preview ${name}";
+  static String m21(dateTime) => "Message time: ${dateTime}";
 
-  static String m22(error) => "Processing failed: ${error}";
+  static String m22(name) => "Preview ${name}";
 
-  static String m23(name) => "Read ${name}";
+  static String m23(error) => "Processing failed: ${error}";
 
-  static String m24(name) => "Remove ${name}";
+  static String m24(name) => "Read ${name}";
 
-  static String m25(query) => "Search \"${query}\"";
+  static String m25(name) => "Remove ${name}";
 
-  static String m26(count) => "${count} matching messages";
+  static String m26(query) => "Search \"${query}\"";
 
-  static String m27(name) => "Welcome, ${name}";
+  static String m27(count) => "${count} matching messages";
+
+  static String m28(name) => "Welcome, ${name}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -344,6 +346,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_delete_untitled_chat_message": MessageLookupByLibrary.simpleMessage(
       "Delete this chat? This cannot be undone.",
     ),
+    "Chat_draft": MessageLookupByLibrary.simpleMessage("Draft"),
     "Chat_edit_negative_feedback": MessageLookupByLibrary.simpleMessage(
       "Edit negative feedback",
     ),
@@ -454,6 +457,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_link_copied": MessageLookupByLibrary.simpleMessage(
       "Link copied to clipboard",
     ),
+    "Chat_message_time": m21,
     "Chat_models": MessageLookupByLibrary.simpleMessage("Models"),
     "Chat_move_to_folder": MessageLookupByLibrary.simpleMessage(
       "Move to folder",
@@ -483,22 +487,22 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_photo_library": MessageLookupByLibrary.simpleMessage("Photo Library"),
     "Chat_pin": MessageLookupByLibrary.simpleMessage("Pin"),
     "Chat_pinned": MessageLookupByLibrary.simpleMessage("Pinned"),
-    "Chat_preview_image": m21,
+    "Chat_preview_image": m22,
     "Chat_processing_document": MessageLookupByLibrary.simpleMessage(
       "Processing document…",
     ),
     "Chat_processing_failed": MessageLookupByLibrary.simpleMessage(
       "Processing failed",
     ),
-    "Chat_processing_failed_detail": m22,
-    "Chat_read_file": m23,
+    "Chat_processing_failed_detail": m23,
+    "Chat_read_file": m24,
     "Chat_refresh_knowledge": MessageLookupByLibrary.simpleMessage(
       "Refresh knowledge",
     ),
     "Chat_regenerate_response": MessageLookupByLibrary.simpleMessage(
       "Regenerate response",
     ),
-    "Chat_remove_attachment": m24,
+    "Chat_remove_attachment": m25,
     "Chat_remove_from_folder": MessageLookupByLibrary.simpleMessage(
       "Remove from folder",
     ),
@@ -530,14 +534,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_search_excerpt_copied": MessageLookupByLibrary.simpleMessage(
       "Excerpt copied",
     ),
-    "Chat_search_history_title": m25,
+    "Chat_search_history_title": m26,
     "Chat_search_knowledge": MessageLookupByLibrary.simpleMessage(
       "Search knowledge",
     ),
     "Chat_search_loaded_messages": MessageLookupByLibrary.simpleMessage(
       "Search loaded messages",
     ),
-    "Chat_search_match_count": m26,
+    "Chat_search_match_count": m27,
     "Chat_search_no_matches": MessageLookupByLibrary.simpleMessage(
       "No matching messages.",
     ),
@@ -586,7 +590,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_welcome_description": MessageLookupByLibrary.simpleMessage(
       "Ask about materials, laminate design, failure analysis, manufacturing, or engineering calculations.",
     ),
-    "Chat_welcome_name": m27,
+    "Chat_welcome_name": m28,
     "Chat_working_on": MessageLookupByLibrary.simpleMessage(
       "What are you working on?",
     ),

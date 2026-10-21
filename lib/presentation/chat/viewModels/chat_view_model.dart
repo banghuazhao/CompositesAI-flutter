@@ -164,6 +164,14 @@ class ChatViewModel extends ChangeNotifier {
     return _composer.textController;
   }
 
+  Listenable get draftChanges => _composer.draftChanges;
+
+  bool hasDraft(String? chatId) =>
+      !_isDisposed &&
+      isLoggedIn &&
+      _composerSessionKey == chatSessionKey &&
+      _composer.hasDraft(chatId);
+
   void _syncComposerSession() {
     final key = chatSessionKey;
     if (_composerSessionKey == key) return;

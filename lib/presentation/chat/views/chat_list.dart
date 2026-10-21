@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 
 import '../viewModels/chat_view_model.dart';
+import 'chat_draft_badge.dart';
 
 /// Shows Share Chat dialog. Copy Link button calls [viewModel].copyShareLink([chat]).
 Future<void> showShareChatDialog(
@@ -247,6 +248,7 @@ Future<void> _showMoveToFolderSheet(
 class _ChatListTile extends StatelessWidget {
   const _ChatListTile({
     required this.chat,
+    required this.viewModel,
     required this.isSelected,
     required this.isPinned,
     required this.onSelect,
@@ -254,6 +256,7 @@ class _ChatListTile extends StatelessWidget {
   });
 
   final Chat chat;
+  final ChatViewModel viewModel;
   final bool isSelected;
   final bool isPinned;
   final VoidCallback onSelect;
@@ -278,15 +281,22 @@ class _ChatListTile extends StatelessWidget {
             )
           : null,
       horizontalTitleGap: isPinned ? 8 : null,
-      title: Text(
-        chat.title.trim().isEmpty
-            ? S.maybeOf(context)?.Chat_untitled_chat ?? 'Untitled chat'
-            : chat.title,
-        overflow: TextOverflow.ellipsis,
-        maxLines: 1,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-        ),
+      title: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            chat.title.trim().isEmpty
+                ? S.maybeOf(context)?.Chat_untitled_chat ?? 'Untitled chat'
+                : chat.title,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+          ChatDraftBadge(viewModel: viewModel, chatId: chat.id),
+        ],
       ),
       trailing: PopupMenuButton<String>(
         tooltip: S.maybeOf(context)?.Chat_chat_options ?? 'Chat options',
@@ -544,6 +554,7 @@ class _ChatListState extends State<ChatList> {
   }) {
     return _ChatListTile(
       chat: chat,
+      viewModel: viewModel,
       isSelected: viewModel.selectedChat?.id == chat.id,
       isPinned: isPinned,
       onSelect: () {

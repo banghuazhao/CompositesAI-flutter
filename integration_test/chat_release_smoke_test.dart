@@ -118,6 +118,21 @@ Future<void> _enter(WidgetTester tester, String text) async {
   expect(tester.widget<TextField>(_composer).controller!.text, text);
 }
 
+Future<void> _openDrawer(WidgetTester tester) async {
+  final material =
+      MaterialLocalizations.of(tester.element(find.byType(ChatScreen)));
+  await tester.tap(find.byTooltip(material.openAppDrawerTooltip));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _closeDrawer(WidgetTester tester) async {
+  tester.state<ScaffoldState>(find.byType(Scaffold).first).closeDrawer();
+  await tester.pumpAndSettle();
+}
+
+Finder _tooltipText(String text) => find.byWidgetPredicate(
+    (widget) => widget is Text && widget.textSpan?.toPlainText() == text);
+
 Future<void> _expectDecodedPreview(WidgetTester tester) async {
   final decoded = find.descendant(
     of: find.byKey(const ValueKey('pending-image-preview-content')),
@@ -231,6 +246,170 @@ void main() {
     model.show(null);
     await tester.pumpAndSettle();
     expect(latest, findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets(
+      'native draft badges follow originating accepted sends and logout',
+      (tester) async {
+    model.chats = [_a, _b];
+    model.show(_a);
+    model.acceptImmediately = false;
+    await _mount(tester, model, locale: const Locale('zh', 'HK'));
+    final strings = S.of(tester.element(find.byType(ChatScreen)));
+    final badgeA = find.byKey(const ValueKey('chat-draft-badge-native-a'));
+    final badgeB = find.byKey(const ValueKey('chat-draft-badge-native-b'));
+    await _enter(tester, 'A awaiting acceptance');
+    await tester.tap(find.byTooltip(strings.Chat_send_message));
+    await tester.pumpAndSettle();
+    model.show(_b);
+    await tester.pumpAndSettle();
+    await _enter(tester, '  B 私人草稿  ');
+    model.acceptors.single();
+    await tester.pumpAndSettle();
+    expect(model.hasDraft(_a.id), isFalse);
+    expect(model.hasDraft(_b.id), isTrue);
+    expect(model.composerTextController.text, '  B 私人草稿  ');
+    await _openDrawer(tester);
+    expect(badgeA, findsNothing);
+    expect(badgeB, findsOneWidget);
+    expect(
+        tester
+            .widget<Text>(
+                find.descendant(of: badgeB, matching: find.byType(Text)))
+            .data,
+        strings.Chat_draft);
+    await _closeDrawer(tester);
+
+    model.show(_a);
+    await tester.pumpAndSettle();
+    await _enter(tester, 'A second outgoing message');
+    await tester.tap(find.byTooltip(strings.Chat_send_message));
+    await tester.pumpAndSettle();
+    await _enter(tester, 'A newer private draft');
+    model.show(_b);
+    await tester.pumpAndSettle();
+    model.acceptors.last();
+    await tester.pumpAndSettle();
+    expect(model.hasDraft(_a.id), isTrue);
+    expect(model.composerTextController.text, '  B 私人草稿  ');
+    await _openDrawer(tester);
+    expect(badgeA, findsOneWidget);
+    expect(badgeB, findsOneWidget);
+    expect(
+        tester
+            .widget<Text>(
+                find.descendant(of: badgeA, matching: find.byType(Text)))
+            .data,
+        strings.Chat_draft);
+    await _closeDrawer(tester);
+    await _enter(tester, '  \n ');
+    await _openDrawer(tester);
+    expect(badgeA, findsOneWidget);
+    expect(badgeB, findsNothing);
+    await model.clearChatStateOnLogout();
+    await tester.pumpAndSettle();
+    expect(badgeA, findsNothing);
+    expect(badgeB, findsNothing);
+    expect(model.hasDraft(_a.id), isFalse);
+    expect(model.hasDraft(_b.id), isFalse);
+    expect(_composer, findsNothing);
+    expect(model.sent, ['A awaiting acceptance', 'A second outgoing message']);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native selected header updates and retires private tooltips',
+      (tester) async {
+    final conversation =
+        Chat(id: 'native-header', title: '${'碳纖維 laminate α 🌍 ' * 6}設計比較');
+    model.show(conversation);
+    await _mount(tester, model, locale: const Locale('zh', 'HK'));
+    final strings = S.of(tester.element(find.byType(ChatScreen)));
+    final header = find.byKey(const Key('chat-header-title'));
+    final initialTitle = conversation.title;
+    expect(tester.widget<Text>(header).data, initialTitle);
+    expect(tester.widget<Text>(header).maxLines, 1);
+    expect(tester.widget<Text>(header).overflow, TextOverflow.ellipsis);
+    await tester.longPress(header);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(_tooltipText(initialTitle), findsOneWidget);
+    conversation.title = '重新命名：碳纖維 α [0/90]';
+    model.notifyListeners();
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(header).data, conversation.title);
+    expect(_tooltipText(initialTitle), findsNothing);
+    model.show(Chat(id: 'native-header-b', title: '玻璃纖維 β'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(header).data, '玻璃纖維 β');
+    model.show(Chat(id: 'native-header-untitled', title: '  \n '));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(header).data, strings.Chat_untitled_chat);
+    model.show(null);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(header).data, strings.Chat_title);
+    model.show(conversation);
+    await tester.pumpAndSettle();
+    await tester.longPress(header);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(_tooltipText(conversation.title), findsOneWidget);
+    await model.clearChatStateOnLogout();
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(header).data, strings.Chat_title);
+    expect(_tooltipText(conversation.title), findsNothing);
+    expect(model.sent, isEmpty);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native message timestamps use local time and scoped details',
+      (tester) async {
+    final question = Message(role: 'user', content: '時間戳記 α question')
+      ..timestamp = DateTime.utc(2025, 3, 5, 13, 7).millisecondsSinceEpoch;
+    final response = Message(role: 'assistant', content: '時間戳記 β answer')
+      ..timestamp = DateTime.utc(2025, 3, 5, 13, 9).millisecondsSinceEpoch;
+    model.show(_a, history: [question, response]);
+    await _mount(tester, model, locale: const Locale('zh', 'HK'));
+    final screenContext = tester.element(find.byType(ChatScreen));
+    final strings = S.of(screenContext);
+    final material = MaterialLocalizations.of(screenContext);
+    final use24Hours = MediaQuery.of(screenContext).alwaysUse24HourFormat;
+    String time(Message message) => material.formatTimeOfDay(
+          TimeOfDay.fromDateTime(
+              DateTime.fromMillisecondsSinceEpoch(message.timestamp).toLocal()),
+          alwaysUse24HourFormat: use24Hours,
+        );
+    String detail(Message message) => strings.Chat_message_time(
+        '${material.formatFullDate(DateTime.fromMillisecondsSinceEpoch(message.timestamp).toLocal())}, ${time(message)}');
+    final questionTime =
+        find.byKey(ValueKey('chat-message-time-${question.id}'));
+    final responseTime =
+        find.byKey(ValueKey('chat-message-time-${response.id}'));
+    for (final entry in [(question, questionTime), (response, responseTime)]) {
+      await tester.ensureVisible(entry.$2);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: entry.$2, matching: find.text(time(entry.$1))),
+          findsOneWidget);
+    }
+    await tester.tap(responseTime);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(_tooltipText(detail(response)), findsOneWidget);
+    // Reusing the same message IDs in another chat must retire the old overlay.
+    model.show(_b, history: [question, response]);
+    await tester.pumpAndSettle();
+    expect(_tooltipText(detail(response)), findsNothing);
+    await tester.ensureVisible(questionTime);
+    await tester.pumpAndSettle();
+    await tester.tap(questionTime);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(_tooltipText(detail(question)), findsOneWidget);
+    await model.clearChatStateOnLogout();
+    await tester.pumpAndSettle();
+    expect(questionTime, findsNothing);
+    expect(responseTime, findsNothing);
+    expect(_tooltipText(detail(question)), findsNothing);
+    expect(model.sent, isEmpty);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   }, timeout: const Timeout(Duration(minutes: 3)));

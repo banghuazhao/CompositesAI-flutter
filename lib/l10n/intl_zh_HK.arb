@@ -473,5 +473,14 @@
       }
     }
   },
-  "Chat_open_link_failed": "無法開啟此連結。"
+  "Chat_open_link_failed": "無法開啟此連結。",
+  "Chat_draft": "草稿",
+  "Chat_message_time": "訊息時間：{dateTime}",
+  "@Chat_message_time": {
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 /// Account-scoped, in-memory composer drafts. Null identifies New chat and is
@@ -13,6 +15,9 @@ class ChatComposerController {
   final int maximumDrafts;
   final TextEditingController textController = TextEditingController();
   final _drafts = <String?, _Draft>{};
+  final _draftChanges = _DraftPresenceNotifier();
+  Set<String?> _nonemptyDrafts = const {};
+  bool _draftNotificationPending = false;
   String? _chatId;
   int _epoch = 0;
   bool _restoring = false;
@@ -20,6 +25,32 @@ class ChatComposerController {
 
   @visibleForTesting
   int get cachedDraftCount => _drafts.length;
+
+  Listenable get draftChanges => _draftChanges;
+
+  /// Presence reads never touch draft contents, cache order or retention.
+  bool hasDraft(String? chatId) =>
+      !_disposed && _nonemptyDrafts.contains(chatId);
+
+  void _refreshDraftPresence() {
+    final next = {
+      for (final entry in _drafts.entries)
+        if (entry.value.value.text.trim().isNotEmpty) entry.key,
+    };
+    if (next.length == _nonemptyDrafts.length &&
+        next.containsAll(_nonemptyDrafts)) {
+      return;
+    }
+    _nonemptyDrafts = next;
+    if (_draftNotificationPending) return;
+    _draftNotificationPending = true;
+    // A session sync can clear drafts from a widget getter during build.
+    // Publish outside that call stack, coalescing multiple cache operations.
+    scheduleMicrotask(() {
+      _draftNotificationPending = false;
+      if (!_disposed) _draftChanges.publish();
+    });
+  }
 
   void _recordEdit() {
     if (_restoring || _disposed) return;
@@ -39,6 +70,7 @@ class ChatComposerController {
     while (_drafts.length > maximumDrafts) {
       _drafts.remove(_drafts.keys.first);
     }
+    _refreshDraftPresence();
   }
 
   static TextEditingValue _restorable(TextEditingValue value) {
@@ -128,12 +160,14 @@ class ChatComposerController {
     if (_disposed) return;
     _drafts.remove(chatId);
     if (_chatId == chatId) selectChat(null);
+    _refreshDraftPresence();
   }
 
   void clear() {
     if (_disposed) return;
     _epoch++;
     _drafts.clear();
+    _refreshDraftPresence();
     _chatId = null;
     _restoring = true;
     try {
@@ -150,7 +184,12 @@ class ChatComposerController {
     _disposed = true;
     textController.removeListener(_recordEdit);
     textController.dispose();
+    _draftChanges.dispose();
   }
+}
+
+class _DraftPresenceNotifier extends ChangeNotifier {
+  void publish() => notifyListeners();
 }
 
 class ChatComposerTicket {

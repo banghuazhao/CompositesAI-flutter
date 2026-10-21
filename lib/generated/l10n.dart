@@ -2808,6 +2808,21 @@ class S {
       args: [],
     );
   }
+
+  /// `Draft`
+  String get Chat_draft {
+    return Intl.message('Draft', name: 'Chat_draft', desc: '', args: []);
+  }
+
+  /// `Message time: {dateTime}`
+  String Chat_message_time(String dateTime) {
+    return Intl.message(
+      'Message time: $dateTime',
+      name: 'Chat_message_time',
+      desc: '',
+      args: [dateTime],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
