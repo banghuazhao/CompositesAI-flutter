@@ -14,12 +14,14 @@ class ChatUseAsDraftButton extends StatefulWidget {
     required this.message,
     this.onBeforeUse,
     this.onApplied,
+    this.menuItem = false,
   });
 
   final ChatViewModel viewModel;
   final Message message;
   final VoidCallback? onBeforeUse;
   final VoidCallback? onApplied;
+  final bool menuItem;
 
   @override
   State<ChatUseAsDraftButton> createState() => _ChatUseAsDraftButtonState();
@@ -88,8 +90,9 @@ class _ChatUseAsDraftButtonState extends State<ChatUseAsDraftButton> {
     final request = model.prepareMessageAsDraft(widget.message);
     if (request == null) return;
     if (!request.replacesDraft) {
-      if (model.applyMessageAsDraft(request) && mounted)
+      if (model.applyMessageAsDraft(request) && mounted) {
         widget.onApplied?.call();
+      }
       return;
     }
 
@@ -137,12 +140,14 @@ class _ChatUseAsDraftButtonState extends State<ChatUseAsDraftButton> {
     try {
       final confirmed = await navigator.push(route);
       if (confirmed == true &&
+          mounted &&
           _current &&
           ModalRoute.of(context)?.isCurrent == true) {
         // Detach first: applying the new text intentionally invalidates its ticket.
         _stopObserving();
-        if (model.applyMessageAsDraft(request) && mounted)
+        if (model.applyMessageAsDraft(request) && mounted) {
           widget.onApplied?.call();
+        }
       }
     } finally {
       _stopObserving();
@@ -163,12 +168,28 @@ class _ChatUseAsDraftButtonState extends State<ChatUseAsDraftButton> {
   }
 
   @override
-  Widget build(BuildContext context) => IconButton(
+  Widget build(BuildContext context) {
+    final label = S.maybeOf(context)?.Chat_use_as_draft ?? 'Use as draft';
+    final onPressed = widget.viewModel.canUseMessageAsDraft(widget.message)
+        ? () => unawaited(_use())
+        : null;
+    if (widget.menuItem) {
+      return MenuItemButton(
         key: ValueKey('chat-use-as-draft-${widget.message.id}'),
-        tooltip: S.maybeOf(context)?.Chat_use_as_draft ?? 'Use as draft',
-        icon: const Icon(Icons.edit_note_rounded, size: 20),
-        onPressed: widget.viewModel.canUseMessageAsDraft(widget.message)
-            ? () => unawaited(_use())
-            : null,
+        closeOnActivate: false,
+        onPressed: onPressed,
+        leadingIcon: const Icon(Icons.edit_note_rounded, size: 18),
+        style: const ButtonStyle(
+          minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+        ),
+        child: Text(label),
       );
+    }
+    return IconButton(
+      key: ValueKey('chat-use-as-draft-${widget.message.id}'),
+      tooltip: label,
+      icon: const Icon(Icons.edit_note_rounded, size: 20),
+      onPressed: onPressed,
+    );
+  }
 }

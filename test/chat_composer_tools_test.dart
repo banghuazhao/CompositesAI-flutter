@@ -108,6 +108,11 @@ Future<void> _find(WidgetTester tester,
   }
 }
 
+Future<void> _openComposerMore(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('chat-composer-more')).last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late _Model model;
   setUp(() {
@@ -246,6 +251,7 @@ void main() {
     const selection = TextSelection(baseOffset: 8, extentOffset: 3);
     model.composerTextController.selection = selection;
     final controller = model.composerTextController;
+    await _openComposerMore(tester);
     await tester.tap(_expand);
     await tester.pumpAndSettle();
     expect(_expanded, findsOneWidget);
@@ -281,6 +287,7 @@ void main() {
       (tester) async {
     await _pump(tester, model);
     await tester.enterText(_composer, 'Private A');
+    await _openComposerMore(tester);
     await tester.tap(_expand);
     await tester.pumpAndSettle();
     await tester.enterText(_expanded, 'Expanded A draft');
@@ -308,6 +315,7 @@ void main() {
             of: find.byTooltip('Send message'),
             matching: find.byType(Pressable)))
         .onTap!;
+    await _openComposerMore(tester);
     await tester.tap(_expand);
     await tester.pumpAndSettle();
     await tester.enterText(_expanded, 'Expanded draft to keep');
@@ -326,6 +334,7 @@ void main() {
       (tester) async {
     await _pump(tester, model);
     await tester.enterText(_composer, 'Draft before disposal');
+    await _openComposerMore(tester);
     await tester.tap(_expand);
     await tester.pumpAndSettle();
     model.dispose();
@@ -345,9 +354,9 @@ void main() {
     testWidgets('expanded controls are accessible at 2x text in $locale',
         (tester) async {
       await _pump(tester, model, locale: locale, scale: 2);
+      await _openComposerMore(tester);
       final strings = S.of(tester.element(_expand));
-      expect(tester.widget<IconButton>(_expand).tooltip,
-          strings.Chat_expand_composer);
+      expect(find.text(strings.Chat_expand_composer), findsOneWidget);
       expect(tester.getSize(_expand).width, greaterThanOrEqualTo(48));
       expect(tester.getSize(_expand).height, greaterThanOrEqualTo(48));
       await tester.tap(_expand);

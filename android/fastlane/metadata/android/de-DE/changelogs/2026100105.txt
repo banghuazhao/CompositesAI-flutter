@@ -1,0 +1,4 @@
+- Chatentwürfe behalten, Fragen wiederverwenden und im erweiterten Editor schreiben.
+- Nachrichten finden, lange Antworten einklappen und übersichtlichere Chatfunktionen mit Vorschauen für Einstiegsfragen nutzen.
+- Rechnerdiagramme, Lagenaufbau-Vorschauen, Versagensfilter und einfacheres Kopieren von Ergebnissen entdecken.
+- Eigene Materialien ansehen, sortieren, exportieren und wiederherstellen.

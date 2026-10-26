@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:domain/chat/entities/message.dart';
 import 'package:flutter/widgets.dart' show CharacterRange;
 
+enum ChatMessageSearchFilter { all, questions, answers }
+
 /// Searches the text already loaded for a conversation without changing it.
 class ChatMessageSearch {
   static const int maximumExcerptLength = 240;
@@ -10,8 +12,9 @@ class ChatMessageSearch {
 
   static List<ChatMessageSearchMatch> find(
     Iterable<Message> messages,
-    String query,
-  ) {
+    String query, {
+    ChatMessageSearchFilter filter = ChatMessageSearchFilter.all,
+  }) {
     final text = query.trim();
     if (text.isEmpty) return const [];
     // Match against the original text. Lowercasing a separate copy can change
@@ -21,7 +24,12 @@ class ChatMessageSearch {
     final results = <ChatMessageSearchMatch>[];
     var index = 0;
     for (final message in messages) {
-      final match = pattern.firstMatch(message.content);
+      final includeRole = switch (filter) {
+        ChatMessageSearchFilter.all => true,
+        ChatMessageSearchFilter.questions => message.role == 'user',
+        ChatMessageSearchFilter.answers => message.role == 'assistant',
+      };
+      final match = includeRole ? pattern.firstMatch(message.content) : null;
       if (match != null) {
         results.add(ChatMessageSearchMatch._(
           messageIndex: index,

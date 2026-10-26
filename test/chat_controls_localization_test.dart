@@ -160,8 +160,15 @@ void main() {
                 .hintText,
             strings.Chat_composer_hint);
         expect(find.byTooltip(strings.Chat_copy_message), findsWidgets);
-        expect(find.byTooltip(strings.Chat_good_response), findsOneWidget);
-        expect(find.byTooltip(strings.Chat_bad_response), findsOneWidget);
+        expect(find.text(strings.Chat_good_response), findsNothing);
+        await _tap(
+            tester,
+            find.byKey(
+                ValueKey('chat-message-more-${model.messages.last.id}')));
+        expect(find.text(strings.Chat_good_response), findsOneWidget);
+        expect(find.text(strings.Chat_bad_response), findsOneWidget);
+        await tester.tapAt(const Offset(2, 2));
+        await tester.pumpAndSettle();
 
         await _tap(tester, find.byTooltip(strings.Chat_find_in_chat));
         expect(find.text(strings.Chat_find_in_chat), findsOneWidget);
@@ -198,6 +205,8 @@ void main() {
         expect(find.byTooltip(strings.Chat_send_message), findsOneWidget);
         final useAsDraft =
             find.byKey(ValueKey('chat-use-as-draft-${model.question.id}'));
+        await _tap(tester,
+            find.byKey(ValueKey('chat-message-more-${model.question.id}')));
         await _tap(tester, useAsDraft);
         expect(find.text(strings.Chat_replace_draft_title), findsOneWidget);
         expect(find.text(strings.Chat_replace_draft_message), findsOneWidget);

@@ -1,0 +1,4 @@
+- Conserva borradores, reutiliza preguntas y escribe en un editor ampliado.
+- Busca mensajes, contrae respuestas largas y disfruta de controles más claros y vistas previas de preguntas iniciales.
+- Explora gráficos de cálculo, vistas previas de apilado, filtros de fallo y copia resultados más fácilmente.
+- Previsualiza, ordena, exporta y recupera materiales personalizados.

@@ -43,6 +43,42 @@ class ChatDraftReuseRequest {
   bool get replacesDraft => _composer.value.text.isNotEmpty;
 }
 
+/// One temporary, revision-scoped snapshot for undoing an explicit draft clear.
+class ChatDraftClearUndo {
+  const ChatDraftClearUndo._(
+    this._session,
+    this._selection,
+    this._chatId,
+    this._original,
+    this._cleared,
+  );
+
+  final Object _session;
+  final int _selection;
+  final String? _chatId;
+  final TextEditingValue _original;
+  final ChatComposerTicket _cleared;
+}
+
+/// A starting question and the exact unsent draft it is allowed to replace.
+class ChatSuggestedDraftRequest {
+  const ChatSuggestedDraftRequest._(
+    this._session,
+    this._selection,
+    this._index,
+    this._text,
+    this._composer,
+  );
+
+  final Object _session;
+  final int _selection;
+  final int _index;
+  final String _text;
+  final ChatComposerTicket _composer;
+
+  bool get replacesDraft => _composer.value.text.isNotEmpty;
+}
+
 class ChatViewModel extends ChangeNotifier {
   /// Matches backend: skip = (page - 1) * 60, limit 60 when page is set.
   static const int chatListPageSize = 60;
@@ -66,6 +102,7 @@ class ChatViewModel extends ChangeNotifier {
   Object? _composerSessionKey;
   final _disposalNotifier = ValueNotifier(false);
   int _composerReplacementRevision = 0;
+  ChatDraftClearUndo? _draftClearUndo;
 
   bool get isDisposed => _isDisposed;
   ValueListenable<bool> get disposalListenable => _disposalNotifier;
@@ -141,6 +178,7 @@ class ChatViewModel extends ChangeNotifier {
     )..addListener(_forwardAttachmentChange);
     chatListScrollController.addListener(_onChatListScroll);
     _composerSessionKey = chatSessionKey;
+    _composer.textController.addListener(_onComposerDraftEdited);
   }
 
   bool get isSendingMessage => _conversation.isSendingMessage;
@@ -150,6 +188,7 @@ class ChatViewModel extends ChangeNotifier {
   set selectedChat(Chat? value) {
     if (_isDisposed) return;
     _syncComposerSession();
+    if (selectedChat?.id != value?.id) _draftClearUndo = null;
     _conversation.selectedChat = value;
     _composer.selectChat(value?.id);
   }
@@ -179,12 +218,81 @@ class ChatViewModel extends ChangeNotifier {
     final key = chatSessionKey;
     if (_composerSessionKey == key) return;
     _composerSessionKey = key;
+    _draftClearUndo = null;
     _composer.clear();
   }
 
   void _syncComposerState() {
     _syncComposerSession();
     _composer.selectChat(selectedChat?.id);
+  }
+
+  bool get canClearComposerDraft =>
+      !_isDisposed &&
+      isLoggedIn &&
+      !isSendingMessage &&
+      !isLoadingMessages &&
+      _composerSessionKey == chatSessionKey &&
+      _composer.textController.text.isNotEmpty;
+
+  void _onComposerDraftEdited() {
+    final undo = _draftClearUndo;
+    if (undo != null && !isDraftClearUndoCurrent(undo)) _draftClearUndo = null;
+  }
+
+  ChatDraftClearUndo? clearComposerDraft() {
+    if (!canClearComposerDraft) return null;
+    _syncComposerState();
+    final session = chatSessionKey;
+    final selection = chatSelectionRevision;
+    final chatId = selectedChat?.id;
+    final original = _composer.takeTicket();
+    _draftClearUndo = null;
+    _composerReplacementRevision++;
+    if (!_composer.replaceIfCurrent(original, '')) return null;
+    if (_isDisposed ||
+        chatSessionKey != session ||
+        chatSelectionRevision != selection ||
+        selectedChat?.id != chatId) {
+      return null;
+    }
+    final undo = ChatDraftClearUndo._(
+      session,
+      selection,
+      chatId,
+      original.value,
+      _composer.takeTicket(),
+    );
+    _draftClearUndo = undo;
+    notifyListeners();
+    return isDraftClearUndoCurrent(undo) ? undo : null;
+  }
+
+  bool isDraftClearUndoCurrent(ChatDraftClearUndo undo) =>
+      !_isDisposed &&
+      identical(_draftClearUndo, undo) &&
+      isLoggedIn &&
+      !isSendingMessage &&
+      !isLoadingMessages &&
+      chatSessionKey == undo._session &&
+      chatSelectionRevision == undo._selection &&
+      selectedChat?.id == undo._chatId &&
+      _composerSessionKey == chatSessionKey &&
+      _composer.isCurrent(undo._cleared);
+
+  bool undoClearComposerDraft(ChatDraftClearUndo undo) {
+    if (!isDraftClearUndoCurrent(undo)) return false;
+    _draftClearUndo = null;
+    _composerReplacementRevision++;
+    if (!_composer.replaceValueIfCurrent(undo._cleared, undo._original)) {
+      return false;
+    }
+    notifyListeners();
+    return true;
+  }
+
+  void discardDraftClearUndo(ChatDraftClearUndo undo) {
+    if (identical(_draftClearUndo, undo)) _draftClearUndo = null;
   }
 
   bool canUseMessageAsDraft(Message message) =>
@@ -229,6 +337,55 @@ class ChatViewModel extends ChangeNotifier {
     return true;
   }
 
+  /// Custom workspace prompts keep their own wording instead of receiving an
+  /// unrelated engineering category when the server changes their order.
+  int? suggestedQuestionTaskIndex(int index) {
+    if (index < 0 || index >= defaultQuestions.length) return null;
+    final task = _fallbackDefaultQuestions.indexOf(defaultQuestions[index]);
+    return task < 0 ? null : task;
+  }
+
+  bool _canPrepareSuggestion(int index) =>
+      !_isDisposed &&
+      isLoggedIn &&
+      !isSendingMessage &&
+      !isLoadingMessages &&
+      selectedChat == null &&
+      index >= 0 &&
+      index < defaultQuestions.length &&
+      defaultQuestions[index].trim().isNotEmpty;
+
+  ChatSuggestedDraftRequest? prepareSuggestedDraft(int index) {
+    if (!_canPrepareSuggestion(index)) return null;
+    _syncComposerState();
+    return ChatSuggestedDraftRequest._(
+      chatSessionKey,
+      _conversation.selectionRevision,
+      index,
+      defaultQuestions[index],
+      _composer.takeTicket(),
+    );
+  }
+
+  bool isSuggestedDraftCurrent(ChatSuggestedDraftRequest request) =>
+      _canPrepareSuggestion(request._index) &&
+      chatSessionKey == request._session &&
+      _conversation.selectionRevision == request._selection &&
+      defaultQuestions[request._index] == request._text &&
+      _composer.isCurrent(request._composer);
+
+  bool applySuggestedDraft(ChatSuggestedDraftRequest request) {
+    if (!isSuggestedDraftCurrent(request)) return false;
+    // Invalidate pending recognition before publishing a deliberate replacement.
+    _composerReplacementRevision++;
+    _draftClearUndo = null;
+    if (!_composer.replaceIfCurrent(request._composer, request._text)) {
+      return false;
+    }
+    notifyListeners();
+    return true;
+  }
+
   List<Message> get messages => _conversation.messages;
   set messages(List<Message> value) => _conversation.messages = value;
   StreamController<Message> get threadResponseController =>
@@ -251,6 +408,7 @@ class ChatViewModel extends ChangeNotifier {
   void notifyListeners() {
     if (!_isDisposed) {
       _syncComposerState();
+      _onComposerDraftEdited();
       super.notifyListeners();
     }
   }
@@ -417,8 +575,10 @@ class ChatViewModel extends ChangeNotifier {
   void dispose() {
     if (_isDisposed) return;
     _isDisposed = true;
+    _draftClearUndo = null;
     _disposalNotifier.value = true;
     _disposalNotifier.dispose();
+    _composer.textController.removeListener(_onComposerDraftEdited);
     _composer.dispose();
     chatListScrollController.removeListener(_onChatListScroll);
     _conversation.removeListener(_forwardConversationChange);
@@ -1117,6 +1277,7 @@ class ChatViewModel extends ChangeNotifier {
 
   Future<void> _clearPrivateChatState() async {
     _sessionGeneration++;
+    _draftClearUndo = null;
     _composerSessionKey = chatSessionKey;
     _composer.clear();
     _chatFilterRequestId++;
@@ -1189,6 +1350,7 @@ class ChatViewModel extends ChangeNotifier {
     String text, {
     VoidCallback? onMessageAccepted,
   }) async {
+    _draftClearUndo = null;
     if (isUploadingFile || isSendingMessage) return;
     final generation = _sessionGeneration;
     final session = chatSessionKey;
@@ -1212,6 +1374,7 @@ class ChatViewModel extends ChangeNotifier {
   /// sendInputMessage, while protecting the originating draft and session.
   Future<void> sendComposerMessage() async {
     if (_isDisposed) return;
+    _draftClearUndo = null;
     _syncComposerState();
     final session = chatSessionKey;
     final ticket = _composer.takeTicket();
@@ -1228,6 +1391,7 @@ class ChatViewModel extends ChangeNotifier {
   void stopGenerating() => _conversation.stopGenerating();
 
   Future<void> regenerateLastResponse() async {
+    _draftClearUndo = null;
     if (isUploadingFile) return;
     await _conversation.regenerateLastResponse(
       toolIds: selectedToolIds.toList(growable: false),
@@ -1236,6 +1400,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   Future<void> onDefaultQuestionsTapped(int index) async {
+    _draftClearUndo = null;
     final question = defaultQuestions[index];
     await sendInputMessage(question);
   }

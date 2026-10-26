@@ -129,6 +129,7 @@ class _ChatSearchSheet extends StatefulWidget {
 
 class _ChatSearchSheetState extends State<_ChatSearchSheet> {
   final _query = TextEditingController();
+  ChatMessageSearchFilter _filter = ChatMessageSearchFilter.all;
   List<ChatMessageSearchMatch> _matches = const [];
   bool _refreshScheduled = false;
 
@@ -160,9 +161,18 @@ class _ChatSearchSheetState extends State<_ChatSearchSheet> {
     setState(() {
       _matches = widget.lifetime.available
           ? ChatMessageSearch.find(
-              widget.lifetime.viewModel.messages, _query.text)
+              widget.lifetime.viewModel.messages,
+              _query.text,
+              filter: _filter,
+            )
           : const [];
     });
+  }
+
+  void _selectFilter(ChatMessageSearchFilter filter) {
+    if (!mounted || !widget.lifetime.canCopy || _filter == filter) return;
+    _filter = filter;
+    _refresh();
   }
 
   Future<void> _copy(ChatMessageSearchMatch match) async {
@@ -252,6 +262,37 @@ class _ChatSearchSheetState extends State<_ChatSearchSheet> {
                               ),
                       ),
                       textInputAction: TextInputAction.search,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final filter in ChatMessageSearchFilter.values)
+                          ChoiceChip(
+                            key: ValueKey('chat-search-filter-${filter.name}'),
+                            selected: _filter == filter,
+                            materialTapTargetSize: MaterialTapTargetSize.padded,
+                            visualDensity: VisualDensity.standard,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
+                            labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 4,
+                            ),
+                            onSelected: (_) => _selectFilter(filter),
+                            label: Text(switch (filter) {
+                              ChatMessageSearchFilter.all =>
+                                strings?.Chat_search_all ?? 'All',
+                              ChatMessageSearchFilter.questions =>
+                                strings?.Chat_search_questions ?? 'Questions',
+                              ChatMessageSearchFilter.answers =>
+                                strings?.Chat_search_answers ?? 'Answers',
+                            }),
+                          ),
+                      ],
                     ),
                     if (hasQuery) ...[
                       const SizedBox(height: 12),

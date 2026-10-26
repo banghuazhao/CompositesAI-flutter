@@ -1,19 +1,20 @@
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
-import 'package:swiftcomp/util/context_extension_screen_width.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 
 import '../model/chat_citation.dart';
 import '../viewModels/chat_view_model.dart';
 import 'ai_markdown_message.dart';
 import 'chat_answer_collapse_state.dart';
+import 'chat_copy_exchange_button.dart';
+import 'chat_layout.dart';
 import 'chat_message_timestamp.dart';
 import 'chat_progress_indicator.dart';
+import 'chat_reading_style.dart';
 import 'chat_use_as_draft_button.dart';
 import 'response_feedback_sheet.dart';
 
@@ -31,6 +32,62 @@ class MessageList extends StatefulWidget {
 
   @override
   _MessageListState createState() => _MessageListState();
+}
+
+class _MessageActionsMenu extends StatefulWidget {
+  const _MessageActionsMenu({
+    super.key,
+    required this.messageId,
+    required this.enabled,
+    required this.isCurrent,
+    required this.items,
+  });
+
+  final String messageId;
+  final bool enabled;
+  final bool Function() isCurrent;
+  final List<Widget> Function(MenuController) items;
+
+  @override
+  State<_MessageActionsMenu> createState() => _MessageActionsMenuState();
+}
+
+class _MessageActionsMenuState extends State<_MessageActionsMenu> {
+  final _controller = MenuController();
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = S.maybeOf(context);
+    final width =
+        (MediaQuery.sizeOf(context).width - 40).clamp(160.0, 360.0).toDouble();
+    return MenuAnchor(
+      crossAxisUnconstrained: false,
+      controller: _controller,
+      consumeOutsideTap: true,
+      style: MenuStyle(
+        maximumSize: WidgetStatePropertyAll(Size(width, double.infinity)),
+      ),
+      menuChildren: widget.items(_controller),
+      builder: (context, controller, _) => Tooltip(
+        message: strings?.Chat_more_actions ?? 'More actions',
+        child: TextButton.icon(
+          key: ValueKey('chat-message-more-${widget.messageId}'),
+          onPressed: widget.enabled
+              ? () {
+                  if (!mounted || !widget.isCurrent()) return;
+                  controller.isOpen ? controller.close() : controller.open();
+                }
+              : null,
+          style: TextButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          icon: const Icon(Icons.more_horiz, size: ChatReadingStyle.iconSize),
+          label: Text(strings?.Chat_more ?? 'More'),
+        ),
+      ),
+    );
+  }
 }
 
 class _MessageListState extends State<MessageList> {
@@ -118,9 +175,9 @@ class _MessageListState extends State<MessageList> {
       controller: chatViewModel.scrollController,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.fromLTRB(
-        context.horizontalSidePaddingForContentWidth,
+        ChatLayout.horizontalPaddingFor(MediaQuery.sizeOf(context).width),
         20,
-        context.horizontalSidePaddingForContentWidth,
+        ChatLayout.horizontalPaddingFor(MediaQuery.sizeOf(context).width),
         widget.bottomContentPadding,
       ),
       itemCount: messages.length + 1,
@@ -152,27 +209,23 @@ class _MessageListState extends State<MessageList> {
             alignment: Alignment.centerRight,
             child: Container(
               constraints: BoxConstraints(
-                maxWidth: min(
-                  680,
-                  max(280, MediaQuery.of(context).size.width * 0.72),
-                ),
+                maxWidth: ChatLayout.contentWidthFor(
+                    MediaQuery.sizeOf(context).width),
               ),
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
                 color: scheme.secondaryContainer,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                  bottomLeft: Radius.circular(20),
+                  topLeft: Radius.circular(ChatReadingStyle.messageRadius),
+                  topRight: Radius.circular(ChatReadingStyle.messageRadius),
+                  bottomLeft: Radius.circular(ChatReadingStyle.messageRadius),
                   bottomRight: Radius.circular(4),
                 ),
               ),
               child: SelectableText(
                 message.content,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: scheme.onSecondaryContainer,
-                ),
+                style: ChatReadingStyle.body(context,
+                    color: scheme.onSecondaryContainer),
               ),
             ),
           ),
@@ -251,10 +304,7 @@ class _MessageListState extends State<MessageList> {
                                 _attachedFileDetail(file),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade600,
-                                ),
+                                style: ChatReadingStyle.metadata(context),
                               ),
                           ],
                         ),
@@ -280,8 +330,9 @@ class _MessageListState extends State<MessageList> {
     if (file.isKnowledgeCollection) {
       return strings?.Chat_knowledge_collection ?? 'Knowledge collection';
     }
-    if (file.isKnowledgeFile)
+    if (file.isKnowledgeFile) {
       return strings?.Chat_knowledge_file ?? 'Knowledge file';
+    }
     if (file.size > 0) return _formatFileSize(file.size);
     return '';
   }
@@ -302,18 +353,18 @@ class _MessageListState extends State<MessageList> {
         width: 160,
         height: 120,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(ChatReadingStyle.codeRadius),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(ChatReadingStyle.codeRadius),
           child: bytes != null
               ? Image.memory(bytes, fit: BoxFit.cover)
-              : const Center(
+              : Center(
                   child: Icon(
                     Icons.image_outlined,
                     size: 36,
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
         ),
@@ -334,75 +385,185 @@ class _MessageListState extends State<MessageList> {
     );
   }
 
+  bool _messageActionCurrent(
+    ChatViewModel model,
+    Message message,
+    Object scope,
+    int revision,
+    String content,
+    int index,
+  ) =>
+      mounted &&
+      identical(model, _observedModel) &&
+      !model.isDisposed &&
+      model.isLoggedIn &&
+      !model.isLoadingMessages &&
+      _answerScope(model) == scope &&
+      _answerControlRevision == revision &&
+      ModalRoute.of(context)?.isCurrent == true &&
+      message.content == content &&
+      index >= 0 &&
+      index < model.messages.length &&
+      identical(model.messages[index], message);
+
+  Widget _moreMenu(
+    ChatViewModel model,
+    Message message,
+    List<Widget> Function(MenuController controller) items,
+  ) {
+    final scope = _answerScope(model);
+    final revision = _answerControlRevision;
+    final content = message.content;
+    final index = model.messages.indexWhere((item) => identical(item, message));
+    return _MessageActionsMenu(
+      key: ValueKey((_answerScope(model), message, message.content)),
+      messageId: message.id,
+      enabled:
+          !model.isDisposed && model.isLoggedIn && !model.isLoadingMessages,
+      isCurrent: () => _messageActionCurrent(
+          model, message, scope, revision, content, index),
+      items: items,
+    );
+  }
+
   Widget buildMessageActions(ChatViewModel viewModel, Message message) {
     final isUnansweredLast = viewModel.messages.isNotEmpty &&
-        viewModel.messages.last == message &&
+        identical(viewModel.messages.last, message) &&
         viewModel.canRegenerate;
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        if (isUnansweredLast)
-          buildRegenerateButton(
-            viewModel,
-            label: S.maybeOf(context)?.Chat_get_response ?? 'Get response',
-          ),
         buildCopyIconButton(viewModel, message),
-        if (message.content.trim().isNotEmpty)
-          ChatUseAsDraftButton(
-            viewModel: viewModel,
-            message: message,
-            onBeforeUse: widget.onBeforeReuse,
-            onApplied: widget.onDraftApplied,
-          ),
+        if (isUnansweredLast || message.content.trim().isNotEmpty)
+          _moreMenu(
+              viewModel,
+              message,
+              (controller) => [
+                    if (isUnansweredLast)
+                      buildRegenerateMenuItem(viewModel, message,
+                          label: S.maybeOf(context)?.Chat_get_response ??
+                              'Get response'),
+                    if (message.content.trim().isNotEmpty)
+                      ChatUseAsDraftButton(
+                        key: ValueKey(('reuse', message)),
+                        viewModel: viewModel,
+                        message: message,
+                        menuItem: true,
+                        onBeforeUse: widget.onBeforeReuse,
+                        onApplied: () {
+                          controller.close();
+                          widget.onDraftApplied?.call();
+                        },
+                      ),
+                  ]),
       ],
     );
   }
 
-  Widget buildRegenerateButton(ChatViewModel viewModel, {String? label}) {
-    final tooltip =
-        S.maybeOf(context)?.Chat_regenerate_response ?? 'Regenerate response';
-    final onPressed = viewModel.canRegenerate
-        ? () => viewModel.regenerateLastResponse()
-        : null;
-    if (label != null) {
-      return TextButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.refresh_rounded, size: 16),
-        label: Text(label),
-        style: TextButton.styleFrom(
-          visualDensity: VisualDensity.compact,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-        ),
-      );
-    }
-    return IconButton(
-      tooltip: tooltip,
-      icon: const Icon(Icons.refresh_rounded, size: 18),
-      onPressed: onPressed,
-      style: ButtonStyle(
-        padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-        minimumSize: WidgetStateProperty.all(Size.zero),
+  Widget buildRegenerateMenuItem(ChatViewModel model, Message message,
+      {String? label}) {
+    final scope = _answerScope(model);
+    final revision = _answerControlRevision;
+    final content = message.content;
+    final index = model.messages.indexWhere((item) => identical(item, message));
+    return MenuItemButton(
+      key: ValueKey('chat-regenerate-${message.id}'),
+      onPressed: model.canRegenerate
+          ? () {
+              if (!_messageActionCurrent(
+                      model, message, scope, revision, content, index) ||
+                  !model.canRegenerate ||
+                  !identical(model.messages.lastOrNull, message)) {
+                return;
+              }
+              model.regenerateLastResponse();
+            }
+          : null,
+      style: const ButtonStyle(
+        minimumSize: WidgetStatePropertyAll(Size(48, 48)),
       ),
+      leadingIcon:
+          const Icon(Icons.refresh_rounded, size: ChatReadingStyle.iconSize),
+      child: Text(label ??
+          S.maybeOf(context)?.Chat_regenerate_response ??
+          'Regenerate response'),
     );
   }
 
-  Widget buildCopyIconButton(ChatViewModel viewModel, Message message) {
+  Widget buildCopyIconButton(ChatViewModel model, Message message) {
+    final scope = _answerScope(model);
+    final revision = _answerControlRevision;
+    final content = message.content;
+    final index = model.messages.indexWhere((item) => identical(item, message));
     return IconButton(
-      tooltip: viewModel.isMessageCopying(message)
+      tooltip: model.isMessageCopying(message)
           ? S.maybeOf(context)?.Chat_copied ?? 'Copied'
           : S.maybeOf(context)?.Chat_copy_message ?? 'Copy message',
-      icon: viewModel.isMessageCopying(message)
-          ? const Icon(Icons.check, size: 15)
-          : const Icon(Icons.copy, size: 15),
-      onPressed: viewModel.isMessageCopying(message)
+      icon: Icon(model.isMessageCopying(message) ? Icons.check : Icons.copy,
+          size: ChatReadingStyle.iconSize),
+      onPressed: model.isMessageCopying(message)
+          ? null
+          : () {
+              if (_messageActionCurrent(
+                  model, message, scope, revision, content, index)) {
+                model.copyMessage(message);
+              }
+            },
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+    );
+  }
+
+  Widget _feedbackMenuItem(
+    ChatViewModel model,
+    Message message,
+    int messageIndex, {
+    required bool good,
+  }) {
+    final scope = _answerScope(model);
+    final revision = _answerControlRevision;
+    final content = message.content;
+    final strings = S.maybeOf(context);
+    final selected = message.feedbackRating == (good ? 1 : -1);
+    final label = good
+        ? selected
+            ? strings?.Chat_edit_positive_feedback ?? 'Edit positive feedback'
+            : strings?.Chat_good_response ?? 'Good response'
+        : selected
+            ? strings?.Chat_edit_negative_feedback ?? 'Edit negative feedback'
+            : strings?.Chat_bad_response ?? 'Bad response';
+    return MenuItemButton(
+      key: ValueKey(
+          'chat-feedback-${good ? 'positive' : 'negative'}-${message.id}'),
+      onPressed: model.isSubmittingFeedbackFor(message)
           ? null
           : () async {
-              viewModel.copyMessage(message);
+              if (!_messageActionCurrent(
+                  model, message, scope, revision, content, messageIndex)) {
+                return;
+              }
+              await showResponseFeedbackSheet(
+                context: context,
+                viewModel: model,
+                message: message,
+                initialIsGood: good,
+                messageIndex: messageIndex,
+              );
             },
-      style: ButtonStyle(
-        padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-        minimumSize: WidgetStateProperty.all(Size.zero),
+      style: const ButtonStyle(
+        minimumSize: WidgetStatePropertyAll(Size(48, 48)),
       ),
+      leadingIcon: Icon(
+        good
+            ? selected
+                ? Icons.thumb_up_alt_rounded
+                : Icons.thumb_up_alt_outlined
+            : selected
+                ? Icons.thumb_down_alt_rounded
+                : Icons.thumb_down_alt_outlined,
+        size: ChatReadingStyle.iconSize,
+        color: selected ? Theme.of(context).colorScheme.primary : null,
+      ),
+      child: Text(label),
     );
   }
 
@@ -412,89 +573,44 @@ class _MessageListState extends State<MessageList> {
     int messageIndex,
   ) {
     final isSubmitting = viewModel.isSubmittingFeedbackFor(message);
-    final liked = message.feedbackRating == 1;
-    final disliked = message.feedbackRating == -1;
-    final isLast =
-        viewModel.messages.isNotEmpty && viewModel.messages.last == message;
-
-    final strings = S.maybeOf(context);
+    final isLast = viewModel.messages.isNotEmpty &&
+        identical(viewModel.messages.last, message);
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         buildCopyIconButton(viewModel, message),
-        if (isLast && viewModel.canRegenerate) buildRegenerateButton(viewModel),
+        _moreMenu(
+            viewModel,
+            message,
+            (_) => [
+                  ChatCopyExchangeButton(
+                    key: ValueKey(('exchange', message)),
+                    viewModel: viewModel,
+                    answer: message,
+                    menuItem: true,
+                  ),
+                  if (isLast && viewModel.canRegenerate)
+                    buildRegenerateMenuItem(viewModel, message),
+                  _feedbackMenuItem(viewModel, message, messageIndex,
+                      good: true),
+                  _feedbackMenuItem(viewModel, message, messageIndex,
+                      good: false),
+                ]),
         if (isSubmitting)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8),
-            child: SizedBox(
-              width: 16,
-              height: 16,
+            child: SizedBox.square(
+              dimension: ChatReadingStyle.iconSize,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-          )
-        else ...[
-          IconButton(
-            tooltip: liked
-                ? strings?.Chat_edit_positive_feedback ??
-                    'Edit positive feedback'
-                : strings?.Chat_good_response ?? 'Good response',
-            icon: Icon(
-              liked ? Icons.thumb_up_alt_rounded : Icons.thumb_up_alt_outlined,
-              size: 18,
-              color: liked ? Colors.green.shade700 : null,
-            ),
-            onPressed: () async {
-              await showResponseFeedbackSheet(
-                context: context,
-                viewModel: viewModel,
-                message: message,
-                initialIsGood: true,
-                messageIndex: messageIndex,
-              );
-            },
-            style: ButtonStyle(
-              padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-              minimumSize: WidgetStateProperty.all(Size.zero),
-            ),
           ),
-          IconButton(
-            tooltip: disliked
-                ? strings?.Chat_edit_negative_feedback ??
-                    'Edit negative feedback'
-                : strings?.Chat_bad_response ?? 'Bad response',
-            icon: Icon(
-              disliked
-                  ? Icons.thumb_down_alt_rounded
-                  : Icons.thumb_down_alt_outlined,
-              size: 18,
-              color: disliked ? Colors.red.shade700 : null,
-            ),
-            onPressed: () async {
-              await showResponseFeedbackSheet(
-                context: context,
-                viewModel: viewModel,
-                message: message,
-                initialIsGood: false,
-                messageIndex: messageIndex,
-              );
-            },
-            style: ButtonStyle(
-              padding: WidgetStateProperty.all(const EdgeInsets.all(6)),
-              minimumSize: WidgetStateProperty.all(Size.zero),
-            ),
-          ),
-        ],
         if (message.feedbackId != null)
-          Padding(
-            padding: const EdgeInsets.only(left: 2),
-            child: Tooltip(
-              message: strings?.Chat_feedback_submitted ?? 'Feedback submitted',
-              child: Icon(
-                Icons.check_circle_rounded,
-                size: 16,
-                color: Colors.grey.shade500,
-              ),
-            ),
+          Tooltip(
+            message: S.maybeOf(context)?.Chat_feedback_submitted ??
+                'Feedback submitted',
+            child: Icon(Icons.check_circle_outline_rounded,
+                size: ChatReadingStyle.iconSize,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
       ],
     );
@@ -537,7 +653,8 @@ class _MessageListState extends State<MessageList> {
       return const SizedBox.shrink();
     }
 
-    final maxContentWidth = min(MediaQuery.of(context).size.width, 820.0);
+    final maxContentWidth =
+        ChatLayout.contentWidthFor(MediaQuery.sizeOf(context).width);
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -560,12 +677,10 @@ class _MessageListState extends State<MessageList> {
                         key: ValueKey('chat-answer-preview-${message.id}'),
                         maxLines: 4,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontSize: 15,
-                              height: 1.5,
-                            ),
+                        style: ChatReadingStyle.body(context),
                       )
                     : AiMarkdownMessage(
+                        key: ValueKey((_answerScope(viewModel), message)),
                         markdown: message.content,
                         citations: citations,
                       ),

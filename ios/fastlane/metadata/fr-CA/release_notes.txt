@@ -1,3 +1,4 @@
-- Connexion, changement de compte et déconnexion hors ligne plus fiables.
-- Récupération du mot de passe simplifiée et remplissage automatique amélioré.
-- Modification du nom et actualisation du profil plus fluides, avec la possibilité de réessayer après un problème de connexion.
+- Conservez vos brouillons, réutilisez vos questions et écrivez dans un éditeur agrandi.
+- Retrouvez vos messages, repliez les longues réponses et profitez de commandes plus claires et d’aperçus des questions de départ.
+- Explorez les graphiques des calculateurs, aperçus d’empilement, filtres de rupture et copie simplifiée des résultats.
+- Prévisualisez, triez, exportez et restaurez vos matériaux personnalisés.

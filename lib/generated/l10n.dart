@@ -2868,6 +2868,261 @@ class S {
       args: [],
     );
   }
+
+  /// `All`
+  String get Chat_search_all {
+    return Intl.message('All', name: 'Chat_search_all', desc: '', args: []);
+  }
+
+  /// `Questions`
+  String get Chat_search_questions {
+    return Intl.message(
+      'Questions',
+      name: 'Chat_search_questions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Answers`
+  String get Chat_search_answers {
+    return Intl.message(
+      'Answers',
+      name: 'Chat_search_answers',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy question and answer`
+  String get Chat_copy_exchange {
+    return Intl.message(
+      'Copy question and answer',
+      name: 'Chat_copy_exchange',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Question and answer copied`
+  String get Chat_exchange_copied {
+    return Intl.message(
+      'Question and answer copied',
+      name: 'Chat_exchange_copied',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not copy this exchange.`
+  String get Chat_exchange_copy_failed {
+    return Intl.message(
+      'Could not copy this exchange.',
+      name: 'Chat_exchange_copy_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Question`
+  String get Chat_exchange_question {
+    return Intl.message(
+      'Question',
+      name: 'Chat_exchange_question',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Answer`
+  String get Chat_exchange_answer {
+    return Intl.message(
+      'Answer',
+      name: 'Chat_exchange_answer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear draft`
+  String get Chat_clear_draft {
+    return Intl.message(
+      'Clear draft',
+      name: 'Chat_clear_draft',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Draft cleared.`
+  String get Chat_draft_cleared {
+    return Intl.message(
+      'Draft cleared.',
+      name: 'Chat_draft_cleared',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Undo`
+  String get Chat_undo {
+    return Intl.message('Undo', name: 'Chat_undo', desc: '', args: []);
+  }
+
+  /// `More actions`
+  String get Chat_more_actions {
+    return Intl.message(
+      'More actions',
+      name: 'Chat_more_actions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `More`
+  String get Chat_more {
+    return Intl.message('More', name: 'Chat_more', desc: '', args: []);
+  }
+
+  /// `Could not copy this code.`
+  String get Chat_code_copy_failed {
+    return Intl.message(
+      'Could not copy this code.',
+      name: 'Chat_code_copy_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Compare materials`
+  String get Chat_task_materials {
+    return Intl.message(
+      'Compare materials',
+      name: 'Chat_task_materials',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Estimate stiffness`
+  String get Chat_task_stiffness {
+    return Intl.message(
+      'Estimate stiffness',
+      name: 'Chat_task_stiffness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Understand failure`
+  String get Chat_task_failure {
+    return Intl.message(
+      'Understand failure',
+      name: 'Chat_task_failure',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Plan a laminate`
+  String get Chat_task_laminate {
+    return Intl.message(
+      'Plan a laminate',
+      name: 'Chat_task_laminate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose a calculator`
+  String get Chat_task_calculators {
+    return Intl.message(
+      'Choose a calculator',
+      name: 'Chat_task_calculators',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Explore a question`
+  String get Chat_task_generic {
+    return Intl.message(
+      'Explore a question',
+      name: 'Chat_task_generic',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose a starting point, then review your draft before sending.`
+  String get Chat_starter_review_hint {
+    return Intl.message(
+      'Choose a starting point, then review your draft before sending.',
+      name: 'Chat_starter_review_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use this question`
+  String get Chat_starter_use_question {
+    return Intl.message(
+      'Use this question',
+      name: 'Chat_starter_use_question',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Preview question`
+  String get Chat_starter_preview {
+    return Intl.message(
+      'Preview question',
+      name: 'Chat_starter_preview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hide question`
+  String get Chat_starter_hide_preview {
+    return Intl.message(
+      'Hide question',
+      name: 'Chat_starter_hide_preview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `See more starting points`
+  String get Chat_starters_more {
+    return Intl.message(
+      'See more starting points',
+      name: 'Chat_starters_more',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show fewer`
+  String get Chat_starters_less {
+    return Intl.message(
+      'Show fewer',
+      name: 'Chat_starters_less',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Write your question below to begin.`
+  String get Chat_starter_empty {
+    return Intl.message(
+      'Write your question below to begin.',
+      name: 'Chat_starter_empty',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

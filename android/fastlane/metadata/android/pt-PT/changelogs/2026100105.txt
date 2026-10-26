@@ -1,0 +1,4 @@
+- Mantenha rascunhos de conversa, reutilize perguntas e escreva num editor ampliado.
+- Encontre mensagens, recolha respostas longas e use controlos mais claros e pré-visualizações das perguntas iniciais.
+- Explore gráficos dos cálculos, pré-visualizações do empilhamento, filtros de falha e cópia mais fácil dos resultados.
+- Pré-visualize, ordene, exporte e recupere materiais personalizados.

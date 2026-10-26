@@ -15,7 +15,6 @@ import 'package:swiftcomp/app/injection_container.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/util/app_interactions.dart';
 import 'package:swiftcomp/util/app_theme.dart';
-import 'package:swiftcomp/util/context_extension_screen_width.dart';
 
 import '../../auth/login_page.dart';
 import '../../conponents/base64-image.dart';
@@ -25,8 +24,13 @@ import '../../../util/export/file_share.dart';
 import '../model/chat_export.dart';
 import '../viewModels/chat_view_model.dart';
 import 'chat_error_snack_bar.dart';
+import 'chat_clear_draft_button.dart';
+import 'chat_composer_more_menu.dart';
 import 'chat_expanded_composer.dart';
 import 'chat_header_title.dart';
+import 'chat_layout.dart';
+import 'chat_reading_style.dart';
+import 'chat_suggested_draft.dart';
 import 'message_list.dart';
 import 'chat_list.dart';
 import 'chat_welcome_view.dart';
@@ -635,13 +639,7 @@ class _ChatScreenState extends State<ChatScreen>
                                   bottomContentPadding: _inputBarHeight + 20,
                                 ),
                               ))
-                        : ChatWelcomeView(
-                            user: viewModel.user,
-                            questions: viewModel.defaultQuestions,
-                            bottomPadding: _inputBarHeight,
-                            onQuestionSelected:
-                                viewModel.onDefaultQuestionsTapped,
-                          ),
+                        : _buildWelcome(),
                   ),
                   Positioned(left: 0, right: 0, bottom: 0, child: inputBar()),
                 ] else
@@ -650,6 +648,46 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           ),
         );
+      },
+    );
+  }
+
+  Widget _buildWelcome() {
+    final session = viewModel.chatSessionKey;
+    final selection = viewModel.chatSelectionRevision;
+    final questions = List<String>.of(viewModel.defaultQuestions);
+    bool current() =>
+        mounted &&
+        !viewModel.isDisposed &&
+        !_isComposerExpanded &&
+        viewModel.chatSessionKey == session &&
+        viewModel.chatSelectionRevision == selection &&
+        viewModel.selectedChat == null &&
+        ModalRoute.of(context)?.isCurrent == true;
+    return ChatWelcomeView(
+      user: viewModel.user,
+      questions: questions,
+      taskIndices: [
+        for (var index = 0; index < questions.length; index++)
+          viewModel.suggestedQuestionTaskIndex(index),
+      ],
+      bottomPadding: _inputBarHeight,
+      onQuestionSelected: (index) async {
+        if (!current() ||
+            index < 0 ||
+            index >= questions.length ||
+            index >= viewModel.defaultQuestions.length ||
+            questions[index] != viewModel.defaultQuestions[index]) {
+          return;
+        }
+        if (_voiceInputSession != null) _invalidateVoiceInput();
+        if (!current()) return;
+        final applied =
+            await useChatSuggestionAsDraft(context, viewModel, index);
+        if (applied && current()) {
+          focusNode.requestFocus();
+          _scheduleInputBarMeasurement();
+        }
       },
     );
   }
@@ -732,105 +770,151 @@ class _ChatScreenState extends State<ChatScreen>
 
   Widget inputBar() {
     final scheme = Theme.of(context).colorScheme;
-    final hPad = context.horizontalSidePaddingForContentWidth;
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-    return Container(
-      key: _inputBarKey,
-      color: Theme.of(context).scaffoldBackgroundColor,
-      padding: EdgeInsets.fromLTRB(
-        hPad,
-        0,
-        hPad,
-        bottomInset > 0 ? bottomInset : 12,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildPendingFiles(),
-          Container(
-            decoration: BoxDecoration(
-              color: scheme.surface,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: scheme.outlineVariant),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.fromLTRB(12, 10, 10, 8),
-            child: Column(
+    final hPad =
+        ChatLayout.horizontalPaddingFor(MediaQuery.sizeOf(context).width);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final editorHeight = ((MediaQuery.sizeOf(context).height -
+                MediaQuery.viewInsetsOf(context).bottom -
+                MediaQuery.paddingOf(context).top -
+                kToolbarHeight) *
+            0.4)
+        .clamp(64.0, 240.0);
+    final session = viewModel.chatSessionKey;
+    final selection = viewModel.chatSelectionRevision;
+    return NotificationListener<SizeChangedLayoutNotification>(
+      onNotification: (_) {
+        _scheduleInputBarMeasurement();
+        return false;
+      },
+      child: SizeChangedLayoutNotifier(
+        child: Container(
+          key: _inputBarKey,
+          color: Theme.of(context).scaffoldBackgroundColor,
+          padding: EdgeInsets.fromLTRB(
+            hPad,
+            0,
+            hPad,
+            bottomInset > 0 ? bottomInset : AppSpacing.sm,
+          ),
+          child: ChatClearDraftButton(
+            viewModel: viewModel,
+            isAvailable: () => mounted && !_isComposerExpanded,
+            onBeforeClear: () {
+              if (_voiceInputSession != null) _invalidateVoiceInput();
+            },
+            onDraftChanged: () {
+              if (mounted &&
+                  !viewModel.isDisposed &&
+                  !_isComposerExpanded &&
+                  ModalRoute.of(context)?.isCurrent == true) {
+                focusNode.requestFocus();
+                _scheduleInputBarMeasurement();
+              }
+            },
+            builder: (context, onClear, undoNotice) => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Focus(
-                  canRequestFocus: false,
-                  onKeyEvent: _handleComposerKeyEvent,
-                  child: TextField(
-                    key: const Key('chat-composer'),
-                    controller: textController,
-                    focusNode: focusNode,
-                    readOnly: _isComposerExpanded,
-                    canRequestFocus: !_isComposerExpanded,
-                    selectAllOnFocus: false,
-                    decoration: InputDecoration(
-                      hintText: S.maybeOf(context)?.Chat_composer_hint ??
-                          'Ask about composites engineering…',
-                      filled: false,
-                      fillColor: Colors.transparent,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    minLines: 1,
-                    maxLines: 8,
-                    onChanged: (_) {
-                      setState(() {});
-                      _scheduleInputBarMeasurement();
-                    },
+                if (undoNotice != null) ...[
+                  undoNotice,
+                  const SizedBox(height: AppSpacing.xs),
+                ],
+                _buildPendingFiles(),
+                Container(
+                  decoration: BoxDecoration(
+                    color: scheme.surface,
+                    borderRadius: BorderRadius.circular(AppRadii.sheet),
+                    border: Border.all(color: scheme.outlineVariant),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildAttachButton(),
-                    IconButton(
-                      key: const Key('chat-expand-composer'),
-                      tooltip: S.maybeOf(context)?.Chat_expand_composer ??
-                          'Expand composer',
-                      onPressed: _isComposerExpanded ? null : _expandComposer,
-                      icon: const Icon(Icons.open_in_full_rounded),
-                    ),
-                    if (viewModel.isAdmin) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Row(
-                          children: [
-                            if (viewModel.shouldShowModelSelector) ...[
-                              Flexible(
-                                child: viewModel.canSelectModels
-                                    ? _buildModelPickerButton()
-                                    : _buildModelLoadingChip(),
-                              ),
-                            ],
-                          ],
+                  padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Focus(
+                        canRequestFocus: false,
+                        onKeyEvent: _handleComposerKeyEvent,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxHeight: editorHeight),
+                          child: TextField(
+                            key: const Key('chat-composer'),
+                            controller: textController,
+                            focusNode: focusNode,
+                            readOnly: _isComposerExpanded,
+                            canRequestFocus: !_isComposerExpanded,
+                            selectAllOnFocus: false,
+                            style: ChatReadingStyle.body(context),
+                            decoration: InputDecoration(
+                              hintText:
+                                  S.maybeOf(context)?.Chat_composer_hint ??
+                                      'Ask about composites engineering…',
+                              filled: false,
+                              fillColor: Colors.transparent,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              isDense: true,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            minLines: 1,
+                            maxLines: 8,
+                            onChanged: (_) {
+                              setState(() {});
+                              _scheduleInputBarMeasurement();
+                            },
+                          ),
                         ),
                       ),
-                    ] else
-                      const Spacer(),
-                    const SizedBox(width: 8),
-                    _buildRightButton(),
-                  ],
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          _buildAttachButton(),
+                          ChatComposerMoreMenu(
+                            key: ValueKey((viewModel, session, selection)),
+                            onClear: onClear,
+                            onExpand: _isComposerExpanded
+                                ? null
+                                : () {
+                                    if (!mounted ||
+                                        viewModel.isDisposed ||
+                                        viewModel.chatSessionKey != session ||
+                                        viewModel.chatSelectionRevision !=
+                                            selection ||
+                                        ModalRoute.of(context)?.isCurrent !=
+                                            true) {
+                                      return;
+                                    }
+                                    _expandComposer();
+                                  },
+                          ),
+                          if (viewModel.isAdmin) ...[
+                            const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  if (viewModel.shouldShowModelSelector)
+                                    Flexible(
+                                      child: viewModel.canSelectModels
+                                          ? _buildModelPickerButton()
+                                          : _buildModelLoadingChip(),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ] else
+                            const Spacer(),
+                          const SizedBox(width: AppSpacing.xs),
+                          _buildRightButton(),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1111,11 +1195,11 @@ class _ChatScreenState extends State<ChatScreen>
               'Generating response. Stop generating',
           child: Pressable(
             haptic: true,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadii.sheet),
             onTap: viewModel.stopGenerating,
             child: SizedBox(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -1149,11 +1233,11 @@ class _ChatScreenState extends State<ChatScreen>
           MediaQuery.maybeOf(context)?.disableAnimations ?? false;
       final stopButton = Pressable(
         haptic: true,
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(AppRadii.sheet),
         onTap: _stopListening,
         child: Container(
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: scheme.error,
             shape: BoxShape.circle,
@@ -1185,11 +1269,11 @@ class _ChatScreenState extends State<ChatScreen>
           label: S.maybeOf(context)?.Chat_send_message ?? 'Send message',
           child: Pressable(
             haptic: true,
-            borderRadius: BorderRadius.circular(17),
+            borderRadius: BorderRadius.circular(AppRadii.sheet),
             onTap: _sendComposerMessage,
             child: Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: scheme.primary,
                 shape: BoxShape.circle,
@@ -1212,12 +1296,12 @@ class _ChatScreenState extends State<ChatScreen>
         label:
             S.maybeOf(context)?.Chat_start_voice_input ?? 'Start voice input',
         child: Pressable(
-          borderRadius: BorderRadius.circular(17),
+          borderRadius: BorderRadius.circular(AppRadii.sheet),
           haptic: true,
           onTap: viewModel.isUploadingFile ? null : _startListening,
           child: Container(
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: scheme.outline, width: 1.5),
@@ -1241,14 +1325,14 @@ class _ChatScreenState extends State<ChatScreen>
         button: true,
         label: S.maybeOf(context)?.Chat_add_attachment ?? 'Add attachment',
         child: Pressable(
-          borderRadius: BorderRadius.circular(17),
+          borderRadius: BorderRadius.circular(AppRadii.sheet),
           haptic: true,
           onTap: viewModel.isUploadingFile || viewModel.isSendingMessage
               ? null
               : _showAttachmentSheet,
           child: Container(
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: scheme.outline, width: 1.5),
@@ -1629,7 +1713,7 @@ class _ChatScreenState extends State<ChatScreen>
         viewModel.pendingFiles.length + viewModel.uploadingFileNames.length;
 
     return Container(
-      width: context.contentWidth,
+      width: ChatLayout.contentWidthFor(MediaQuery.sizeOf(context).width),
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

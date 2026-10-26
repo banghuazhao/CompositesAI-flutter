@@ -18,6 +18,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:swiftcomp/generated/l10n.dart';
+import 'package:swiftcomp/util/app_theme.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'package:swiftcomp/presentation/chat/views/ai_markdown_message.dart';
 import 'package:swiftcomp/presentation/chat/views/chat_screen.dart';
@@ -42,6 +43,7 @@ class _ChatModel extends ChatViewModel {
   final sent = <String>[];
   final acceptors = <VoidCallback>[];
   bool acceptImmediately = true;
+  int fetchChatsCalls = 0;
 
   @override
   List<ChatFile> get pendingFiles => files;
@@ -50,7 +52,10 @@ class _ChatModel extends ChatViewModel {
   @override
   Future<void> fetchAuthSessionNew() async {}
   @override
-  Future<void> fetchChats() async {}
+  Future<void> fetchChats() async {
+    fetchChatsCalls++;
+  }
+
   @override
   Future<void> fetchTools() async {}
 
@@ -87,11 +92,24 @@ final _b = Chat(id: 'native-b', title: 'Laminate B');
 const _file = ChatFile(id: 'native-image', name: 'layup.png', url: '');
 Finder get _composer => find.byKey(const Key('chat-composer'));
 
+Future<void> _openComposerMore(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('chat-composer-more')).last);
+  await tester.pumpAndSettle();
+}
+
 Future<void> _mount(WidgetTester tester, _ChatModel model,
-    {Locale locale = const Locale('en')}) async {
+    {Locale locale = const Locale('en'),
+    bool dark = false,
+    double textScale = 1}) async {
   await tester.pumpWidget(ChangeNotifierProvider<ChatViewModel>.value(
     value: model,
     child: MaterialApp(
+      theme: dark ? AppTheme.dark() : AppTheme.light(),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
       locale: locale,
       supportedLocales: S.delegate.supportedLocales,
       localizationsDelegates: const [
@@ -464,6 +482,8 @@ void main() {
         const TextSelection.collapsed(offset: 4);
     final originalDraft = model.composerTextController.value;
     final useAsDraft = find.byKey(ValueKey('chat-use-as-draft-${question.id}'));
+    await _tapVisible(
+        tester, find.byKey(ValueKey('chat-message-more-${question.id}')));
     await tester.ensureVisible(useAsDraft);
     await tester.pumpAndSettle();
     await tester.tap(useAsDraft);
@@ -639,8 +659,10 @@ void main() {
         final originalValue = model.composerTextController.value;
 
         // Two taps before the next frame must still create just one editor.
+        await _openComposerMore(tester);
+        final secondExpand = tester.widget<MenuItemButton>(expand).onPressed!;
         await tester.tap(expand);
-        await tester.tap(expand, warnIfMissed: false);
+        secondExpand();
         await tester.pumpAndSettle();
         expect(dialog, findsOneWidget);
         expect(editor, findsOneWidget);
@@ -669,6 +691,7 @@ void main() {
         );
         expect(model.sent, isEmpty);
 
+        await _openComposerMore(tester);
         await _tapVisible(tester, expand);
         expect(tester.widget<TextField>(editor).controller!.value, editedValue);
         await tester.tap(editor);
@@ -763,6 +786,7 @@ void main() {
     model.show(_a);
     await _mount(tester, model);
     await _enter(tester, 'Draft before disposing the model');
+    await _openComposerMore(tester);
     await tester.tap(find.byKey(const Key('chat-expand-composer')));
     await tester.pumpAndSettle();
     final editor = find.byKey(const Key('chat-expanded-composer'));
@@ -860,6 +884,372 @@ void main() {
       if (exportedFile != null && await exportedFile.exists()) {
         await exportedFile.delete();
       }
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets(
+      'native clear and Undo restore exact Unicode draft and attachment',
+      (tester) async {
+    const text = '  碳纖維 α [0/90] 🌍\nKeep trailing spaces  ';
+    final clear = find.byKey(const Key('chat-clear-draft'));
+    final undo = find.byKey(const Key('chat-undo-clear-draft'));
+    model.files.add(_file);
+    model.previews[_file.id] = png;
+    try {
+      model.show(_a);
+      await _mount(tester, model, locale: const Locale('zh', 'HK'));
+      await _enter(tester, text);
+      model.composerTextController.selection =
+          const TextSelection.collapsed(offset: 7);
+      final original = model.composerTextController.value;
+      final files = List<ChatFile>.of(model.files);
+      final previews = Map<String, Uint8List>.of(model.previews);
+      await _openComposerMore(tester);
+      await _tapVisible(tester, clear);
+      expect(model.composerTextController.text, isEmpty);
+      expect(model.composerTextController.value.composing, TextRange.empty);
+      expect(model.files, files);
+      expect(model.previews, previews);
+      expect(undo, findsOneWidget);
+      await _tapVisible(tester, undo);
+      await _hideKeyboard(tester);
+      expect(model.composerTextController.value, original);
+      expect(tester.widget<TextField>(_composer).controller!.value, original);
+      expect(model.files, files);
+      expect(model.previews, previews);
+      expect(model.sent, isEmpty);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await _hideKeyboard(tester);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native stale draft Undo cannot replace edits, sends or sessions',
+      (tester) async {
+    const bText = '  Private B draft β  ';
+    final clear = find.byKey(const Key('chat-clear-draft'));
+    final undo = find.byKey(const Key('chat-undo-clear-draft'));
+    Future<VoidCallback> clearAndKeepAction() async {
+      await _openComposerMore(tester);
+      await _tapVisible(tester, clear);
+      expect(model.composerTextController.text, isEmpty);
+      return tester.widget<TextButton>(undo).onPressed!;
+    }
+
+    try {
+      model.show(_b);
+      await _mount(tester, model);
+      await _enter(tester, bText);
+      final bValue = model.composerTextController.value;
+      model.show(_a);
+      await tester.pumpAndSettle();
+      await _enter(tester, 'A original α');
+      final afterEdit = await clearAndKeepAction();
+      await _enter(tester, 'A newer edit γ');
+      final newer = model.composerTextController.value;
+      afterEdit();
+      await tester.pumpAndSettle();
+      expect(model.composerTextController.value, newer);
+
+      final afterSwitch = await clearAndKeepAction();
+      model.show(_b);
+      await tester.pumpAndSettle();
+      afterSwitch();
+      await tester.pumpAndSettle();
+      expect(model.composerTextController.value, bValue);
+      model.show(_a);
+      await tester.pumpAndSettle();
+      expect(model.composerTextController.text, isEmpty);
+
+      await _enter(tester, 'A draft retained after its expanded Clear expires');
+      await _openComposerMore(tester);
+      await _tapVisible(tester, find.byKey(const Key('chat-expand-composer')));
+      final expandedDialog =
+          find.byKey(const Key('chat-expanded-composer-dialog'));
+      final expandedClear =
+          find.byKey(const Key('chat-clear-draft')).hitTestable();
+      await _openComposerMore(tester);
+      final staleExpandedClear =
+          tester.widget<MenuItemButton>(expandedClear).onPressed!;
+      final expandedA = model.composerTextController.value;
+      model.show(_b);
+      // Invoke the old action before the invalidated editor's removal frame.
+      staleExpandedClear();
+      expect(model.composerTextController.value, bValue);
+      await tester.pumpAndSettle();
+      expect(expandedDialog, findsNothing);
+      expect(model.composerTextController.value, bValue);
+      model.show(_a);
+      await tester.pumpAndSettle();
+      expect(model.composerTextController.value, expandedA);
+
+      // An attachment-only accepted send invalidates Undo without a newer edit.
+      model.files.add(const ChatFile(
+          id: 'undo-send-file', name: 'laminate-loads.pdf', url: ''));
+      model.notifyListeners();
+      await _enter(tester, 'A draft before attachment-only send');
+      final afterSend = await clearAndKeepAction();
+      // Undo stays above the composer so the native Send remains tappable.
+      await _tapVisible(tester, find.byTooltip('Send message'));
+      await tester.pumpAndSettle();
+      await _hideKeyboard(tester);
+      expect(model.sent, ['']);
+      afterSend();
+      await tester.pumpAndSettle();
+      expect(model.composerTextController.text, isEmpty);
+
+      await _enter(tester, 'Private draft before logout 🌍');
+      final afterLogout = await clearAndKeepAction();
+      await model.clearChatStateOnLogout();
+      await tester.pumpAndSettle();
+      afterLogout();
+      await tester.pumpAndSettle();
+      expect(_composer, findsNothing);
+      expect(model.composerTextController.text, isEmpty);
+      model.dispose();
+      afterLogout();
+      await tester.pumpAndSettle();
+      expect(_composer, findsNothing);
+      expect(model.sent, ['']);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await _hideKeyboard(tester);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native search role filters preserve original loaded copy index',
+      (tester) async {
+    const query = 'laminate α';
+    final question = Message(role: 'user', content: 'Question: $query [0/90]');
+    final unrelated = Message(role: 'assistant', content: 'Unrelated answer');
+    final otherQuestion =
+        Message(role: 'user', content: 'A different question');
+    final answer = Message(role: 'assistant', content: 'Answer: $query β 🌍');
+    final laterQuestion =
+        Message(role: 'user', content: 'Follow-up: $query thickness?');
+    final history = [question, unrelated, otherQuestion, answer, laterQuestion];
+    final snapshots = history.map((message) => message.toJson()).toList();
+    final all = find.byKey(const ValueKey('chat-search-filter-all'));
+    final questions =
+        find.byKey(const ValueKey('chat-search-filter-questions'));
+    final answers = find.byKey(const ValueKey('chat-search-filter-answers'));
+    final search = find.byKey(const ValueKey('chat-search-field'));
+    try {
+      model.show(_a, history: history);
+      await _mount(tester, model, locale: const Locale('zh', 'HK'));
+      await _enter(tester, '  Search keeps this unsent draft  ');
+      final draft = model.composerTextController.value;
+      final fetches = model.fetchChatsCalls;
+      final strings = S.of(tester.element(find.byType(ChatScreen)));
+      await _tapVisible(
+          tester, find.byKey(const ValueKey('chat-find-in-chat')));
+      expect(tester.widget<ChoiceChip>(all).selected, isTrue);
+      await tester.tap(search);
+      await tester.pumpAndSettle();
+      await tester.enterText(search, query);
+      await _hideKeyboard(tester);
+      expect(find.text(strings.Chat_search_match_count(3)), findsOneWidget);
+      await _tapVisible(tester, questions);
+      expect(tester.widget<ChoiceChip>(questions).selected, isTrue);
+      expect(find.text(strings.Chat_search_match_count(2)), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-search-result-3')), findsNothing);
+      await _tapVisible(tester, answers);
+      expect(tester.widget<ChoiceChip>(answers).selected, isTrue);
+      expect(find.text(strings.Chat_search_match_count(1)), findsOneWidget);
+      expect(
+          find.byKey(const ValueKey('chat-search-result-3')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-search-result-0')), findsNothing);
+      await _tapVisible(
+          tester, find.byKey(const ValueKey('chat-search-copy-3')));
+      expect((await Clipboard.getData(Clipboard.kTextPlain))?.text,
+          answer.content);
+
+      await tester.tap(search);
+      await tester.pumpAndSettle();
+      await tester.enterText(search, '$query no matching suffix');
+      await _hideKeyboard(tester);
+      expect(tester.widget<ChoiceChip>(answers).selected, isTrue);
+      expect(find.text(strings.Chat_search_match_count(0)), findsOneWidget);
+      expect(find.text(strings.Chat_search_no_matches), findsOneWidget);
+      await tester.tap(search);
+      await tester.pumpAndSettle();
+      await tester.enterText(search, query);
+      await _hideKeyboard(tester);
+      expect(tester.widget<ChoiceChip>(answers).selected, isTrue);
+      expect(find.text(strings.Chat_search_match_count(1)), findsOneWidget);
+      await _tapVisible(tester, all);
+      expect(find.text(strings.Chat_search_match_count(3)), findsOneWidget);
+      await _tapVisible(
+          tester, find.byKey(const ValueKey('chat-search-close')));
+      expect(model.composerTextController.value, draft);
+      expect(history.map((message) => message.toJson()).toList(), snapshots);
+      expect(model.fetchChatsCalls, fetches);
+      expect(model.activeError, isNull);
+      expect(model.sent, isEmpty);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await _hideKeyboard(tester);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets(
+      'native folded exchange copy retains full linked question and answer',
+      (tester) async {
+    final question = Message(
+        role: 'user', content: '  Question α 🌍\nUse the full [0/90] layup?  ')
+      ..timestamp = DateTime.utc(2026, 10, 20, 12).millisecondsSinceEpoch;
+    final decoy = Message(
+        role: 'user', content: 'Do not copy this nearer question')
+      ..timestamp = DateTime.utc(2026, 10, 20, 12, 1).millisecondsSinceEpoch;
+    final answer = Message(
+        role: 'assistant',
+        parentId: question.id,
+        content: '  # Complete linked answer β\n\n'
+            '${List.generate(24, (index) => 'Layer $index: keep every calculation detail for the original carbon-fibre question α.').join('\n')}\n'
+            'NATIVE_EXCHANGE_END 🌍  ')
+      ..timestamp = DateTime.utc(2026, 10, 20, 12, 2).millisecondsSinceEpoch
+      ..isDone = true;
+    final history = [question, decoy, answer];
+    final snapshots = history.map((message) => message.toJson()).toList();
+    final toggle = find.byKey(ValueKey('chat-answer-toggle-${answer.id}'));
+    final preview = find.byKey(ValueKey('chat-answer-preview-${answer.id}'));
+    final copy = find.byKey(ValueKey('chat-copy-exchange-${answer.id}'));
+    try {
+      model.show(_a, history: history);
+      await _mount(tester, model, locale: const Locale('zh', 'HK'));
+      await _enter(tester, '  Preserve the current unrelated draft  ');
+      final draft = model.composerTextController.value;
+      final strings = S.of(tester.element(find.byType(ChatScreen)));
+      await _tapVisible(tester, toggle);
+      expect(preview, findsOneWidget);
+      await _tapVisible(
+          tester, find.byKey(ValueKey('chat-message-more-${answer.id}')));
+      expect(tester.widget<MenuItemButton>(copy).onPressed, isNotNull);
+      await _tapVisible(tester, copy);
+      final expected = '## ${strings.Chat_exchange_question}\n\n'
+          '${question.content}\n\n'
+          '## ${strings.Chat_exchange_answer}\n\n${answer.content}';
+      expect((await Clipboard.getData(Clipboard.kTextPlain))?.text, expected);
+      expect(expected, contains('Layer 23:'));
+      expect(expected, contains('NATIVE_EXCHANGE_END 🌍  '));
+      expect(expected, isNot(contains(decoy.content)));
+      expect(preview, findsOneWidget);
+      expect(history.map((message) => message.toJson()).toList(), snapshots);
+      expect(model.composerTextController.value, draft);
+      expect(model.sent, isEmpty);
+
+      final orphan = Message(
+          role: 'assistant',
+          parentId: 'not-in-loaded-history',
+          content: 'This orphan answer cannot infer a question')
+        ..isDone = true;
+      model.show(_b, history: [orphan]);
+      await tester.pumpAndSettle();
+      final orphanCopy =
+          find.byKey(ValueKey('chat-copy-exchange-${orphan.id}'));
+      await _tapVisible(
+          tester, find.byKey(ValueKey('chat-message-more-${orphan.id}')));
+      expect(orphanCopy, findsOneWidget);
+      expect(tester.widget<MenuItemButton>(orphanCopy).onPressed, isNull);
+      await _tapVisible(tester, orphanCopy);
+      expect((await Clipboard.getData(Clipboard.kTextPlain))?.text, expected);
+      expect(model.sent, isEmpty);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await _hideKeyboard(tester);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native welcome prepares an editable question before sending',
+      (tester) async {
+    const prompt = '  比較材料 α [0/90] 🌍\n保留完整問題  ';
+    model.defaultQuestions = [prompt];
+    model.files.add(_file);
+    model.previews[_file.id] = png;
+    try {
+      await _mount(tester, model, locale: const Locale('zh', 'HK'), dark: true);
+      await _tapVisible(tester, find.byKey(const Key('chat-starter-0')));
+      expect(model.composerTextController.text, prompt);
+      expect(model.composerTextController.selection,
+          TextSelection.collapsed(offset: prompt.length));
+      expect(model.selectedChat, isNull);
+      expect(model.messages, isEmpty);
+      expect(model.sent, isEmpty);
+      expect(model.files, [_file]);
+      await _enter(tester, '  Reviewed native question β 🌍  ');
+      final strings = S.of(tester.element(_composer));
+      await _tapVisible(tester, find.byTooltip(strings.Chat_send_message));
+      expect(model.sent, ['Reviewed native question β 🌍']);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await _hideKeyboard(tester);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native starter confirmation preserves edits and stale scope',
+      (tester) async {
+    try {
+      await _mount(tester, model);
+      await _enter(tester, '  My native draft 🌍  ');
+      final original = model.composerTextController.value;
+      final starter = find.byKey(const Key('chat-starter-0'));
+      final confirm = find.byKey(const Key('chat-replace-draft-confirm'));
+      await _tapVisible(tester, starter);
+      expect(confirm, findsOneWidget);
+      await _tapVisible(
+          tester, find.byKey(const Key('chat-replace-draft-cancel')));
+      expect(model.composerTextController.value, original);
+      await _tapVisible(tester, starter);
+      final stale = tester.widget<FilledButton>(confirm).onPressed!;
+      model.show(_b);
+      model.composerTextController.text = 'Private B native draft';
+      stale();
+      await tester.pumpAndSettle();
+      expect(confirm, findsNothing);
+      expect(model.composerTextController.text, 'Private B native draft');
+      expect(model.sent, isEmpty);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await _hideKeyboard(tester);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  testWidgets('native dark large-text menus preserve full code copying',
+      (tester) async {
+    final answer = Message(
+        role: 'assistant', content: '計算結果\n\n```python\nE = 135000  # MPa\n```')
+      ..isDone = true;
+    model.show(_a, history: [answer]);
+    try {
+      await _mount(tester, model,
+          locale: const Locale('zh', 'HK'), dark: true, textScale: 3);
+      final strings = S.of(tester.element(_composer));
+      await _tapVisible(tester, find.byTooltip(strings.Chat_copy_code));
+      expect((await Clipboard.getData(Clipboard.kTextPlain))?.text,
+          'E = 135000  # MPa\n');
+      await _tapVisible(
+          tester, find.byKey(ValueKey('chat-message-more-${answer.id}')));
+      final copy = find.byKey(ValueKey('chat-copy-exchange-${answer.id}'));
+      expect(tester.widget<MenuItemButton>(copy).onPressed, isNull);
+      expect(tester.getSize(copy).height, greaterThanOrEqualTo(48));
+      expect(model.sent, isEmpty);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await _hideKeyboard(tester);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
     }

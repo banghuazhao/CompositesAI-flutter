@@ -1,0 +1,4 @@
+- Mantenha rascunhos de chat, reutilize perguntas e escreva em um editor ampliado.
+- Encontre mensagens, recolha respostas longas e use controles de chat mais claros e prévias de perguntas iniciais.
+- Explore gráficos dos cálculos, prévias de laminação, filtros de falha e cópia mais fácil dos resultados.
+- Visualize, ordene, exporte e recupere materiais personalizados.

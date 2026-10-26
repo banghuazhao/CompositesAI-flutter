@@ -196,7 +196,14 @@ void main() {
     expect(
         find.byKey(ValueKey('chat-message-time-${answer.id}')), findsOneWidget);
     expect(find.byTooltip('Copy message'), findsOneWidget);
-    expect(find.byTooltip('Good response'), findsOneWidget);
+    expect(find.text('Good response'), findsNothing);
+    await tester.tap(find.byKey(ValueKey('chat-message-more-${answer.id}')));
+    await tester.pumpAndSettle();
+    expect(find.text('Good response'), findsOneWidget);
+    expect(find.byKey(ValueKey('chat-feedback-positive-${answer.id}')),
+        findsOneWidget);
+    await tester.tapAt(const Offset(2, 2));
+    await tester.pumpAndSettle();
     await tester.tap(_toggle(answer));
     await tester.pumpAndSettle();
     expect(find.byType(AiMarkdownMessage), findsOneWidget);

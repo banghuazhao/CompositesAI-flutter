@@ -57,6 +57,11 @@ Future<void> _cleanup(WidgetTester tester) async {
   await tester.pump();
 }
 
+Future<void> _openComposerMore(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('chat-composer-more')).last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final speech = _SpeechPlatform();
@@ -286,6 +291,7 @@ void main() {
         speech.result('Voice draft before expanding');
         if (visuallyStopped) speech.status(SpeechToText.notListeningStatus);
         await tester.pumpAndSettle();
+        await _openComposerMore(tester);
         await tester.tap(find.byKey(const Key('chat-expand-composer')));
         await tester.pumpAndSettle();
         final editor = find.byKey(const Key('chat-expanded-composer'));
@@ -310,6 +316,40 @@ void main() {
     }
   });
 
+  testWidgets('clear and Undo retire active and visually stopped voice results',
+      (tester) async {
+    try {
+      await _mount(tester, model);
+      for (final visuallyStopped in [false, true]) {
+        await tester.enterText(_composer, '');
+        await _start(tester);
+        speech.result('  Voice draft to restore  ');
+        if (visuallyStopped) speech.status(SpeechToText.notListeningStatus);
+        await tester.pumpAndSettle();
+        model.composerTextController.selection =
+            const TextSelection(baseOffset: 2, extentOffset: 12);
+        final original = model.composerTextController.value;
+        await _openComposerMore(tester);
+        await tester.tap(find.byKey(const Key('chat-clear-draft')));
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.text, isEmpty);
+        speech.result('Late voice after clear', finalResult: true);
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.text, isEmpty);
+        await tester.tap(find.byKey(const Key('chat-undo-clear-draft')));
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.value, original);
+        speech.result('Late voice after Undo', finalResult: true);
+        await tester.pumpAndSettle();
+        expect(model.composerTextController.value, original);
+        expect(model.sent, isEmpty);
+      }
+      expect(tester.takeException(), isNull);
+    } finally {
+      await _cleanup(tester);
+    }
+  });
+
   testWidgets('an old inline mic callback cannot start speech over the editor',
       (tester) async {
     try {
@@ -320,7 +360,10 @@ void main() {
               find.descendant(of: mic, matching: find.byType(Pressable)))
           .onTap!;
       final listensBefore = speech.listens;
+      await _openComposerMore(tester);
       await tester.tap(find.byKey(const Key('chat-expand-composer')));
+      // MenuItemButton dispatches after its menu restores focus.
+      await tester.pump();
       // Exercise the old callback before the expanded route's first frame.
       staleStart();
       await tester.pumpAndSettle();
@@ -351,7 +394,11 @@ void main() {
         speech.result('A voice draft before reuse');
         if (visuallyStopped) speech.status(SpeechToText.notListeningStatus);
         await tester.pumpAndSettle();
-        await tester.tap(find.byTooltip('Use as draft'));
+        await tester
+            .tap(find.byKey(ValueKey('chat-message-more-${question.id}')));
+        await tester.pumpAndSettle();
+        await tester
+            .tap(find.byKey(ValueKey('chat-use-as-draft-${question.id}')));
         await tester.pumpAndSettle();
         expect(find.byTooltip('Stop voice input'), findsNothing);
         await tester

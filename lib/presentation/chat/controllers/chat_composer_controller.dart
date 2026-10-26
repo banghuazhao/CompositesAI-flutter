@@ -120,12 +120,21 @@ class ChatComposerController {
       ticket._chatId == _chatId &&
       identical(_drafts[_chatId]?.revision, ticket._draft.revision);
 
-  bool replaceIfCurrent(ChatComposerTicket ticket, String text) {
+  bool replaceIfCurrent(ChatComposerTicket ticket, String text) =>
+      replaceValueIfCurrent(
+        ticket,
+        TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        ),
+      );
+
+  bool replaceValueIfCurrent(
+    ChatComposerTicket ticket,
+    TextEditingValue replacement,
+  ) {
     if (!isCurrent(ticket)) return false;
-    final value = TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-    );
+    final value = _restorable(replacement);
     // A deliberate replacement is a new draft even when its text is identical.
     _store(_chatId, _Draft(value));
     _restoring = true;

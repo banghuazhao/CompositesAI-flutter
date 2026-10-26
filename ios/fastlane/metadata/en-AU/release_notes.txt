@@ -1,3 +1,4 @@
-- More reliable sign-in, account switching and offline sign-out.
-- Easier password recovery and improved password autofill.
-- Smoother name changes and profile refresh, with a retry option after connection problems.
+- Keep chat drafts, reuse questions, and write in an expanded editor.
+- Find messages, fold long answers, and enjoy clearer chat controls and starter previews.
+- Explore calculator charts, layup previews, failure filters, and easier result copying.
+- Preview, sort, export, and recover custom materials.

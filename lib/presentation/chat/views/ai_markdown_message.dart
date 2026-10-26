@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
@@ -7,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../model/chat_citation.dart';
 import 'chat_citation_widgets.dart';
+import 'chat_reading_style.dart';
 
 class AiMarkdownMessage extends StatelessWidget {
   const AiMarkdownMessage({
@@ -22,18 +25,7 @@ class AiMarkdownMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final baseStyle = theme.textTheme.bodyMedium?.copyWith(
-          color: scheme.onSurface,
-          fontSize: 15,
-          height: 1.5,
-          letterSpacing: 0,
-        ) ??
-        TextStyle(
-          color: scheme.onSurface,
-          fontSize: 15,
-          height: 1.5,
-          letterSpacing: 0,
-        );
+    final baseStyle = ChatReadingStyle.body(context);
 
     final markdownTheme = GptMarkdownThemeData(
       brightness: theme.brightness,
@@ -159,13 +151,53 @@ class _CodeBlock extends StatefulWidget {
 
 class _CodeBlockState extends State<_CodeBlock> {
   bool _copied = false;
+  bool _copying = false;
+  String? _copyError;
+  Timer? _resetCopied;
+  int _copyRevision = 0;
+
+  @override
+  void didUpdateWidget(covariant _CodeBlock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.code != widget.code ||
+        oldWidget.language != widget.language) {
+      _copyRevision++;
+      _resetCopied?.cancel();
+      _copied = false;
+      _copyError = null;
+    }
+  }
 
   Future<void> _copyCode() async {
-    await Clipboard.setData(ClipboardData(text: widget.code));
-    if (!mounted) return;
-    setState(() => _copied = true);
-    await Future<void>.delayed(const Duration(seconds: 2));
-    if (mounted) setState(() => _copied = false);
+    if (!mounted || _copying || widget.code.isEmpty) return;
+    final code = widget.code;
+    final revision = _copyRevision;
+    final failed = S.maybeOf(context)?.Chat_code_copy_failed ??
+        'Could not copy this code.';
+    setState(() {
+      _copying = true;
+      _copyError = null;
+    });
+    try {
+      await Clipboard.setData(ClipboardData(text: code));
+      if (!mounted || revision != _copyRevision) return;
+      setState(() => _copied = true);
+      _resetCopied?.cancel();
+      _resetCopied = Timer(const Duration(seconds: 2), () {
+        if (mounted) setState(() => _copied = false);
+      });
+    } catch (_) {
+      if (!mounted || revision != _copyRevision) return;
+      setState(() => _copyError = failed);
+    } finally {
+      if (mounted) setState(() => _copying = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _resetCopied?.cancel();
+    super.dispose();
   }
 
   @override
@@ -176,66 +208,76 @@ class _CodeBlockState extends State<_CodeBlock> {
         : widget.language;
 
     return Container(
+      key: const Key('chat-code-surface'),
       width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF1E293B)),
+        color: ChatReadingStyle.codeSurface(context),
+        borderRadius: BorderRadius.circular(ChatReadingStyle.codeRadius),
+        border: Border.all(color: ChatReadingStyle.codeBorder(context)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            height: 38,
+            key: const Key('chat-code-header'),
+            constraints: const BoxConstraints(minHeight: 48),
             padding: const EdgeInsets.only(left: 12, right: 4),
-            color: const Color(0xFF111827),
+            color: ChatReadingStyle.codeHeader(context),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     languageLabel,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFD1D5DB),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: ChatReadingStyle.metadata(context)
+                        .copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 IconButton(
                   tooltip: _copied
                       ? (S.maybeOf(context)?.Chat_copied ?? 'Copied')
                       : (S.maybeOf(context)?.Chat_copy_code ?? 'Copy code'),
-                  onPressed: widget.code.isEmpty ? null : _copyCode,
-                  icon: Icon(
-                    _copied ? Icons.check : Icons.copy,
-                    size: 16,
-                    color: const Color(0xFFE5E7EB),
-                  ),
+                  onPressed: widget.code.isEmpty || _copying ? null : _copyCode,
+                  icon: _copying
+                      ? const SizedBox.square(
+                          dimension: ChatReadingStyle.iconSize,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          _copied ? Icons.check : Icons.copy,
+                          size: ChatReadingStyle.iconSize,
+                        ),
                   style: IconButton.styleFrom(
-                    minimumSize: const Size.square(32),
+                    minimumSize: const Size.square(48),
                     padding: EdgeInsets.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    tapTargetSize: MaterialTapTargetSize.padded,
                   ),
                 ),
               ],
             ),
           ),
+          if (_copyError != null)
+            Semantics(
+              liveRegion: true,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: Text(
+                  _copyError!,
+                  key: const Key('chat-code-copy-error'),
+                  style: ChatReadingStyle.metadata(context,
+                      color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(14),
             child: SelectableText(
               widget.code,
-              style: const TextStyle(
-                color: Color(0xFFE5E7EB),
-                fontFamily: 'monospace',
-                fontSize: 13,
-                height: 1.45,
-                letterSpacing: 0,
-              ),
+              style: ChatReadingStyle.code(context),
             ),
           ),
         ],

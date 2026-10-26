@@ -366,6 +366,20 @@ void main() {
       final text = List.generate(100, (index) => '第 $index 層 α').join('\n');
       await tester.enterText(find.byKey(_field), text);
       await tester.pump();
+      await tester.tap(find.byKey(const Key('chat-composer-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('chat-clear-draft')));
+      await tester.pumpAndSettle();
+      final notice = find.byKey(const Key('chat-draft-clear-notice'));
+      expect(notice, findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(tester.getRect(notice).bottom,
+          lessThan(tester.getRect(find.byKey(_field)).top));
+      expect(tester.getSize(find.byKey(_field)).height, greaterThan(0));
+      await tester.tap(find.byKey(const Key('chat-undo-clear-draft')));
+      await tester.pumpAndSettle();
+      expect(model.composerTextController.text, text);
+      expect(notice, findsNothing);
       await tester.tap(done);
       await tester.pumpAndSettle();
       expect(model.composerTextController.text, text);

@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 
 import '../viewModels/chat_view_model.dart';
+import 'chat_clear_draft_button.dart';
+import 'chat_composer_more_menu.dart';
+import 'chat_reading_style.dart';
 
 final _expandedComposers = Expando<_ExpandedComposerLifetime>();
 
@@ -204,46 +207,72 @@ class _ExpandedComposerState extends State<_ExpandedComposer> {
     final strings = S.maybeOf(context);
     return Dialog.fullscreen(
       key: const Key('chat-expanded-composer-dialog'),
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: Text(
-            strings?.Chat_expanded_composer ?? 'Edit question',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          actions: [
-            TextButton(
-              key: const Key('chat-expanded-composer-done'),
-              onPressed: lifetime.done,
-              child: Text(strings?.Chat_composer_done ?? 'Done'),
-            ),
-          ],
-        ),
-        body: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              key: const Key('chat-expanded-composer'),
-              controller: lifetime.controller,
-              focusNode: _focus,
-              autofocus: true,
-              selectAllOnFocus: false,
-              expands: true,
-              minLines: null,
-              maxLines: null,
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
-              inputFormatters: [
-                TextInputFormatter.withFunction((oldValue, newValue) =>
-                    lifetime.available ? newValue : oldValue),
+      child: ScaffoldMessenger(
+        child: ChatClearDraftButton(
+          viewModel: lifetime.viewModel,
+          isAvailable: () => lifetime.available && lifetime.route.isCurrent,
+          onDraftChanged: () {
+            if (mounted && lifetime.available && lifetime.route.isCurrent) {
+              _focus.requestFocus();
+            }
+          },
+          builder: (context, onClear, undoNotice) => Scaffold(
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              title: Text(
+                strings?.Chat_expanded_composer ?? 'Edit question',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              actions: [
+                ChatComposerMoreMenu(onClear: onClear),
+                TextButton(
+                  key: const Key('chat-expanded-composer-done'),
+                  onPressed: lifetime.done,
+                  child: Text(strings?.Chat_composer_done ?? 'Done'),
+                ),
               ],
-              textAlignVertical: TextAlignVertical.top,
-              decoration: InputDecoration(
-                hintText: strings?.Chat_composer_hint ??
-                    'Ask about composites engineering…',
-                border: const OutlineInputBorder(),
+            ),
+            body: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (undoNotice != null) ...[
+                      undoNotice,
+                      const SizedBox(height: 12),
+                    ],
+                    Expanded(
+                      child: TextField(
+                        key: const Key('chat-expanded-composer'),
+                        style: ChatReadingStyle.body(context),
+                        controller: lifetime.controller,
+                        focusNode: _focus,
+                        autofocus: true,
+                        selectAllOnFocus: false,
+                        expands: true,
+                        minLines: null,
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        inputFormatters: [
+                          TextInputFormatter.withFunction(
+                            (oldValue, newValue) =>
+                                lifetime.available ? newValue : oldValue,
+                          ),
+                        ],
+                        textAlignVertical: TextAlignVertical.top,
+                        decoration: InputDecoration(
+                          hintText: strings?.Chat_composer_hint ??
+                              'Ask about composites engineering…',
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -319,11 +319,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_chat_title": MessageLookupByLibrary.simpleMessage("Title"),
     "Chat_chats": MessageLookupByLibrary.simpleMessage("Chats"),
     "Chat_clear": MessageLookupByLibrary.simpleMessage("Clear"),
+    "Chat_clear_draft": MessageLookupByLibrary.simpleMessage("Clear draft"),
     "Chat_clear_search": MessageLookupByLibrary.simpleMessage("Clear search"),
     "Chat_close_image_preview": MessageLookupByLibrary.simpleMessage(
       "Close image preview",
     ),
     "Chat_code": MessageLookupByLibrary.simpleMessage("code"),
+    "Chat_code_copy_failed": MessageLookupByLibrary.simpleMessage(
+      "Could not copy this code.",
+    ),
     "Chat_code_streaming": m18,
     "Chat_collapse_answer": MessageLookupByLibrary.simpleMessage(
       "Collapse answer",
@@ -340,6 +344,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "Chat_copied": MessageLookupByLibrary.simpleMessage("Copied"),
     "Chat_copy_code": MessageLookupByLibrary.simpleMessage("Copy code"),
+    "Chat_copy_exchange": MessageLookupByLibrary.simpleMessage(
+      "Copy question and answer",
+    ),
     "Chat_copy_link": MessageLookupByLibrary.simpleMessage("Copy link"),
     "Chat_copy_message": MessageLookupByLibrary.simpleMessage("Copy message"),
     "Chat_delete": MessageLookupByLibrary.simpleMessage("Delete"),
@@ -351,6 +358,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Delete this chat? This cannot be undone.",
     ),
     "Chat_draft": MessageLookupByLibrary.simpleMessage("Draft"),
+    "Chat_draft_cleared": MessageLookupByLibrary.simpleMessage(
+      "Draft cleared.",
+    ),
     "Chat_edit_negative_feedback": MessageLookupByLibrary.simpleMessage(
       "Edit negative feedback",
     ),
@@ -360,6 +370,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_engineering_copilot": MessageLookupByLibrary.simpleMessage(
       "Composites engineering copilot",
     ),
+    "Chat_exchange_answer": MessageLookupByLibrary.simpleMessage("Answer"),
+    "Chat_exchange_copied": MessageLookupByLibrary.simpleMessage(
+      "Question and answer copied",
+    ),
+    "Chat_exchange_copy_failed": MessageLookupByLibrary.simpleMessage(
+      "Could not copy this exchange.",
+    ),
+    "Chat_exchange_question": MessageLookupByLibrary.simpleMessage("Question"),
     "Chat_expand_answer": MessageLookupByLibrary.simpleMessage("Expand answer"),
     "Chat_expand_composer": MessageLookupByLibrary.simpleMessage(
       "Expand composer",
@@ -470,6 +488,8 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "Chat_message_time": m21,
     "Chat_models": MessageLookupByLibrary.simpleMessage("Models"),
+    "Chat_more": MessageLookupByLibrary.simpleMessage("More"),
+    "Chat_more_actions": MessageLookupByLibrary.simpleMessage("More actions"),
     "Chat_move_to_folder": MessageLookupByLibrary.simpleMessage(
       "Move to folder",
     ),
@@ -530,6 +550,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Response interrupted",
     ),
     "Chat_save": MessageLookupByLibrary.simpleMessage("Save"),
+    "Chat_search_all": MessageLookupByLibrary.simpleMessage("All"),
+    "Chat_search_answers": MessageLookupByLibrary.simpleMessage("Answers"),
     "Chat_search_assistant": MessageLookupByLibrary.simpleMessage("Assistant"),
     "Chat_search_chats": MessageLookupByLibrary.simpleMessage("Search chats"),
     "Chat_search_clear": MessageLookupByLibrary.simpleMessage("Clear search"),
@@ -556,6 +578,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_search_no_matches": MessageLookupByLibrary.simpleMessage(
       "No matching messages.",
     ),
+    "Chat_search_questions": MessageLookupByLibrary.simpleMessage("Questions"),
     "Chat_search_you": MessageLookupByLibrary.simpleMessage("You"),
     "Chat_select_model": MessageLookupByLibrary.simpleMessage("Select model"),
     "Chat_send_message": MessageLookupByLibrary.simpleMessage("Send message"),
@@ -581,6 +604,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_start_voice_input": MessageLookupByLibrary.simpleMessage(
       "Start voice input",
     ),
+    "Chat_starter_empty": MessageLookupByLibrary.simpleMessage(
+      "Write your question below to begin.",
+    ),
+    "Chat_starter_hide_preview": MessageLookupByLibrary.simpleMessage(
+      "Hide question",
+    ),
+    "Chat_starter_preview": MessageLookupByLibrary.simpleMessage(
+      "Preview question",
+    ),
+    "Chat_starter_review_hint": MessageLookupByLibrary.simpleMessage(
+      "Choose a starting point, then review your draft before sending.",
+    ),
+    "Chat_starter_use_question": MessageLookupByLibrary.simpleMessage(
+      "Use this question",
+    ),
+    "Chat_starters_less": MessageLookupByLibrary.simpleMessage("Show fewer"),
+    "Chat_starters_more": MessageLookupByLibrary.simpleMessage(
+      "See more starting points",
+    ),
     "Chat_stop_generating": MessageLookupByLibrary.simpleMessage(
       "Stop generating",
     ),
@@ -590,7 +632,26 @@ class MessageLookup extends MessageLookupByLibrary {
     "Chat_suggested_questions": MessageLookupByLibrary.simpleMessage(
       "Suggested questions",
     ),
+    "Chat_task_calculators": MessageLookupByLibrary.simpleMessage(
+      "Choose a calculator",
+    ),
+    "Chat_task_failure": MessageLookupByLibrary.simpleMessage(
+      "Understand failure",
+    ),
+    "Chat_task_generic": MessageLookupByLibrary.simpleMessage(
+      "Explore a question",
+    ),
+    "Chat_task_laminate": MessageLookupByLibrary.simpleMessage(
+      "Plan a laminate",
+    ),
+    "Chat_task_materials": MessageLookupByLibrary.simpleMessage(
+      "Compare materials",
+    ),
+    "Chat_task_stiffness": MessageLookupByLibrary.simpleMessage(
+      "Estimate stiffness",
+    ),
     "Chat_title": MessageLookupByLibrary.simpleMessage("Chat"),
+    "Chat_undo": MessageLookupByLibrary.simpleMessage("Undo"),
     "Chat_unpin": MessageLookupByLibrary.simpleMessage("Unpin"),
     "Chat_untitled_chat": MessageLookupByLibrary.simpleMessage("Untitled chat"),
     "Chat_use_as_draft": MessageLookupByLibrary.simpleMessage("Use as draft"),
