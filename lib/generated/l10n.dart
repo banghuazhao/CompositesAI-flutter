@@ -3123,6 +3123,56 @@ class S {
       args: [],
     );
   }
+
+  /// `Legacy SwiftComp data`
+  String get Legacy_data_title {
+    return Intl.message(
+      'Legacy SwiftComp data',
+      name: 'Legacy_data_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Export a complete backup of materials and layups saved in the older Mac app. The original values and units are preserved; this backup is separate from the new material library.`
+  String get Legacy_data_help {
+    return Intl.message(
+      'Export a complete backup of materials and layups saved in the older Mac app. The original values and units are preserved; this backup is separate from the new material library.',
+      name: 'Legacy_data_help',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Export legacy data`
+  String get Legacy_data_export {
+    return Intl.message(
+      'Export legacy data',
+      name: 'Legacy_data_export',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Legacy SwiftComp data exported.`
+  String get Legacy_data_saved {
+    return Intl.message(
+      'Legacy SwiftComp data exported.',
+      name: 'Legacy_data_saved',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not export legacy data. Your original data has not been changed.`
+  String get Legacy_data_failed {
+    return Intl.message(
+      'Could not export legacy data. Your original data has not been changed.',
+      name: 'Legacy_data_failed',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

@@ -6,6 +6,8 @@ import 'package:infrastructure/microsoft_android_redirect_service.dart';
 import 'package:infrastructure/microsoft_sign_in_service.dart';
 import 'package:msal_auth/msal_auth.dart';
 
+import 'mac_oauth_configuration.dart';
+
 /// Shares one MSAL client and serializes cache removal with interactive login.
 /// MULTIPLE mode removes this client's tokens without signing out the broker.
 class MicrosoftSignInServiceImpl implements MicrosoftSignInService {
@@ -33,6 +35,9 @@ class MicrosoftSignInServiceImpl implements MicrosoftSignInService {
 
   Future<MultipleAccountPca> _client({bool Function()? isActive}) async {
     _ensureActive(isActive);
+    if (!MacOAuthConfiguration.microsoftAvailable) {
+      throw const MicrosoftSignInConfigurationException();
+    }
     final clientId = _env('MICROSOFT_CLIENT_ID');
     if (clientId.isEmpty ||
         kIsWeb ||

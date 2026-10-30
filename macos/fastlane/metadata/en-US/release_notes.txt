@@ -1,0 +1,4 @@
+- Meet the refreshed CompositesAI app for Mac, with engineering chat and composite calculators.
+- Keep drafts, reuse questions, search loaded messages, and review prompts in an expanded editor.
+- Explore charts, layup previews, failure filters, and easier result copying.
+- Preview, sort, export, and recover custom materials.

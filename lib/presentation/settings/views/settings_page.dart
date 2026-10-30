@@ -1,3 +1,4 @@
+import 'legacy_swiftcomp_export.dart';
 import 'package:swiftcomp/presentation/tools/model/unit_system.dart';
 import 'package:swiftcomp/presentation/tools/widget/unit_system_picker.dart';
 import 'package:domain/auth/entities/user.dart';
@@ -29,6 +30,8 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late SettingsViewModel viewModel;
+  bool _openingAppStore = false;
+  bool _sharingApp = false;
 
   @override
   void initState() {
@@ -38,6 +41,47 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _refresh() => viewModel.fetchAuthSessionNew();
+
+  bool get _canShowSupportFeedback =>
+      mounted && ModalRoute.of(context)?.isCurrent == true;
+
+  void _showSupportFeedback(String message) {
+    if (!_canShowSupportFeedback) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _rateApp() async {
+    if (!mounted || _openingAppStore) return;
+    setState(() => _openingAppStore = true);
+    try {
+      final opened = await viewModel.rateApp();
+      if (!opened) {
+        _showSupportFeedback('Could not open the App Store. Please try again.');
+      }
+    } catch (_) {
+      _showSupportFeedback('Could not open the App Store. Please try again.');
+    } finally {
+      if (mounted) setState(() => _openingAppStore = false);
+    }
+  }
+
+  Future<void> _shareApp() async {
+    if (!mounted || _sharingApp) return;
+    setState(() => _sharingApp = true);
+    try {
+      final handled = await viewModel.shareApp(context);
+      if (!handled) {
+        _showSupportFeedback('Could not share the app. Please try again.');
+      } else if (kIsWeb) {
+        _showSupportFeedback('https://compositesai.com copied to Clipboard');
+      }
+    } catch (_) {
+      _showSupportFeedback('Could not share the app. Please try again.');
+    } finally {
+      if (mounted) setState(() => _sharingApp = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +191,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () => showUnitSystemPicker(context),
                 ),
               ]),
+              const LegacySwiftCompExport(),
               if (viewModel.isAdmin) ...[
                 const SizedBox(height: 24),
                 _buildSectionLabel('Admin'),
@@ -206,23 +251,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   _buildTile(
                     icon: Icons.star_outline_rounded,
                     title: 'Rate this App',
-                    onTap: viewModel.rateApp,
+                    onTap: _rateApp,
                   ),
                 ],
                 _buildDivider(),
                 _buildTile(
                   icon: Icons.share_outlined,
                   title: kIsWeb ? 'Share this Website' : 'Share this App',
-                  onTap: () {
-                    viewModel.shareApp(context);
-                    if (kIsWeb) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'https://compositesai.com copied to Clipboard')),
-                      );
-                    }
-                  },
+                  onTap: _shareApp,
                 ),
               ]),
               const SizedBox(height: 32),

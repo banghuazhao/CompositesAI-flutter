@@ -1,0 +1,25 @@
+// Application-level settings for the Runner target.
+//
+// This may be replaced with something auto-generated from metadata (e.g., pubspec.yaml) in the
+// future. If not, the values below would default to using the project name when this becomes a
+// 'flutter create' template.
+
+// The application's name. By default this is also the title of the Flutter window.
+PRODUCT_NAME = CompositesAI
+
+// The application's bundle identifier
+PRODUCT_BUNDLE_IDENTIFIER = maccatalyst.com.cdmHUB.SwiftComp
+
+// Preserve support for both Apple Silicon and Intel Macs in release archives.
+ARCHS = arm64 x86_64
+MACOSX_DEPLOYMENT_TARGET = 12.0
+
+// The copyright displayed in application information
+PRODUCT_COPYRIGHT = Copyright © 2026 Banghua Zhao. All rights reserved.
+
+// The existing pre-11.4 Catalyst record requires a manually selected profile.
+// Keep machine-specific team and profile settings in the ignored file.
+COMPOSITESAI_CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = Apple Development
+#include? "Secrets.xcconfig"
+DEVELOPMENT_TEAM = $(COMPOSITESAI_TEAM_ID)

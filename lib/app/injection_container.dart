@@ -30,6 +30,7 @@ import 'package:swiftcomp/presentation/auth/signup_view_model.dart';
 import 'package:swiftcomp/presentation/auth/update_password_view_model.dart';
 import 'package:swiftcomp/presentation/chat/viewModels/chat_view_model.dart';
 import 'services/microsoft_sign_in_service.dart';
+import 'services/mac_oauth_configuration.dart';
 import 'package:swiftcomp/presentation/settings/viewModels/qa_settings_view_model.dart';
 
 final sl = GetIt.instance;
@@ -88,8 +89,8 @@ void initInjection() {
   sl.registerLazySingleton<TokenProvider>(() => TokenProvider());
   sl.registerLazySingleton<FeatureFlagProvider>(() => FeatureFlagProvider());
   sl.registerLazySingleton<AppleSignInService>(() => AppleSignInServiceImpl());
-  sl.registerLazySingleton<GoogleSignInService>(
-      () => GoogleSignInServiceImpl());
+  sl.registerLazySingleton<GoogleSignInService>(() => GoogleSignInServiceImpl(
+      macOSClientId: () => MacOAuthConfiguration.googleClientId));
   sl.registerLazySingleton<MicrosoftSignInService>(
       () => MicrosoftSignInServiceImpl());
 }

@@ -10,6 +10,7 @@ import 'package:swiftcomp/util/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/injection_container.dart';
+import '../../app/services/mac_oauth_configuration.dart';
 import 'login_view_model.dart';
 import 'forget_password_page.dart';
 
@@ -600,7 +601,8 @@ class _LoginPageState extends State<LoginPage> {
                                 ],
                               ),
                               const SizedBox(height: 10.0),
-                              if (supportsNativeOAuth) ...[
+                              if (supportsNativeOAuth &&
+                                  MacOAuthConfiguration.googleAvailable) ...[
                                 _buildSocialButton(
                                   key: const ValueKey('login_google'),
                                   iconPath: 'images/google_logo.png',
@@ -623,7 +625,8 @@ class _LoginPageState extends State<LoginPage> {
                                     ? null
                                     : () => _githubSignIn(viewModel),
                               ),
-                              if (supportsNativeOAuth) ...[
+                              if (supportsNativeOAuth &&
+                                  MacOAuthConfiguration.microsoftAvailable) ...[
                                 const SizedBox(height: 10),
                                 _buildSocialButtonIcon(
                                   key: const ValueKey('login_microsoft'),
@@ -639,8 +642,10 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ],
                               if (!kIsWeb &&
-                                  defaultTargetPlatform ==
-                                      TargetPlatform.iOS) ...[
+                                  const [
+                                    TargetPlatform.iOS,
+                                    TargetPlatform.macOS,
+                                  ].contains(defaultTargetPlatform)) ...[
                                 const SizedBox(height: 10),
                                 _buildSocialButton(
                                   key: const ValueKey('login_apple'),

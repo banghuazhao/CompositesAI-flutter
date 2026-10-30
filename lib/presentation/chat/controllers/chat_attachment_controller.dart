@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../model/chat_error.dart';
+import '../../../util/platform_support.dart';
 
 typedef ChatAccessCallback = bool Function();
 typedef AttachmentErrorCallback = void Function(
@@ -171,6 +172,15 @@ class ChatAttachmentController extends ChangeNotifier {
 
   Future<void> pickAndUploadImages(ImageSource source) async {
     if (_isDisposed || !_canUseChat() || isUploadingFile) return;
+    if (source == ImageSource.camera && !PlatformSupport.cameraCapture) {
+      _onError(ChatFailure.validation(
+        operation: ChatOperation.uploadImage,
+        title: 'Camera unavailable',
+        message: 'Choose an image or file instead of taking a photo.',
+        technicalCode: 'CHAT_CAMERA_UNAVAILABLE',
+      ));
+      return;
+    }
     final generation = _sessionGeneration;
 
     try {

@@ -514,6 +514,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "Layer_Thickness": MessageLookupByLibrary.simpleMessage("單層厚度"),
     "Layup_Angle": MessageLookupByLibrary.simpleMessage("鋪層角"),
     "Layup_Sequence": MessageLookupByLibrary.simpleMessage("鋪層次序"),
+    "Legacy_data_export": MessageLookupByLibrary.simpleMessage("匯出舊版資料"),
+    "Legacy_data_failed": MessageLookupByLibrary.simpleMessage(
+      "無法匯出舊版資料，原始資料未有更改。",
+    ),
+    "Legacy_data_help": MessageLookupByLibrary.simpleMessage(
+      "匯出舊版 Mac 應用程式中儲存的所有材料及鋪層資料。備份會保留原始數值及單位，並與新版材料庫分開儲存。",
+    ),
+    "Legacy_data_saved": MessageLookupByLibrary.simpleMessage(
+      "已匯出舊版 SwiftComp 資料。",
+    ),
+    "Legacy_data_title": MessageLookupByLibrary.simpleMessage(
+      "舊版 SwiftComp 資料",
+    ),
     "ME_Toolkit": MessageLookupByLibrary.simpleMessage("工程工具箱"),
     "Mechanics_of_Material": MessageLookupByLibrary.simpleMessage("材料力學"),
     "Moments_of_Inertia": MessageLookupByLibrary.simpleMessage("慣性矩"),

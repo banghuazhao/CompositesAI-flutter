@@ -1,4 +1,3 @@
-- Conserva borradores, reutiliza preguntas y escribe en un editor ampliado.
-- Busca mensajes, contrae respuestas largas y disfruta de controles más claros y vistas previas de preguntas iniciales.
-- Explora gráficos de cálculo, vistas previas de apilado, filtros de falla y copia resultados más fácilmente.
-- Previsualiza, ordena, exporta y recupera materiales personalizados.
+- Inicio de sesión más fiable con Google y Microsoft.
+- Mensajes más claros si no se puede compartir CompositesAI o abrir su página en la tienda.
+- Inicio más fluido cuando no se pueden mostrar solicitudes de valoración.

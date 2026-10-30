@@ -1,0 +1,2 @@
+- Mensagens mais claras quando não é possível compartilhar CompositesAI ou abrir sua página na loja.
+- Inicialização mais estável quando os pedidos de avaliação estão indisponíveis.

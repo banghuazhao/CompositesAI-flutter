@@ -1,0 +1,1 @@
+composites,laminate,fiber,materials,engineering,calculator,stiffness,stress,strain,failure,layup

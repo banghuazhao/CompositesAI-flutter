@@ -1,0 +1,2 @@
+- Klarere Rückmeldungen, wenn CompositesAI nicht geteilt oder die Store-Seite nicht geöffnet werden kann.
+- Stabilerer App-Start, wenn Bewertungsanfragen nicht verfügbar sind.

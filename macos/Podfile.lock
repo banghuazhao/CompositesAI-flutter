@@ -1,0 +1,185 @@
+PODS:
+  - AppAuth (2.1.0):
+    - AppAuth/Core (= 2.1.0)
+    - AppAuth/ExternalUserAgent (= 2.1.0)
+  - AppAuth/Core (2.1.0)
+  - AppAuth/ExternalUserAgent (2.1.0):
+    - AppAuth/Core
+  - AppCheckCore (11.3.2):
+    - GoogleUtilities/Environment (~> 8.0)
+    - GoogleUtilities/UserDefaults (~> 8.0)
+    - PromisesObjC (~> 2.4)
+    - PromisesSwift (~> 2.4)
+    - RecaptchaInterop (~> 101.0)
+  - CwlCatchException (2.2.1):
+    - CwlCatchExceptionSupport (~> 2.2.1)
+  - CwlCatchExceptionSupport (2.2.1)
+  - device_info_plus (0.0.1):
+    - FlutterMacOS
+  - file_picker (0.0.1):
+    - FlutterMacOS
+  - file_selector_macos (0.0.1):
+    - FlutterMacOS
+  - flutter_secure_storage_darwin (10.0.0):
+    - Flutter
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+  - google_sign_in_ios (0.0.1):
+    - Flutter
+    - FlutterMacOS
+    - GoogleSignIn (~> 9.0)
+    - GTMSessionFetcher (>= 3.4.0)
+  - GoogleSignIn (9.2.0):
+    - AppAuth (~> 2.1)
+    - AppCheckCore (~> 11.0)
+    - GTMAppAuth (~> 5.0)
+    - GTMSessionFetcher/Core (~> 3.3)
+  - GoogleUtilities/Environment (8.1.5):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Logger (8.1.5):
+    - GoogleUtilities/Environment
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Privacy (8.1.5)
+  - GoogleUtilities/UserDefaults (8.1.5):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
+  - GTMAppAuth (5.0.0):
+    - AppAuth/Core (~> 2.0)
+    - GTMSessionFetcher/Core (< 4.0, >= 3.3)
+  - GTMSessionFetcher (3.5.0):
+    - GTMSessionFetcher/Full (= 3.5.0)
+  - GTMSessionFetcher/Core (3.5.0)
+  - GTMSessionFetcher/Full (3.5.0):
+    - GTMSessionFetcher/Core
+  - in_app_review (2.0.0):
+    - FlutterMacOS
+  - MSAL (2.11.0):
+    - MSAL/app-lib (= 2.11.0)
+  - MSAL/app-lib (2.11.0)
+  - msal_auth (0.0.2):
+    - FlutterMacOS
+    - MSAL (~> 2.11.0)
+  - package_info_plus (0.0.1):
+    - FlutterMacOS
+  - PromisesObjC (2.4.1)
+  - PromisesSwift (2.4.1):
+    - PromisesObjC (= 2.4.1)
+  - share_plus (0.0.1):
+    - FlutterMacOS
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - sign_in_with_apple (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - speech_to_text (7.2.0):
+    - CwlCatchException
+    - Flutter
+    - FlutterMacOS
+  - sqflite_darwin (0.0.4):
+    - Flutter
+    - FlutterMacOS
+  - url_launcher_macos (0.0.1):
+    - FlutterMacOS
+  - webview_flutter_wkwebview (0.0.1):
+    - Flutter
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - device_info_plus (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos`)
+  - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
+  - file_selector_macos (from `Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos`)
+  - flutter_secure_storage_darwin (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - google_sign_in_ios (from `Flutter/ephemeral/.symlinks/plugins/google_sign_in_ios/darwin`)
+  - in_app_review (from `Flutter/ephemeral/.symlinks/plugins/in_app_review/macos`)
+  - msal_auth (from `Flutter/ephemeral/.symlinks/plugins/msal_auth/macos`)
+  - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
+  - share_plus (from `Flutter/ephemeral/.symlinks/plugins/share_plus/macos`)
+  - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - sign_in_with_apple (from `Flutter/ephemeral/.symlinks/plugins/sign_in_with_apple/darwin`)
+  - speech_to_text (from `Flutter/ephemeral/.symlinks/plugins/speech_to_text/darwin`)
+  - sqflite_darwin (from `Flutter/ephemeral/.symlinks/plugins/sqflite_darwin/darwin`)
+  - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
+  - webview_flutter_wkwebview (from `Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin`)
+
+SPEC REPOS:
+  trunk:
+    - AppAuth
+    - AppCheckCore
+    - CwlCatchException
+    - CwlCatchExceptionSupport
+    - GoogleSignIn
+    - GoogleUtilities
+    - GTMAppAuth
+    - GTMSessionFetcher
+    - MSAL
+    - PromisesObjC
+    - PromisesSwift
+
+EXTERNAL SOURCES:
+  device_info_plus:
+    :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos
+  file_picker:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
+  file_selector_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos
+  flutter_secure_storage_darwin:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  google_sign_in_ios:
+    :path: Flutter/ephemeral/.symlinks/plugins/google_sign_in_ios/darwin
+  in_app_review:
+    :path: Flutter/ephemeral/.symlinks/plugins/in_app_review/macos
+  msal_auth:
+    :path: Flutter/ephemeral/.symlinks/plugins/msal_auth/macos
+  package_info_plus:
+    :path: Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos
+  share_plus:
+    :path: Flutter/ephemeral/.symlinks/plugins/share_plus/macos
+  shared_preferences_foundation:
+    :path: Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin
+  sign_in_with_apple:
+    :path: Flutter/ephemeral/.symlinks/plugins/sign_in_with_apple/darwin
+  speech_to_text:
+    :path: Flutter/ephemeral/.symlinks/plugins/speech_to_text/darwin
+  sqflite_darwin:
+    :path: Flutter/ephemeral/.symlinks/plugins/sqflite_darwin/darwin
+  url_launcher_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
+  webview_flutter_wkwebview:
+    :path: Flutter/ephemeral/.symlinks/plugins/webview_flutter_wkwebview/darwin
+
+SPEC CHECKSUMS:
+  AppAuth: ef4da5a3fc2e10b90c09a0a94a9baeaedc0341d5
+  AppCheckCore: be8fce5469f68d7f6a29aa94b25f097409ff7fdc
+  CwlCatchException: 7acc161b299a6de7f0a46a6ed741eae2c8b4d75a
+  CwlCatchExceptionSupport: 54ccab8d8c78907b57f99717fb19d4cc3bce02dc
+  device_info_plus: 1b14eed9bf95428983aed283a8d51cce3d8c4215
+  file_picker: e716a70a9fe5fd9e09ebc922d7541464289443af
+  file_selector_macos: 3e56eaea051180007b900eacb006686fd54da150
+  flutter_secure_storage_darwin: 557817588b80e60213cbecb573c45c76b788018d
+  FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
+  google_sign_in_ios: 7336a3372ea93ea56a21e126a0055ffca3723601
+  GoogleSignIn: e449a40a92e9f2eea56e98b5214d13725dc5a00a
+  GoogleUtilities: 7dc09b3fa9ecb5c2298b952313d14628b61b9da3
+  GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
+  GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
+  in_app_review: 866c9b17c87a7b46a395bda43f5d3ca02deb585a
+  MSAL: 47df23ea9a9c6df9e09e9ba2aa2a7539c7030b6b
+  msal_auth: 1bb0fecf51cfed2c74bae29a0dd777a8992b5a05
+  package_info_plus: 12f1c5c2cfe8727ca46cbd0b26677728972d9a5b
+  PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
+  PromisesSwift: 217dea0fd5d2ad65222a109c48698add13cc1c5b
+  share_plus: 1fa619de8392a4398bfaf176d441853922614e89
+  shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
+  sign_in_with_apple: fb98447f3dfb81e2926945ea43a8c9c7205eaca9
+  speech_to_text: 87bf9298952e8d9073be1b6aade6d5758db5170c
+  sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
+  url_launcher_macos: 175a54c831f4375a6cf895875f716ee5af3888ce
+  webview_flutter_wkwebview: 29eb20d43355b48fe7d07113835b9128f84e3af4
+
+PODFILE CHECKSUM: 1e95c36afbfd1cb6423ceca4de7a8e1b256fb6ac
+
+COCOAPODS: 1.16.2

@@ -1,4 +1,3 @@
-- Chatentwürfe behalten, Fragen wiederverwenden und im erweiterten Editor schreiben.
-- Nachrichten finden, lange Antworten einklappen und übersichtlichere Chatfunktionen mit Vorschauen für Einstiegsfragen nutzen.
-- Rechnerdiagramme, Lagenaufbau-Vorschauen, Versagensfilter und einfacheres Kopieren von Ergebnissen entdecken.
-- Eigene Materialien ansehen, sortieren, exportieren und wiederherstellen.
+- Zuverlässigere Anmeldung mit Google und Microsoft.
+- Klarere Rückmeldungen, wenn CompositesAI nicht geteilt oder die Store-Seite nicht geöffnet werden kann.
+- Stabilerer App-Start, wenn Bewertungsanfragen nicht verfügbar sind.

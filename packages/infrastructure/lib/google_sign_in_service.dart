@@ -1,4 +1,5 @@
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart';
 
 // Abstract service interface
 abstract class GoogleSignInService {
@@ -27,6 +28,10 @@ class GoogleSignInUser {
 
 // Implementation of the service
 class GoogleSignInServiceImpl implements GoogleSignInService {
+  GoogleSignInServiceImpl({String? Function()? macOSClientId})
+      : _macOSClientId = macOSClientId;
+
+  final String? Function()? _macOSClientId;
   static bool _initialized = false;
 
   @override
@@ -37,6 +42,13 @@ class GoogleSignInServiceImpl implements GoogleSignInService {
     String? serverClientId,
     bool forceCodeForRefreshToken = false,
   }) async {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
+      final configuredClientId = _macOSClientId?.call()?.trim();
+      if (configuredClientId == null || configuredClientId.isEmpty) {
+        throw StateError('Google sign-in is not configured for macOS.');
+      }
+      clientId = configuredClientId;
+    }
     try {
       if (!_initialized) {
         await GoogleSignIn.instance.initialize(

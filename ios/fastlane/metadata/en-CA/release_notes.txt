@@ -1,4 +1,3 @@
-- Keep chat drafts, reuse questions, and write in an expanded editor.
-- Find messages, fold long answers, and enjoy clearer chat controls and starter previews.
-- Explore calculator charts, layup previews, failure filters, and easier result copying.
-- Preview, sort, export, and recover custom materials.
+- More reliable Google and Microsoft sign-in.
+- Clearer feedback when sharing CompositesAI or opening its store page fails.
+- Smoother startup when rating prompts are unavailable.

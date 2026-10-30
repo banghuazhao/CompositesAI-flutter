@@ -334,54 +334,61 @@ class SettingsViewModel extends ChangeNotifier {
     }
   }
 
-  void openAppStore() async {
-    if (kIsWeb) {
-      // Handle the web case if necessary, such as showing an error or a message.
-      debugPrint("App store link is not supported on web.");
-      return;
-    }
-
-    final Uri androidUrl = Uri.parse(
-        'https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp');
-    final Uri iOSUrl = Uri.parse('https://apps.apple.com/app/id1297825946');
-
-    final Uri url = Platform.isAndroid ? androidUrl : iOSUrl;
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      throw 'Could not open the app store URL';
+  Future<bool> openAppStore() async {
+    if (_isDisposed || kIsWeb) return false;
+    final url = switch (defaultTargetPlatform) {
+      TargetPlatform.android =>
+        'https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp',
+      TargetPlatform.iOS => 'https://apps.apple.com/app/id1297825946',
+      TargetPlatform.macOS => 'https://apps.apple.com/app/id1487971887',
+      _ => null,
+    };
+    if (url == null) return false;
+    try {
+      return await launchUrl(Uri.parse(url),
+          mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
     }
   }
 
-  void rateApp() async {
-    openAppStore();
-  }
+  Future<bool> rateApp() => openAppStore();
 
-  Future<void> shareApp(BuildContext context) async {
-    final Size size = MediaQuery.sizeOf(context);
-    final packageInfo = await PackageInfo.fromPlatform();
-    if (!context.mounted) return;
-    final String appName = packageInfo.appName;
+  /// True means the platform handled the request, including a dismissed sheet.
+  Future<bool> shareApp(BuildContext context) async {
+    if (_isDisposed || !context.mounted) return false;
+    try {
+      if (kIsWeb ||
+          !const [
+            TargetPlatform.android,
+            TargetPlatform.iOS,
+            TargetPlatform.macOS,
+          ].contains(defaultTargetPlatform)) {
+        await Clipboard.setData(
+            const ClipboardData(text: 'https://compositesai.com'));
+        return true;
+      }
 
-    if (Platform.isIOS) {
-      await SharePlus.instance.share(
-        ShareParams(
-          text: "http://itunes.apple.com/app/id1297825946",
-          subject: appName,
-          sharePositionOrigin: Rect.fromLTRB(0, 0, size.width, size.height / 2),
-        ),
-      );
-    } else if (Platform.isAndroid) {
-      await SharePlus.instance.share(
-        ShareParams(
-          text:
-              "https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp",
-          subject: appName,
-        ),
-      );
-    } else {
-      await Clipboard.setData(ClipboardData(text: "https://compositesai.com"));
+      final platform = defaultTargetPlatform;
+      final size = MediaQuery.sizeOf(context);
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (_isDisposed || !context.mounted) return false;
+      final text = switch (platform) {
+        TargetPlatform.android =>
+          'https://play.google.com/store/apps/details?id=com.banghuazhao.swiftcomp',
+        TargetPlatform.macOS => 'https://apps.apple.com/app/id1487971887',
+        _ => 'http://itunes.apple.com/app/id1297825946',
+      };
+      await SharePlus.instance.share(ShareParams(
+        text: text,
+        subject: packageInfo.appName,
+        sharePositionOrigin: platform == TargetPlatform.android
+            ? null
+            : Rect.fromLTRB(0, 0, size.width, size.height / 2),
+      ));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

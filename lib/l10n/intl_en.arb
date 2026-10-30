@@ -514,5 +514,10 @@
   "Chat_starter_hide_preview": "Hide question",
   "Chat_starters_more": "See more starting points",
   "Chat_starters_less": "Show fewer",
-  "Chat_starter_empty": "Write your question below to begin."
+  "Chat_starter_empty": "Write your question below to begin.",
+  "Legacy_data_title": "Legacy SwiftComp data",
+  "Legacy_data_help": "Export a complete backup of materials and layups saved in the older Mac app. The original values and units are preserved; this backup is separate from the new material library.",
+  "Legacy_data_export": "Export legacy data",
+  "Legacy_data_saved": "Legacy SwiftComp data exported.",
+  "Legacy_data_failed": "Could not export legacy data. Your original data has not been changed."
 }

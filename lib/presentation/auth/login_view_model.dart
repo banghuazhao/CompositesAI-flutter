@@ -19,6 +19,7 @@ import 'package:msal_auth/msal_auth.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app/services/microsoft_sign_in_service.dart';
+import '../../app/services/mac_oauth_configuration.dart';
 
 class LoginViewModel extends ChangeNotifier {
   final AuthUseCase authUseCase;
@@ -252,6 +253,11 @@ class LoginViewModel extends ChangeNotifier {
     if (!_beginSignIn()) return;
 
     try {
+      if (!MacOAuthConfiguration.googleAvailable) {
+        _errorMessage =
+            'Google sign-in could not be completed. Please try again.';
+        return;
+      }
       // Initialize GoogleSignIn instance
       final GoogleSignInUser? user = kIsWeb
           ? await googleSignInService.signIn(
@@ -259,6 +265,9 @@ class LoginViewModel extends ChangeNotifier {
               scopes: <String>['email', 'openid', 'profile'],
             )
           : await googleSignInService.signIn(
+              clientId: MacOAuthConfiguration.isMacOS
+                  ? MacOAuthConfiguration.googleClientId
+                  : null,
               serverClientId: GOOGLE_SIGNIN_SERVER_CLIENT_ID.isEmpty
                   ? null
                   : GOOGLE_SIGNIN_SERVER_CLIENT_ID,

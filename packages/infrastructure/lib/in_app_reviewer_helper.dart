@@ -6,27 +6,26 @@ class InAppReviewHelper {
   static InAppReview inAppReview = InAppReview.instance;
 
   static Future<void> incrementOpenCount() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int? count = prefs.getInt(openCount);
-    if (count != null) {
-      count += 1;
-      prefs.setInt(openCount, count);
-    } else {
-      prefs.setInt(openCount, 1);
+    final prefs = await SharedPreferences.getInstance();
+    final count = prefs.getInt(openCount) ?? 0;
+    if (!await prefs.setInt(openCount, count + 1)) {
+      throw StateError('The app open count could not be saved.');
     }
   }
 
   static Future<void> checkAndAskForReview() async {
-    await incrementOpenCount();
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    int? count = prefs.getInt(openCount);
-
-    print("App open count: $count");
-    if (count == 3 || count == 15 || count == 100) {
-      if (await inAppReview.isAvailable()) {
-        inAppReview.requestReview();
+    try {
+      await incrementOpenCount();
+      final prefs = await SharedPreferences.getInstance();
+      final count = prefs.getInt(openCount);
+      if (count == 3 || count == 15 || count == 100) {
+        if (await inAppReview.isAvailable()) {
+          await inAppReview.requestReview();
+        }
       }
+    } catch (_) {
+      // Review availability, window readiness and storage are best effort.
+      // None of them may interrupt app startup.
     }
   }
 }

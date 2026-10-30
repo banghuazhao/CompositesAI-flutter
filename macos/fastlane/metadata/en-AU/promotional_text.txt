@@ -1,0 +1,1 @@
+A clearer workspace for composites: draft and search chats, inspect laminate results, and manage custom materials.

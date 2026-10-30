@@ -6,6 +6,7 @@ import 'package:domain/auth/mocks/auth_use_case_mock.dart';
 import 'package:domain/common/domain_exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:infrastructure/google_sign_in_service.dart';
 import 'package:infrastructure/mocks/apple_sign_in_service_mock.dart';
 import 'package:infrastructure/mocks/google_sign_in_service_mock.dart';
@@ -104,6 +105,9 @@ void main() {
   late GoogleSignInUser googleUser;
 
   setUp(() async {
+    dotenv.loadFromString(
+        envString: 'GOOGLE_SIGNIN_CLIENT_ID_MACOS=test-mac-client\n'
+            'MICROSOFT_MACOS_AUTH_ENABLED=true');
     await sl.reset();
     authUseCase = MockAuthUseCase();
     googleSignInService = MockGoogleSignInService();
@@ -127,6 +131,7 @@ void main() {
 
   tearDown(() async {
     await sl.reset();
+    dotenv.clean();
   });
 
   for (final succeed in [false, true]) {
@@ -222,8 +227,11 @@ void main() {
           nativeSupported ? findsOneWidget : findsNothing);
       expect(find.text('Continue with Microsoft'),
           nativeSupported ? findsOneWidget : findsNothing);
-      expect(find.text('Continue with Apple'),
-          platform == TargetPlatform.iOS ? findsOneWidget : findsNothing);
+      expect(
+          find.text('Continue with Apple'),
+          const [TargetPlatform.iOS, TargetPlatform.macOS].contains(platform)
+              ? findsOneWidget
+              : findsNothing);
       expect(find.text('Continue with GitHub'), findsOneWidget);
       expect(find.text('Continue with LinkedIn'), findsNothing);
       expect(tester.takeException(), isNull);

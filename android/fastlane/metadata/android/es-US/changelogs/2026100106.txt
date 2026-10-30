@@ -1,0 +1,2 @@
+- Mensajes más claros si no se puede compartir CompositesAI o abrir su página en la tienda.
+- Inicio más fluido cuando no se pueden mostrar solicitudes de valoración.

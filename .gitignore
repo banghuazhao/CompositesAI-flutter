@@ -88,3 +88,5 @@ android/fastlane/metadata
 
 # FVM Version Cache
 .fvm/
+# Local Mac signing and OAuth configuration
+macos/Runner/Configs/Secrets.xcconfig

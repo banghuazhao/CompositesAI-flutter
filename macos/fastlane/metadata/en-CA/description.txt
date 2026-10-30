@@ -1,0 +1,9 @@
+CompositesAI brings AI conversations and practical composite calculations into one focused workspace on your Mac.
+
+Keep unsent text while switching conversations, reuse earlier questions, and review longer prompts in an expanded editor. Search loaded messages by question or answer, fold long responses, and copy or export your work.
+
+Explore lamina engineering constants and stress/strain, laminate plate and 3D properties, laminate stress/strain, failure criteria, and unidirectional rules of mixtures. Inspect charts and layup previews, filter failure results, and copy calculation results. Work in SI or US units with adjustable result precision.
+
+Manage custom materials with property previews, sorting, JSON backup exports, and recovery options for saved material data.
+
+Available in English, Simplified Chinese, and Traditional Chinese. AI chat requires sign-in and an internet connection.

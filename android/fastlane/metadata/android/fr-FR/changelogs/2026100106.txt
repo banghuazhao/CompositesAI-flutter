@@ -1,0 +1,2 @@
+- Des messages plus clairs si le partage de CompositesAI ou l’ouverture de sa page dans la boutique échoue.
+- Démarrage plus fluide lorsque les demandes d’évaluation sont indisponibles.

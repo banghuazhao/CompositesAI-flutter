@@ -1,0 +1,155 @@
+{
+  "appId": "1297825946",
+  "version": "7.14.0",
+  "versionId": "6d732e25-d313-4ab0-a6e7-eed1aa89b6c7",
+  "locale": "en-US",
+  "versionState": "PREPARE_FOR_SUBMISSION",
+  "verifiedAt": "2026-10-30T02:55:27.089419+00:00",
+  "placements": [
+    {
+      "file": "header-search-universal.png",
+      "sha256": "ebc6b38bf2baf3d56c2ccf40362d1a82a8afa25f76bedd8c87fd648d5f664cc3",
+      "width": 5244,
+      "height": 2950,
+      "placementId": "1b400004-d5b4-809a-8f09-4e66601e37e0",
+      "placementType": "PRODUCT_PAGE_HEADER_ASSET",
+      "placementGroup": "DEFAULT_PROFILE",
+      "placementState": "ACTIVE",
+      "imageId": "38800004-d5b4-809a-803c-14959083bf55",
+      "imageState": "PREPARE_FOR_SUBMISSION",
+      "specId": "c8f4e2b1-7a3d-5c9e-8b6f-2d1a0e9c8b7a"
+    },
+    {
+      "file": "header-search-universal.png",
+      "sha256": "ebc6b38bf2baf3d56c2ccf40362d1a82a8afa25f76bedd8c87fd648d5f664cc3",
+      "width": 5244,
+      "height": 2950,
+      "placementId": "23c00004-d5b4-809a-8f29-7f1813865014",
+      "placementType": "APP_STORE_SEARCH_RESULTS_ASSET",
+      "placementGroup": "DEFAULT_PROFILE",
+      "placementState": "ACTIVE",
+      "imageId": "38800004-d5b4-809a-803c-14959083bf55",
+      "imageState": "PREPARE_FOR_SUBMISSION",
+      "specId": "c8f4e2b1-7a3d-5c9e-8b6f-2d1a0e9c8b7a"
+    },
+    {
+      "file": "duo/outer/en-US/02-tools.png",
+      "sha256": "ba88217c9fdc0bbe1fabba96a8e5422554db15a832fb210c506a3924d3d30092",
+      "width": 1398,
+      "height": 2034,
+      "placementId": "ce400004-d5b4-809a-8f22-cc91adced119",
+      "placementType": "APP_SCREENSHOT",
+      "placementGroup": "IPHONE_DUO_PROFILE",
+      "placementState": "ACTIVE",
+      "imageId": "b8000004-d5b4-809a-801f-b6e945ec3409",
+      "imageState": "PREPARE_FOR_SUBMISSION",
+      "specId": "205e7ab6-a23a-4ee2-b327-0a99ec2a2520"
+    },
+    {
+      "file": "duo/outer/en-US/03-plate-results.png",
+      "sha256": "c656e19b497674d01193aba81810ce4619730d5ca894743be5b74fc31f1dcfe6",
+      "width": 1398,
+      "height": 2034,
+      "placementId": "56000004-d5b4-809a-8f12-8cf2e4b51ef4",
+      "placementType": "APP_SCREENSHOT",
+      "placementGroup": "IPHONE_DUO_PROFILE",
+      "placementState": "ACTIVE",
+      "imageId": "aac00004-d5b4-809a-801d-05f5c51d23a9",
+      "imageState": "PREPARE_FOR_SUBMISSION",
+      "specId": "205e7ab6-a23a-4ee2-b327-0a99ec2a2520"
+    },
+    {
+      "file": "duo/inner/en-US/02-tools.png",
+      "sha256": "2cbd63290c3c33bad6f32a5990382b917c820564671cf0960d44459419f5efac",
+      "width": 2853,
+      "height": 2007,
+      "placementId": "92c00004-d5b4-809a-8f35-2f41a54bb2d9",
+      "placementType": "APP_SCREENSHOT",
+      "placementGroup": "IPHONE_DUO_PROFILE",
+      "placementState": "ACTIVE",
+      "imageId": "1c000004-d5b4-809a-803b-28679fcf98b2",
+      "imageState": "PREPARE_FOR_SUBMISSION",
+      "specId": "b83915b8-5b87-4e63-bba5-ab3a0c439862"
+    },
+    {
+      "file": "duo/inner/en-US/03-plate-results.png",
+      "sha256": "f37950faa04ba2e7d7eafe3695a1fb8b2d0d0c9fb619ecf7eaf0cce92381d279",
+      "width": 2853,
+      "height": 2007,
+      "placementId": "cb800004-d5b4-809a-8f13-e2203595eb21",
+      "placementType": "APP_SCREENSHOT",
+      "placementGroup": "IPHONE_DUO_PROFILE",
+      "placementState": "ACTIVE",
+      "imageId": "33000004-d5b4-809a-8008-4f28a7ecea5a",
+      "imageState": "PREPARE_FOR_SUBMISSION",
+      "specId": "b83915b8-5b87-4e63-bba5-ab3a0c439862"
+    },
+    {
+      "file": "duo/outer/en-US/01-chat-signed-in.jpg",
+      "sha256": "3877bd9e0a0a981d8667b4072b863368f43d7036f9cca95e01cfd9c9a9374baa",
+      "width": 1398,
+      "height": 2034,
+      "placementId": "bb400004-d5b4-809a-8f31-260a68b91e30",
+      "placementType": "APP_SCREENSHOT",
+      "placementGroup": "IPHONE_DUO_PROFILE",
+      "placementState": "ACTIVE",
+      "imageId": "d5c00004-d5b4-809a-800c-efee821ab920",
+      "imageState": "PREPARE_FOR_SUBMISSION",
+      "specId": "205e7ab6-a23a-4ee2-b327-0a99ec2a2520"
+    },
+    {
+      "file": "duo/inner/en-US/01-chat-signed-in.jpg",
+      "sha256": "1e0e2f950bf218b7577bebf5c78a1a43338d8c2837cd21a04af8944271b94da9",
+      "width": 2853,
+      "height": 2007,
+      "placementId": "9e400004-d5b4-809a-8f37-61fc96b1b017",
+      "placementType": "APP_SCREENSHOT",
+      "placementGroup": "IPHONE_DUO_PROFILE",
+      "placementState": "ACTIVE",
+      "imageId": "97c00004-d5b4-809a-8024-f29ece644b39",
+      "imageState": "PREPARE_FOR_SUBMISSION",
+      "specId": "b83915b8-5b87-4e63-bba5-ab3a0c439862"
+    }
+  ],
+  "existingOtherPlacements": 12,
+  "reviewSubmitted": false,
+  "screenshotGalleryOrder": [
+    {
+      "id": "4e5980df-0fda-4bc9-ad98-65e4802ba326",
+      "fileName": "01-chat-signed-in.jpg",
+      "width": 1398,
+      "height": 2034
+    },
+    {
+      "id": "a5d2fc1c-692c-4690-84ea-284b4abfd0f0",
+      "fileName": "02-tools.png",
+      "width": 1398,
+      "height": 2034
+    },
+    {
+      "id": "8527c7e2-f541-408c-b854-f84b6b92b134",
+      "fileName": "03-plate-results.png",
+      "width": 1398,
+      "height": 2034
+    },
+    {
+      "id": "4d90efc3-0996-41ae-9fc2-f004eddbb4fd",
+      "fileName": "01-chat-signed-in.jpg",
+      "width": 2853,
+      "height": 2007
+    },
+    {
+      "id": "7bd01b49-adb6-43ba-9af8-a0cf3a250fec",
+      "fileName": "02-tools.png",
+      "width": 2853,
+      "height": 2007
+    },
+    {
+      "id": "413629be-a037-4ae9-8cd0-b9d6d326385a",
+      "fileName": "03-plate-results.png",
+      "width": 2853,
+      "height": 2007
+    }
+  ],
+  "signedInWelcomeReplacements": 2
+}

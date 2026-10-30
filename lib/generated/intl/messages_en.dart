@@ -729,6 +729,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "Layer_Thickness": MessageLookupByLibrary.simpleMessage("Layer Thickness"),
     "Layup_Angle": MessageLookupByLibrary.simpleMessage("Layup Angle"),
     "Layup_Sequence": MessageLookupByLibrary.simpleMessage("Layup Sequence"),
+    "Legacy_data_export": MessageLookupByLibrary.simpleMessage(
+      "Export legacy data",
+    ),
+    "Legacy_data_failed": MessageLookupByLibrary.simpleMessage(
+      "Could not export legacy data. Your original data has not been changed.",
+    ),
+    "Legacy_data_help": MessageLookupByLibrary.simpleMessage(
+      "Export a complete backup of materials and layups saved in the older Mac app. The original values and units are preserved; this backup is separate from the new material library.",
+    ),
+    "Legacy_data_saved": MessageLookupByLibrary.simpleMessage(
+      "Legacy SwiftComp data exported.",
+    ),
+    "Legacy_data_title": MessageLookupByLibrary.simpleMessage(
+      "Legacy SwiftComp data",
+    ),
     "ME_Toolkit": MessageLookupByLibrary.simpleMessage("ME Toolkit"),
     "Mechanics_of_Material": MessageLookupByLibrary.simpleMessage(
       "Mechanics of Material",

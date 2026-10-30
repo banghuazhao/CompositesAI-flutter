@@ -15,6 +15,7 @@ import 'package:swiftcomp/app/injection_container.dart';
 import 'package:swiftcomp/generated/l10n.dart';
 import 'package:swiftcomp/util/app_interactions.dart';
 import 'package:swiftcomp/util/app_theme.dart';
+import 'package:swiftcomp/util/platform_support.dart';
 
 import '../../auth/login_page.dart';
 import '../../conponents/base64-image.dart';
@@ -1478,14 +1479,15 @@ class _ChatScreenState extends State<ChatScreen>
                   viewModel.pickAndUploadImages(ImageSource.gallery);
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt_outlined),
-                title: Text(S.maybeOf(context)?.Chat_camera ?? 'Camera'),
-                onTap: () {
-                  _closeSheet(sheetContext);
-                  viewModel.pickAndUploadImages(ImageSource.camera);
-                },
-              ),
+              if (PlatformSupport.cameraCapture)
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: Text(S.maybeOf(context)?.Chat_camera ?? 'Camera'),
+                  onTap: () {
+                    _closeSheet(sheetContext);
+                    viewModel.pickAndUploadImages(ImageSource.camera);
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.insert_drive_file_outlined),
                 title: Text(S.maybeOf(context)?.Chat_files ?? 'Files'),

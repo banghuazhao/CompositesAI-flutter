@@ -1,0 +1,2 @@
+- Clearer feedback when sharing CompositesAI or opening its store page fails.
+- Smoother startup when rating prompts are unavailable.

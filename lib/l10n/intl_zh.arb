@@ -514,5 +514,10 @@
   "Chat_starter_hide_preview": "收起问题",
   "Chat_starters_more": "查看更多起点",
   "Chat_starters_less": "显示较少",
-  "Chat_starter_empty": "在下方输入问题即可开始。"
+  "Chat_starter_empty": "在下方输入问题即可开始。",
+  "Legacy_data_title": "旧版 SwiftComp 数据",
+  "Legacy_data_help": "导出旧版 Mac 应用中保存的全部材料和铺层数据。备份保留原始数值和单位，与新版材料库分开保存。",
+  "Legacy_data_export": "导出旧版数据",
+  "Legacy_data_saved": "已导出旧版 SwiftComp 数据。",
+  "Legacy_data_failed": "无法导出旧版数据，原始数据未被更改。"
 }
