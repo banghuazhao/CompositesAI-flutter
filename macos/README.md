@@ -78,35 +78,68 @@ FLUTTER_MACOS_ARM64_ONLY=false flutter build macos --release --target=lib/main.d
 
 ## Mac App Store package
 
-Create the release archive from the production entry point, with the local
-App Store signing configuration selected:
+Create the release archive from the production entry point. The Release
+configuration defaults to Automatic signing with a development identity, which
+embeds `get-task-allow`. Select the Mac App Store distribution profile and
+identity for the archive with command-line overrides (or the ignored
+`Secrets.xcconfig`):
 
 ```sh
 FLUTTER_MACOS_ARM64_ONLY=false flutter build macos --release --config-only --target=lib/main.dart
 FLUTTER_MACOS_ARM64_ONLY=false xcodebuild -workspace macos/Runner.xcworkspace -scheme Runner \
   -configuration Release -destination 'generic/platform=macOS' \
-  -archivePath build/macos/archive/CompositesAI.xcarchive archive
+  -archivePath build/macos/archive/CompositesAI.xcarchive \
+  COMPOSITESAI_CODE_SIGN_STYLE=Manual \
+  COMPOSITESAI_PROVISIONING_PROFILE='<MAC_APP_STORE_PROFILE_NAME>' \
+  CODE_SIGN_IDENTITY='3rd Party Mac Developer Application' \
+  archive
 ```
 
-The legacy Catalyst profile authorizes the existing prefixed Mac bundle ID.
-Xcode's export workflow can reject that profile's classification for the native
-macOS runner. Package the signed archive using Apple's `productbuild` workflow
-instead, with the installed Mac Installer Distribution identity selected by
-local secure tooling:
+The legacy Catalyst profile authorizes the existing prefixed Mac bundle ID, but
+it also carries the iOS-style `get-task-allow` and `application-identifier`
+keys. Xcode copies them into the native macOS runner's signature, and App Store
+Connect rejects them (error 90285). The macOS equivalents
+(`com.apple.application-identifier` and `com.apple.developer.team-identifier`)
+are already present, so re-sign a copy of the app without the two iOS-only keys:
+
+```sh
+mkdir -p build/macos/store
+rm -rf build/macos/store/CompositesAI.app
+ditto build/macos/archive/CompositesAI.xcarchive/Products/Applications/CompositesAI.app \
+  build/macos/store/CompositesAI.app
+codesign -d --entitlements - --xml build/macos/store/CompositesAI.app > build/macos/store/ent.plist
+plutil -remove get-task-allow build/macos/store/ent.plist
+plutil -remove application-identifier build/macos/store/ent.plist
+codesign -f -s '<MAC_APP_DISTRIBUTION_IDENTITY>' --entitlements build/macos/store/ent.plist \
+  --generate-entitlement-der build/macos/store/CompositesAI.app
+codesign --verify --deep --strict build/macos/store/CompositesAI.app
+```
+
+Xcode's export workflow can reject the profile's classification for the native
+macOS runner, so package the re-signed app with Apple's `productbuild` workflow
+and the installed Mac Installer Distribution identity:
 
 ```sh
 productbuild --sign '<MAC_INSTALLER_DISTRIBUTION_IDENTITY>' \
-  --component build/macos/archive/CompositesAI.xcarchive/Products/Applications/CompositesAI.app \
+  --component build/macos/store/CompositesAI.app \
   /Applications build/macos/store/CompositesAI.pkg
 ```
 
-Create the output directory first. Keep the signing identity and API key values
-out of logs and shell history. Verify the app and installer signatures and use
-App Store Connect package validation before uploading. The 7.13.0 package was
-rejected by both validation and upload: their JSON responses reported
-`get-task-allow` and `application-identifier` entitlement errors despite process
-exit status 0. The Mac release remains stopped. Leave the existing bundle ID and
-profile contents intact.
+Validate, then upload, with an App Store Connect API key whose `.p8` file is in
+`API_PRIVATE_KEYS_DIR`:
+
+```sh
+xcrun altool --validate-app -f build/macos/store/CompositesAI.pkg -t macos \
+  --apiKey <KEY_ID> --apiIssuer <ISSUER_ID> --output-format json
+xcrun altool --upload-app -f build/macos/store/CompositesAI.pkg -t macos \
+  --apiKey <KEY_ID> --apiIssuer <ISSUER_ID> --output-format json
+```
+
+`altool` exits with status 0 even when validation fails, so read the JSON for
+`product-errors` or the `success-message`. Keep the signing identity and API key
+values out of logs and shell history. Leave the existing bundle ID and profile
+contents intact. The Mac app is a separate App Store Connect record
+("CompositesAI for Mac"); 7.14.0 was the first native build submitted this way.
 
 ## Desktop authentication
 
